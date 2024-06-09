@@ -8,3 +8,6 @@ CvGameCoreDLL_Expansion2/RCa26116
 CIV5MPDLL.civ5suo
 build
 Packages
+(1) CIV5MPDLL/DLL/CvGameCoreDLL_Expansion2Win32Release.pdb
+(1) CIV5MPDLL/DLL/CvGameCore_Expansion2.dll
+.gitignore
