@@ -206,6 +206,7 @@ CvPromotionEntry::CvPromotionEntry():
 	m_iInsightEnemyDamageModifier(0),
 	m_iHeightModPerX(0),
 	m_iHeightModLimited(0),
+	m_iMilitaryMightMod(0),
 	m_iExtraMoveTimesXX(0),
 	m_iRangeAttackCostModifier(0),
 	m_iOriginalCapitalDamageFix(0),
@@ -738,6 +739,7 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_iInsightEnemyDamageModifier = kResults.GetInt("InsightEnemyDamageModifier");
 	m_iHeightModPerX = kResults.GetInt("HeightModPerX");
 	m_iHeightModLimited = kResults.GetInt("HeightModLimited");
+	m_iMilitaryMightMod = kResults.GetInt("MilitaryMightMod");
 	m_iExtraMoveTimesXX = kResults.GetInt("ExtraMoveTimesXX");
 	m_iRangeAttackCostModifier = kResults.GetInt("RangeAttackCostModifier");
 	m_iOriginalCapitalDamageFix = kResults.GetInt("OriginalCapitalDamageFix");
@@ -2533,9 +2535,9 @@ int CvPromotionEntry::GetHeightModLimited() const
 {
 	return m_iHeightModLimited;
 }
-int CvPromotionEntry::GetCalculateMilitaryMightMod() const
+int CvPromotionEntry::GetMilitaryMightMod() const
 {
-	return m_iCalculateMilitaryMightMod;
+	return m_iMilitaryMightMod;
 }
 int CvPromotionEntry::GetExtraMoveTimesXX() const
 {

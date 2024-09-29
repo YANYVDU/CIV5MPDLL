@@ -1906,6 +1906,9 @@ public:
 	void ChangeHeightModLimited(int iValue);
 	const int GetTotalHeightMod(CvPlot& TargetPlot) const;
 
+	const int GetMilitaryMightMod() const;
+	void ChangeMilitaryMightMod(int iValue);
+
 	const int GetExtraMoveTimesXX() const;
 	void ChangeExtraMoveTimesXX(int iValue);
 
@@ -2577,6 +2580,7 @@ protected:
 	int m_iInsightEnemyDamageModifier;
 	int m_iHeightModPerX;
 	int m_iHeightModLimited;
+	int m_iMilitaryMightMod;
 	int m_iExtraMoveTimesXX;
 	int m_iRangeAttackCostModifier;
 	int m_iOriginalCapitalDamageFix;

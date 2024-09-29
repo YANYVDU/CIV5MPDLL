@@ -471,6 +471,7 @@ CvUnit::CvUnit() :
 	, m_iInsightEnemyDamageModifier(0)
 	, m_iHeightModPerX(0)
 	, m_iHeightModLimited(0)
+	, m_iMilitaryMightMod(0)
 	, m_iExtraMoveTimesXX(0)
 	, m_iRangeAttackCostModifier(100)
 	, m_iOriginalCapitalDamageFix(0)
@@ -1473,6 +1474,7 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iInsightEnemyDamageModifier = 0;
 	m_iHeightModPerX = 0;
 	m_iHeightModLimited = 0;
+	m_iMilitaryMightMod = 0;
 	m_iExtraMoveTimesXX = 0;
 	m_iRangeAttackCostModifier = 100;
 	m_iOriginalCapitalDamageFix = 0;
@@ -7112,9 +7114,14 @@ const int CvUnit::GetTotalHeightMod(CvPlot& TargetPlot) const
 	}
 	return 0;
 }
-const int CvUnit::GetCalculateMilitaryMightMod() const
+//	--------------------------------------------------------------------------------
+const int CvUnit::GetMilitaryMightMod() const
 {
-	return m_iCalculateMilitaryMightMod;
+	return m_iMilitaryMightMod;
+}
+void CvUnit::ChangeMilitaryMightMod(int iValue)
+{
+	m_iMilitaryMightMod += iValue;
 }
 //	--------------------------------------------------------------------------------
 void CvUnit::ChangeExtraMoveTimesXX(int iValue)
@@ -26305,6 +26312,7 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeInsightEnemyDamageModifier((thisPromotion.GetInsightEnemyDamageModifier()) * iChange);
 		ChangeHeightModPerX((thisPromotion.GetHeightModPerX()) * iChange);
 		ChangeHeightModLimited((thisPromotion.GetHeightModLimited()) * iChange);
+		ChangeMilitaryMightMod((thisPromotion.GetMilitaryMightMod()) * iChange);
 		ChangeExtraMoveTimesXX((thisPromotion.GetExtraMoveTimesXX()) * iChange);
 		ChangeRangeAttackCostModifier((thisPromotion.GetRangeAttackCostModifier()) * iChange);
 		ChangeOriginalCapitalDamageFix((thisPromotion.GetOriginalCapitalDamageFix()) * iChange);
@@ -26874,7 +26882,7 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_iInsightEnemyDamageModifier;
 	kStream >> m_iHeightModPerX;
 	kStream >> m_iHeightModLimited;
-	kStream >> m_iCalculateMilitaryMightMod;
+	kStream >> m_iMilitaryMightMod;
 	kStream >> m_iExtraMoveTimesXX;
 	kStream >> m_iRangeAttackCostModifier;
 	kStream >> m_iOriginalCapitalDamageFix;
@@ -27276,7 +27284,7 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_iInsightEnemyDamageModifier;
 	kStream << m_iHeightModPerX;
 	kStream << m_iHeightModLimited;
-	kStream << m_iCalculateMilitaryMightMod;
+	kStream << m_iMilitaryMightMod;
 	kStream << m_iExtraMoveTimesXX;
 	kStream << m_iRangeAttackCostModifier;
 	kStream << m_iOriginalCapitalDamageFix;
