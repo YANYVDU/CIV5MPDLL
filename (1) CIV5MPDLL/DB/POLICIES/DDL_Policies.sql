@@ -98,4 +98,5 @@ alter table Policies add column CapitalTradeRouteGoldChange integer default 0;
 alter table Policies add column CapitalTradeRouteRangeChange integer default 0;
 alter table Policies add column RiggingElectionInfluenceModifier integer default 0;
 alter table Policies add column SpyLevelUpWhenRigging boolean default 0;
+-- GlobalUnlimitedOneTurnTGCP 
 ALTER TABLE Policies ADD COLUMN GlobalUnlimitedOneTurnTGCP BOOLEAN DEFAULT 0;
