@@ -258,6 +258,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_piProductionTraits(NULL),
 	m_piSeaPlotYieldChange(NULL),
 	m_piRiverPlotYieldChange(NULL),
+	m_piRiverPlotYieldChangeGlobal(NULL),
 	m_piLakePlotYieldChange(NULL),
 	m_piSeaResourceYieldChange(NULL),
 	m_piYieldChange(NULL),
@@ -390,6 +391,7 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	SAFE_DELETE_ARRAY(m_piProductionTraits);
 	SAFE_DELETE_ARRAY(m_piSeaPlotYieldChange);
 	SAFE_DELETE_ARRAY(m_piRiverPlotYieldChange);
+	SAFE_DELETE_ARRAY(m_piRiverPlotYieldChangeGlobal);
 	SAFE_DELETE_ARRAY(m_piLakePlotYieldChange);
 	SAFE_DELETE_ARRAY(m_piSeaResourceYieldChange);
 	SAFE_DELETE_ARRAY(m_piYieldChange);
@@ -864,6 +866,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	
 	kUtility.SetYields(m_piSeaPlotYieldChange, "Building_SeaPlotYieldChanges", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piRiverPlotYieldChange, "Building_RiverPlotYieldChanges", "BuildingType", szBuildingType);
+	kUtility.SetYields(m_piRiverPlotYieldChangeGlobal, "Building_RiverPlotYieldChangesGlobal", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piLakePlotYieldChange, "Building_LakePlotYieldChanges", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piSeaResourceYieldChange, "Building_SeaResourceYieldChanges", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piYieldChange, "Building_YieldChanges", "BuildingType", szBuildingType);
@@ -3557,6 +3560,20 @@ int CvBuildingEntry::GetRiverPlotYieldChange(int i) const
 int* CvBuildingEntry::GetRiverPlotYieldChangeArray() const
 {
 	return m_piRiverPlotYieldChange;
+}
+
+/// Global River plot yield changes by type
+int CvBuildingEntry::GetRiverPlotYieldChangeGlobal(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piRiverPlotYieldChangeGlobal ? m_piRiverPlotYieldChangeGlobal[i] : -1;
+}
+
+/// Array of Global river plot yield changes
+int* CvBuildingEntry::GetRiverPlotYieldChangeGlobalArray() const
+{
+	return m_piRiverPlotYieldChangeGlobal;
 }
 
 /// Lake plot yield changes by type
