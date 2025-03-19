@@ -250,6 +250,8 @@ public:
 	bool IsBuildingFeatureValid(BuildingTypes eBuilding, CvString* toolTipSink = NULL) const;
 	bool IsBuildingEmpireResourceValid(BuildingTypes eBuilding, CvString* toolTipSink = NULL) const;
 #endif
+	bool IsHasPlotLocal(PlotTypes ePlot) const;
+	bool IsBuildingPlotValid(BuildingTypes eBuilding, CvString* toolTipSink = NULL) const;
 	// Resource Demanded
 
 	ResourceTypes GetResourceDemanded(bool bHideUnknown = true) const;
@@ -598,6 +600,8 @@ public:
 	void ChangeUnitMaxExperienceLocal(int iChange);
 	int GetSecondCapitalsExtraScore() const;
 	void ChangeSecondCapitalsExtraScore(int iChange);
+	int GetFoodKeptFromPollution() const;
+	void ChangeFoodKeptFromPollution(int iChange);
 	bool IsAllowsFoodTradeRoutes();
 	void ChangeNumAllowsFoodTradeRoutes(int iChange);
 	bool IsAllowsProductionTradeRoutes();
@@ -858,6 +862,9 @@ public:
 
 	int GetYieldPerReligionTimes100(YieldTypes eIndex) const;
 	void ChangeYieldPerReligionTimes100(YieldTypes eIndex, int iChange);
+
+	int GetYieldPerEra(YieldTypes eIndex) const;
+	void ChangeYieldPerEra(YieldTypes eIndex, int iChange);
 
 
 	void changeNukeInterceptionChance(int iValue);
@@ -1434,6 +1441,9 @@ public:
 	int GetTradeRouteFromTheCityYields(YieldTypes eIndex) const;
 	void ChangeTradeRouteFromTheCityYields(YieldTypes eIndex, int iChange);
 
+	int GetTradeRouteFromTheCityYieldsPerEra(YieldTypes eIndex) const;
+	void ChangeTradeRouteFromTheCityYieldsPerEra(YieldTypes eIndex, int iChange);
+
 	int GetLastTurnWorkerDisbanded() const;
 	void SetLastTurnWorkerDisbanded(int iValue);
 
@@ -1479,6 +1489,7 @@ protected:
 	int m_iPlotBuyCostModifier;
 	int m_iUnitMaxExperienceLocal;
 	int m_iSecondCapitalsExtraScore;
+	int m_iFoodKeptFromPollution;
 	int m_iNumAllowsFoodTradeRoutes;
 	int m_iNumAllowsProductionTradeRoutes;
 #if defined(MOD_BUILDINGS_CITY_WORKING)
@@ -1619,6 +1630,7 @@ protected:
 
 
 	std::vector<int> m_aiYieldPerReligion;
+	std::vector<int> m_aiYieldPerEra;
 	FAutoVariable<std::vector<int>, CvCity> m_aiPowerYieldRateModifier;
 	FAutoVariable<std::vector<int>, CvCity> m_aiFeatureYieldRateModifier;
 	FAutoVariable<std::vector<int>, CvCity> m_aiTerrainYieldRateModifier;
@@ -1743,6 +1755,7 @@ protected:
 #endif
 
 	std::tr1::array<int, YieldTypes::NUM_YIELD_TYPES> m_aTradeRouteFromTheCityYields;
+	std::tr1::array<int, YieldTypes::NUM_YIELD_TYPES> m_aTradeRouteFromTheCityYieldsPerEra;
 
 	CvCityBuildings* m_pCityBuildings;
 	CvCityStrategyAI* m_pCityStrategyAI;

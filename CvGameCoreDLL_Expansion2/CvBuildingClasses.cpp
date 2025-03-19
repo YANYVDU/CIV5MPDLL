@@ -258,9 +258,11 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_piProductionTraits(NULL),
 	m_piSeaPlotYieldChange(NULL),
 	m_piRiverPlotYieldChange(NULL),
+	m_piRiverPlotYieldChangeGlobal(NULL),
 	m_piLakePlotYieldChange(NULL),
 	m_piSeaResourceYieldChange(NULL),
 	m_piYieldChange(NULL),
+	m_piYieldChangePerEra(NULL),
 	m_piYieldChangePerPop(NULL),
 	m_piYieldChangePerReligion(NULL),
 	m_piYieldModifier(NULL),
@@ -313,6 +315,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_piEmpireResourceOrs(NULL),
     m_piLocalFeatureOrs(NULL),
 	m_piLocalFeatureAnds(NULL),
+	m_piLocalPlotAnds(NULL),
 
 	m_paiHurryModifier(NULL),
 	m_paiHurryModifierLocal(NULL),
@@ -389,9 +392,11 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	SAFE_DELETE_ARRAY(m_piProductionTraits);
 	SAFE_DELETE_ARRAY(m_piSeaPlotYieldChange);
 	SAFE_DELETE_ARRAY(m_piRiverPlotYieldChange);
+	SAFE_DELETE_ARRAY(m_piRiverPlotYieldChangeGlobal);
 	SAFE_DELETE_ARRAY(m_piLakePlotYieldChange);
 	SAFE_DELETE_ARRAY(m_piSeaResourceYieldChange);
 	SAFE_DELETE_ARRAY(m_piYieldChange);
+	SAFE_DELETE_ARRAY(m_piYieldChangePerEra);
 	SAFE_DELETE_ARRAY(m_piYieldChangePerPop);
 	SAFE_DELETE_ARRAY(m_piYieldChangePerReligion);
 	SAFE_DELETE_ARRAY(m_piYieldModifier);
@@ -432,6 +437,7 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	SAFE_DELETE_ARRAY(m_piEmpireResourceOrs);
 	SAFE_DELETE_ARRAY(m_piLocalFeatureOrs);
 	SAFE_DELETE_ARRAY(m_piLocalFeatureAnds);
+	SAFE_DELETE_ARRAY(m_piLocalPlotAnds);
 
 	SAFE_DELETE_ARRAY(m_paiHurryModifier);
 	SAFE_DELETE_ARRAY(m_paiHurryModifierLocal);
@@ -760,6 +766,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 
 	m_iGlobalGrowthFoodNeededModifier = kResults.GetInt("GlobalGrowthFoodNeededModifier");
 	m_iSecondCapitalsExtraScore = kResults.GetInt("SecondCapitalsExtraScore");
+	m_iFoodKeptFromPollution = kResults.GetInt("FoodKeptFromPollution");
 
 	m_bCapitalOnly = kResults.GetBool("CapitalOnly");
 	m_bOriginalCapitalOnly = kResults.GetBool("OriginalCapitalOnly");
@@ -861,9 +868,11 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	
 	kUtility.SetYields(m_piSeaPlotYieldChange, "Building_SeaPlotYieldChanges", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piRiverPlotYieldChange, "Building_RiverPlotYieldChanges", "BuildingType", szBuildingType);
+	kUtility.SetYields(m_piRiverPlotYieldChangeGlobal, "Building_RiverPlotYieldChangesGlobal", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piLakePlotYieldChange, "Building_LakePlotYieldChanges", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piSeaResourceYieldChange, "Building_SeaResourceYieldChanges", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piYieldChange, "Building_YieldChanges", "BuildingType", szBuildingType);
+	kUtility.SetYields(m_piYieldChangePerEra, "Building_YieldChangesPerEra", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piYieldChangePerPop, "Building_YieldChangesPerPop", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piYieldChangePerReligion, "Building_YieldChangesPerReligion", "BuildingType", szBuildingType);
 	kUtility.SetYields(m_piYieldModifier, "Building_YieldModifiers", "BuildingType", szBuildingType);
@@ -926,6 +935,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	kUtility.PopulateArrayByExistence(m_piEmpireResourceOrs, "Resources", "Building_EmpireResourceOrs", "ResourceType", "BuildingType", szBuildingType);
 	kUtility.PopulateArrayByExistence(m_piLocalFeatureOrs, "Features", "Building_LocalFeatureOrs", "FeatureType", "BuildingType", szBuildingType);
 	kUtility.PopulateArrayByExistence(m_piLocalFeatureAnds, "Features", "Building_LocalFeatureAnds", "FeatureType", "BuildingType", szBuildingType);
+	kUtility.PopulateArrayByExistence(m_piLocalPlotAnds, "Plots", "Building_LocalPlotAnds", "PlotType", "BuildingType", szBuildingType);
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 	kUtility.SetYields(m_piInstantYield, "Building_InstantYield", "BuildingType", szBuildingType);
 	{
@@ -1859,6 +1869,34 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 		pResults->Reset();
 	}
 
+	// int GetTradeRouteFromTheCityYieldsPerEra(YieldTypes eYieldTypes);
+	{
+		for (size_t i = 0; i < NUM_YIELD_TYPES; i++)
+		{
+			m_aTradeRouteFromTheCityYieldsPerEra[i] = 0;
+		}
+
+		std::string strKey("Building_TradeRouteFromTheCityYieldsPerEra");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == nullptr)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select YieldType, YieldValue from Building_TradeRouteFromTheCityYieldsPerEra where BuildingType = ?");
+		}
+		pResults->Bind(1, szBuildingType);
+
+		while (pResults->Step())
+		{
+			const auto yieldType = (YieldTypes) GC.getInfoTypeForString(pResults->GetText(0));
+			const int yieldValue = pResults->GetInt(1);
+			if (yieldType >= 0 && yieldType < NUM_YIELD_TYPES)
+			{
+				m_aTradeRouteFromTheCityYieldsPerEra[yieldType] = yieldValue;
+			}
+		}
+
+		pResults->Reset();
+	}
+
 #ifdef MOD_GLOBAL_CITY_SCALES
 	m_bEnableAllCityScaleGrowth = kResults.GetBool("EnableAllCityScaleGrowth");
 	auto* strCityScale = kResults.GetText("EnableCityScaleGrowth");
@@ -2558,6 +2596,10 @@ int CvBuildingEntry::GetSecondCapitalsExtraScore() const {
 	return m_iSecondCapitalsExtraScore;
 }
 
+int CvBuildingEntry::GetFoodKeptFromPollution() const {
+	return m_iFoodKeptFromPollution;
+}
+
 int CvBuildingEntry::GetExtraAttacks() const
 {
 	return m_iExtraAttacks;
@@ -3132,6 +3174,10 @@ bool CvBuildingEntry::IsScienceBuilding() const
 	{
 		bRtnValue = true;
 	}
+	else if(GetYieldChangePerEra(YIELD_SCIENCE) > 0)
+	{
+		bRtnValue = true;
+	}
 	else if(GetYieldChangePerPop(YIELD_SCIENCE) > 0)
 	{
 		bRtnValue = true;
@@ -3215,6 +3261,20 @@ int CvBuildingEntry::GetYieldChange(int i) const
 int* CvBuildingEntry::GetYieldChangeArray() const
 {
 	return m_piYieldChange;
+}
+
+/// Change to yield by type per era
+int CvBuildingEntry::GetYieldChangePerEra(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piYieldChangePerEra ? m_piYieldChangePerEra[i] : -1;
+}
+
+/// Array of yield changes per era
+int* CvBuildingEntry::GetYieldChangePerEraArray() const
+{
+	return m_piYieldChangePerEra;
 }
 
 /// Change to yield by type
@@ -3505,6 +3565,20 @@ int* CvBuildingEntry::GetRiverPlotYieldChangeArray() const
 	return m_piRiverPlotYieldChange;
 }
 
+/// Global River plot yield changes by type
+int CvBuildingEntry::GetRiverPlotYieldChangeGlobal(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piRiverPlotYieldChangeGlobal ? m_piRiverPlotYieldChangeGlobal[i] : -1;
+}
+
+/// Array of Global river plot yield changes
+int* CvBuildingEntry::GetRiverPlotYieldChangeGlobalArray() const
+{
+	return m_piRiverPlotYieldChangeGlobal;
+}
+
 /// Lake plot yield changes by type
 int CvBuildingEntry::GetLakePlotYieldChange(int i) const
 {
@@ -3741,7 +3815,13 @@ int CvBuildingEntry::GetFeatureOr(int i) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piLocalFeatureOrs ? m_piLocalFeatureOrs[i] : -1;
 }
-
+/// Prerequisite Plot with AND
+int CvBuildingEntry::GetPlotAnd(int i) const
+{
+	CvAssertMsg(i < GC.getNumPlotInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piLocalPlotAnds ? m_piLocalPlotAnds[i] : -1;
+}
 
 /// Modifier to Hurry cost
 int CvBuildingEntry::GetHurryModifier(int i) const
@@ -4421,6 +4501,16 @@ int CvBuildingEntry::GetTradeRouteFromTheCityYields(YieldTypes eYieldTypes) cons
 	}
 
 	return m_aTradeRouteFromTheCityYields[eYieldTypes];
+}
+
+int CvBuildingEntry::GetTradeRouteFromTheCityYieldsPerEra(YieldTypes eYieldTypes) const
+{
+	if (eYieldTypes < 0 || eYieldTypes >= NUM_YIELD_TYPES)
+	{
+		return 0;
+	}
+
+	return m_aTradeRouteFromTheCityYieldsPerEra[eYieldTypes];
 }
 
 //This building can only be built in capital

@@ -134,6 +134,7 @@ public:
 	int GetScienceModifierFromRANum() const;
 	int GetDiplomatPropagandaModifier() const;
 	int GetCityExtraProductionCount() const;
+	int GetNationalWonderCityCostModifier() const;
 
 	int GetYieldFromNonSpecialistCitizens(int i) const;
 	int* GetYieldFromNonSpecialistCitizensArray() const;
@@ -303,6 +304,7 @@ public:
 	bool IsDummy() const;
 #endif
 	bool IsAlwaysWeLoveKindDayInGoldenAge() const;
+	bool IsGlobalUnlimitedOneTurnTGCP() const;
 	bool IsNoResistance() const;
 	bool IsUpgradeAllTerritory() const;
 	int GetDefenseBoost() const;
@@ -463,6 +465,7 @@ private:
 	int m_iScienceModifierFromRANum;
 	int m_iDiplomatPropagandaModifier;
 	int m_iCityExtraProductionCount;
+	int m_iNationalWonderCityCostModifier;
 	int m_iGoldPerUnit;
 	int m_iGoldPerMilitaryUnit;
 	int m_iCityStrengthMod;
@@ -544,6 +547,7 @@ private:
 	bool m_bDummy;
 #endif
 	bool m_bAlwaysWeLoveKindDayInGoldenAge;
+	bool m_bGlobalUnlimitedOneTurnTGCP;
 	bool m_bNoResistance;
 	bool m_bUpgradeAllTerritory;
 	int m_iDefenseBoost;

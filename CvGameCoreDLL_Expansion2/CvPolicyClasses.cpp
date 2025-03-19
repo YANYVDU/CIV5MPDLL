@@ -124,6 +124,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iScienceModifierFromRANum(0),
 	m_iDiplomatPropagandaModifier(0),
 	m_iCityExtraProductionCount(0),
+	m_iNationalWonderCityCostModifier(0),
 	m_iGoldPerUnit(0),
 	m_iGoldPerMilitaryUnit(0),
 	m_iCityStrengthMod(0),
@@ -203,6 +204,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_bDummy(false),
 #endif
 	m_bAlwaysWeLoveKindDayInGoldenAge(false),
+	m_bGlobalUnlimitedOneTurnTGCP(false),	
 	m_bNoResistance(false),
 	m_bUpgradeAllTerritory(false),
 	m_iDefenseBoost(0),
@@ -450,6 +452,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iScienceModifierFromRANum = kResults.GetInt("ScienceModifierFromRANum");
 	m_iDiplomatPropagandaModifier = kResults.GetInt("DiplomatPropagandaModifier");
 	m_iCityExtraProductionCount = kResults.GetInt("CityExtraProductionCount");
+	m_iNationalWonderCityCostModifier = kResults.GetInt("NationalWonderCityCostModifier");
 	m_iGoldPerUnit = kResults.GetInt("GoldPerUnit");
 	m_iGoldPerMilitaryUnit = kResults.GetInt("GoldPerMilitaryUnit");
 	m_iCityStrengthMod = kResults.GetInt("CityStrengthMod");
@@ -529,6 +532,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	}
 #endif
 	m_bAlwaysWeLoveKindDayInGoldenAge = kResults.GetInt("AlwaysWeLoveKindDayInGoldenAge");
+	m_bGlobalUnlimitedOneTurnTGCP = kResults.GetInt("GlobalUnlimitedOneTurnTGCP");
 	m_bNoResistance = kResults.GetInt("NoResistance");
 	m_bUpgradeAllTerritory = kResults.GetInt("UpgradeAllTerritory");
 	m_iDefenseBoost = kResults.GetInt("DefenseBoostAllCities");
@@ -1920,6 +1924,11 @@ int CvPolicyEntry::GetCityExtraProductionCount() const
 	return m_iCityExtraProductionCount;
 }
 
+int CvPolicyEntry::GetNationalWonderCityCostModifier() const
+{
+	return m_iNationalWonderCityCostModifier;
+}
+
 /// Upkeep cost
 int CvPolicyEntry::GetGoldPerUnit() const
 {
@@ -2370,6 +2379,10 @@ bool CvPolicyEntry::IsDummy() const
 bool CvPolicyEntry::IsAlwaysWeLoveKindDayInGoldenAge() const
 {
 	return m_bAlwaysWeLoveKindDayInGoldenAge;
+}
+bool CvPolicyEntry::IsGlobalUnlimitedOneTurnTGCP() const
+{
+	return m_bGlobalUnlimitedOneTurnTGCP;
 }
 
 bool CvPolicyEntry::IsNoResistance() const

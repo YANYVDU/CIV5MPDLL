@@ -67,6 +67,7 @@ ALTER TABLE Policies ADD 'TourismModifierPerGPCreation' BOOLEAN DEFAULT 0;
 ALTER TABLE Policies ADD 'ScienceModifierFromRANum' INTEGER DEFAULT 0;
 ALTER TABLE Policies ADD 'DiplomatPropagandaModifier' INTEGER DEFAULT 0;
 ALTER TABLE Policies ADD 'CityExtraProductionCount' INTEGER DEFAULT 0;
+ALTER TABLE Policies ADD 'NationalWonderCityCostModifier' INTEGER DEFAULT 0;
 
 ALTER TABLE Policies ADD 'DeepWaterNavalStrengthCultureModifier' INTEGER DEFAULT 0;
 ALTER TABLE Policies ADD 'FreeBuildingClass' text default null references BuildingClasses(Type);
@@ -98,3 +99,4 @@ alter table Policies add column CapitalTradeRouteGoldChange integer default 0;
 alter table Policies add column CapitalTradeRouteRangeChange integer default 0;
 alter table Policies add column RiggingElectionInfluenceModifier integer default 0;
 alter table Policies add column SpyLevelUpWhenRigging boolean default 0;
+ALTER TABLE Policies ADD COLUMN GlobalUnlimitedOneTurnTGCP BOOLEAN DEFAULT 0;

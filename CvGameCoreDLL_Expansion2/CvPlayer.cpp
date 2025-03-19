@@ -474,6 +474,7 @@ CvPlayer::CvPlayer() :
 	, m_aiCapitalYieldPerPopChange("CvPlayer::m_aiCapitalYieldPerPopChange", m_syncArchive)
 	, m_aiYieldPerPopChange("CvPlayer::m_aiYieldPerPopChange", m_syncArchive)
 	, m_aiSeaPlotYield("CvPlayer::m_aiSeaPlotYield", m_syncArchive)
+	, m_aiRiverPlotYield("CvPlayer::m_aiRiverPlotYield", m_syncArchive)
 	, m_aiYieldFromProcessModifierGlobal("CvPlayer::m_aiYieldFromProcessModifierGlobal", m_syncArchive)
 	, m_aiCityLoveKingDayYieldMod("CvPlayer::m_aiCityLoveKingDayYieldMod", m_syncArchive)
 	, m_aiYieldRateModifier("CvPlayer::m_aiYieldRateModifier", m_syncArchive)
@@ -722,6 +723,7 @@ void CvPlayer::init(PlayerTypes eID)
 
 		CvAssert(m_pTraits);
 		m_pTraits->InitPlayerTraits();
+		GetBuilderTaskingAI()->UpdateKeepFeatures(this);
 
 		// Special handling for the Polynesian trait's overriding of embarked unit graphics
 		if(m_pTraits->IsEmbarkedAllWater())
@@ -1396,6 +1398,9 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 
 	m_aiSeaPlotYield.clear();
 	m_aiSeaPlotYield.resize(NUM_YIELD_TYPES, 0);
+
+	m_aiRiverPlotYield.clear();
+	m_aiRiverPlotYield.resize(NUM_YIELD_TYPES, 0);
 
 	m_aiYieldFromProcessModifierGlobal.clear();
 	m_aiYieldFromProcessModifierGlobal.resize(NUM_YIELD_TYPES, 0);
@@ -9418,7 +9423,12 @@ int CvPlayer::getProductionNeeded(BuildingTypes eBuilding) const
 
 	if(pkBuildingInfo->GetNumCityCostMod() > 0 && getNumCities() > 0)
 	{
-		iProductionNeeded += (pkBuildingInfo->GetNumCityCostMod() * getNumCities());
+		int iNumCityCost = (pkBuildingInfo->GetNumCityCostMod() * getNumCities());
+		if(pkBuildingInfo->GetBuildingClassInfo().getMaxPlayerInstances() == 1)
+		{
+			iNumCityCost = iNumCityCost * (100 + getPolicyModifiers(POLICYMOD_NATIONAL_WONDER_CITY_COST_MODIFIER)) / 100;
+		}
+		iProductionNeeded += iNumCityCost;
 	}
 
 	if(isMinorCiv())
@@ -10225,6 +10235,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 		{
 			changeSpecialistExtraYield(((SpecialistTypes)iI), ((YieldTypes)iJ), (pBuildingInfo->GetSpecialistYieldChange(iI, iJ) * iChange));
 		}
+		changeRiverPlotYield((YieldTypes)iJ, (pBuildingInfo->GetRiverPlotYieldChangeGlobalArray()[iJ] * iChange));
 
 	}
 
@@ -14727,6 +14738,17 @@ void CvPlayer::doAdoptPolicy(PolicyTypes ePolicy)
 	updateYield();		// Policies can change the yield
 }
 
+void CvPlayer::UpdateGlobalUnlimitedPolicyStatus() {
+    m_bGlobalUnlimitedOneTurnTGCP = false;
+    for (int iPolicy = 0; iPolicy < GC.getNumPolicyInfos(); ++iPolicy) {
+        const PolicyTypes ePolicy = static_cast<PolicyTypes>(iPolicy);
+        const CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
+        if (pPolicy && pPolicy->IsGlobalUnlimitedOneTurnTGCP() && GetPlayerPolicies()->HasPolicy(ePolicy)) {
+            m_bGlobalUnlimitedOneTurnTGCP = true;
+            break;  
+        }
+    }
+}
 //	--------------------------------------------------------------------------------
 /// Empire in Anarchy?
 bool CvPlayer::IsAnarchy() const
@@ -21276,6 +21298,29 @@ void CvPlayer::changeSeaPlotYield(YieldTypes eIndex, int iChange)
 	}
 }
 
+//	--------------------------------------------------------------------------------
+int CvPlayer::getRiverPlotYield(YieldTypes eIndex) const
+{
+	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eIndex < NUM_YIELD_TYPES, "eIndex is expected to be within maximum bounds (invalid Index)");
+	return m_aiRiverPlotYield[eIndex];
+}
+
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::changeRiverPlotYield(YieldTypes eIndex, int iChange)
+{
+	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eIndex < NUM_YIELD_TYPES, "eIndex is expected to be within maximum bounds (invalid Index)");
+
+	if(iChange != 0)
+	{
+		m_aiRiverPlotYield.setAt(eIndex, m_aiRiverPlotYield[eIndex] + iChange);
+
+		updateYield();
+	}
+}
+
 
 //	--------------------------------------------------------------------------------
 int CvPlayer::getYieldRateModifier(YieldTypes eIndex) const
@@ -25565,7 +25610,7 @@ void CvPlayer::doAdvancedStartAction(AdvancedStartActionTypes eAction, int iX, i
 				{
 					pCity->GetCityBuildings()->SetNumRealBuilding(eBuilding, pCity->GetCityBuildings()->GetNumRealBuilding(eBuilding)+1);
 					changeAdvancedStartPoints(-iCost);
-					if(pkBuildingInfo->GetFoodKept() != 0)
+					if(pkBuildingInfo->GetFoodKept() != 0 || pkBuildingInfo->GetFoodKeptFromPollution() != 0)
 					{
 						pCity->setFoodKept((pCity->getFood() * pCity->getMaxFoodKeptPercent()) / 100);
 					}
@@ -25577,7 +25622,7 @@ void CvPlayer::doAdvancedStartAction(AdvancedStartActionTypes eAction, int iX, i
 			{
 				pCity->GetCityBuildings()->SetNumRealBuilding(eBuilding, pCity->GetCityBuildings()->GetNumRealBuilding(eBuilding)-1);
 				changeAdvancedStartPoints(iCost);
-				if(pkBuildingInfo->GetFoodKept() != 0)
+				if(pkBuildingInfo->GetFoodKept() != 0 || pkBuildingInfo->GetFoodKeptFromPollution() != 0)
 				{
 					pCity->setFoodKept((pCity->getFood() * pCity->getMaxFoodKeptPercent()) / 100);
 				}
@@ -26716,6 +26761,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changePolicyModifiers(POLICYMOD_DIPLOMAT_PROPAGANDA_MODIFIER, pPolicy->GetDiplomatPropagandaModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_DEEP_WATER_NAVAL_CULTURE_STRENGTH_MODIFIER, pPolicy->GetDeepWaterNavalStrengthCultureModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_CITY_EXTRA_PRODUCTION_COUNT, pPolicy->GetCityExtraProductionCount() * iChange);
+	changePolicyModifiers(POLICYMOD_NATIONAL_WONDER_CITY_COST_MODIFIER, pPolicy->GetNationalWonderCityCostModifier() * iChange);
 
 	if(pPolicy->GetFreeBuildingClass() != NO_BUILDINGCLASS)
 	{
@@ -28307,6 +28353,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_aiCapitalYieldPerPopChange;
 	kStream >> m_aiYieldPerPopChange;
 	kStream >> m_aiSeaPlotYield;
+	kStream >> m_aiRiverPlotYield;
 	kStream >> m_aiCityLoveKingDayYieldMod;
 	kStream >> m_aiYieldRateModifier;
 	kStream >> m_aiCapitalYieldRateModifier;
@@ -29057,6 +29104,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_aiCapitalYieldPerPopChange;
 	kStream << m_aiYieldPerPopChange;
 	kStream << m_aiSeaPlotYield;
+	kStream << m_aiRiverPlotYield;
 	kStream << m_aiCityLoveKingDayYieldMod;
 	kStream << m_aiYieldRateModifier;
 	kStream << m_aiCapitalYieldRateModifier;
