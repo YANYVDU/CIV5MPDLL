@@ -633,7 +633,7 @@
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} 来自时代</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_PerERA">
-			<Text>[NEWLINE][ICON_BULLET]来自时代: {1_Num}%</Text>
+			<Text>[NEWLINE][ICON_BULLET]来自时代修正: {1_Num}%</Text>
 		</Row>
 
 		<Row Tag="TXT_KEY_VOLCAN_EVENT_TITLE">
