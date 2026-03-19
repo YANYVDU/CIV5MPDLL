@@ -187,7 +187,7 @@ public:
 	bool IsBarbarianTraitTechObsolete() const;
 
 	CvString* GetUnitNames(int i);
-	PromotionType CvUnitEntry::GetUnitPromotionFromNames(int i)
+	int CvUnitEntry::GetUnitPromotionFromNames(int i);
 	GreatWorkType GetGreatWorks(int i) const;
 
 	// Accessor Functions (Arrays)

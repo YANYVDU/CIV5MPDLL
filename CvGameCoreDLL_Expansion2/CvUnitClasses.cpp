@@ -524,7 +524,7 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 		{
 			m_paszUnitNames = FNEW(CvString[m_iNumUnitNames], c_eCiv5GameplayDLL, 0);
 			m_paeGreatWorks = FNEW(GreatWorkType[m_iNumUnitNames], c_eCiv5GameplayDLL, 0);
-			m_piFreePromotions = FNEW(PromotionType[m_iNumUnitNames], c_eCiv5GameplayDLL, 0);
+			m_piFreePromotions = FNEW(int[m_iNumUnitNames], c_eCiv5GameplayDLL, 0);
 
 			std::string strKey = "Units - UniqueNames";
 			Database::Results* pResults = kUtility.GetResults(strKey);
@@ -1518,7 +1518,7 @@ CvString* CvUnitEntry::GetUnitNames(int i)
 }
 
 /// Unique promotionID for individual units from name
-PromotionTypes CvUnitEntry::GetUnitPromotionFromNames(int i)
+int CvUnitEntry::GetUnitPromotionFromNames(int i)
 {
     CvAssertMsg(i < GetNumUnitNames(), "Index out of bounds");
     CvAssertMsg(i > -1, "Index out of bounds");
