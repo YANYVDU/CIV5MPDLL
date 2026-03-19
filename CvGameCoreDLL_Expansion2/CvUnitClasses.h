@@ -187,7 +187,6 @@ public:
 	bool IsBarbarianTraitTechObsolete() const;
 
 	CvString* GetUnitNames(int i);
-	PromotionType CvUnitEntry::GetUnitPromotionFromNames(int i)
 	GreatWorkType GetGreatWorks(int i) const;
 
 	// Accessor Functions (Arrays)
@@ -214,7 +213,7 @@ public:
 	bool IsPuppetPurchaseOverride() const;
 	bool IsUnitTechUpgrade() const;
 	bool GetFreePromotions(int i) const;
-	PromotionTypes GetUnitNameFreePromotion(int iIndex) const;
+	int GetUnitNameFreePromotion(int iIndex) const;
 
 	// Derived fields (not in XML)
 	int GetCargoSpace() const;  // (from free promotions)
