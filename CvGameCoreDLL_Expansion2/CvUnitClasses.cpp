@@ -167,6 +167,7 @@ CvUnitEntry::CvUnitEntry(void) :
 	m_paszLateArtDefineTags(NULL),
 	m_paszMiddleArtDefineTags(NULL),
 	m_paszUnitNames(NULL),
+	m_piFreePromotions(NULL),
 	m_paeGreatWorks(NULL),
 	m_bUnitArtInfoEraVariation(false),
 	m_bUnitArtInfoCulturalVariation(false),
@@ -206,6 +207,7 @@ CvUnitEntry::~CvUnitEntry(void)
 	SAFE_DELETE_ARRAY(m_paszLateArtDefineTags);
 	SAFE_DELETE_ARRAY(m_paszMiddleArtDefineTags);
 	SAFE_DELETE_ARRAY(m_paszUnitNames);
+	SAFE_DELETE_ARRAY(m_piFreePromotions);
 	SAFE_DELETE_ARRAY(m_paeGreatWorks);
 	SAFE_DELETE_ARRAY(m_piTechCombatStrength);
 	SAFE_DELETE_ARRAY(m_piTechRangedCombatStrength);
@@ -522,12 +524,13 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 		{
 			m_paszUnitNames = FNEW(CvString[m_iNumUnitNames], c_eCiv5GameplayDLL, 0);
 			m_paeGreatWorks = FNEW(GreatWorkType[m_iNumUnitNames], c_eCiv5GameplayDLL, 0);
+			m_piFreePromotions = FNEW(PromotionType[m_iNumUnitNames], c_eCiv5GameplayDLL, 0);
 
 			std::string strKey = "Units - UniqueNames";
 			Database::Results* pResults = kUtility.GetResults(strKey);
 			if(pResults == NULL)
 			{
-				pResults = kUtility.PrepareResults(strKey, "select UniqueName, GreatWorkType from Unit_UniqueNames where UnitType = ? ORDER BY rowid");
+				pResults = kUtility.PrepareResults(strKey, "select UniqueName, GreatWorkType, FreePromotion from Unit_UniqueNames where UnitType = ? ORDER BY rowid");
 			}
 
 			pResults->Bind(1, szUnitType, -1, false);
@@ -547,6 +550,18 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 					m_paeGreatWorks[i] = static_cast<GreatWorkType>(GC.getInfoTypeForString(szGreatWorkType, true));
 				}
 
+				const char* szFreePromotion = pResults->GetText(2);
+				PromotionTypes iFreePromotion = NO_PROMOTION;
+				if (szFreePromotion != NULL)
+				{
+					iFreePromotion = static_cast<PromotionTypes>(GC.getInfoTypeForString(szFreePromotion, true));
+					if (iFreePromotion < 0 || iFreePromotion >= GC.getNumPromotionInfos())
+					{
+						iFreePromotion = NO_PROMOTION;
+						CvAssertMsg(false, "Invalid FreePromotion in Unit_UniqueNames");
+					}
+				}
+				m_piFreePromotions[i] = iFreePromotion;
 				i++;
 			}
 
@@ -1443,6 +1458,13 @@ bool CvUnitEntry::GetFreePromotions(int i) const
 	return m_pbFreePromotions ? m_pbFreePromotions[i] : false;
 }
 
+PromotionTypes CvUnitEntry::GetUnitNameFreePromotion(int iIndex) const
+{
+	CvAssertMsg(iIndex < m_iNumUnitNames, "Index out of bounds");
+	CvAssertMsg(iIndex >= 0, "Index out of bounds");
+	return m_piFreePromotions ? static_cast<PromotionTypes>(m_piFreePromotions[iIndex]) : NO_PROMOTION;
+}
+
 /// Project required to train this unit?
 int CvUnitEntry::GetProjectPrereq() const
 {
@@ -1493,6 +1515,18 @@ CvString* CvUnitEntry::GetUnitNames(int i)
 	CvAssertMsg(i < GetNumUnitNames(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return (m_paszUnitNames) ? m_paszUnitNames + i : nullptr;
+}
+
+/// Unique promotionID for individual units from name
+PromotionTypes CvUnitEntry::GetUnitPromotionFromNames(int i)
+{
+    CvAssertMsg(i < GetNumUnitNames(), "Index out of bounds");
+    CvAssertMsg(i > -1, "Index out of bounds");
+    if (m_piFreePromotions && i >= 0 && i < m_iNumUnitNames)
+    {
+        return m_piFreePromotions[i];
+    }
+    return NO_PROMOTION;
 }
 
 /// Unique great works created by individual units.
