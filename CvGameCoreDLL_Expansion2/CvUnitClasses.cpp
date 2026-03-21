@@ -551,10 +551,10 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 				}
 
 				const char* szFreePromotion = pResults->GetText(2);
-				PromotionTypes iFreePromotion = NO_PROMOTION;
+				int iFreePromotion = NO_PROMOTION;
 				if (szFreePromotion != NULL)
 				{
-					iFreePromotion = static_cast<PromotionTypes>(GC.getInfoTypeForString(szFreePromotion, true));
+					iFreePromotion = GC.getInfoTypeForString(szFreePromotion, true);
 					if (iFreePromotion < 0 || iFreePromotion >= GC.getNumPromotionInfos())
 					{
 						iFreePromotion = NO_PROMOTION;
@@ -1462,7 +1462,7 @@ int CvUnitEntry::GetUnitNameFreePromotion(int iIndex) const
 {
 	CvAssertMsg(iIndex < m_iNumUnitNames, "Index out of bounds");
 	CvAssertMsg(iIndex >= 0, "Index out of bounds");
-	return m_piFreePromotions ? static_cast<PromotionTypes>(m_piFreePromotions[iIndex]) : NO_PROMOTION;
+	return m_piFreePromotions ? m_piFreePromotions[iIndex] : NO_PROMOTION;
 }
 
 /// Project required to train this unit?
