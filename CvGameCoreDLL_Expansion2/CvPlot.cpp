@@ -10262,7 +10262,51 @@ bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, Tea
 #endif
 {
 	int iI;
-	
+	if (bNewValue && !isRevealed(eTeam))  
+{
+#if defined(MOD_API_EXTENSIONS)
+    if (pUnit != NULL)  
+    {
+        int iEra = GET_TEAM(pUnit->getTeam()).GetCurrentEra();
+        int aiTotalYield[NUM_YIELD_TYPES] = {0};
+        
+        for (int i = 0; i < GC.getNumPromotionInfos(); i++)
+        {
+            PromotionTypes ePromotion = (PromotionTypes)i;
+            if (!pUnit->isHasPromotion(ePromotion)) continue;
+            
+            CvPromotionEntry* pkPromotion = GC.getPromotionInfo(ePromotion);
+            if (!pkPromotion) continue;
+            
+            for (int j = 0; j < NUM_YIELD_TYPES; j++)
+            {
+                YieldTypes eYield = (YieldTypes)j;
+                int iYieldBonus = pkPromotion->GetExploreYield(eYield);
+                if (iYieldBonus <= 0) continue;
+                int iEraPercent = pkPromotion->GetEraPercent(eYield);
+                iYieldBonus = iYieldBonus * (100 + iEra * iEraPercent) / 100;
+                
+                aiTotalYield[j] += iYieldBonus;
+            }
+        }
+        
+        for (int j = 0; j < NUM_YIELD_TYPES; j++)
+        {
+            YieldTypes eYield = (YieldTypes)j;
+            if (aiTotalYield[j] <= 0) continue;
+            
+            GET_PLAYER(pUnit->getOwner()).doInstantYield(eYield, aiTotalYield[j]);
+            
+            char text[256] = {0};
+            sprintf_s(text, "%s+%d[ENDCOLOR]%s", 
+                GC.getYieldInfo(eYield)->getColorString(), 
+                aiTotalYield[j], 
+                GC.getYieldInfo(eYield)->getIconString());
+            SHOW_PLOT_POPUP(this, pUnit->getOwner(), text, 0.0f);
+        }
+    }
+#endif
+}
 #if defined(MOD_EVENTS_TILE_REVEALED)
 	// We need to capture this value here, as a Natural Wonder may update it before we need it
 	int iRevealedMajors = getNumMajorCivsRevealed();

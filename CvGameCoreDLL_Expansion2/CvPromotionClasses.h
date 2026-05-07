@@ -281,6 +281,12 @@ public:
 	int GetAttackChanceFromAttackDamageFormula() const;
 	int GetMovementFromAttackDamageFormula() const;
 	int GetHealPercentFromAttackDamageFormula() const;
+	int GetGoldAttackBonusFormula() const;
+	int GetGoldDefenseBonusFormula() const;
+	int GetCultureAttackBonusFormula() const;
+	int GetCultureDefenseBonusFormula() const;
+	int GetFaithAttackBonusFormula() const;
+	int GetFaithDefenseBonusFormula() const;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool IsCrops() const;
@@ -518,7 +524,7 @@ public:
 
 	int GetInstantYieldPerReligionFollowerConverted(YieldTypes eIndex) const;
 	int GetExploreYield(YieldTypes eIndex) const;
-	int GetEraPercent() const;
+	int GetEraPercent(YieldTypes eYield) const;
 
 protected:
 	int m_iLayerAnimationPath;
@@ -665,6 +671,12 @@ protected:
 	int m_eAttackChanceFromAttackDamageFormula;
 	int m_eMovementFromAttackDamageFormula;
 	int m_eHealPercentFromAttackDamageFormula;
+	int m_eGoldAttackBonusFormula;
+	int m_eGoldDefenseBonusFormula;
+	int m_eCultureAttackBonusFormula;
+	int m_eCultureDefenseBonusFormula;
+	int m_eFaithAttackBonusFormula;
+	int m_eFaithDefenseBonusFormula;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool m_bCrops;
@@ -971,10 +983,10 @@ protected:
 	int m_iHeavyChargeCollateralPercent = 0;
 
 	int m_iOutsideFriendlyLandsInflictDamageChange = 0;
-	int m_iEraPercent = 0;
 
 	std::tr1::array<int, NUM_YIELD_TYPES> m_aiInstantYieldPerReligionFollowerConverted;
 	std::tr1::array<int, NUM_YIELD_TYPES> m_aiExploreYield;
+	std::tr1::array<int, NUM_YIELD_TYPES> m_aiExploreEraPercent;
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

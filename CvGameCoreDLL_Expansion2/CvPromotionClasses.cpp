@@ -222,6 +222,12 @@ CvPromotionEntry::CvPromotionEntry():
 	m_eAttackChanceFromAttackDamageFormula(NO_LUA_FORMULA),
 	m_eMovementFromAttackDamageFormula(NO_LUA_FORMULA),
 	m_eHealPercentFromAttackDamageFormula(NO_LUA_FORMULA),
+	m_eGoldAttackBonusFormula(NO_LUA_FORMULA),
+	m_eGoldDefenseBonusFormula(NO_LUA_FORMULA),
+	m_eCultureAttackBonusFormula(NO_LUA_FORMULA),
+	m_eCultureDefenseBonusFormula(NO_LUA_FORMULA),
+	m_eFaithAttackBonusFormula(NO_LUA_FORMULA),
+	m_eFaithDefenseBonusFormula(NO_LUA_FORMULA),
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops(false),
@@ -780,6 +786,12 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_eAttackChanceFromAttackDamageFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("AttackChanceFromAttackDamage")));
 	m_eMovementFromAttackDamageFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("MovementFromAttackDamage")));
 	m_eHealPercentFromAttackDamageFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("HealPercentFromAttackDamage")));
+	m_eGoldAttackBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("GoldAttackBonusFormula")));
+	m_eGoldDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("GoldDefenseBonusFormula")));
+	m_eCultureAttackBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("CultureAttackBonusFormula")));
+	m_eCultureDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("CultureDefenseBonusFormula")));
+	m_eFaithAttackBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("FaithAttackBonusFormula")));
+	m_eFaithDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("FaithDefenseBonusFormula")));
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops = kResults.GetBool("IsCrops");
@@ -1667,12 +1679,12 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	{
 		for (int i = 0; i < NUM_YIELD_TYPES; ++i) {
 			m_aiExploreYield[i] = 0;
+			m_aiExploreEraPercent[i] = 0;  
 		}
-		
 		std::string sqlKey = "UnitPromotions_ExploreYield";
 		Database::Results* pResults = kUtility.GetResults(sqlKey);
 		if (pResults == nullptr) {
-			const char* sql = "SELECT YieldType, Yield FROM UnitPromotions_ExploreYield WHERE PromotionType = ?";
+			const char* sql = "SELECT YieldType, Yield, EraPercent FROM UnitPromotions_ExploreYield WHERE PromotionType = ?";
 			pResults = kUtility.PrepareResults(sqlKey, sql);
 		}
 		
@@ -1689,9 +1701,11 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 				continue;
 			}
 			const int yieldValue = pResults->GetInt(1);
+			const int eraPercent = pResults->GetInt(2);  
+			
 			m_aiExploreYield[yieldType] = yieldValue;
+			m_aiExploreEraPercent[yieldType] = eraPercent;  
 		}
-		
 		pResults->Reset();
 	}
 
@@ -2788,6 +2802,36 @@ int CvPromotionEntry::GetMovementFromAttackDamageFormula() const
 int CvPromotionEntry::GetHealPercentFromAttackDamageFormula() const
 {
 	return m_eHealPercentFromAttackDamageFormula;
+}
+
+int CvPromotionEntry::GetGoldAttackBonusFormula() const
+{
+	return m_eGoldAttackBonusFormula;
+}
+
+int CvPromotionEntry::GetGoldDefenseBonusFormula() const
+{
+	return m_eGoldDefenseBonusFormula;
+}
+
+int CvPromotionEntry::GetCultureAttackBonusFormula() const
+{
+	return m_eCultureAttackBonusFormula;
+}
+
+int CvPromotionEntry::GetCultureDefenseBonusFormula() const
+{
+	return m_eCultureDefenseBonusFormula;
+}
+
+int CvPromotionEntry::GetFaithAttackBonusFormula() const
+{
+	return m_eFaithAttackBonusFormula;
+}
+
+int CvPromotionEntry::GetFaithDefenseBonusFormula() const
+{
+	return m_eFaithDefenseBonusFormula;
 }
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
@@ -3972,9 +4016,11 @@ int CvPromotionEntry::GetExploreYield(YieldTypes eIndex) const
 	}
 	return m_aiExploreYield[eIndex];
 }
-int CvPromotionEntry::GetEraPercent() const
+int CvPromotionEntry::GetEraPercent(YieldTypes eYield) const
 {
-	return m_iEraPercent;
+    if (eYield < 0 || eYield >= NUM_YIELD_TYPES)
+        return 0;
+    return m_aiExploreEraPercent[eYield];
 }
 
 #ifdef MOD_PROMOTION_ADD_ENEMY_PROMOTIONS
