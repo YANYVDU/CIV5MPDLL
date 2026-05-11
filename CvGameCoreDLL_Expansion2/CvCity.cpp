@@ -7809,6 +7809,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		m_pCityBuildings->ChangeBuildingProductionModifier(pBuildingInfo->GetBuildingProductionModifier() * iChange);
 		m_pCityBuildings->ChangeMissionaryExtraSpreads(pBuildingInfo->GetExtraMissionarySpreads() * iChange);
 		m_pCityBuildings->ChangeLandmarksTourismPercent(pBuildingInfo->GetLandmarksTourismPercent() * iChange);
+		m_pCityBuildings->ChangeLandmarksTourismPerXForeignFollowers(pBuildingInfo->GetLandmarksTourismPerXForeignFollowers() * iChange);
 		m_pCityBuildings->ChangeGreatWorksTourismModifier(pBuildingInfo->GetGreatWorksTourismModifier() * iChange);
 		m_pCityBuildings->ChangeNumBuildingsFromFaith((pBuildingInfo->GetFaithCost() > 0 && pBuildingInfo->IsUnlockedByBelief() && pBuildingInfo->GetProductionCost() == -1) ? iChange : 0);
 		ChangeWonderProductionModifier(pBuildingInfo->GetWonderProductionModifier() * iChange);
