@@ -1707,6 +1707,9 @@ public:
 	int GetResearchTotalCostModifierGoldenAge() const;
 	void ChangeResearchTotalCostModifierGoldenAge(int iChange);
 
+	int GetImmigrationRegressandModifier() const;
+	void ChangeImmigrationRegressandModifier(int iChange);
+
 	int GetLiberatedInfluence() const;
 	void SetLiberatedInfluence(int iValue);
 	void ChangeLiberatedInfluence(int iChange);
@@ -2613,6 +2616,7 @@ protected:
 	int m_iGlobalRangedStrikeModifier;
 	int m_iResearchTotalCostModifier;
 	int m_iResearchTotalCostModifierGoldenAge;
+	int m_iImmigrationRegressandModifier;
 	int m_iLiberatedInfluence;
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;

@@ -241,6 +241,7 @@ public:
 	int GetGlobalRangedStrikeModifier() const;
 	int GetResearchTotalCostModifier() const;
 	int GetResearchTotalCostModifierGoldenAge() const;
+	int GetImmigrationRegressandModifier() const;
 	int GetResetDamageValue() const;
 	int GetReduceDamageValue() const;
 
@@ -724,6 +725,7 @@ private:
 	int m_iGlobalRangedStrikeModifier;
 	int m_iResearchTotalCostModifier;
 	int m_iResearchTotalCostModifierGoldenAge;
+	int m_iImmigrationRegressandModifier;
 	int m_iWaterTileDamage;
 	int m_iWaterTileMovementReduce;
 	int m_iWaterTileTurnDamage;
