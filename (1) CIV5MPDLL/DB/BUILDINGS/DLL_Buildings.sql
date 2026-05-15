@@ -307,6 +307,8 @@ create table Building_CityWithWorldWonderYieldModifierGlobal (
 	YieldType text not null references Yields(Type),
 	Yield integer not null default 0
 );
+alter table Buildings add ImmigrationRegressandModifier integer default 0;
+alter table Buildings add LandmarksTourismPerXForeignFollowers integer default 0;
 --******************** New Multiplier ********************--
 create table Building_YieldMultiplier (
 	BuildingType text not null references Buildings(Type),

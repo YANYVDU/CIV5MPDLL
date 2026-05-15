@@ -241,6 +241,7 @@ public:
 	int GetGlobalRangedStrikeModifier() const;
 	int GetResearchTotalCostModifier() const;
 	int GetResearchTotalCostModifierGoldenAge() const;
+	int GetImmigrationRegressandModifier() const;
 	int GetResetDamageValue() const;
 	int GetReduceDamageValue() const;
 
@@ -342,6 +343,7 @@ public:
 	int GetGlobalConversionModifier() const;
 #endif
 	int GetLandmarksTourismPercent() const;
+	int GetLandmarksTourismPerXForeignFollowers() const;
 	int GetInstantMilitaryIncrease() const;
 	int GetGreatWorksTourismModifier() const;
 	int GetXBuiltTriggersIdeologyChoice() const;
@@ -724,6 +726,7 @@ private:
 	int m_iGlobalRangedStrikeModifier;
 	int m_iResearchTotalCostModifier;
 	int m_iResearchTotalCostModifierGoldenAge;
+	int m_iImmigrationRegressandModifier;
 	int m_iWaterTileDamage;
 	int m_iWaterTileMovementReduce;
 	int m_iWaterTileTurnDamage;
@@ -827,6 +830,7 @@ private:
 #endif
 
 	int m_iLandmarksTourismPercent;
+	int m_iLandmarksTourismPerXForeignFollowers;
 	int m_iInstantMilitaryIncrease;
 	int m_iGreatWorksTourismModifier;
 	int m_iXBuiltTriggersIdeologyChoice;
@@ -1185,6 +1189,9 @@ public:
 	int GetGreatWorksTourismModifier() const;
 	void ChangeGreatWorksTourismModifier(int iChange);
 
+	int GetLandmarksTourismPerXForeignFollowers() const;
+	void ChangeLandmarksTourismPerXForeignFollowers(int iChange);
+
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	int GetThemingBonuses(YieldTypes eYield) const;
 #else
@@ -1221,6 +1228,7 @@ private:
 	int m_iBuildingDefenseMod;
 	int m_iMissionaryExtraSpreads;
 	int m_iLandmarksTourismPercent;
+	int m_iLandmarksTourismPerXForeignFollowers;
 	int m_iGreatWorksTourismModifier;
 
 	int m_iNumBuildingsFromFaith;

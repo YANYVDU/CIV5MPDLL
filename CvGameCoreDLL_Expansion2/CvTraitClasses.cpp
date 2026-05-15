@@ -78,6 +78,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iNaturalWonderFirstFinderGold(0),
 	m_iNaturalWonderSubsequentFinderGold(0),
 	m_iNaturalWonderYieldModifier(0),
+	m_iNaturalWonderYieldModifierPerEra(0),
 	m_iNaturalWonderHappinessModifier(0),
 	m_iNearbyImprovementCombatBonus(0),
 	m_iNearbyImprovementBonusRange(0),
@@ -162,6 +163,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_bNoHillsImprovementMaintenance(false),
 	m_bTechBoostFromCapitalScienceBuildings(false),
 	m_bArtistGoldenAgeTechBoost(false),
+	m_bGoldenAgeTechChainBoost(false),
 	m_bStaysAliveZeroCities(false),
 	m_bFaithFromUnimprovedForest(false),
 	m_bWLKDCityNoResearchCost(false),
@@ -545,6 +547,11 @@ int CvTraitEntry::GetNaturalWonderSubsequentFinderGold() const
 int CvTraitEntry::GetNaturalWonderYieldModifier() const
 {
 	return m_iNaturalWonderYieldModifier;
+}
+/// Accessor:: modifier to bonuses for having natural wonders worked or in territory, scaled by current era
+int CvTraitEntry::GetNaturalWonderYieldModifierPerEra() const
+{
+	return m_iNaturalWonderYieldModifierPerEra;
 }
 
 /// Accessor: modifier to happiness received from finding natural wonders
@@ -940,6 +947,10 @@ bool CvTraitEntry::IsTechBoostFromCapitalScienceBuildings() const
 bool CvTraitEntry::IsArtistGoldenAgeTechBoost() const
 {
 	return m_bArtistGoldenAgeTechBoost;
+}
+bool CvTraitEntry::IsGoldenAgeTechChainBoost() const
+{
+	return m_bGoldenAgeTechChainBoost;
 }
 /// Accessor:: does this civ still exist with zero cities?
 bool CvTraitEntry::IsStaysAliveZeroCities() const
@@ -1726,6 +1737,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iNaturalWonderFirstFinderGold         = kResults.GetInt("NaturalWonderFirstFinderGold");
 	m_iNaturalWonderSubsequentFinderGold    = kResults.GetInt("NaturalWonderSubsequentFinderGold");
 	m_iNaturalWonderYieldModifier           = kResults.GetInt("NaturalWonderYieldModifier");
+	m_iNaturalWonderYieldModifierPerEra      = kResults.GetInt("NaturalWonderYieldModifierPerEra");
 	m_iNaturalWonderHappinessModifier       = kResults.GetInt("NaturalWonderHappinessModifier");
 	m_iNearbyImprovementCombatBonus			= kResults.GetInt("NearbyImprovementCombatBonus");
 	m_iNearbyImprovementBonusRange			= kResults.GetInt("NearbyImprovementBonusRange");
@@ -1887,6 +1899,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_bNoHillsImprovementMaintenance = kResults.GetBool("NoHillsImprovementMaintenance");
 	m_bTechBoostFromCapitalScienceBuildings = kResults.GetBool("TechBoostFromCapitalScienceBuildings");
 	m_bArtistGoldenAgeTechBoost = kResults.GetBool("ArtistGoldenAgeTechBoost");
+	m_bGoldenAgeTechChainBoost = kResults.GetBool("GoldenAgeTechChainBoost");
 	m_bStaysAliveZeroCities = kResults.GetBool("StaysAliveZeroCities");
 	m_bFaithFromUnimprovedForest = kResults.GetBool("FaithFromUnimprovedForest");
 
@@ -2757,6 +2770,7 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iNaturalWonderFirstFinderGold += trait->GetNaturalWonderFirstFinderGold();
 			m_iNaturalWonderSubsequentFinderGold += trait->GetNaturalWonderSubsequentFinderGold();
 			m_iNaturalWonderYieldModifier += trait->GetNaturalWonderYieldModifier();
+			m_iNaturalWonderYieldModifierPerEra += trait->GetNaturalWonderYieldModifierPerEra();
 			m_iNaturalWonderHappinessModifier += trait->GetNaturalWonderHappinessModifier();
 			m_iNearbyImprovementCombatBonus += trait->GetNearbyImprovementCombatBonus();
 			m_iNearbyImprovementBonusRange += trait->GetNearbyImprovementBonusRange();
@@ -2903,6 +2917,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			if(trait->IsArtistGoldenAgeTechBoost())
 			{
 				m_bArtistGoldenAgeTechBoost = true;
+			}
+			if(trait->IsGoldenAgeTechChainBoost())
+			{
+				m_bGoldenAgeTechChainBoost = true;
 			}
 			if(trait->IsStaysAliveZeroCities())
 			{
@@ -3326,6 +3344,7 @@ void CvPlayerTraits::Reset()
 	m_iNaturalWonderFirstFinderGold = 0;
 	m_iNaturalWonderSubsequentFinderGold = 0;
 	m_iNaturalWonderYieldModifier = 0;
+	m_iNaturalWonderYieldModifierPerEra = 0;
 	m_iNaturalWonderHappinessModifier = 0;
 	m_iNearbyImprovementCombatBonus = 0;
 	m_iNearbyImprovementBonusRange = 0;
@@ -3402,6 +3421,7 @@ void CvPlayerTraits::Reset()
 	m_bNoHillsImprovementMaintenance = false;
 	m_bTechBoostFromCapitalScienceBuildings = false;
 	m_bArtistGoldenAgeTechBoost = false;
+	m_bGoldenAgeTechChainBoost = false;
 	m_bStaysAliveZeroCities = false;
 	m_bFaithFromUnimprovedForest = false;
 	m_bWLKDCityNoResearchCost = false;
@@ -4727,6 +4747,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iNaturalWonderSubsequentFinderGold;
 
 	kStream >> m_iNaturalWonderYieldModifier;
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderYieldModifierPerEra, 0);
 	kStream >> m_iNaturalWonderHappinessModifier;
 
 	kStream >> m_iNearbyImprovementCombatBonus;
@@ -4920,6 +4941,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 
 	kStream >> m_bTechBoostFromCapitalScienceBuildings;
 	kStream >> m_bArtistGoldenAgeTechBoost;
+	MOD_SERIALIZE_READ(160, kStream, m_bGoldenAgeTechChainBoost, false);
 	kStream >> m_bStaysAliveZeroCities;
 
 	kStream >> m_bFaithFromUnimprovedForest;
@@ -5260,6 +5282,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iNaturalWonderFirstFinderGold;
 	kStream << m_iNaturalWonderSubsequentFinderGold;
 	kStream << m_iNaturalWonderYieldModifier;
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderYieldModifierPerEra);
 	kStream << m_iNaturalWonderHappinessModifier;
 	kStream << m_iNearbyImprovementCombatBonus;
 	kStream << m_iNearbyImprovementBonusRange;
@@ -5337,6 +5360,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_bNoHillsImprovementMaintenance;
 	kStream << m_bTechBoostFromCapitalScienceBuildings;
 	kStream << m_bArtistGoldenAgeTechBoost;
+	MOD_SERIALIZE_WRITE(kStream, m_bGoldenAgeTechChainBoost);
 	kStream << m_bStaysAliveZeroCities;
 	kStream << m_bFaithFromUnimprovedForest;
 #if defined(MOD_TRAITS_ANY_BELIEF)

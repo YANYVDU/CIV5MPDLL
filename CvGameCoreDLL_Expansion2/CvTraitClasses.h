@@ -102,6 +102,7 @@ public:
 	int GetNaturalWonderFirstFinderGold() const;
 	int GetNaturalWonderSubsequentFinderGold() const;
 	int GetNaturalWonderYieldModifier() const;
+	int GetNaturalWonderYieldModifierPerEra() const;
 	int GetNaturalWonderHappinessModifier() const;
 	int GetNearbyImprovementCombatBonus() const;
 	int GetNearbyImprovementBonusRange() const;
@@ -186,6 +187,7 @@ public:
 	bool IsNoHillsImprovementMaintenance() const;
 	bool IsTechBoostFromCapitalScienceBuildings() const;
 	bool IsArtistGoldenAgeTechBoost() const;
+	bool IsGoldenAgeTechChainBoost() const;
 	bool IsStaysAliveZeroCities() const;
 	bool IsFaithFromUnimprovedForest() const;
 #if defined(MOD_TRAITS_ANY_BELIEF)
@@ -394,6 +396,7 @@ protected:
 	int m_iNaturalWonderFirstFinderGold;
 	int m_iNaturalWonderSubsequentFinderGold;
 	int m_iNaturalWonderYieldModifier;
+	int m_iNaturalWonderYieldModifierPerEra;
 	int m_iNaturalWonderHappinessModifier;
 	int m_iNearbyImprovementCombatBonus;
 	int m_iNearbyImprovementBonusRange;
@@ -477,6 +480,7 @@ protected:
 	bool m_bNoHillsImprovementMaintenance;
 	bool m_bTechBoostFromCapitalScienceBuildings;
 	bool m_bArtistGoldenAgeTechBoost;
+	bool m_bGoldenAgeTechChainBoost;
 	bool m_bStaysAliveZeroCities;
 	bool m_bFaithFromUnimprovedForest;
 	bool m_bWLKDCityNoResearchCost;
@@ -843,6 +847,10 @@ public:
 	{
 		return m_iNaturalWonderYieldModifier;
 	};
+	int GetNaturalWonderYieldModifierPerEra() const
+	{
+		return m_iNaturalWonderYieldModifierPerEra;
+	};
 	int GetNaturalWonderHappinessModifier() const
 	{
 		return m_iNaturalWonderHappinessModifier;
@@ -1131,6 +1139,10 @@ public:
 	bool IsArtistGoldenAgeTechBoost() const
 	{
 		return m_bArtistGoldenAgeTechBoost;
+	};
+	bool IsGoldenAgeTechChainBoost() const
+	{
+		return m_bGoldenAgeTechChainBoost;
 	};
 	bool IsStaysAliveZeroCities() const
 	{
@@ -1487,6 +1499,7 @@ private:
 	int m_iNaturalWonderFirstFinderGold;
 	int m_iNaturalWonderSubsequentFinderGold;
 	int m_iNaturalWonderYieldModifier;
+	int m_iNaturalWonderYieldModifierPerEra;
 	int m_iNaturalWonderHappinessModifier;
 	int m_iNearbyImprovementCombatBonus;
 	int m_iNearbyImprovementBonusRange;
@@ -1565,6 +1578,7 @@ private:
 	bool m_bNoHillsImprovementMaintenance = false;
 	bool m_bTechBoostFromCapitalScienceBuildings = false;
 	bool m_bArtistGoldenAgeTechBoost = false;
+	bool m_bGoldenAgeTechChainBoost = false;
 	bool m_bStaysAliveZeroCities = false;
 	bool m_bFaithFromUnimprovedForest = false;
 #if defined(MOD_TRAITS_ANY_BELIEF)

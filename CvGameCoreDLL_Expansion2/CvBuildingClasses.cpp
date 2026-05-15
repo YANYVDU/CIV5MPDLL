@@ -135,6 +135,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 #endif
 	m_iInstantSpyRankChange(0),
 	m_iLandmarksTourismPercent(0),
+	m_iLandmarksTourismPerXForeignFollowers(0),
 	m_iInstantMilitaryIncrease(0),
 	m_iGreatWorksTourismModifier(0),
 	m_iXBuiltTriggersIdeologyChoice(0),
@@ -174,6 +175,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iGlobalRangedStrikeModifier(0),
 	m_iResearchTotalCostModifier(0),
 	m_iResearchTotalCostModifierGoldenAge(0),
+	m_iImmigrationRegressandModifier(0),
 	m_iWaterTileDamage(0),
 	m_iWaterTileMovementReduce(0),
 	m_iWaterTileTurnDamage(0),
@@ -544,6 +546,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iGlobalRangedStrikeModifier = kResults.GetInt("GlobalRangedStrikeModifier");
 	m_iResearchTotalCostModifier = kResults.GetInt("ResearchTotalCostModifier");
 	m_iResearchTotalCostModifierGoldenAge = kResults.GetInt("ResearchTotalCostModifierGoldenAge");
+	m_iImmigrationRegressandModifier = kResults.GetInt("ImmigrationRegressandModifier");
 	m_iWaterTileDamage = kResults.GetInt("WaterTileDamage");
 	m_iWaterTileMovementReduce = kResults.GetInt("WaterTileMovementReduce");
 	m_iWaterTileTurnDamage = kResults.GetInt("WaterTileTurnDamage");
@@ -698,6 +701,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 #endif
 	m_iInstantSpyRankChange = kResults.GetInt("InstantSpyRankChange");
 	m_iLandmarksTourismPercent = kResults.GetInt("LandmarksTourismPercent");
+	m_iLandmarksTourismPerXForeignFollowers = kResults.GetInt("LandmarksTourismPerXForeignFollowers");
 	m_iInstantMilitaryIncrease = kResults.GetInt("InstantMilitaryIncrease");
 	m_iGreatWorksTourismModifier = kResults.GetInt("GreatWorksTourismModifier");
 	m_iXBuiltTriggersIdeologyChoice = kResults.GetInt("XBuiltTriggersIdeologyChoice");
@@ -2407,6 +2411,10 @@ int CvBuildingEntry::GetResearchTotalCostModifierGoldenAge() const
 {
 	return m_iResearchTotalCostModifierGoldenAge;
 }
+int CvBuildingEntry::GetImmigrationRegressandModifier() const
+{
+	return m_iImmigrationRegressandModifier;
+}
 
 /// Does this Building allow us to Range Strike?
 int CvBuildingEntry::CityRangedStrikeModifier() const
@@ -2864,6 +2872,10 @@ int CvBuildingEntry::GetLandmarksTourismPercent() const
 	return m_iLandmarksTourismPercent;
 }
 
+int CvBuildingEntry::GetLandmarksTourismPerXForeignFollowers() const
+{
+	return m_iLandmarksTourismPerXForeignFollowers;
+}
 /// For the terra cotta army. DOUBLE THE SIZE OF YOUR ARMY
 int CvBuildingEntry::GetInstantMilitaryIncrease() const
 {
@@ -4657,6 +4669,7 @@ CvCityBuildings::CvCityBuildings():
 	m_iBuildingDefenseMod(0),
 	m_iMissionaryExtraSpreads(0),
 	m_iLandmarksTourismPercent(0),
+	m_iLandmarksTourismPerXForeignFollowers(0),
 	m_iGreatWorksTourismModifier(0),
 	m_iNumBuildingsFromFaith(0),
 	m_bSoldBuildingThisTurn(false),
@@ -4730,6 +4743,7 @@ void CvCityBuildings::Reset()
 	m_iBuildingDefenseMod = 0;
 	m_iMissionaryExtraSpreads = 0;
 	m_iLandmarksTourismPercent = 0;
+	m_iLandmarksTourismPerXForeignFollowers = 0;
 	m_iGreatWorksTourismModifier = 0;
 	m_iNumBuildingsFromFaith = 0;
 
@@ -4762,6 +4776,7 @@ void CvCityBuildings::Read(FDataStream& kStream)
 	kStream >> m_iBuildingDefenseMod;
 	kStream >> m_iMissionaryExtraSpreads;
 	kStream >> m_iLandmarksTourismPercent;
+	MOD_SERIALIZE_READ(160, kStream, m_iLandmarksTourismPerXForeignFollowers, 0);
 	kStream >> m_iGreatWorksTourismModifier;
 	kStream >> m_iNumBuildingsFromFaith;
 
@@ -4784,7 +4799,7 @@ void CvCityBuildings::Write(FDataStream& kStream)
 	CvAssertMsg(m_pBuildings != NULL && m_pBuildings->GetNumBuildings() > 0, "Number of buildings to serialize is expected to greater than 0");
 
 	// Current version number
-	uint uiVersion = 1;
+	uint uiVersion = 2;
 	kStream << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(kStream);
 
@@ -4794,6 +4809,7 @@ void CvCityBuildings::Write(FDataStream& kStream)
 	kStream << m_iBuildingDefenseMod;
 	kStream << m_iMissionaryExtraSpreads;
 	kStream << m_iLandmarksTourismPercent;
+	MOD_SERIALIZE_WRITE(kStream, m_iLandmarksTourismPerXForeignFollowers);
 	kStream << m_iGreatWorksTourismModifier;
 	kStream << m_iNumBuildingsFromFaith;
 	kStream << m_bSoldBuildingThisTurn;
@@ -5885,6 +5901,21 @@ void CvCityBuildings::ChangeLandmarksTourismPercent(int iChange)
 	{
 		m_iLandmarksTourismPercent = (m_iLandmarksTourismPercent + iChange);
 		CvAssert(m_iLandmarksTourismPercent >= 0);
+	}
+}
+
+/// Accessor: Get tourism converted from culture from Improvements and Wonders per X foreign followers of the city's majority religion
+int CvCityBuildings::GetLandmarksTourismPerXForeignFollowers() const
+{
+	return m_iLandmarksTourismPerXForeignFollowers;
+}
+/// Accessor: Change tourism converted from culture from Improvements and Wonders per X foreign followers of the city's majority religion
+void CvCityBuildings::ChangeLandmarksTourismPerXForeignFollowers(int iChange)
+{
+	if(iChange != 0)
+	{
+		m_iLandmarksTourismPerXForeignFollowers = (m_iLandmarksTourismPerXForeignFollowers + iChange);
+		CvAssert(m_iLandmarksTourismPerXForeignFollowers >= 0);
 	}
 }
 

@@ -1653,6 +1653,7 @@ if (MOD_API_UNIT_CANNOT_BE_RANGED_ATTACKED)
 	m_iHeavyChargeCollateralPercent = 0;
 
 	m_iOutsideFriendlyLandsInflictDamageChange = 0;
+	m_iEraPercent = 0;
 
 #ifdef MOD_BATTLE_CAPTURE_NEW_RULE
 	m_bIsNewCapture = false;
@@ -1663,6 +1664,10 @@ if (MOD_API_UNIT_CANNOT_BE_RANGED_ATTACKED)
 	for (int i = 0; i < NUM_YIELD_TYPES; ++i)
 	{
 		m_aiInstantYieldPerReligionFollowerConverted[i] = 0;
+	}
+	for (int i = 0; i < NUM_YIELD_TYPES; ++i)
+	{
+		m_aiExploreYield[i] = 0;
 	}
 
 	if(!bConstructorCall)
@@ -26602,6 +26607,10 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		{
 			ChangeInstantYieldPerReligionFollowerConverted((YieldTypes) i, thisPromotion.GetInstantYieldPerReligionFollowerConverted((YieldTypes) i) * iChange);
 		}
+		for (int i = 0; i < NUM_YIELD_TYPES; ++i)
+		{
+			ChangeExploreYield((YieldTypes) i, thisPromotion.GetExploreYield((YieldTypes) i) * iChange);
+		}
 
 #if defined(MOD_UNITS_MAX_HP)
 		changeMaxHitPointsChange(thisPromotion.GetMaxHitPointsChange() * iChange);
@@ -27116,15 +27125,12 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_eAttackChanceFromAttackDamageFormula;
 	kStream >> m_eMovementFromAttackDamageFormula;
 	kStream >> m_eHealPercentFromAttackDamageFormula;
-	if (uiVersion >= 10)
-	{
-		kStream >> m_eGoldAttackBonusFormula;
-		kStream >> m_eGoldDefenseBonusFormula;
-		kStream >> m_eCultureAttackBonusFormula;
-		kStream >> m_eCultureDefenseBonusFormula;
-		kStream >> m_eFaithAttackBonusFormula;
-		kStream >> m_eFaithDefenseBonusFormula;
-	}
+	MOD_SERIALIZE_READ(160, kStream, m_eGoldAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_eGoldDefenseBonusFormula, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_eCultureAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_eCultureDefenseBonusFormula, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_eFaithAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_eFaithDefenseBonusFormula, 0);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream >> m_iCrops;
@@ -27426,6 +27432,8 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_iRangedCombatStrengthChangeFromKilledUnits;
 
 	kStream >> m_aiInstantYieldPerReligionFollowerConverted;
+	MOD_SERIALIZE_READ(160, kStream, m_aiExploreYield, {});
+	MOD_SERIALIZE_READ(160, kStream, m_iEraPercent, 0);
 	//  Read mission queue
 	UINT uSize;
 	kStream >> uSize;
@@ -27536,15 +27544,12 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_eAttackChanceFromAttackDamageFormula;
 	kStream << m_eMovementFromAttackDamageFormula;
 	kStream << m_eHealPercentFromAttackDamageFormula;
-	if (uiVersion >= 10)
-	{
-		kStream << m_eGoldAttackBonusFormula;
-		kStream << m_eGoldDefenseBonusFormula;
-		kStream << m_eCultureAttackBonusFormula;
-		kStream << m_eCultureDefenseBonusFormula;
-		kStream << m_eFaithAttackBonusFormula;
-		kStream << m_eFaithDefenseBonusFormula;
-	}
+	MOD_SERIALIZE_WRITE(kStream, m_eGoldAttackBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eGoldDefenseBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eCultureAttackBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eCultureDefenseBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eFaithAttackBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eFaithDefenseBonusFormula);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream << m_iCrops;
@@ -27772,6 +27777,8 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_iRangedCombatStrengthChangeFromKilledUnits;
 
 	kStream << m_aiInstantYieldPerReligionFollowerConverted;
+	kStream << m_aiExploreYield;
+	MOD_SERIALIZE_WRITE(kStream, m_iEraPercent);
 
 	//  Write mission list
 	kStream << m_missionQueue.getLength();
@@ -32570,4 +32577,26 @@ void CvUnit::ChangeInstantYieldPerReligionFollowerConverted(YieldTypes eIndex, i
 	}
 
 	m_aiInstantYieldPerReligionFollowerConverted[eIndex] += iChange;
+}
+int CvUnit::GetExploreYield(YieldTypes eIndex) const
+{
+	if (eIndex < 0 || eIndex >= NUM_YIELD_TYPES)
+	{
+		return 0;
+	}
+
+	return m_aiExploreYield[eIndex];
+}
+void CvUnit::ChangeExploreYield(YieldTypes eIndex, int iChange)
+{
+	if (eIndex < 0 || eIndex >= NUM_YIELD_TYPES)
+	{
+		return;
+	}
+
+	m_aiExploreYield[eIndex] += iChange;
+}
+int CvUnit::GetEraPercent() const
+{
+	return m_iEraPercent;
 }

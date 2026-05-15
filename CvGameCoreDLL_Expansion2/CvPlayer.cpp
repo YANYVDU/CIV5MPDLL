@@ -389,6 +389,7 @@ CvPlayer::CvPlayer() :
 	, m_iGlobalRangedStrikeModifier(0)
 	, m_iResearchTotalCostModifier(0)
 	, m_iResearchTotalCostModifierGoldenAge(0)
+	, m_iImmigrationRegressandModifier(0)
 	, m_iLiberatedInfluence(0)
 	, m_iExtraUnitPlayerInstances(0)
 	, m_iConquestCasualtiesModifier(0)
@@ -1182,6 +1183,7 @@ void CvPlayer::uninit()
 	m_iGlobalRangedStrikeModifier = 0;
 	m_iResearchTotalCostModifier = 0;
 	m_iResearchTotalCostModifierGoldenAge = 0;
+	m_iImmigrationRegressandModifier = 0;
 	m_iLiberatedInfluence = 0;
 	m_iExtraUnitPlayerInstances = 0;
 	m_iConquestCasualtiesModifier = 0;
@@ -10107,6 +10109,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 	ChangeGlobalRangedStrikeModifier(pBuildingInfo->GetGlobalRangedStrikeModifier()* iChange);
 	ChangeResearchTotalCostModifier(pBuildingInfo->GetResearchTotalCostModifier()* iChange);
 	ChangeResearchTotalCostModifierGoldenAge(pBuildingInfo->GetResearchTotalCostModifierGoldenAge()* iChange);
+	ChangeImmigrationRegressandModifier(pBuildingInfo->GetImmigrationRegressandModifier() * iChange);
 	ChangeLiberatedInfluence(pBuildingInfo->GetLiberatedInfluence()* iChange);
 	ChangeExtraUnitPlayerInstances(pBuildingInfo->GetExtraUnitPlayerInstances()* iChange);
 	ChangeWaterTileDamageGlobal(pBuildingInfo->GetWaterTileDamageGlobal()* iChange);
@@ -13529,6 +13532,11 @@ int CvPlayer::GetHappinessFromNaturalWonders() const
 		iHappiness *= (100 + m_pTraits->GetNaturalWonderHappinessModifier());
 		iHappiness /= 100;
 	}
+	if(m_pTraits->GetNaturalWonderYieldModifierPerEra() > 0)
+	{
+		iHappiness *= (100 + m_pTraits->GetNaturalWonderYieldModifierPerEra() * GetCurrentEra());
+		iHappiness /= 100;
+	}
 
 
 
@@ -13540,6 +13548,12 @@ int CvPlayer::GetHappinessFromNaturalWonders() const
 		if (m_pTraits->GetNaturalWonderYieldModifier() > 0)
 		{
 			iPlotHappiness *= (100 + m_pTraits->GetNaturalWonderYieldModifier());
+			iPlotHappiness /= 100;
+		}
+
+		if (m_pTraits->GetNaturalWonderYieldModifierPerEra() != 0)
+		{
+			iPlotHappiness *= (100 + m_pTraits->GetNaturalWonderYieldModifierPerEra() * GetCurrentEra());
 			iPlotHappiness /= 100;
 		}
 
@@ -28405,6 +28419,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iGlobalRangedStrikeModifier;
 	kStream >> m_iResearchTotalCostModifier;
 	kStream >> m_iResearchTotalCostModifierGoldenAge;
+	MOD_SERIALIZE_READ(160, kStream, m_iImmigrationRegressandModifier, 0);
 	kStream >> m_iLiberatedInfluence;
 	kStream >> m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_READ(159, kStream, m_iConquestCasualtiesModifier, 0);
@@ -29179,6 +29194,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iGlobalRangedStrikeModifier;
 	kStream << m_iResearchTotalCostModifier;
 	kStream << m_iResearchTotalCostModifierGoldenAge;
+	MOD_SERIALIZE_WRITE(kStream, m_iImmigrationRegressandModifier);
 	kStream << m_iLiberatedInfluence;
 	kStream << m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_WRITE(kStream, m_iConquestCasualtiesModifier);
@@ -30250,6 +30266,19 @@ void CvPlayer::ChangeResearchTotalCostModifierGoldenAge(int iChange)
 	}
 }
 
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetImmigrationRegressandModifier() const
+{
+	return m_iImmigrationRegressandModifier;
+}
+
+void CvPlayer::ChangeImmigrationRegressandModifier(int iChange)
+{
+	if (iChange != 0)
+	{
+		m_iImmigrationRegressandModifier += iChange;
+	}
+}
 
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetLiberatedInfluence() const
