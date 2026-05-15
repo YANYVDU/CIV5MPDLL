@@ -4776,7 +4776,7 @@ void CvCityBuildings::Read(FDataStream& kStream)
 	kStream >> m_iBuildingDefenseMod;
 	kStream >> m_iMissionaryExtraSpreads;
 	kStream >> m_iLandmarksTourismPercent;
-	MOD_SERIALIZE_READ(160, kStream, m_iLandmarksTourismPerXForeignFollowers, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_iLandmarksTourismPerXForeignFollowers, 0);
 	kStream >> m_iGreatWorksTourismModifier;
 	kStream >> m_iNumBuildingsFromFaith;
 

@@ -4747,7 +4747,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iNaturalWonderSubsequentFinderGold;
 
 	kStream >> m_iNaturalWonderYieldModifier;
-	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderYieldModifierPerEra, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_iNaturalWonderYieldModifierPerEra, 0);
 	kStream >> m_iNaturalWonderHappinessModifier;
 
 	kStream >> m_iNearbyImprovementCombatBonus;
@@ -4941,7 +4941,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 
 	kStream >> m_bTechBoostFromCapitalScienceBuildings;
 	kStream >> m_bArtistGoldenAgeTechBoost;
-	MOD_SERIALIZE_READ(160, kStream, m_bGoldenAgeTechChainBoost, false);
+	MOD_SERIALIZE_READ(159, kStream, m_bGoldenAgeTechChainBoost, false);
 	kStream >> m_bStaysAliveZeroCities;
 
 	kStream >> m_bFaithFromUnimprovedForest;

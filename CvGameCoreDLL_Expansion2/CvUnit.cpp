@@ -27125,12 +27125,12 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_eAttackChanceFromAttackDamageFormula;
 	kStream >> m_eMovementFromAttackDamageFormula;
 	kStream >> m_eHealPercentFromAttackDamageFormula;
-	MOD_SERIALIZE_READ(160, kStream, m_eGoldAttackBonusFormula, 0);
-	MOD_SERIALIZE_READ(160, kStream, m_eGoldDefenseBonusFormula, 0);
-	MOD_SERIALIZE_READ(160, kStream, m_eCultureAttackBonusFormula, 0);
-	MOD_SERIALIZE_READ(160, kStream, m_eCultureDefenseBonusFormula, 0);
-	MOD_SERIALIZE_READ(160, kStream, m_eFaithAttackBonusFormula, 0);
-	MOD_SERIALIZE_READ(160, kStream, m_eFaithDefenseBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eGoldAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eGoldDefenseBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eCultureAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eCultureDefenseBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eFaithAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eFaithDefenseBonusFormula, 0);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream >> m_iCrops;
@@ -27432,8 +27432,8 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_iRangedCombatStrengthChangeFromKilledUnits;
 
 	kStream >> m_aiInstantYieldPerReligionFollowerConverted;
-	MOD_SERIALIZE_READ(160, kStream, m_aiExploreYield, {});
-	MOD_SERIALIZE_READ(160, kStream, m_iEraPercent, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_aiExploreYield, {});
+	MOD_SERIALIZE_READ(159, kStream, m_iEraPercent, 0);
 	//  Read mission queue
 	UINT uSize;
 	kStream >> uSize;
