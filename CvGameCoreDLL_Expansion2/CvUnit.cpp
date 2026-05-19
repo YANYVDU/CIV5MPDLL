@@ -27125,15 +27125,12 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_eAttackChanceFromAttackDamageFormula;
 	kStream >> m_eMovementFromAttackDamageFormula;
 	kStream >> m_eHealPercentFromAttackDamageFormula;
-	if (uiVersion >= 10)
-	{
-		kStream >> m_eGoldAttackBonusFormula;
-		kStream >> m_eGoldDefenseBonusFormula;
-		kStream >> m_eCultureAttackBonusFormula;
-		kStream >> m_eCultureDefenseBonusFormula;
-		kStream >> m_eFaithAttackBonusFormula;
-		kStream >> m_eFaithDefenseBonusFormula;
-	}
+	MOD_SERIALIZE_READ(159, kStream, m_eGoldAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eGoldDefenseBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eCultureAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eCultureDefenseBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eFaithAttackBonusFormula, 0);
+	MOD_SERIALIZE_READ(159, kStream, m_eFaithDefenseBonusFormula, 0);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream >> m_iCrops;
@@ -27435,8 +27432,8 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_iRangedCombatStrengthChangeFromKilledUnits;
 
 	kStream >> m_aiInstantYieldPerReligionFollowerConverted;
-	kStream >> m_aiExploreYield;
-	kStream >> m_iEraPercent;
+	MOD_SERIALIZE_READ(159, kStream, m_aiExploreYield, {});
+	MOD_SERIALIZE_READ(159, kStream, m_iEraPercent, 0);
 	//  Read mission queue
 	UINT uSize;
 	kStream >> uSize;
@@ -27547,15 +27544,12 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_eAttackChanceFromAttackDamageFormula;
 	kStream << m_eMovementFromAttackDamageFormula;
 	kStream << m_eHealPercentFromAttackDamageFormula;
-	if (uiVersion >= 10)
-	{
-		kStream << m_eGoldAttackBonusFormula;
-		kStream << m_eGoldDefenseBonusFormula;
-		kStream << m_eCultureAttackBonusFormula;
-		kStream << m_eCultureDefenseBonusFormula;
-		kStream << m_eFaithAttackBonusFormula;
-		kStream << m_eFaithDefenseBonusFormula;
-	}
+	MOD_SERIALIZE_WRITE(kStream, m_eGoldAttackBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eGoldDefenseBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eCultureAttackBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eCultureDefenseBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eFaithAttackBonusFormula);
+	MOD_SERIALIZE_WRITE(kStream, m_eFaithDefenseBonusFormula);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream << m_iCrops;
@@ -27784,7 +27778,7 @@ void CvUnit::write(FDataStream& kStream) const
 
 	kStream << m_aiInstantYieldPerReligionFollowerConverted;
 	kStream << m_aiExploreYield;
-	kStream << m_iEraPercent;
+	MOD_SERIALIZE_WRITE(kStream, m_iEraPercent);
 
 	//  Write mission list
 	kStream << m_missionQueue.getLength();

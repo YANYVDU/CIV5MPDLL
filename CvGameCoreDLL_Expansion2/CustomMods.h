@@ -1364,6 +1364,28 @@ enum BattleTypeTypes
 	} else {																	\
 		for (int iI = 0; iI < size; iI++) { (member)[iI] = def; }				\
 	}
+#define MOD_SERIALIZE_READ_UNORDERED_MAP(version, stream, map) \
+	if (uiDllSaveVersion >= version) { \
+		int iLen = 0; \
+		stream >> iLen; \
+		map.clear(); \
+		for (int i = 0; i < iLen; i++) { \
+			decltype(map)::key_type key = 0; \
+			decltype(map)::mapped_type value = 0; \
+			stream >> key; \
+			stream >> value; \
+			map[key] = value; \
+		} \
+	} else { \
+		map.clear(); \
+	}
+#define MOD_SERIALIZE_WRITE_UNORDERED_MAP(stream, map) \
+	CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); \
+	stream << map.size(); \
+	for (auto iter = map.begin(); iter != map.end(); iter++) { \
+		stream << iter->first; \
+		stream << iter->second; \
+	}
 #define MOD_SERIALIZE_INIT_WRITE(stream) uint uiDllSaveVersion = MOD_DLL_VERSION_NUMBER; stream << uiDllSaveVersion
 #define MOD_SERIALIZE_WRITE(stream, member) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); stream << member
 #define MOD_SERIALIZE_WRITE_AUTO(stream, member) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); stream << member
@@ -1376,12 +1398,14 @@ enum BattleTypeTypes
 #define MOD_SERIALIZE_READ_AUTO(version, stream, member, size, def) __noop
 #define MOD_SERIALIZE_READ_ARRAY(version, stream, member, type, size, def) __noop
 #define MOD_SERIALIZE_READ_HASH(version, stream, member, type, size, def) __noop
+#define MOD_SERIALIZE_READ_UNORDERED_MAP(version, stream, map) __noop
 #define MOD_SERIALIZE_INIT_WRITE(stream) __noop
 #define MOD_SERIALIZE_WRITE(stream, member) __noop
 #define MOD_SERIALIZE_WRITE_AUTO(stream, member) __noop
 #define MOD_SERIALIZE_WRITE_ARRAY(stream, member, type, size) __noop
 #define MOD_SERIALIZE_WRITE_ARRAYCONST(stream, member, type, size) __noop
 #define MOD_SERIALIZE_WRITE_HASH(stream, member, type, size) __noop
+#define MOD_SERIALIZE_WRITE_UNORDERED_MAP(stream, map) __noop
 #endif
 
 #define SERIALIZE_READ_UNORDERED_MAP(stream, map) \
@@ -1403,8 +1427,8 @@ enum BattleTypeTypes
 	stream << map.size(); \
 	for (auto iter = map.begin(); iter != map.end(); iter++) \
 	{ \
-		stream << (int) iter->first; \
-		stream << (int) iter->second; \
+		stream << iter->first; \
+		stream << iter->second; \
 	} \
 }
 

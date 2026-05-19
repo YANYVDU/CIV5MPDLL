@@ -1129,6 +1129,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(GetNaturalWonderYieldModifier);
 	Method(GetNaturalWonderYieldModifierPerEra);
+	Method(GetImmigrationRegressandModifier);
 
 	Method(GetPolicyBuildingClassYieldModifier);
 	Method(GetPolicyBuildingClassYieldChange);
@@ -10744,6 +10745,16 @@ int CvLuaPlayer::lGetNaturalWonderYieldModifierPerEra(lua_State* L)
 
 	lua_pushinteger(L, iYieldModifierPerEra);
 	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetImmigrationRegressandModifier(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	if(pkPlayer)
+	{
+		lua_pushinteger(L, pkPlayer->GetImmigrationRegressandModifier());
+		return 1;
+	}
 }
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetPolicyBuildingClassYieldModifier(lua_State* L)

@@ -4776,7 +4776,7 @@ void CvCityBuildings::Read(FDataStream& kStream)
 	kStream >> m_iBuildingDefenseMod;
 	kStream >> m_iMissionaryExtraSpreads;
 	kStream >> m_iLandmarksTourismPercent;
-	kStream >> m_iLandmarksTourismPerXForeignFollowers;
+	MOD_SERIALIZE_READ(159, kStream, m_iLandmarksTourismPerXForeignFollowers, 0);
 	kStream >> m_iGreatWorksTourismModifier;
 	kStream >> m_iNumBuildingsFromFaith;
 
@@ -4799,7 +4799,7 @@ void CvCityBuildings::Write(FDataStream& kStream)
 	CvAssertMsg(m_pBuildings != NULL && m_pBuildings->GetNumBuildings() > 0, "Number of buildings to serialize is expected to greater than 0");
 
 	// Current version number
-	uint uiVersion = 1;
+	uint uiVersion = 2;
 	kStream << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(kStream);
 
@@ -4809,7 +4809,7 @@ void CvCityBuildings::Write(FDataStream& kStream)
 	kStream << m_iBuildingDefenseMod;
 	kStream << m_iMissionaryExtraSpreads;
 	kStream << m_iLandmarksTourismPercent;
-	kStream << m_iLandmarksTourismPerXForeignFollowers;
+	MOD_SERIALIZE_WRITE(kStream, m_iLandmarksTourismPerXForeignFollowers);
 	kStream << m_iGreatWorksTourismModifier;
 	kStream << m_iNumBuildingsFromFaith;
 	kStream << m_bSoldBuildingThisTurn;

@@ -4747,7 +4747,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iNaturalWonderSubsequentFinderGold;
 
 	kStream >> m_iNaturalWonderYieldModifier;
-	kStream >> m_iNaturalWonderYieldModifierPerEra;
+	MOD_SERIALIZE_READ(159, kStream, m_iNaturalWonderYieldModifierPerEra, 0);
 	kStream >> m_iNaturalWonderHappinessModifier;
 
 	kStream >> m_iNearbyImprovementCombatBonus;
@@ -4941,7 +4941,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 
 	kStream >> m_bTechBoostFromCapitalScienceBuildings;
 	kStream >> m_bArtistGoldenAgeTechBoost;
-	kStream >> m_bGoldenAgeTechChainBoost;
+	MOD_SERIALIZE_READ(159, kStream, m_bGoldenAgeTechChainBoost, false);
 	kStream >> m_bStaysAliveZeroCities;
 
 	kStream >> m_bFaithFromUnimprovedForest;
@@ -5282,7 +5282,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iNaturalWonderFirstFinderGold;
 	kStream << m_iNaturalWonderSubsequentFinderGold;
 	kStream << m_iNaturalWonderYieldModifier;
-	kStream << m_iNaturalWonderYieldModifierPerEra;
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderYieldModifierPerEra);
 	kStream << m_iNaturalWonderHappinessModifier;
 	kStream << m_iNearbyImprovementCombatBonus;
 	kStream << m_iNearbyImprovementBonusRange;
@@ -5360,7 +5360,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_bNoHillsImprovementMaintenance;
 	kStream << m_bTechBoostFromCapitalScienceBuildings;
 	kStream << m_bArtistGoldenAgeTechBoost;
-	kStream << m_bGoldenAgeTechChainBoost;
+	MOD_SERIALIZE_WRITE(kStream, m_bGoldenAgeTechChainBoost);
 	kStream << m_bStaysAliveZeroCities;
 	kStream << m_bFaithFromUnimprovedForest;
 #if defined(MOD_TRAITS_ANY_BELIEF)

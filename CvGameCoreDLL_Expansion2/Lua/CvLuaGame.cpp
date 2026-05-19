@@ -3279,7 +3279,7 @@ int CvLuaGame::lGetImmigrationRegressand(lua_State* L)
         {
             CvPlayer& kActivePlayer = GET_PLAYER(eActivePlayer);
             int iModifier = kActivePlayer.GetImmigrationRegressandModifier();
-            iRtnValue = iRtnValue * (100 - iModifier) / 100;
+            iRtnValue = iRtnValue * (100 + iModifier) / 100;
         }
         
         iRtnValue /= 100;
