@@ -781,6 +781,10 @@ public:
 	void SetGreatScientistBeakerPolicyMod(int iValue);
 	void ChangeGreatScientistBeakerPolicyMod(int iChange);
 
+	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
+	void SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue);
+	void ChangeInstantTourismBombWhenFirstConquerMajorCapital(int iChange);
+
 	int GetGreatScientistBeakerMod() const;
 	void SetGreatScientistBeakerMod(int iValue);
 	void ChangeGreatScientistBeakerMod(int iChange);
@@ -2482,6 +2486,7 @@ protected:
 	int m_iGreatScientistRateModifier;
 	int m_iGreatScientistBeakerModifier;
 	int m_iGreatScientistBeakerPolicyModifier;
+	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;

@@ -271,6 +271,7 @@ CvPlayer::CvPlayer() :
 	, m_iDomesticGreatGeneralRateModFromBldgs("CvPlayer::m_iDomesticGreatGeneralRateModFromBldgs", m_syncArchive)
 	, m_iGreatScientistBeakerModifier(0)
 	, m_iGreatScientistBeakerPolicyModifier(0)
+	, m_iInstantTourismBombWhenFirstConquerMajorCapital(0)
 	, m_iProductionBeakerMod(0)
 	, m_iGreatPersonExpendGold(0)
 	, m_iMaxGlobalBuildingProductionModifier("CvPlayer::m_iMaxGlobalBuildingProductionModifier", m_syncArchive)
@@ -1070,6 +1071,7 @@ void CvPlayer::uninit()
 	m_iGreatScientistRateModifier = 0;
 	m_iGreatScientistBeakerModifier = 0;
 	m_iGreatScientistBeakerPolicyModifier = 0;
+	m_iInstantTourismBombWhenFirstConquerMajorCapital = 0;
 	m_iProductionBeakerMod = 0;
 	m_iGreatEngineerRateModifier = 0;
 	m_iGreatPersonExpendGold = 0;
@@ -2540,11 +2542,11 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 
 	if (bConquest)
 	{
-		if (GetPlayerTraits()->GetInstantTourismBombWhenFirstConquerMajorCapital() > 0 && pOldCity->IsOriginalMajorCapital())
+		if (GetPlayerTraits()->GetInstantTourismBombWhenFirstConquerMajorCapital() > 0 || GetInstantTourismBombWhenFirstConquerMajorCapital() > 0 && pOldCity->IsOriginalMajorCapital())
 		{
 			if (!pOldCity->isEverOwned(GetID()))
 			{
-				const int iValue = GetCulture()->GetTourismBlastStrength(GetPlayerTraits()->GetInstantTourismBombWhenFirstConquerMajorCapital());
+				const int iValue = GetCulture()->GetTourismBlastStrength(GetPlayerTraits()->GetInstantTourismBombWhenFirstConquerMajorCapital() + GetInstantTourismBombWhenFirstConquerMajorCapital());
 				if (iValue > 0)
 				{
 					GetCulture()->AddTourismAllKnownCivs(iValue);
@@ -16339,6 +16341,22 @@ void CvPlayer::ChangeGreatScientistBeakerPolicyMod(int iChange)
 	SetGreatScientistBeakerPolicyMod(GetGreatScientistBeakerPolicyMod() + iChange);
 }
 
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetInstantTourismBombWhenFirstConquerMajorCapital() const
+{
+	return m_iInstantTourismBombWhenFirstConquerMajorCapital;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeInstantTourismBombWhenFirstConquerMajorCapital(int iChange)
+{
+	m_iInstantTourismBombWhenFirstConquerMajorCapital += iChange;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue)
+{
+	m_iInstantTourismBombWhenFirstConquerMajorCapital = iValue;
+}
 
 //	--------------------------------------------------------------------------------
 // Do we get extra beakers from using Great Scientists?
@@ -27018,6 +27036,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	ChangeStrategicResourceMod(pPolicy->GetStrategicResourceMod() * iChange);
 	ChangeAbleToAnnexCityStatesCount((pPolicy->IsAbleToAnnexCityStates()) ? iChange : 0);
 	ChangeGreatScientistBeakerPolicyMod(pPolicy->GetGreatScientistBeakerPolicyModifier() * iChange);
+	ChangeInstantTourismBombWhenFirstConquerMajorCapital(pPolicy->GetInstantTourismBombWhenFirstConquerMajorCapital() * iChange);
 	ChangeProductionBeakerMod(pPolicy->GetProductionBeakerMod() * iChange);
 	changeCityCaptureHealGlobal(pPolicy->GetCityCaptureHealGlobal() * iChange);
 	changeOriginalCapitalCaptureTech(pPolicy->GetOriginalCapitalCaptureTech() * iChange);
@@ -28257,6 +28276,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	}
 
 	kStream >> m_iGreatScientistBeakerPolicyModifier;
+	MOD_SERIALIZE_READ(160, kStream, m_iInstantTourismBombWhenFirstConquerMajorCapital, 0);
 	kStream >> m_iProductionBeakerMod;
 	if (uiVersion >= 13)
 	{
@@ -29067,6 +29087,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iGreatScientistRateModifier;
 	kStream << m_iGreatScientistBeakerModifier;
 	kStream << m_iGreatScientistBeakerPolicyModifier;
+	MOD_SERIALIZE_WRITE(kStream, m_iInstantTourismBombWhenFirstConquerMajorCapital);
 	kStream << m_iProductionBeakerMod;
 	kStream << m_iGreatEngineerRateModifier;
 	kStream << m_iGreatPersonExpendGold;
