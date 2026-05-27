@@ -256,6 +256,7 @@ CvPromotionEntry::CvPromotionEntry():
 	m_bHillsDoubleMove(false),
 	m_bIgnoreTerrainCost(false),
 	m_bRiverDoubleMove(false),
+	m_bPeaceForCS(false),
 #if defined(MOD_API_PLOT_BASED_DAMAGE)
 	m_bIgnoreTerrainDamage(false),
 	m_bIgnoreFeatureDamage(false),
@@ -468,6 +469,7 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_bHillsDoubleMove = kResults.GetBool("HillsDoubleMove");
 	m_bIgnoreTerrainCost = kResults.GetBool("IgnoreTerrainCost");
 	m_bRiverDoubleMove = kResults.GetBool("RiverDoubleMove");
+	m_bPeaceForCS = kResults.GetBool("PeaceForCS");
 #if defined(MOD_API_PLOT_BASED_DAMAGE)
 	m_bIgnoreTerrainDamage = kResults.GetBool("IgnoreTerrainDamage");
 	m_bIgnoreFeatureDamage = kResults.GetBool("IgnoreFeatureDamage");
@@ -2965,6 +2967,12 @@ bool CvPromotionEntry::IsHillsDoubleMove() const
 bool CvPromotionEntry::IsRiverDoubleMove() const
 {
 	return m_bRiverDoubleMove;
+}
+
+/// Accessor: Does this promotion allow peaceful CS intrusion?
+bool CvPromotionEntry::IsPeaceForCS() const
+{
+	return m_bPeaceForCS;
 }
 
 /// Accessor: Ignores terrain movement penalties

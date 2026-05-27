@@ -1089,6 +1089,10 @@ public:
 	bool isRiverDoubleMove() const;
 	void changeRiverDoubleMoveCount(int iChange);
 
+	int getPeaceForCSCount() const;
+	bool isPeaceForCSUnit() const;
+	void changePeaceForCSCount(int iChange);
+
 	int getImmuneToFirstStrikesCount() const;
 	void changeImmuneToFirstStrikesCount(int iChange);
 
@@ -2212,6 +2216,7 @@ protected:
 	FAutoVariable<int, CvUnit> m_iHealOutsideFriendlyCount;
 	FAutoVariable<int, CvUnit> m_iHillsDoubleMoveCount;
 	FAutoVariable<int, CvUnit> m_iRiverDoubleMoveCount;
+	int m_iPeaceForCSCount;
 	FAutoVariable<int, CvUnit> m_iImmuneToFirstStrikesCount;
 	FAutoVariable<int, CvUnit> m_iExtraVisibilityRange;
 #if defined(MOD_PROMOTIONS_VARIABLE_RECON)
