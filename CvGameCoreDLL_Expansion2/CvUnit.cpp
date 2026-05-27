@@ -212,6 +212,7 @@ CvUnit::CvUnit() :
 	, m_iHealOutsideFriendlyCount("CvUnit::m_iHealOutsideFriendlyCount", m_syncArchive)
 	, m_iHillsDoubleMoveCount("CvUnit::m_iHillsDoubleMoveCount", m_syncArchive)
 	, m_iRiverDoubleMoveCount("CvUnit::m_iRiverDoubleMoveCount", m_syncArchive)
+	, m_iPeaceForCSCount(0)
 	, m_iImmuneToFirstStrikesCount("CvUnit::m_iImmuneToFirstStrikesCount", m_syncArchive)
 	, m_iExtraVisibilityRange("CvUnit::m_iExtraVisibilityRange", m_syncArchive)
 #if defined(MOD_PROMOTIONS_VARIABLE_RECON)
@@ -1232,6 +1233,7 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iHealOutsideFriendlyCount = 0;
 	m_iHillsDoubleMoveCount = 0;
 	m_iRiverDoubleMoveCount = 0;
+	m_iPeaceForCSCount = 0;
 	m_iImmuneToFirstStrikesCount = 0;
 	m_iExtraVisibilityRange = 0;
 #if defined(MOD_PROMOTIONS_VARIABLE_RECON)
@@ -4321,6 +4323,9 @@ bool CvUnit::IsAngerFreeUnit() const
 
 	// We don't care about other Minors or the Barbs
 	if(GET_PLAYER(getOwner()).isBarbarian())
+		return true;
+	// Does this unit have a PeaceForCS promotion?
+	if(isPeaceForCSUnit())
 		return true;
 
 	return false;
@@ -22757,6 +22762,28 @@ void CvUnit::changeRiverDoubleMoveCount(int iChange)
 }
 
 //	--------------------------------------------------------------------------------
+int CvUnit::getPeaceForCSCount() const
+{
+	VALIDATE_OBJECT
+	return m_iPeaceForCSCount;
+}
+
+//	--------------------------------------------------------------------------------
+bool CvUnit::isPeaceForCSUnit() const
+{
+	VALIDATE_OBJECT
+	return (getPeaceForCSCount() > 0);
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::changePeaceForCSCount(int iChange)
+{
+	VALIDATE_OBJECT
+	m_iPeaceForCSCount = (m_iPeaceForCSCount + iChange);
+	CvAssert(getPeaceForCSCount() >= 0);
+}
+
+//	--------------------------------------------------------------------------------
 int CvUnit::getImmuneToFirstStrikesCount() const
 {
 	VALIDATE_OBJECT
@@ -26319,6 +26346,7 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		changeHealOutsideFriendlyCount((thisPromotion.IsHealOutsideFriendly()) ? iChange : 0);
 		changeHillsDoubleMoveCount((thisPromotion.IsHillsDoubleMove()) ? iChange : 0);
 		changeRiverDoubleMoveCount((thisPromotion.IsRiverDoubleMove()) ? iChange : 0);
+		changePeaceForCSCount((thisPromotion.IsPeaceForCS()) ? iChange : 0);
 		changeIgnoreTerrainCostCount((thisPromotion.IsIgnoreTerrainCost()) ? iChange : 0);
 #if defined(MOD_API_PLOT_BASED_DAMAGE)
 		changeIgnoreTerrainDamageCount((thisPromotion.IsIgnoreTerrainDamage()) ? iChange : 0);
@@ -27122,6 +27150,7 @@ void CvUnit::read(FDataStream& kStream)
 	kStream >> m_iCityAttackFaithBonus;
 	kStream >> m_iCarrierEXPGivenModifier;
 	kStream >> m_iRemovePromotionUpgrade;
+	MOD_SERIALIZE_READ(160, kStream, m_iPeaceForCSCount, 0);
 	kStream >> m_eAttackChanceFromAttackDamageFormula;
 	kStream >> m_eMovementFromAttackDamageFormula;
 	kStream >> m_eHealPercentFromAttackDamageFormula;
@@ -27541,6 +27570,7 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_iCityAttackFaithBonus;
 	kStream << m_iCarrierEXPGivenModifier;
 	kStream << m_iRemovePromotionUpgrade;
+	MOD_SERIALIZE_WRITE(kStream, m_iPeaceForCSCount);
 	kStream << m_eAttackChanceFromAttackDamageFormula;
 	kStream << m_eMovementFromAttackDamageFormula;
 	kStream << m_eHealPercentFromAttackDamageFormula;

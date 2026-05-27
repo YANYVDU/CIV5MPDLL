@@ -10755,6 +10755,7 @@ int CvLuaPlayer::lGetImmigrationRegressandModifier(lua_State* L)
 		lua_pushinteger(L, pkPlayer->GetImmigrationRegressandModifier());
 		return 1;
 	}
+	return 0;
 }
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetPolicyBuildingClassYieldModifier(lua_State* L)

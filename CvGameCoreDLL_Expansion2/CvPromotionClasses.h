@@ -315,6 +315,7 @@ public:
 	bool IsHealOutsideFriendly() const;
 	bool IsHillsDoubleMove() const;
 	bool IsRiverDoubleMove() const;
+	bool IsPeaceForCS() const;
 	bool IsIgnoreTerrainCost() const;
 #if defined(MOD_API_PLOT_BASED_DAMAGE)
 	bool IsIgnoreTerrainDamage() const;
@@ -809,6 +810,7 @@ protected:
 	bool m_bHealOutsideFriendly;
 	bool m_bHillsDoubleMove;
 	bool m_bRiverDoubleMove;
+	bool m_bPeaceForCS;
 	bool m_bIgnoreTerrainCost;
 #if defined(MOD_API_PLOT_BASED_DAMAGE)
 	bool m_bIgnoreTerrainDamage;
