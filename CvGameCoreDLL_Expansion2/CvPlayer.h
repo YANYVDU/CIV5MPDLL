@@ -2196,6 +2196,9 @@ public:
 	bool IsCorruptionLevelReduceByOne() const;
 	void ChangeCorruptionLevelReduceByOneRC(int change);
 
+	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	void ChangeCorruptionScoreGlobalChangeFromBuilding(int change);
+
 	int GetCorruptionPolicyCostModifier() const;
 	void ChangeCorruptionPolicyCostModifier(int change);
 
@@ -2999,6 +3002,7 @@ protected:
 	int m_iCorruptionScoreModifierFromPolicy = 0;
 	int m_iCorruptionLevelReduceByOneRC = 0;
 	int m_iCorruptionPolicyCostModifier = 0;
+	int m_iCorruptionScoreGlobalChangeFromBuilding = 0;
 
 	std::vector<int> m_paiCorruptionLevelPolicyCostModifier;
 #endif

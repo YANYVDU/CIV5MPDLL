@@ -23671,6 +23671,7 @@ int CvCity::CalculateTotalCorruptionScore() const
 	score += CalculateCorruptionScoreFromCoastalBonus();
 	score += CalculateCorruptionScoreFromResource();
 	score += GetCorruptionScoreChangeFromBuilding();
+	score += owner.GetCorruptionScoreGlobalChangeFromBuilding();
 	score += CalculateCorruptionScoreFromTrait();
 	score = std::max(0, score);
 
@@ -23690,6 +23691,12 @@ int CvCity::GetCorruptionScoreModifierFromPolicy() const
 {
 	CvPlayerAI &owner = GET_PLAYER(getOwner());
 	return owner.GetCorruptionScoreModifierFromPolicy();
+}
+
+int CvCity::GetCorruptionScoreGlobalChangeFromBuilding() const
+{
+	CvPlayerAI &owner = GET_PLAYER(getOwner());
+	return owner.GetCorruptionScoreGlobalChangeFromBuilding();
 }
 
 int CvCity::CalculateCorruptionScoreFromDistance() const

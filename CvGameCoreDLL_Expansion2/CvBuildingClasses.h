@@ -596,6 +596,7 @@ public:
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	int GetCorruptionScoreChange() const;
+	int GetCorruptionScoreGlobalChange() const;
 	int GetCorruptionLevelChange() const;
 	int GetCorruptionPolicyCostModifier() const;
 	int GetMinCorruptionLevelNeeded() const;
@@ -1041,6 +1042,7 @@ private:
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	int m_iCorruptionScoreChange = 0;
+	int m_iCorruptionScoreGlobalChange = 0;
 	int m_iCorruptionLevelChange = 0;
 	int m_iCorruptionPolicyCostModifier = 0;
 	int m_iMinCorruptionLevelNeeded = -1;

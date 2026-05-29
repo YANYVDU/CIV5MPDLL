@@ -272,6 +272,7 @@ CvPlayer::CvPlayer() :
 	, m_iGreatScientistBeakerModifier(0)
 	, m_iGreatScientistBeakerPolicyModifier(0)
 	, m_iInstantTourismBombWhenFirstConquerMajorCapital(0)
+	
 	, m_iProductionBeakerMod(0)
 	, m_iGreatPersonExpendGold(0)
 	, m_iMaxGlobalBuildingProductionModifier("CvPlayer::m_iMaxGlobalBuildingProductionModifier", m_syncArchive)
@@ -1266,6 +1267,7 @@ void CvPlayer::uninit()
 #endif
 #ifdef MOD_GLOBAL_CORRUPTION
 	m_iCorruptionScoreModifierFromPolicy = 0;
+	m_iCorruptionScoreGlobalChangeFromBuilding = 0;
 	m_iCorruptionLevelReduceByOneRC = 0;
 	m_iCorruptionPolicyCostModifier = 0;
 #endif
@@ -10112,6 +10114,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 	ChangeResearchTotalCostModifier(pBuildingInfo->GetResearchTotalCostModifier()* iChange);
 	ChangeResearchTotalCostModifierGoldenAge(pBuildingInfo->GetResearchTotalCostModifierGoldenAge()* iChange);
 	ChangeImmigrationRegressandModifier(pBuildingInfo->GetImmigrationRegressandModifier() * iChange);
+	ChangeCorruptionScoreGlobalChangeFromBuilding(pBuildingInfo->GetCorruptionScoreGlobalChange() * iChange);
 	ChangeLiberatedInfluence(pBuildingInfo->GetLiberatedInfluence()* iChange);
 	ChangeExtraUnitPlayerInstances(pBuildingInfo->GetExtraUnitPlayerInstances()* iChange);
 	ChangeWaterTileDamageGlobal(pBuildingInfo->GetWaterTileDamageGlobal()* iChange);
@@ -28882,6 +28885,7 @@ void CvPlayer::Read(FDataStream& kStream)
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	kStream >> m_iCorruptionScoreModifierFromPolicy;
+	MOD_SERIALIZE_READ(160, kStream, m_iCorruptionScoreGlobalChangeFromBuilding, 0);
 	kStream >> m_iCorruptionLevelReduceByOneRC;
 	kStream >> m_iCorruptionPolicyCostModifier;
 	
@@ -29587,6 +29591,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	kStream << m_iCorruptionScoreModifierFromPolicy;
+	MOD_SERIALIZE_WRITE(kStream, m_iCorruptionScoreGlobalChangeFromBuilding);
 	kStream << m_iCorruptionLevelReduceByOneRC;
 	kStream << m_iCorruptionPolicyCostModifier;
 
@@ -33431,6 +33436,16 @@ int CvPlayer::GetCorruptionScoreModifierFromPolicy() const
 void CvPlayer::ChangeCorruptionScoreModifierFromPolicy(int change)
 {
 	m_iCorruptionScoreModifierFromPolicy += change;
+}
+
+int CvPlayer::GetCorruptionScoreGlobalChangeFromBuilding() const
+{
+	return m_iCorruptionScoreGlobalChangeFromBuilding;
+}
+
+void CvPlayer::ChangeCorruptionScoreGlobalChangeFromBuilding(int change)
+{
+	m_iCorruptionScoreGlobalChangeFromBuilding += change;
 }
 
 int CvPlayer::GetCorruptionLevelReduceByOneRC() const
