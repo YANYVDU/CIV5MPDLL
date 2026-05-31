@@ -23671,7 +23671,7 @@ int CvCity::CalculateTotalCorruptionScore() const
 	score += CalculateCorruptionScoreFromCoastalBonus();
 	score += CalculateCorruptionScoreFromResource();
 	score += GetCorruptionScoreChangeFromBuilding();
-	score += owner.GetCorruptionScoreGlobalChangeFromBuilding();
+	score += GetCorruptionScoreGlobalChangeFromBuilding();
 	score += CalculateCorruptionScoreFromTrait();
 	score = std::max(0, score);
 

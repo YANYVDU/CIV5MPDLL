@@ -2544,7 +2544,7 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 
 	if (bConquest)
 	{
-		if (GetPlayerTraits()->GetInstantTourismBombWhenFirstConquerMajorCapital() > 0 || GetInstantTourismBombWhenFirstConquerMajorCapital() > 0 && pOldCity->IsOriginalMajorCapital())
+		if ((GetPlayerTraits()->GetInstantTourismBombWhenFirstConquerMajorCapital() > 0 || GetInstantTourismBombWhenFirstConquerMajorCapital() > 0 )&& pOldCity->IsOriginalMajorCapital())
 		{
 			if (!pOldCity->isEverOwned(GetID()))
 			{
