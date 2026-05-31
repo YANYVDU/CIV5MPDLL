@@ -321,6 +321,7 @@ public:
 	int GetExtraSpies() const;
 	int GetGreatScientistBeakerPolicyModifier() const;
 	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
+	int GetNaturalWonderFirstFinderTechPolicies() const;
 	int GetProductionBeakerMod() const;
 	bool IsOneShot() const;
 	bool IncludesOneShotFreeUnits() const;
@@ -570,6 +571,7 @@ private:
 	int m_iExtraSpies;
 	int m_iGreatScientistBeakerPolicyModifier;
 	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
+	int m_iNaturalWonderFirstFinderTechPolicies;
 	int m_iProductionBeakerMod;
 	bool m_bOneShot;
 	bool m_bIncludesOneShotFreeUnits;

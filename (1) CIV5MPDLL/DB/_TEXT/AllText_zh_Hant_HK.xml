@@ -473,6 +473,12 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING">
 			<Text>來自建築的全局變化: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NATURAL_WONDER_FREE_TECH_POLICY">
+			<Text>發現{2_FeatureName}！作為首位發現者，獲得 {1_Num} 項免費科技和 {1_Num} 項免費政策。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_NATURAL_WONDER_FREE_TECH_POLICY">
+			<Text>自然奇觀首發獎勵：免費科技與政策</Text>
+		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RESOURCE">
 			<Text>來自資源: {1_score}</Text>
 		</Row>

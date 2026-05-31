@@ -272,6 +272,7 @@ CvPlayer::CvPlayer() :
 	, m_iGreatScientistBeakerModifier(0)
 	, m_iGreatScientistBeakerPolicyModifier(0)
 	, m_iInstantTourismBombWhenFirstConquerMajorCapital(0)
+	, m_iNaturalWonderFirstFinderTechPolicies(0)
 	
 	, m_iProductionBeakerMod(0)
 	, m_iGreatPersonExpendGold(0)
@@ -1073,6 +1074,7 @@ void CvPlayer::uninit()
 	m_iGreatScientistBeakerModifier = 0;
 	m_iGreatScientistBeakerPolicyModifier = 0;
 	m_iInstantTourismBombWhenFirstConquerMajorCapital = 0;
+	m_iNaturalWonderFirstFinderTechPolicies = 0;
 	m_iProductionBeakerMod = 0;
 	m_iGreatEngineerRateModifier = 0;
 	m_iGreatPersonExpendGold = 0;
@@ -16362,6 +16364,24 @@ void CvPlayer::SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue)
 }
 
 //	--------------------------------------------------------------------------------
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNaturalWonderFirstFinderTechPolicies() const
+{
+	return m_iNaturalWonderFirstFinderTechPolicies;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNaturalWonderFirstFinderTechPolicies(int iChange)
+{
+	m_iNaturalWonderFirstFinderTechPolicies += iChange;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetNaturalWonderFirstFinderTechPolicies(int iValue)
+{
+	m_iNaturalWonderFirstFinderTechPolicies = iValue;
+}
+
+//	--------------------------------------------------------------------------------
 // Do we get extra beakers from using Great Scientists?
 int CvPlayer::GetProductionBeakerMod() const
 {
@@ -27040,6 +27060,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	ChangeAbleToAnnexCityStatesCount((pPolicy->IsAbleToAnnexCityStates()) ? iChange : 0);
 	ChangeGreatScientistBeakerPolicyMod(pPolicy->GetGreatScientistBeakerPolicyModifier() * iChange);
 	ChangeInstantTourismBombWhenFirstConquerMajorCapital(pPolicy->GetInstantTourismBombWhenFirstConquerMajorCapital() * iChange);
+	ChangeNaturalWonderFirstFinderTechPolicies(pPolicy->GetNaturalWonderFirstFinderTechPolicies() * iChange);
 	ChangeProductionBeakerMod(pPolicy->GetProductionBeakerMod() * iChange);
 	changeCityCaptureHealGlobal(pPolicy->GetCityCaptureHealGlobal() * iChange);
 	changeOriginalCapitalCaptureTech(pPolicy->GetOriginalCapitalCaptureTech() * iChange);
@@ -28280,6 +28301,7 @@ void CvPlayer::Read(FDataStream& kStream)
 
 	kStream >> m_iGreatScientistBeakerPolicyModifier;
 	MOD_SERIALIZE_READ(160, kStream, m_iInstantTourismBombWhenFirstConquerMajorCapital, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderTechPolicies, 0);
 	kStream >> m_iProductionBeakerMod;
 	if (uiVersion >= 13)
 	{
@@ -29092,6 +29114,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iGreatScientistBeakerModifier;
 	kStream << m_iGreatScientistBeakerPolicyModifier;
 	MOD_SERIALIZE_WRITE(kStream, m_iInstantTourismBombWhenFirstConquerMajorCapital);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderTechPolicies);
 	kStream << m_iProductionBeakerMod;
 	kStream << m_iGreatEngineerRateModifier;
 	kStream << m_iGreatPersonExpendGold;

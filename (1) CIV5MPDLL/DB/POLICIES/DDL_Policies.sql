@@ -114,6 +114,7 @@ create table Policy_GreatPersonOutputModifierPerGWs (
     Modifier integer default 0
 );
 alter table Policies add column InstantTourismBombWhenFirstConquerMajorCapital integer not null default 0;
+alter table Policies add column NaturalWonderFirstFinderTechPolicies integer not null default 0;
 --******************** New Condition ********************--
 create table PolicyBranch_CivilizationLocked (
     PolicyBranchType text references PolicyBranchTypes(Type),

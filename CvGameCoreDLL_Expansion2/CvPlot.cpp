@@ -10428,6 +10428,31 @@ bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, Tea
 									if(playerI.getTeam() == eTeam)
 									{
 										iFinderGold += playerI.GetPlayerTraits()->GetNaturalWonderFirstFinderGold();
+										int iFreeTechAndPolicies = playerI.GetNaturalWonderFirstFinderTechPolicies();
+										if(iFreeTechAndPolicies > 0)
+										{
+											for(int iCount = 0; iCount < iFreeTechAndPolicies; iCount++)
+											{
+												playerI.SetNumFreeTechs(playerI.GetNumFreeTechs() + 1);
+											}
+											for(int iCount = 0; iCount < iFreeTechAndPolicies; iCount++)
+											{
+												playerI.SetNumFreePolicies(playerI.GetNumFreePolicies() + 1);
+											}
+
+											if(playerI.GetID() == GC.getGame().getActivePlayer())
+											{
+												CvNotifications* pNotifications = playerI.GetNotifications();
+												if(pNotifications)
+												{
+													Localization::String strBonus = Localization::Lookup("TXT_KEY_NOTIFICATION_NATURAL_WONDER_FREE_TECH_POLICY");
+													strBonus << iFreeTechAndPolicies;
+													strBonus << GC.getFeatureInfo(getFeatureType())->GetTextKey();
+													Localization::String strBonusSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NATURAL_WONDER_FREE_TECH_POLICY");
+													pNotifications->Add(NOTIFICATION_FREE_TECH, strBonus.toUTF8(), strBonusSummary.toUTF8(), getX(), getY(), 0);
+												}
+											}
+										}
 									}
 								}
 							}

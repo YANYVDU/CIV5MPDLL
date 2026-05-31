@@ -221,6 +221,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iExtraSpies(0),
 	m_iGreatScientistBeakerPolicyModifier(0),
 	m_iInstantTourismBombWhenFirstConquerMajorCapital(0),
+	m_iNaturalWonderFirstFinderTechPolicies(0),
 	m_iProductionBeakerMod(0),
 	m_bOneShot(false),
 	m_bIncludesOneShotFreeUnits(false),
@@ -555,6 +556,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iExtraSpies = kResults.GetInt("ExtraSpies");
 	m_iGreatScientistBeakerPolicyModifier = kResults.GetInt("GreatScientistBeakerPolicyModifier");
 	m_iInstantTourismBombWhenFirstConquerMajorCapital = kResults.GetInt("InstantTourismBombWhenFirstConquerMajorCapital");
+	m_iNaturalWonderFirstFinderTechPolicies = kResults.GetInt("NaturalWonderFirstFinderTechPolicies");
 	m_iProductionBeakerMod = kResults.GetInt("ProductionBeakerMod");
 	m_bOneShot = kResults.GetBool("OneShot");
 	m_bIncludesOneShotFreeUnits = kResults.GetBool("IncludesOneShotFreeUnits");
@@ -2484,6 +2486,11 @@ int CvPolicyEntry::GetGreatScientistBeakerPolicyModifier() const
 int CvPolicyEntry::GetInstantTourismBombWhenFirstConquerMajorCapital() const
 {
 	return m_iInstantTourismBombWhenFirstConquerMajorCapital;
+}
+
+int CvPolicyEntry::GetNaturalWonderFirstFinderTechPolicies() const
+{
+	return m_iNaturalWonderFirstFinderTechPolicies;
 }
 
 int CvPolicyEntry::GetProductionBeakerMod() const

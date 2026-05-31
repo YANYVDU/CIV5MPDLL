@@ -471,6 +471,12 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING">
 			<Text>Global change from Building: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NATURAL_WONDER_FREE_TECH_POLICY">
+			<Text>Found {2_FeatureName}! As the first discoverer, you receive {1_Num} free technologies and {1_Num} free policies.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_NATURAL_WONDER_FREE_TECH_POLICY">
+			<Text>Natural Wonder First Discovery Reward: Free Technologies and Policies</Text>
+		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RESOURCE">
 			<Text>From resource: {1_score}</Text>
 		</Row>
