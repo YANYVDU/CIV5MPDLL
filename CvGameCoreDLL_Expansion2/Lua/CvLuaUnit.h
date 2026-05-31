@@ -484,6 +484,8 @@ protected:
 #endif
 	static int lGetDamageFixValueToUnit(lua_State* L);
 	static int lGetDamageFixValueToCity(lua_State* L);
+	static int lGetFixDamagePerPromotionTotalMod(lua_State* L);
+	static int lGetFixReducePerPromotionTotalMod(lua_State* L);
 	static int lGetDamageCombatModifier(lua_State* L);
 	static int lDomainAttack(lua_State* L);
 	static int lDomainDefense(lua_State* L);
@@ -614,6 +616,7 @@ protected:
 	static int lGetNumAttacks(lua_State* L);
 	static int lChangeMadeAttackNum(lua_State* L);
 	static int lGetNumAttacksMadeThisTurn(lua_State* L);
+	static int lGetNumPromotions(lua_State* L);
 
 	static int lisOutOfInterceptions(lua_State* L);
 	static int lSetMadeInterception(lua_State* L);

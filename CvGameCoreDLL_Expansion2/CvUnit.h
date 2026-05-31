@@ -1046,6 +1046,11 @@ public:
 	void ChangeSiegeInflictDamageChange(int iChange);
 	void ChangeSiegeInflictDamageChangeMaxHPPercent(int iChange);
 
+	int GetFixDamagePerPromotionTotal() const;
+	void ChangeFixDamagePerPromotionTotal(int iChange);
+	int GetFixReducePerPromotionTotal() const;
+	void ChangeFixReducePerPromotionTotal(int iChange);
+
 	bool IsRangeBackWhenDefense() const;
 	void ChangeNumRangeBackWhenDefense(int iChange);
 
@@ -1244,6 +1249,9 @@ public:
 	int getNumAttacksMadeThisTurn() const;
 	void changeExtraAttacks(int iChange);
 	void ChangeMadeAttackNum(int iChange);
+
+	int GetNumPromotions() const;
+	void ChangeNumPromotions(int iChange);
 
 	// Citadel
 	bool IsNearEnemyCitadel(int& iCitadelDamage);
@@ -2665,12 +2673,17 @@ protected:
 	int m_iSiegeInflictDamageChange = 0;
 	int m_iSiegeInflictDamageChangeMaxHPPercent = 0;
 
+	int m_iFixDamagePerPromotionTotal = 0;
+	int m_iFixReducePerPromotionTotal = 0;
+
 	int m_iNumRangeBackWhenDefense = 0;
 
 	int m_iHeavyChargeAddMoves = 0;
 	int m_iHeavyChargeExtraDamage = 0;
 	int m_iHeavyChargeCollateralFixed = 0;
 	int m_iHeavyChargeCollateralPercent = 0;
+
+	int m_iNumPromotions = 0;
 
 	int m_iOutsideFriendlyLandsInflictDamageChange = 0;
 	

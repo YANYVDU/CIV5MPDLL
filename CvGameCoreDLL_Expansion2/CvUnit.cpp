@@ -1654,6 +1654,10 @@ if (MOD_API_UNIT_CANNOT_BE_RANGED_ATTACKED)
 	m_iHeavyChargeCollateralFixed = 0;
 	m_iHeavyChargeCollateralPercent = 0;
 
+	m_iNumPromotions = 0;
+	m_iFixDamagePerPromotionTotal = 0;
+	m_iFixReducePerPromotionTotal = 0;
+
 	m_iOutsideFriendlyLandsInflictDamageChange = 0;
 	m_iEraPercent = 0;
 
@@ -23830,6 +23834,16 @@ int CvUnit::getNumAttacksMadeThisTurn() const
 	return m_iAttacksMade;
 }
 
+int CvUnit::GetNumPromotions() const
+{
+	VALIDATE_OBJECT
+	return m_iNumPromotions;
+}
+void CvUnit::ChangeNumPromotions(int iChange)
+{
+	VALIDATE_OBJECT
+	m_iNumPromotions += iChange;
+}
 
 //	--------------------------------------------------------------------------------
 bool CvUnit::isOutOfAttacks() const
@@ -26318,6 +26332,8 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		m_Promotions.SetPromotion(eIndex, bNewValue);
 		const int iChange = ((isHasPromotion(eIndex)) ? 1 : -1);
 
+		ChangeNumPromotions(iChange);
+
 		// Promotions will set Invisibility once but not change it later
 		if(getInvisibleType() == NO_INVISIBLE && thisPromotion.GetInvisibleType() != NO_INVISIBLE)
 		{
@@ -26870,6 +26886,8 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeDefenseInflictDamageChangeMaxHPPercent(iChange * thisPromotion.GetDefenseInflictDamageChangeMaxHPPercent());
 		ChangeSiegeInflictDamageChange(iChange * thisPromotion.GetSiegeInflictDamageChange());
 		ChangeSiegeInflictDamageChangeMaxHPPercent(iChange * thisPromotion.GetSiegeInflictDamageChangeMaxHPPercent());
+		ChangeFixDamagePerPromotionTotal(iChange * thisPromotion.GetFixDamagePerPromotionMod());
+		ChangeFixReducePerPromotionTotal(iChange * thisPromotion.GetFixReducePerPromotionMod());
 		ChangeNumRangeBackWhenDefense(thisPromotion.IsRangeBackWhenDefense() ? iChange : 0);
 		ChangeHeavyChargeAddMoves(iChange * thisPromotion.GetHeavyChargeAddMoves());
 		ChangeHeavyChargeExtraDamage(iChange * thisPromotion.GetHeavyChargeExtraDamage());
@@ -27452,6 +27470,10 @@ void CvUnit::read(FDataStream& kStream)
 
 	kStream >> m_iOutsideFriendlyLandsInflictDamageChange;
 
+	MOD_SERIALIZE_READ(160, kStream, m_iNumPromotions, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iFixDamagePerPromotionTotal, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iFixReducePerPromotionTotal, 0);
+
 #ifdef MOD_BATTLE_CAPTURE_NEW_RULE
 	kStream >> m_bIsNewCapture;
 #endif
@@ -27797,6 +27819,10 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_iHeavyChargeCollateralPercent;
 
 	kStream << m_iOutsideFriendlyLandsInflictDamageChange;
+
+	MOD_SERIALIZE_WRITE(kStream, m_iNumPromotions);
+	MOD_SERIALIZE_WRITE(kStream, m_iFixDamagePerPromotionTotal);
+	MOD_SERIALIZE_WRITE(kStream, m_iFixReducePerPromotionTotal);
 
 #ifdef MOD_BATTLE_CAPTURE_NEW_RULE
 	kStream << m_bIsNewCapture;
@@ -32410,6 +32436,23 @@ void CvUnit::ChangeSiegeInflictDamageChange(int iChange)
 void CvUnit::ChangeSiegeInflictDamageChangeMaxHPPercent(int iChange)
 {
 	m_iSiegeInflictDamageChangeMaxHPPercent += iChange;
+}
+
+int CvUnit::GetFixDamagePerPromotionTotal() const
+{
+	return m_iFixDamagePerPromotionTotal;
+}
+void CvUnit::ChangeFixDamagePerPromotionTotal(int iChange)
+{
+	m_iFixDamagePerPromotionTotal += iChange;
+}
+int CvUnit::GetFixReducePerPromotionTotal() const
+{
+	return m_iFixReducePerPromotionTotal;
+}
+void CvUnit::ChangeFixReducePerPromotionTotal(int iChange)
+{
+	m_iFixReducePerPromotionTotal += iChange;
 }
 
 bool CvUnit::IsRangeBackWhenDefense() const

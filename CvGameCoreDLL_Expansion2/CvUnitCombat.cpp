@@ -4771,6 +4771,53 @@ void UnitDefenseInflictDamageIntervene(InflictDamageContext* ctx)
 	}
 }
 
+void FixReduceDamageIntervene(InflictDamageContext* ctx)
+{
+	// 晋升固减伤害：拥有此属性的单位，无论作为攻击方还是防御方，对手是单位还是城市，自身受到的伤害均减免
+	// 作为攻击方时，减免对方的反击/防御伤害（场景：该单位攻击单位/城市）
+	if (ctx->pAttackerUnit != nullptr && ctx->piDefenseInflictDamage != nullptr)
+	{
+		const int iFixReducePerPromotion = ctx->pAttackerUnit->GetFixReducePerPromotionTotal();
+		if (iFixReducePerPromotion != 0)
+		{
+			*ctx->piDefenseInflictDamage -= ctx->pAttackerUnit->GetNumPromotions() * iFixReducePerPromotion / 100;
+		}
+	}
+
+	// 作为防御方时，减免对方的攻击伤害（场景：单位/城市攻击该单位）
+	if (ctx->pDefenderUnit != nullptr && ctx->piAttackInflictDamage != nullptr)
+	{
+		const int iFixReducePerPromotion = ctx->pDefenderUnit->GetFixReducePerPromotionTotal();
+		if (iFixReducePerPromotion != 0)
+		{
+			*ctx->piAttackInflictDamage -= ctx->pDefenderUnit->GetNumPromotions() * iFixReducePerPromotion / 100;
+		}
+	}
+}
+
+void FixAddDamageIntervene(InflictDamageContext* ctx)
+{
+	// 晋升固增伤害：拥有此属性的单位，无论作为攻击方还是防御方，对手是单位还是城市，造成的伤害均增加
+	// 作为攻击方时，增加造成的攻击伤害（场景：该单位攻击单位/城市）
+	if (ctx->pAttackerUnit != nullptr && ctx->piAttackInflictDamage != nullptr)
+	{
+		const int iFixDamagePerPromotion = ctx->pAttackerUnit->GetFixDamagePerPromotionTotal();
+		if (iFixDamagePerPromotion != 0)
+		{
+			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetNumPromotions() * iFixDamagePerPromotion / 100;
+		}
+	}
+
+		// 作为防御方时，增加反击伤害（场景：仅单位攻击该单位，城市攻击时无法反击）
+		if (ctx->pDefenderUnit != nullptr && ctx->piDefenseInflictDamage != nullptr && ctx->pAttackerCity == nullptr)
+	{
+		const int iFixDamagePerPromotion = ctx->pDefenderUnit->GetFixDamagePerPromotionTotal();
+		if (iFixDamagePerPromotion != 0)
+		{
+			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetNumPromotions() * iFixDamagePerPromotion / 100;
+		}
+	}
+}
 void SiegeInflictDamageIntervene(InflictDamageContext* ctx)
 {
 	// Unit VS City
@@ -4861,6 +4908,8 @@ void CvUnitCombat::InterveneInflictDamage(InflictDamageContext* ctx)
 	CityDamageChangeIntervene(ctx);
 	UnitAttackInflictDamageIntervene(ctx);
 	UnitDefenseInflictDamageIntervene(ctx);
+	FixReduceDamageIntervene(ctx);
+	FixAddDamageIntervene(ctx);
 	SiegeInflictDamageIntervene(ctx);
 	OutsideFriendlyLandsDamageIntervene(ctx);
 

@@ -149,6 +149,8 @@ CvPromotionEntry::CvPromotionEntry():
 	m_iOutsideCapitalLandAttackMod(0),
 	m_iOnCapitalLandDefenseMod(0),
 	m_iOutsideCapitalLandDefenseMod(0),
+	m_iFixDamagePerPromotionMod(0),
+	m_iFixReducePerPromotionMod(0),
 	m_iMultiAttackBonus(0),
 	m_iNumAttacksMadeThisTurnAttackMod(0),
 	m_iNumSpyDefenseMod(0),
@@ -908,6 +910,9 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_iHeavyChargeCollateralPercent = kResults.GetInt("HeavyChargeCollateralPercent");
 
 	m_iOutsideFriendlyLandsInflictDamageChange = kResults.GetInt("OutsideFriendlyLandsInflictDamageChange");
+
+	m_iFixDamagePerPromotionMod = kResults.GetInt("FixDamagePerPromotionMod");
+	m_iFixReducePerPromotionMod = kResults.GetInt("FixReducePerPromotionMod");
 
 	const char* szPromotionPrereq = kResults.GetText("PromotionPrereq");
 	m_iPrereqPromotion = GC.getInfoTypeForString(szPromotionPrereq, true);
@@ -2177,6 +2182,14 @@ int CvPromotionEntry::GetOnCapitalLandDefenseMod() const
 int CvPromotionEntry::GetOutsideCapitalLandDefenseMod() const
 {
 	return m_iOutsideCapitalLandDefenseMod;
+}
+int CvPromotionEntry::GetFixDamagePerPromotionMod() const
+{
+	return m_iFixDamagePerPromotionMod;
+}
+int CvPromotionEntry::GetFixReducePerPromotionMod() const
+{
+	return m_iFixReducePerPromotionMod;
 }
 #endif
 

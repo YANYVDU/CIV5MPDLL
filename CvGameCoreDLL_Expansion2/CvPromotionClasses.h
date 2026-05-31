@@ -170,6 +170,8 @@ public:
 	int GetOutsideCapitalLandAttackMod() const;
 	int GetOnCapitalLandDefenseMod() const;
 	int GetOutsideCapitalLandDefenseMod() const;
+	int GetFixDamagePerPromotionMod() const;
+	int GetFixReducePerPromotionMod() const;
 	int GetBarbarianCombatBonus() const;
 	int GetAOEDamageOnKill() const;
 	int GetAOEDamageOnPillage() const;
@@ -792,6 +794,8 @@ protected:
 	int m_iOutsideCapitalLandAttackMod;
 	int m_iOnCapitalLandDefenseMod;
 	int m_iOutsideCapitalLandDefenseMod;
+	int m_iFixDamagePerPromotionMod;
+	int m_iFixReducePerPromotionMod;
 #endif
 
 	bool m_bCannotBeChosen;
