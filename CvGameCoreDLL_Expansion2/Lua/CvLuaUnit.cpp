@@ -469,6 +469,8 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 #endif
 	Method(GetDamageFixValueToUnit);
 	Method(GetDamageFixValueToCity);
+	Method(GetFixDamagePerPromotionTotalMod);
+	Method(GetFixReducePerPromotionTotalMod);
 
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_PROMOTIONS_IMPROVEMENT_BONUS)
 	Method(GetNearbyImprovementCombatBonus);
@@ -689,6 +691,7 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetNumAttacks);
 	Method(ChangeMadeAttackNum);
 	Method(GetNumAttacksMadeThisTurn);
+	Method(GetNumPromotions);
 
 	Method(isOutOfInterceptions);
 	Method(SetMadeInterception);
@@ -3855,7 +3858,7 @@ int CvLuaUnit::lGetChangeDamageValue(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);
 
-	const int iResult = pkUnit->getChangeDamageValue();
+	const int iResult = pkUnit->getChangeDamageValue() - pkUnit->GetNumPromotions() * pkUnit->GetFixReducePerPromotionTotal() / 100;
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -3883,11 +3886,13 @@ int CvLuaUnit::lGetDamageFixValueToUnit(lua_State* L)
 		int iSpecialDamageFix = pkUnit->GetOriginalCapitalSpecialDamageFixTotal();
 		iSpecialDamageFix = pkOtherUnit->getDomainType() == DOMAIN_LAND ? iSpecialDamageFix : iSpecialDamageFix / 2;
 		iResult += iSpecialDamageFix;
+		iResult += pkUnit->GetFixDamagePerPromotionTotal() * pkUnit->GetNumPromotions() / 100;
 	}
 	else
 	{
 		iResult += pkUnit->GetDefenseInflictDamageChange();
 		iResult += pkUnit->GetDefenseInflictDamageChangeMaxHPPercent() * pkOtherUnit->GetMaxHitPoints() / 100;
+		iResult += pkUnit->GetFixDamagePerPromotionTotal() * pkUnit->GetNumPromotions() / 100;
 	}
 
 	auto* targetPlot = bIsAttack ? pkOtherUnit->plot() : pkUnit->plot();
@@ -3916,8 +3921,9 @@ int CvLuaUnit::lGetDamageFixValueToCity(lua_State* L)
 
 	int iResult = 0;
 	iResult += pkUnit->GetSiegeInflictDamageChange();
-		iResult += pkUnit->GetOriginalCapitalDamageFixTotal();
+	iResult += pkUnit->GetOriginalCapitalDamageFixTotal();
 	iResult += pkUnit->GetOriginalCapitalSpecialDamageFixTotal() / 2;
+	iResult += pkUnit->GetFixDamagePerPromotionTotal() * pkUnit->GetNumPromotions() / 100;
 	iResult += pkUnit->GetOutsideFriendlyLandsInflictDamageChange();
 
 	int iInflictDamagePerCapturedHolyCity = kAttacker.GetPlayerTraits()->GetInflictDamageChangePerCapturedHolyCity();
@@ -3938,6 +3944,22 @@ int CvLuaUnit::lGetDamageFixValueToCity(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+int CvLuaUnit::lGetFixDamagePerPromotionTotalMod(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	lua_pushinteger(L, pkUnit->GetFixDamagePerPromotionTotal());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaUnit::lGetFixReducePerPromotionTotalMod(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	lua_pushinteger(L, pkUnit->GetFixReducePerPromotionTotal());
+	return 1;
+}
+//------------------------------------------------------------------------------
+
 int CvLuaUnit::lGetDamageCombatModifier(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);
@@ -5843,6 +5865,14 @@ int CvLuaUnit::lGetNumAttacksMadeThisTurn(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);
 	const int iResult = pkUnit->getNumAttacksMadeThisTurn();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaUnit::lGetNumPromotions(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	const int iResult = pkUnit->GetNumPromotions();
 	lua_pushinteger(L, iResult);
 	return 1;
 }
