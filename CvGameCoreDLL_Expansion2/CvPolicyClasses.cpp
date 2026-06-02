@@ -221,7 +221,10 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iExtraSpies(0),
 	m_iGreatScientistBeakerPolicyModifier(0),
 	m_iInstantTourismBombWhenFirstConquerMajorCapital(0),
-	m_iNaturalWonderFirstFinderTechPolicies(0),
+	m_iNaturalWonderFirstFinderPolicies(0),
+	m_iNaturalWonderFirstFinderTech(0),
+	m_iNaturalWonderSubsequentFinderPolicies(0),
+	m_iNaturalWonderSubsequentFinderTech(0),
 	m_iProductionBeakerMod(0),
 	m_bOneShot(false),
 	m_bIncludesOneShotFreeUnits(false),
@@ -556,7 +559,10 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iExtraSpies = kResults.GetInt("ExtraSpies");
 	m_iGreatScientistBeakerPolicyModifier = kResults.GetInt("GreatScientistBeakerPolicyModifier");
 	m_iInstantTourismBombWhenFirstConquerMajorCapital = kResults.GetInt("InstantTourismBombWhenFirstConquerMajorCapital");
-	m_iNaturalWonderFirstFinderTechPolicies = kResults.GetInt("NaturalWonderFirstFinderTechPolicies");
+	m_iNaturalWonderFirstFinderPolicies = kResults.GetInt("NaturalWonderFirstFinderPolicies");
+	m_iNaturalWonderFirstFinderTech = kResults.GetInt("NaturalWonderFirstFinderTech");
+	m_iNaturalWonderSubsequentFinderPolicies = kResults.GetInt("NaturalWonderSubsequentFinderPolicies");
+	m_iNaturalWonderSubsequentFinderTech = kResults.GetInt("NaturalWonderSubsequentFinderTech");
 	m_iProductionBeakerMod = kResults.GetInt("ProductionBeakerMod");
 	m_bOneShot = kResults.GetBool("OneShot");
 	m_bIncludesOneShotFreeUnits = kResults.GetBool("IncludesOneShotFreeUnits");
@@ -2488,9 +2494,22 @@ int CvPolicyEntry::GetInstantTourismBombWhenFirstConquerMajorCapital() const
 	return m_iInstantTourismBombWhenFirstConquerMajorCapital;
 }
 
-int CvPolicyEntry::GetNaturalWonderFirstFinderTechPolicies() const
+int CvPolicyEntry::GetNaturalWonderFirstFinderTech() const
 {
-	return m_iNaturalWonderFirstFinderTechPolicies;
+	return m_iNaturalWonderFirstFinderTech;
+}
+int CvPolicyEntry::GetNaturalWonderFirstFinderPolicies() const
+{
+	return m_iNaturalWonderFirstFinderPolicies;
+}
+int CvPolicyEntry::GetNaturalWonderSubsequentFinderPolicies() const
+{
+	return m_iNaturalWonderSubsequentFinderPolicies;
+}
+
+int CvPolicyEntry::GetNaturalWonderSubsequentFinderTech() const
+{
+	return m_iNaturalWonderSubsequentFinderTech;
 }
 
 int CvPolicyEntry::GetProductionBeakerMod() const

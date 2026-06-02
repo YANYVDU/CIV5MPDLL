@@ -272,8 +272,11 @@ CvPlayer::CvPlayer() :
 	, m_iGreatScientistBeakerModifier(0)
 	, m_iGreatScientistBeakerPolicyModifier(0)
 	, m_iInstantTourismBombWhenFirstConquerMajorCapital(0)
-	, m_iNaturalWonderFirstFinderTechPolicies(0)
-	
+	, m_iNaturalWonderFirstFinderTech(0)
+	, m_iNaturalWonderFirstFinderPolicies(0)
+	, m_iNaturalWonderSubsequentFinderTech(0)
+	, m_iNaturalWonderSubsequentFinderPolicies(0)
+
 	, m_iProductionBeakerMod(0)
 	, m_iGreatPersonExpendGold(0)
 	, m_iMaxGlobalBuildingProductionModifier("CvPlayer::m_iMaxGlobalBuildingProductionModifier", m_syncArchive)
@@ -1074,7 +1077,10 @@ void CvPlayer::uninit()
 	m_iGreatScientistBeakerModifier = 0;
 	m_iGreatScientistBeakerPolicyModifier = 0;
 	m_iInstantTourismBombWhenFirstConquerMajorCapital = 0;
-	m_iNaturalWonderFirstFinderTechPolicies = 0;
+	m_iNaturalWonderFirstFinderTech = 0;
+	m_iNaturalWonderFirstFinderPolicies = 0;
+	m_iNaturalWonderSubsequentFinderTech = 0;
+	m_iNaturalWonderSubsequentFinderPolicies = 0;
 	m_iProductionBeakerMod = 0;
 	m_iGreatEngineerRateModifier = 0;
 	m_iGreatPersonExpendGold = 0;
@@ -16365,20 +16371,68 @@ void CvPlayer::SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue)
 
 //	--------------------------------------------------------------------------------
 //	--------------------------------------------------------------------------------
-int CvPlayer::GetNaturalWonderFirstFinderTechPolicies() const
+int CvPlayer::GetNaturalWonderFirstFinderPolicies() const
 {
-	return m_iNaturalWonderFirstFinderTechPolicies;
+	return m_iNaturalWonderFirstFinderPolicies;
 }
 
 //	--------------------------------------------------------------------------------
-void CvPlayer::ChangeNaturalWonderFirstFinderTechPolicies(int iChange)
+void CvPlayer::ChangeNaturalWonderFirstFinderPolicies(int iChange)
 {
-	m_iNaturalWonderFirstFinderTechPolicies += iChange;
+	m_iNaturalWonderFirstFinderPolicies += iChange;
 }
 //	--------------------------------------------------------------------------------
-void CvPlayer::SetNaturalWonderFirstFinderTechPolicies(int iValue)
+void CvPlayer::SetNaturalWonderFirstFinderPolicies(int iValue)
 {
-	m_iNaturalWonderFirstFinderTechPolicies = iValue;
+	m_iNaturalWonderFirstFinderPolicies = iValue;
+}
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNaturalWonderFirstFinderTech() const
+{
+	return m_iNaturalWonderFirstFinderTech;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNaturalWonderFirstFinderTech(int iChange)
+{
+	m_iNaturalWonderFirstFinderTech += iChange;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetNaturalWonderFirstFinderTech(int iValue)
+{
+	m_iNaturalWonderFirstFinderTech = iValue;
+}
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNaturalWonderSubsequentFinderTech() const
+{
+	return m_iNaturalWonderSubsequentFinderTech;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNaturalWonderSubsequentFinderTech(int iChange)
+{
+	m_iNaturalWonderSubsequentFinderTech += iChange;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetNaturalWonderSubsequentFinderTech(int iValue)
+{
+	m_iNaturalWonderSubsequentFinderTech = iValue;
+}
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNaturalWonderSubsequentFinderPolicies() const
+{
+	return m_iNaturalWonderSubsequentFinderPolicies;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNaturalWonderSubsequentFinderPolicies(int iChange)
+{
+	m_iNaturalWonderSubsequentFinderPolicies += iChange;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetNaturalWonderSubsequentFinderPolicies(int iValue)
+{
+	m_iNaturalWonderSubsequentFinderPolicies = iValue;
 }
 
 //	--------------------------------------------------------------------------------
@@ -27060,7 +27114,9 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	ChangeAbleToAnnexCityStatesCount((pPolicy->IsAbleToAnnexCityStates()) ? iChange : 0);
 	ChangeGreatScientistBeakerPolicyMod(pPolicy->GetGreatScientistBeakerPolicyModifier() * iChange);
 	ChangeInstantTourismBombWhenFirstConquerMajorCapital(pPolicy->GetInstantTourismBombWhenFirstConquerMajorCapital() * iChange);
-	ChangeNaturalWonderFirstFinderTechPolicies(pPolicy->GetNaturalWonderFirstFinderTechPolicies() * iChange);
+	ChangeNaturalWonderFirstFinderTech(pPolicy->GetNaturalWonderFirstFinderTech() * iChange);
+	ChangeNaturalWonderSubsequentFinderTech(pPolicy->GetNaturalWonderSubsequentFinderTech() * iChange);
+	ChangeNaturalWonderSubsequentFinderPolicies(pPolicy->GetNaturalWonderSubsequentFinderPolicies() * iChange);
 	ChangeProductionBeakerMod(pPolicy->GetProductionBeakerMod() * iChange);
 	changeCityCaptureHealGlobal(pPolicy->GetCityCaptureHealGlobal() * iChange);
 	changeOriginalCapitalCaptureTech(pPolicy->GetOriginalCapitalCaptureTech() * iChange);
@@ -28301,7 +28357,10 @@ void CvPlayer::Read(FDataStream& kStream)
 
 	kStream >> m_iGreatScientistBeakerPolicyModifier;
 	MOD_SERIALIZE_READ(160, kStream, m_iInstantTourismBombWhenFirstConquerMajorCapital, 0);
-	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderTechPolicies, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderPolicies, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderTech, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderPolicies, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderTech, 0);
 	kStream >> m_iProductionBeakerMod;
 	if (uiVersion >= 13)
 	{
@@ -29114,7 +29173,10 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iGreatScientistBeakerModifier;
 	kStream << m_iGreatScientistBeakerPolicyModifier;
 	MOD_SERIALIZE_WRITE(kStream, m_iInstantTourismBombWhenFirstConquerMajorCapital);
-	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderTechPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderTech);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderTech);
 	kStream << m_iProductionBeakerMod;
 	kStream << m_iGreatEngineerRateModifier;
 	kStream << m_iGreatPersonExpendGold;

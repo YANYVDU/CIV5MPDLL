@@ -785,9 +785,19 @@ public:
 	void SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue);
 	void ChangeInstantTourismBombWhenFirstConquerMajorCapital(int iChange);
 
-	int GetNaturalWonderFirstFinderTechPolicies() const;
-	void SetNaturalWonderFirstFinderTechPolicies(int iValue);
-	void ChangeNaturalWonderFirstFinderTechPolicies(int iChange);
+	int GetNaturalWonderFirstFinderTech() const;
+	void SetNaturalWonderFirstFinderTech(int iValue);
+	void ChangeNaturalWonderFirstFinderTech(int iChange);
+	int GetNaturalWonderFirstFinderPolicies() const;
+	void SetNaturalWonderFirstFinderPolicies(int iValue);
+	void ChangeNaturalWonderFirstFinderPolicies(int iChange);
+	int GetNaturalWonderSubsequentFinderPolicies() const;
+	void SetNaturalWonderSubsequentFinderPolicies(int iValue);
+	void ChangeNaturalWonderSubsequentFinderPolicies(int iChange);
+	int GetNaturalWonderSubsequentFinderTech() const;
+	void SetNaturalWonderSubsequentFinderTech(int iValue);
+	void ChangeNaturalWonderSubsequentFinderTech(int iChange);
+
 
 	int GetGreatScientistBeakerMod() const;
 	void SetGreatScientistBeakerMod(int iValue);
@@ -2494,7 +2504,10 @@ protected:
 	int m_iGreatScientistBeakerModifier;
 	int m_iGreatScientistBeakerPolicyModifier;
 	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
-	int m_iNaturalWonderFirstFinderTechPolicies;
+	int m_iNaturalWonderFirstFinderPolicies;
+	int m_iNaturalWonderFirstFinderTech;
+	int m_iNaturalWonderSubsequentFinderPolicies;
+	int m_iNaturalWonderSubsequentFinderTech;
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;

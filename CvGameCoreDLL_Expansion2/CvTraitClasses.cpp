@@ -77,6 +77,10 @@ CvTraitEntry::CvTraitEntry() :
 	m_iFreeUnitClassType(NO_UNITCLASS),
 	m_iNaturalWonderFirstFinderGold(0),
 	m_iNaturalWonderSubsequentFinderGold(0),
+	m_iNaturalWonderFirstFinderPolicies(0),
+	m_iNaturalWonderSubsequentFinderPolicies(0),
+	m_iNaturalWonderFirstFinderTech(0),
+	m_iNaturalWonderSubsequentFinderTech(0),
 	m_iNaturalWonderYieldModifier(0),
 	m_iNaturalWonderYieldModifierPerEra(0),
 	m_iNaturalWonderHappinessModifier(0),
@@ -542,7 +546,27 @@ int CvTraitEntry::GetNaturalWonderSubsequentFinderGold() const
 {
 	return m_iNaturalWonderSubsequentFinderGold;
 }
+/// Accessor:: bonus policies for being first to find a natural wonder
+int CvTraitEntry::GetNaturalWonderFirstFinderPolicies() const
+{
+	return m_iNaturalWonderFirstFinderPolicies;
+}
 
+/// Accessor:: bonus policies for being subsequent to find a natural wonder
+int CvTraitEntry::GetNaturalWonderSubsequentFinderPolicies() const
+{
+	return m_iNaturalWonderSubsequentFinderPolicies;
+}
+/// Accessor:: bonus techs for being first to find a natural wonder
+int CvTraitEntry::GetNaturalWonderFirstFinderTech() const
+{
+	return m_iNaturalWonderFirstFinderTech;
+}
+/// Accessor:: bonus techs for being subsequent to find a natural wonder
+int CvTraitEntry::GetNaturalWonderSubsequentFinderTech() const
+{
+	return m_iNaturalWonderSubsequentFinderTech;
+}	
 /// Accessor:: modifier to bonuses for having natural wonders worked or in territory
 int CvTraitEntry::GetNaturalWonderYieldModifier() const
 {
@@ -1736,6 +1760,10 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iExtraEmbarkMoves						= kResults.GetInt("ExtraEmbarkMoves");
 	m_iNaturalWonderFirstFinderGold         = kResults.GetInt("NaturalWonderFirstFinderGold");
 	m_iNaturalWonderSubsequentFinderGold    = kResults.GetInt("NaturalWonderSubsequentFinderGold");
+	m_iNaturalWonderFirstFinderPolicies     = kResults.GetInt("NaturalWonderFirstFinderPolicies");
+	m_iNaturalWonderSubsequentFinderPolicies = kResults.GetInt("NaturalWonderSubsequentFinderPolicies");
+	m_iNaturalWonderFirstFinderTech         = kResults.GetInt("NaturalWonderFirstFinderTech");
+	m_iNaturalWonderSubsequentFinderTech    = kResults.GetInt("NaturalWonderSubsequentFinderTech");
 	m_iNaturalWonderYieldModifier           = kResults.GetInt("NaturalWonderYieldModifier");
 	m_iNaturalWonderYieldModifierPerEra      = kResults.GetInt("NaturalWonderYieldModifierPerEra");
 	m_iNaturalWonderHappinessModifier       = kResults.GetInt("NaturalWonderHappinessModifier");
@@ -2769,6 +2797,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iExtraEmbarkMoves += trait->GetExtraEmbarkMoves();
 			m_iNaturalWonderFirstFinderGold += trait->GetNaturalWonderFirstFinderGold();
 			m_iNaturalWonderSubsequentFinderGold += trait->GetNaturalWonderSubsequentFinderGold();
+			m_iNaturalWonderFirstFinderPolicies += trait->GetNaturalWonderFirstFinderPolicies();
+			m_iNaturalWonderSubsequentFinderPolicies += trait->GetNaturalWonderSubsequentFinderPolicies();
+			m_iNaturalWonderFirstFinderTech += trait->GetNaturalWonderFirstFinderTech();
+			m_iNaturalWonderSubsequentFinderTech += trait->GetNaturalWonderSubsequentFinderTech();
 			m_iNaturalWonderYieldModifier += trait->GetNaturalWonderYieldModifier();
 			m_iNaturalWonderYieldModifierPerEra += trait->GetNaturalWonderYieldModifierPerEra();
 			m_iNaturalWonderHappinessModifier += trait->GetNaturalWonderHappinessModifier();
@@ -3343,6 +3375,10 @@ void CvPlayerTraits::Reset()
 	m_iExtraEmbarkMoves = 0;
 	m_iNaturalWonderFirstFinderGold = 0;
 	m_iNaturalWonderSubsequentFinderGold = 0;
+	m_iNaturalWonderFirstFinderPolicies = 0;
+	m_iNaturalWonderSubsequentFinderPolicies = 0;
+	m_iNaturalWonderFirstFinderTech = 0;
+	m_iNaturalWonderSubsequentFinderTech = 0;
 	m_iNaturalWonderYieldModifier = 0;
 	m_iNaturalWonderYieldModifierPerEra = 0;
 	m_iNaturalWonderHappinessModifier = 0;
@@ -4745,6 +4781,10 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iNaturalWonderFirstFinderGold;
 
 	kStream >> m_iNaturalWonderSubsequentFinderGold;
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderPolicies, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderPolicies, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderTech, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderTech, 0);
 
 	kStream >> m_iNaturalWonderYieldModifier;
 	MOD_SERIALIZE_READ(159, kStream, m_iNaturalWonderYieldModifierPerEra, 0);
@@ -5281,6 +5321,10 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iExtraEmbarkMoves;
 	kStream << m_iNaturalWonderFirstFinderGold;
 	kStream << m_iNaturalWonderSubsequentFinderGold;
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderTech);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderTech);
 	kStream << m_iNaturalWonderYieldModifier;
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderYieldModifierPerEra);
 	kStream << m_iNaturalWonderHappinessModifier;

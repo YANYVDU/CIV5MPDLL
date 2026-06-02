@@ -101,6 +101,10 @@ public:
 	int GetFreeUnitClassType() const;
 	int GetNaturalWonderFirstFinderGold() const;
 	int GetNaturalWonderSubsequentFinderGold() const;
+	int GetNaturalWonderFirstFinderPolicies() const;
+	int GetNaturalWonderSubsequentFinderPolicies() const;
+	int GetNaturalWonderFirstFinderTech() const;
+	int GetNaturalWonderSubsequentFinderTech() const;
 	int GetNaturalWonderYieldModifier() const;
 	int GetNaturalWonderYieldModifierPerEra() const;
 	int GetNaturalWonderHappinessModifier() const;
@@ -395,6 +399,10 @@ protected:
 	int m_iFreeUnitClassType;
 	int m_iNaturalWonderFirstFinderGold;
 	int m_iNaturalWonderSubsequentFinderGold;
+	int m_iNaturalWonderFirstFinderPolicies;
+	int m_iNaturalWonderSubsequentFinderPolicies;
+	int m_iNaturalWonderFirstFinderTech;
+	int m_iNaturalWonderSubsequentFinderTech;
 	int m_iNaturalWonderYieldModifier;
 	int m_iNaturalWonderYieldModifierPerEra;
 	int m_iNaturalWonderHappinessModifier;
@@ -842,6 +850,22 @@ public:
 	int GetNaturalWonderSubsequentFinderGold() const
 	{
 		return m_iNaturalWonderSubsequentFinderGold;
+	};
+	int GetNaturalWonderFirstFinderPolicies() const
+	{
+		return m_iNaturalWonderFirstFinderPolicies;
+	};
+	int GetNaturalWonderSubsequentFinderPolicies() const
+	{
+		return m_iNaturalWonderSubsequentFinderPolicies;
+	};
+	int GetNaturalWonderFirstFinderTech() const
+	{
+		return m_iNaturalWonderFirstFinderTech;
+	};
+	int GetNaturalWonderSubsequentFinderTech() const
+	{
+		return m_iNaturalWonderSubsequentFinderTech;
 	};
 	int GetNaturalWonderYieldModifier() const
 	{
@@ -1498,6 +1522,10 @@ private:
 	int m_iExtraEmbarkMoves;
 	int m_iNaturalWonderFirstFinderGold;
 	int m_iNaturalWonderSubsequentFinderGold;
+	int m_iNaturalWonderFirstFinderPolicies;
+	int m_iNaturalWonderSubsequentFinderPolicies;
+	int m_iNaturalWonderFirstFinderTech;
+	int m_iNaturalWonderSubsequentFinderTech;
 	int m_iNaturalWonderYieldModifier;
 	int m_iNaturalWonderYieldModifierPerEra;
 	int m_iNaturalWonderHappinessModifier;

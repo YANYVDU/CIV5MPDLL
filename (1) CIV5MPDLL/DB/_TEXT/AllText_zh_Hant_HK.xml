@@ -473,11 +473,26 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING">
 			<Text>來自建築的全局變化: {1_score}</Text>
 		</Row>
-		<Row Tag="TXT_KEY_NOTIFICATION_NATURAL_WONDER_FREE_TECH_POLICY">
-			<Text>發現{2_FeatureName}！作為首位發現者，獲得 {1_Num} 項免費科技和 {1_Num} 項免費政策。</Text>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_TECH">
+			<Text>因爲你擁有的{1_Source}，{2_Order}發現{3_Feature}後，獲得了{4_Num}項免費科技。</Text>
 		</Row>
-		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_NATURAL_WONDER_FREE_TECH_POLICY">
-			<Text>自然奇觀首發獎勵：免費科技與政策</Text>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_POLICY">
+			<Text>因爲你擁有的{1_Source}，{2_Order}發現{3_Feature}後，獲得了{4_Num}項免費政策。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER">
+			<Text>自然奇觀探索奖励</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT">
+			<Text>領袖特性</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY">
+			<Text>政策</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FIRST">
+			<Text>首次</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SUBSEQUENT">
+			<Text></Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RESOURCE">
 			<Text>來自資源: {1_score}</Text>
