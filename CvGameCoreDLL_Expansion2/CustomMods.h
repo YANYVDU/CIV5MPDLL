@@ -288,6 +288,8 @@
 #define MOD_PROMOTIONS_CROSS_ICE                    gCustomMods.isPROMOTIONS_CROSS_ICE()
 // Adds a HalfMove feature to the UnitPromotions_Terrains and UnitPromotions_Features tables
 #define MOD_PROMOTIONS_HALF_MOVE                    gCustomMods.isPROMOTIONS_HALF_MOVE()
+// Immediately grants extra movement points when gaining a promotion with MovesChange
+#define MOD_PROMOTION_INSTANT_MOVES                 gCustomMods.isPROMOTION_INSTANT_MOVES()
 // Permits Deep Water (Ocean) embarkation for hovering units - AFFECTS SAVE GAME DATA FORMAT
 #define MOD_PROMOTIONS_DEEP_WATER_EMBARKATION       gCustomMods.isPROMOTIONS_DEEP_WATER_EMBARKATION()
 // Permits naval units to transfer their moves to Great Admirals (like land units can to Great Generals) (v39)
@@ -1558,6 +1560,7 @@ public:
 	MOD_OPT_DECL(PROMOTIONS_CROSS_OCEANS);
 	MOD_OPT_DECL(PROMOTIONS_CROSS_ICE);
 	MOD_OPT_DECL(PROMOTIONS_HALF_MOVE);
+	MOD_OPT_DECL(PROMOTION_INSTANT_MOVES);
 	MOD_OPT_DECL(PROMOTIONS_DEEP_WATER_EMBARKATION);
 	MOD_OPT_DECL(PROMOTIONS_FLAGSHIP);
 	MOD_OPT_DECL(PROMOTIONS_UNIT_NAMING);

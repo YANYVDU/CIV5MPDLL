@@ -13383,6 +13383,18 @@ void CvUnit::promote(PromotionTypes ePromotion, int iLeaderUnitId)
 #endif	
 		setHasPromotion(ePromotion, true);
 
+#if defined(MOD_PROMOTION_INSTANT_MOVES)
+		if (MOD_PROMOTION_INSTANT_MOVES)
+		{
+			// Immediately grant extra movement from this promotion
+			int iMovesChange = pkPromotionInfo->GetMovesChange();
+			if (iMovesChange != 0)
+			{
+				changeMoves(iMovesChange * GC.getMOVE_DENOMINATOR());
+			}
+		}
+#endif
+
 #if defined(MOD_EVENTS_UNIT_UPGRADES)
 		if (MOD_EVENTS_UNIT_UPGRADES) {
 			GAMEEVENTINVOKE_HOOK(GAMEEVENT_UnitPromoted, getOwner(), GetID(), ePromotion);
