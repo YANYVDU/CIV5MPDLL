@@ -7577,6 +7577,7 @@ void CvPlayer::receiveGoody(CvPlot* pPlot, GoodyTypes eGoody, CvUnit* pUnit)
 #else
 		pUnit->changeExperience(kGoodyInfo.getExperience());
 #endif
+		pUnit->testPromotionReady();
 	}
 
 	// Unit Heal
