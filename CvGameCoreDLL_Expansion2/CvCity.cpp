@@ -918,7 +918,7 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 			{
 				if(bGarrisonFreeMaintenance)
 				{
-					kPlayer.changeExtraUnitCost(iUnit->getUnitInfo().GetExtraMaintenanceCost());
+					kPlayer.changeExtraUnitCost(-iUnit->getUnitInfo().GetExtraMaintenanceCost());
 				}
 
 				if (getOwner() == iUnit->getOwner())
@@ -2132,7 +2132,7 @@ void CvCity::kill()
 
 		if(pLoopUnit)
 		{
-			if(bGarrisonFreeMaintenance && pLoopUnit->GetBaseCombatStrength(true/*bIgnoreEmbarked*/) > 0 && pLoopUnit->getDomainType() == DOMAIN_LAND)
+			if(bGarrisonFreeMaintenance && pLoopUnit->GetBaseCombatStrength(true/*bIgnoreEmbarked*/) > 0 && pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->getOwner() == eOwner)
 			{
 				GET_PLAYER(eOwner).changeExtraUnitCost(pLoopUnit->getUnitInfo().GetExtraMaintenanceCost());
 			}

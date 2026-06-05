@@ -20515,7 +20515,7 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 				if (GetBaseCombatStrength(true/*bIgnoreEmbarked*/) > 0 && getDomainType() == DOMAIN_LAND)
 				{
 					CvPlayer& player = GET_PLAYER(getOwner());
-					if (player.IsGarrisonFreeMaintenance())
+					if (player.IsGarrisonFreeMaintenance() && pOldPlot->getPlotCity()->getOwner() == getOwner())
 					{
 						player.changeExtraUnitCost(getUnitInfo().GetExtraMaintenanceCost());
 					}
@@ -20605,7 +20605,7 @@ void CvUnit::setXY(int iX, int iY, bool bGroup, bool bUpdate, bool bShow, bool b
 			if (GetBaseCombatStrength(true/*bIgnoreEmbarked*/) > 0 && getDomainType() == DOMAIN_LAND)
 			{
 				CvPlayer& player = GET_PLAYER(getOwner());
-				if (player.IsGarrisonFreeMaintenance())
+				if (player.IsGarrisonFreeMaintenance() && pNewPlot->getPlotCity()->getOwner() == getOwner())
 				{
 					player.changeExtraUnitCost(-getUnitInfo().GetExtraMaintenanceCost());
 				}
