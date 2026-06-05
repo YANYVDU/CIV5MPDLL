@@ -102,6 +102,13 @@ struct CvUnitCaptureDefinition
 	}
 };
 
+// Combat bonus formula entry — container-based extensible formula storage
+struct CombatBonusFormulaEntry {
+	int m_iFormulaId;   // Lua formula ID (NO_LUA_FORMULA = none)
+	int m_iInputType;   // YieldTypes cast to int (determines the input value)
+	bool m_bIsAttack;   // true = attack, false = defense
+};
+
 class CvUnit : public CvGameObjectExtractable
 {
 
@@ -1960,24 +1967,10 @@ public:
 	void setHealPercentFromAttackDamageFormula(int iValue);
 	const int GetHealPercentFromAttackDamageFormula() const;
 
-	void setGoldAttackBonusFormula(int iValue);
-	const int GetGoldAttackBonusFormula() const;
-
-	void setGoldDefenseBonusFormula(int iValue);
-	const int GetGoldDefenseBonusFormula() const;
-
-	void setCultureAttackBonusFormula(int iValue);
-	const int GetCultureAttackBonusFormula() const;
-
-	void setCultureDefenseBonusFormula(int iValue);
-	const int GetCultureDefenseBonusFormula() const;
-
-	void setFaithAttackBonusFormula(int iValue);
-	const int GetFaithAttackBonusFormula() const;
-
-	void setFaithDefenseBonusFormula(int iValue);
-	const int GetFaithDefenseBonusFormula() const;
-
+	// Combat bonus formula container API
+	void AddCombatBonusFormula(int iFormulaId, int iInputType, bool bIsAttack);
+	int GetCombatBonusFromFormulas(bool bIsAttack) const;
+	// Backward-compatible Lua wrappers
 	int GetGoldAttackBonus() const;
 	int GetGoldDefenseBonus() const;
 	int GetCultureAttackBonus() const;
@@ -2644,12 +2637,7 @@ protected:
 	int m_eAttackChanceFromAttackDamageFormula;
 	int m_eMovementFromAttackDamageFormula;
 	int m_eHealPercentFromAttackDamageFormula;
-	int m_eGoldAttackBonusFormula;
-	int m_eGoldDefenseBonusFormula;
-	int m_eCultureAttackBonusFormula;
-	int m_eCultureDefenseBonusFormula;
-	int m_eFaithAttackBonusFormula;
-	int m_eFaithDefenseBonusFormula;
+	std::vector<CombatBonusFormulaEntry> m_veCombatBonusFormulas;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	int m_iCrops;

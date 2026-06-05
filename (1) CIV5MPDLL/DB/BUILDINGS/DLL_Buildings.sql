@@ -370,6 +370,11 @@ create table Building_DomainFriendsCombatModifierLocal (
 	DomainType text not null references Domains(Type),
 	Modifier integer default 0
 );
+create table Building_DomainFriendsCombatModifierGlobal (
+	BuildingType text not null references Buildings(Type),
+	DomainType text not null references Domains(Type),
+	Modifier integer default 0
+);
 create table Building_UnitTypePrmoteHealGlobal (
 	BuildingType text not null references Buildings(Type),
 	UnitType text not null references Units(Type),

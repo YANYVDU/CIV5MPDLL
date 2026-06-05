@@ -285,6 +285,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_piDomainEnemyCombatModifier(NULL),
 	m_piDomainEnemyCombatModifierGlobal(NULL),
 	m_piDomainFriendsCombatModifierLocal(NULL),
+	m_piDomainFriendsCombatModifierGlobal(NULL),
 
 #if defined(MOD_ROG_CORE)
 	m_piYieldFromConstruction(NULL),
@@ -419,6 +420,7 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	SAFE_DELETE_ARRAY(m_piDomainEnemyCombatModifier);
 	SAFE_DELETE_ARRAY(m_piDomainEnemyCombatModifierGlobal);
 	SAFE_DELETE_ARRAY(m_piDomainFriendsCombatModifierLocal);
+	SAFE_DELETE_ARRAY(m_piDomainFriendsCombatModifierGlobal);
 #if defined(MOD_ROG_CORE)
 	SAFE_DELETE_ARRAY(m_piYieldFromConstruction);
 	SAFE_DELETE_ARRAY(m_piYieldFromUnitProduction);
@@ -914,6 +916,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	kUtility.PopulateArrayByValue(m_piDomainEnemyCombatModifier, "Domains", "Building_DomainEnemyCombatModifier", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainEnemyCombatModifierGlobal, "Domains", "Building_DomainEnemyCombatModifierGlobal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainFriendsCombatModifierLocal, "Domains", "Building_DomainFriendsCombatModifierLocal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
+	kUtility.PopulateArrayByValue(m_piDomainFriendsCombatModifierGlobal, "Domains", "Building_DomainFriendsCombatModifierGlobal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 
 
 #if defined(MOD_ROG_CORE)
@@ -3757,6 +3760,14 @@ int CvBuildingEntry::GetDomainFriendsCombatModifierLocal(int i) const
 	CvAssertMsg(i < NUM_DOMAIN_TYPES, "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piDomainFriendsCombatModifierLocal ? m_piDomainFriendsCombatModifierLocal[i] : -1;
+}
+
+/// Our units' combat bonus in this domain from this building (global, player-level)
+int CvBuildingEntry::GetDomainFriendsCombatModifierGlobal(int i) const
+{
+	CvAssertMsg(i < NUM_DOMAIN_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piDomainFriendsCombatModifierGlobal ? m_piDomainFriendsCombatModifierGlobal[i] : -1;
 }
 
 #if defined(MOD_ROG_CORE)

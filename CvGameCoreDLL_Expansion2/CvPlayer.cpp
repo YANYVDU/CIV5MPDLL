@@ -462,6 +462,7 @@ CvPlayer::CvPlayer() :
 	, m_aiDomainFreeExperiencePerGreatWorkGlobal()
 	, m_aiDomainFreeExperiencesPerTurnGlobal()
 	, m_aiDomainEnemyCombatModifierGlobal()
+	, m_aiDomainFriendsCombatModifierGlobal()
 	, m_piDomainFreeExperience()
 	, m_piUnitTypePrmoteHealGlobal()
 #endif
@@ -1349,6 +1350,8 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 	m_aiDomainFreeExperiencesPerTurnGlobal.resize(NUM_DOMAIN_TYPES, 0);
 	m_aiDomainEnemyCombatModifierGlobal.clear();
 	m_aiDomainEnemyCombatModifierGlobal.resize(NUM_DOMAIN_TYPES, 0);
+	m_aiDomainFriendsCombatModifierGlobal.clear();
+	m_aiDomainFriendsCombatModifierGlobal.resize(NUM_DOMAIN_TYPES, 0);
 
 	m_piDomainFreeExperience.clear();
 	m_piUnitTypePrmoteHealGlobal.clear();
@@ -10074,6 +10077,11 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 			{
 				ChangeDomainEnemyCombatModifierGlobal(eDomain, iNewValue);
 			}
+			iNewValue = pBuildingInfo->GetDomainFriendsCombatModifierGlobal(iDomains);
+			if (iNewValue != 0)
+			{
+				ChangeDomainFriendsCombatModifierGlobal(eDomain, iNewValue);
+			}
 			iNewValue = pBuildingInfo->GetDomainFreeExperienceGlobal(iDomains);
 			if (iNewValue > 0)
 			{
@@ -17823,6 +17831,25 @@ void CvPlayer::ChangeDomainEnemyCombatModifierGlobal(DomainTypes eIndex, int iCh
 	CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
 	CvAssertMsg(eIndex < NUM_DOMAIN_TYPES, "eIndex expected to be < NUM_DOMAIN_TYPES");
 	m_aiDomainEnemyCombatModifierGlobal[eIndex] += iChange;
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetDomainFriendsCombatModifierGlobal(DomainTypes eIndex) const
+{
+	VALIDATE_OBJECT
+	CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
+	CvAssertMsg(eIndex < NUM_DOMAIN_TYPES, "eIndex expected to be < NUM_DOMAIN_TYPES");
+	return m_aiDomainFriendsCombatModifierGlobal[eIndex];
+}
+
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeDomainFriendsCombatModifierGlobal(DomainTypes eIndex, int iChange)
+{
+	VALIDATE_OBJECT
+	CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
+	CvAssertMsg(eIndex < NUM_DOMAIN_TYPES, "eIndex expected to be < NUM_DOMAIN_TYPES");
+	m_aiDomainFriendsCombatModifierGlobal[eIndex] += iChange;
 }
 
 //	--------------------------------------------------------------------------------
@@ -28520,6 +28547,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_aiDomainFreeExperiencePerGreatWorkGlobal;
 	kStream >> m_aiDomainFreeExperiencesPerTurnGlobal;
 	kStream >> m_aiDomainEnemyCombatModifierGlobal;
+	MOD_SERIALIZE_READ_VECTOR(160, kStream, m_aiDomainFriendsCombatModifierGlobal, NUM_DOMAIN_TYPES, 0);
 	kStream >> m_piDomainFreeExperience;
 	kStream >> m_piUnitTypePrmoteHealGlobal;
 #endif
@@ -29277,6 +29305,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_aiDomainFreeExperiencePerGreatWorkGlobal;
 	kStream << m_aiDomainFreeExperiencesPerTurnGlobal;
 	kStream << m_aiDomainEnemyCombatModifierGlobal;
+	MOD_SERIALIZE_WRITE_VECTOR(kStream, m_aiDomainFriendsCombatModifierGlobal);
 	kStream << m_piDomainFreeExperience;
 	kStream << m_piUnitTypePrmoteHealGlobal;
 #endif

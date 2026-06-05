@@ -1392,6 +1392,10 @@ enum BattleTypeTypes
 #define MOD_SERIALIZE_WRITE_ARRAY(stream, member, type, size) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); stream << ArrayWrapper<type>(size, member)
 #define MOD_SERIALIZE_WRITE_CONSTARRAY(stream, member, type, size) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); stream << ArrayWrapperConst<type>(size, member)
 #define MOD_SERIALIZE_WRITE_HASH(stream, member, type, size, obj) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); CvInfosSerializationHelper::WriteHashedDataArray<obj, type>(stream, member, size)
+#define MOD_SERIALIZE_READ_VECTOR(version, stream, member, size, def_val) \
+	if (uiDllSaveVersion >= version) { stream >> member; } \
+	else { member.clear(); member.resize(size, def_val); }
+#define MOD_SERIALIZE_WRITE_VECTOR(stream, member) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); stream << member
 #else
 #define MOD_SERIALIZE_INIT_READ(stream) __noop
 #define MOD_SERIALIZE_READ(version, stream, member, def) __noop
@@ -1406,6 +1410,8 @@ enum BattleTypeTypes
 #define MOD_SERIALIZE_WRITE_ARRAYCONST(stream, member, type, size) __noop
 #define MOD_SERIALIZE_WRITE_HASH(stream, member, type, size) __noop
 #define MOD_SERIALIZE_WRITE_UNORDERED_MAP(stream, map) __noop
+#define MOD_SERIALIZE_READ_VECTOR(version, stream, member, size, def_val) __noop
+#define MOD_SERIALIZE_WRITE_VECTOR(stream, member) __noop
 #endif
 
 #define SERIALIZE_READ_UNORDERED_MAP(stream, map) \
