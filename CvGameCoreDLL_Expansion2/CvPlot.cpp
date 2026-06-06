@@ -9155,6 +9155,25 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 #if defined(MOD_API_VP_ADJACENT_YIELD_BOOST)
 		iYield += ComputeYieldFromOtherAdjacentImprovement(*pImprovement, eYield);
 #endif
+		// Policy and Trait adjacent improvement yield bonuses
+		{
+			CvPlayerAI& kPlayer = GET_PLAYER(ePlayer);
+			for (int iI = 0; iI < NUM_DIRECTION_TYPES; ++iI)
+			{
+				CvPlot* pAdjacentPlot = plotDirection(getX(), getY(), ((DirectionTypes)iI));
+				if (pAdjacentPlot && pAdjacentPlot->getImprovementType() != NO_IMPROVEMENT
+					&& pAdjacentPlot->getOwner() == ePlayer)
+				{
+					ImprovementTypes eOtherImp = pAdjacentPlot->getImprovementType();
+					iYield += kPlayer.GetPlayerPolicies()->GetAdjacentImprovementYieldChange(
+						eImprovement, eOtherImp, eYield);
+					iYield += kPlayer.GetPlayerTraits()->GetAdjacentImprovementYieldChange(
+						eImprovement, eOtherImp, eYield);
+					iYield += kPlayer.GetAdjacentImprovementYieldChangeFromBuildingsGlobal(
+						eImprovement, eOtherImp, eYield);
+				}
+			}
+		}
 	}
 	if(eYield == YIELD_CULTURE && getOwner() != NO_PLAYER)
 	{
@@ -9350,11 +9369,52 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 					iReligionAdjacentCityYield += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetImprovementAdjacentCityYieldChange(eImprovement, eYield);
 				}
 				iYield += iReligionChange;
+				// Belief adjacent improvement yield bonuses
+				for (int iI = 0; iI < NUM_DIRECTION_TYPES; ++iI)
+				{
+					CvPlot* pAdjacentPlot = plotDirection(getX(), getY(), ((DirectionTypes)iI));
+					if (pAdjacentPlot && pAdjacentPlot->getImprovementType() != NO_IMPROVEMENT)
+					{
+						ImprovementTypes eOtherImp = pAdjacentPlot->getImprovementType();
+						iYield += pReligion->m_Beliefs.GetAdjacentImprovementYieldChange(
+							eImprovement, eOtherImp, eYield);
+						if (eSecondaryPantheon != NO_BELIEF)
+						{
+							CvBeliefEntry* pSecBelief = GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon);
+							if (pSecBelief)
+							{
+								const auto& vChanges = pSecBelief->GetAdjacentImprovementYieldChanges();
+								for (const auto& change : vChanges)
+								{
+									if ((int)change.m_iImprovementType == (int)eImprovement &&
+										(int)change.m_iOtherImprovementType == (int)eOtherImp &&
+										(int)change.m_iYieldType == (int)eYield)
+									{
+										iYield += change.m_iYield;
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		
 		// Extra yield for improvements
 		iYield += pWorkingCity->GetImprovementExtraYield(eImprovement, eYield);
+			// Building adjacent improvement yield bonuses
+			{
+				for (int iI = 0; iI < NUM_DIRECTION_TYPES; ++iI)
+				{
+					CvPlot* pAdjacentPlot = plotDirection(getX(), getY(), ((DirectionTypes)iI));
+					if (pAdjacentPlot && pAdjacentPlot->getImprovementType() != NO_IMPROVEMENT)
+					{
+						ImprovementTypes eOtherImp = pAdjacentPlot->getImprovementType();
+						iYield += pWorkingCity->GetAdjacentImprovementYieldChangeFromBuildings(
+							eImprovement, eOtherImp, eYield);
+					}
+				}
+			}
 		if(ePlayer != NO_PLAYER) iYield += GET_PLAYER(ePlayer).GetImprovementExtraYield(eImprovement, eYield);
 	}
 
@@ -14168,4 +14228,4 @@ int CvPlot::GetNumSpecificPlayerUnitsAdjacent(PlayerTypes ePlayer, const CvUnit*
 	return iNumUnitsAdjacent;
 }
 
-#endif
+#endif

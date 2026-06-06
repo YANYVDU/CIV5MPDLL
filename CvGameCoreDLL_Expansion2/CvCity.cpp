@@ -3818,6 +3818,37 @@ int CvCity::GetImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes e
 }
 
 //	--------------------------------------------------------------------------------
+/// Get adjacent improvement yield change from buildings in this city
+int CvCity::GetAdjacentImprovementYieldChangeFromBuildings(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield) const
+{
+	VALIDATE_OBJECT
+	int rtnValue = 0;
+	const std::vector<BuildingTypes>& vCached = GC.GetGameBuildings()->GetBuildingsWithAdjacentYield();
+	for (size_t i = 0; i < vCached.size(); i++)
+	{
+		BuildingTypes eBuilding = vCached[i];
+		if (GetCityBuildings()->GetNumActiveBuilding(eBuilding) > 0)
+		{
+			CvBuildingEntry* pBuilding = GC.getBuildingInfo(eBuilding);
+			if (pBuilding)
+			{
+				const auto& vChanges = pBuilding->GetAdjacentImprovementYieldChanges();
+				for (const auto& change : vChanges)
+				{
+					if ((int)change.m_iImprovementType == (int)eImprovement &&
+						(int)change.m_iOtherImprovementType == (int)eOtherImprovement &&
+						(int)change.m_iYieldType == (int)eYield)
+					{
+						rtnValue += change.m_iYield;
+					}
+				}
+			}
+		}
+	}
+	return rtnValue;
+}
+
+//	--------------------------------------------------------------------------------
 void CvCity::ChangeImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes eYield, int iChange)
 {
 	VALIDATE_OBJECT

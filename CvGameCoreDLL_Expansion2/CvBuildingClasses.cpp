@@ -1232,6 +1232,60 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 			m_ppaiImprovementYieldChange[ImprovementID][YieldID] = yield;
 		}
 	}
+	//AdjacentImprovementYieldChanges
+	{
+		std::string strKey("Building_AdjacentImprovementYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Building_AdjacentImprovementYieldChanges "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE BuildingType = ?");
+		}
+		pResults->Bind(1, szBuildingType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChanges.push_back(change);
+		}
+		pResults->Reset();
+	}
+	//AdjacentImprovementYieldChangesGlobal
+	{
+		std::string strKey("Building_AdjacentImprovementYieldChangesGlobal");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Building_AdjacentImprovementYieldChangesGlobal "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE BuildingType = ?");
+		}
+		pResults->Bind(1, szBuildingType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChangesGlobal.push_back(change);
+		}
+		pResults->Reset();
+	}
 	//ImprovementYieldChangesGlobal
 	{
 		kUtility.Initialize2DArray(m_ppaiImprovementYieldChangeGlobal, "Improvements", "Yields");
@@ -4623,6 +4677,7 @@ bool CvBuildingEntry::IsOriginalCapitalOnly() const
 //=====================================
 /// Constructor
 CvBuildingXMLEntries::CvBuildingXMLEntries(void)
+	: m_bAdjacentYieldCacheBuilt(false)
 {
 
 }
@@ -4654,6 +4709,9 @@ void CvBuildingXMLEntries::DeleteArray()
 	}
 
 	m_paBuildingEntries.clear();
+	m_vAdjacentYieldBuildingTypes.clear();
+	m_vAdjacentYieldGlobalBuildingTypes.clear();
+	m_bAdjacentYieldCacheBuilt = false;
 }
 
 /// Get a specific entry
@@ -4661,6 +4719,36 @@ CvBuildingEntry* CvBuildingXMLEntries::GetEntry(int index)
 {
 	if (index < 0) return nullptr;
 	return m_paBuildingEntries[index];
+}
+
+/// Lazy-build cached list of building types with adjacent yield entries
+void CvBuildingXMLEntries::BuildAdjacentYieldCache() const
+{
+	if (m_bAdjacentYieldCacheBuilt) return;
+	for (size_t i = 0; i < m_paBuildingEntries.size(); i++)
+	{
+		CvBuildingEntry* pEntry = m_paBuildingEntries[i];
+		if (pEntry)
+		{
+			if (!pEntry->GetAdjacentImprovementYieldChanges().empty())
+				m_vAdjacentYieldBuildingTypes.push_back((BuildingTypes)i);
+			if (!pEntry->GetAdjacentImprovementYieldChangesGlobal().empty())
+				m_vAdjacentYieldGlobalBuildingTypes.push_back((BuildingTypes)i);
+		}
+	}
+	m_bAdjacentYieldCacheBuilt = true;
+}
+
+const std::vector<BuildingTypes>& CvBuildingXMLEntries::GetBuildingsWithAdjacentYield() const
+{
+	BuildAdjacentYieldCache();
+	return m_vAdjacentYieldBuildingTypes;
+}
+
+const std::vector<BuildingTypes>& CvBuildingXMLEntries::GetBuildingsWithAdjacentYieldGlobal() const
+{
+	BuildAdjacentYieldCache();
+	return m_vAdjacentYieldGlobalBuildingTypes;
 }
 
 //=====================================
