@@ -4677,6 +4677,7 @@ bool CvBuildingEntry::IsOriginalCapitalOnly() const
 //=====================================
 /// Constructor
 CvBuildingXMLEntries::CvBuildingXMLEntries(void)
+	: m_bAdjacentYieldCacheBuilt(false)
 {
 
 }
@@ -4708,6 +4709,9 @@ void CvBuildingXMLEntries::DeleteArray()
 	}
 
 	m_paBuildingEntries.clear();
+	m_vAdjacentYieldBuildingTypes.clear();
+	m_vAdjacentYieldGlobalBuildingTypes.clear();
+	m_bAdjacentYieldCacheBuilt = false;
 }
 
 /// Get a specific entry
@@ -4715,6 +4719,36 @@ CvBuildingEntry* CvBuildingXMLEntries::GetEntry(int index)
 {
 	if (index < 0) return nullptr;
 	return m_paBuildingEntries[index];
+}
+
+/// Lazy-build cached list of building types with adjacent yield entries
+void CvBuildingXMLEntries::BuildAdjacentYieldCache() const
+{
+	if (m_bAdjacentYieldCacheBuilt) return;
+	for (size_t i = 0; i < m_paBuildingEntries.size(); i++)
+	{
+		CvBuildingEntry* pEntry = m_paBuildingEntries[i];
+		if (pEntry)
+		{
+			if (!pEntry->GetAdjacentImprovementYieldChanges().empty())
+				m_vAdjacentYieldBuildingTypes.push_back((BuildingTypes)i);
+			if (!pEntry->GetAdjacentImprovementYieldChangesGlobal().empty())
+				m_vAdjacentYieldGlobalBuildingTypes.push_back((BuildingTypes)i);
+		}
+	}
+	m_bAdjacentYieldCacheBuilt = true;
+}
+
+const std::vector<BuildingTypes>& CvBuildingXMLEntries::GetBuildingsWithAdjacentYield() const
+{
+	BuildAdjacentYieldCache();
+	return m_vAdjacentYieldBuildingTypes;
+}
+
+const std::vector<BuildingTypes>& CvBuildingXMLEntries::GetBuildingsWithAdjacentYieldGlobal() const
+{
+	BuildAdjacentYieldCache();
+	return m_vAdjacentYieldGlobalBuildingTypes;
 }
 
 //=====================================

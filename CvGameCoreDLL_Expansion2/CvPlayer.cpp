@@ -21322,15 +21322,16 @@ int CvPlayer::GetImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes
 int CvPlayer::GetAdjacentImprovementYieldChangeFromBuildingsGlobal(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield) const
 {
 	int rtnValue = 0;
-	int iNumBuildings = GC.getNumBuildingInfos();
 	int iLoop = 0;
+	const std::vector<BuildingTypes>& vCached = GC.GetGameBuildings()->GetBuildingsWithAdjacentYieldGlobal();
 	for (const CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
 	{
-		for (int i = 0; i < iNumBuildings; i++)
+		for (size_t i = 0; i < vCached.size(); i++)
 		{
-			if (pLoopCity->GetCityBuildings()->GetNumActiveBuilding((BuildingTypes)i) > 0)
+			BuildingTypes eBuilding = vCached[i];
+			if (pLoopCity->GetCityBuildings()->GetNumActiveBuilding(eBuilding) > 0)
 			{
-				CvBuildingEntry* pBuilding = GC.getBuildingInfo((BuildingTypes)i);
+				CvBuildingEntry* pBuilding = GC.getBuildingInfo(eBuilding);
 				if (pBuilding)
 				{
 					const auto& vChanges = pBuilding->GetAdjacentImprovementYieldChangesGlobal();

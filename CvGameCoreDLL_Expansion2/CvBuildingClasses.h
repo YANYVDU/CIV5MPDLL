@@ -1109,8 +1109,17 @@ public:
 
 	void DeleteArray();
 
+	// Cached building types with adjacent improvement yield entries
+	const std::vector<BuildingTypes>& GetBuildingsWithAdjacentYield() const;
+	const std::vector<BuildingTypes>& GetBuildingsWithAdjacentYieldGlobal() const;
+
 private:
+	void BuildAdjacentYieldCache() const;
+
 	std::vector<CvBuildingEntry*> m_paBuildingEntries;
+	mutable std::vector<BuildingTypes> m_vAdjacentYieldBuildingTypes;
+	mutable std::vector<BuildingTypes> m_vAdjacentYieldGlobalBuildingTypes;
+	mutable bool m_bAdjacentYieldCacheBuilt;
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

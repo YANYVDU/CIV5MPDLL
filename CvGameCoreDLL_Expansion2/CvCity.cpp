@@ -3823,11 +3823,13 @@ int CvCity::GetAdjacentImprovementYieldChangeFromBuildings(ImprovementTypes eImp
 {
 	VALIDATE_OBJECT
 	int rtnValue = 0;
-	for (int i = 0; i < GC.getNumBuildingInfos(); i++)
+	const std::vector<BuildingTypes>& vCached = GC.GetGameBuildings()->GetBuildingsWithAdjacentYield();
+	for (size_t i = 0; i < vCached.size(); i++)
 	{
-		if (GetCityBuildings()->GetNumActiveBuilding((BuildingTypes)i) > 0)
+		BuildingTypes eBuilding = vCached[i];
+		if (GetCityBuildings()->GetNumActiveBuilding(eBuilding) > 0)
 		{
-			CvBuildingEntry* pBuilding = GC.getBuildingInfo((BuildingTypes)i);
+			CvBuildingEntry* pBuilding = GC.getBuildingInfo(eBuilding);
 			if (pBuilding)
 			{
 				const auto& vChanges = pBuilding->GetAdjacentImprovementYieldChanges();
