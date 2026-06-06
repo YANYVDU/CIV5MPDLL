@@ -280,6 +280,16 @@ public:
 	int GetImprovementYieldChangeGlobal(int i, int j) const;
 	int* GetImprovementYieldChangeGlobalArray(int i) const;
 
+	// AdjacentImprovementYieldChanges
+	struct AdjacentImprovementYieldChange {
+		int m_iImprovementType;
+		int m_iOtherImprovementType;
+		int m_iYieldType;
+		int m_iYield;
+	};
+	const std::vector<AdjacentImprovementYieldChange>& GetAdjacentImprovementYieldChanges() const { return m_vAdjacentImprovementYieldChanges; }
+	const std::vector<AdjacentImprovementYieldChange>& GetAdjacentImprovementYieldChangesGlobal() const { return m_vAdjacentImprovementYieldChangesGlobal; }
+
 	int GetFeatureYieldChangesGlobal(int i, int j) const;
 	int GetTerrainYieldChangesGlobal(int i, int j) const;
 
@@ -1069,6 +1079,10 @@ private:
 
 	std::tr1::array<int, YieldTypes::NUM_YIELD_TYPES> m_aTradeRouteFromTheCityYields;
 	std::tr1::array<int, YieldTypes::NUM_YIELD_TYPES> m_aTradeRouteFromTheCityYieldsPerEra;
+
+	// AdjacentImprovementYieldChanges
+	std::vector<AdjacentImprovementYieldChange> m_vAdjacentImprovementYieldChanges;
+	std::vector<AdjacentImprovementYieldChange> m_vAdjacentImprovementYieldChangesGlobal;
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

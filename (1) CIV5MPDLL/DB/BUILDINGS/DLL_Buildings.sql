@@ -468,3 +468,18 @@ create table Building_SpecificGreatPersonRateModifier (
 	SpecialistType text not null references Specialists(Type),
 	Modifier integer not null default 0
 );
+--******************** Adjacent Improvement Yield ********************--
+create table Building_AdjacentImprovementYieldChanges (
+    BuildingType text references Buildings(Type),
+    ImprovementType text references Improvements(Type),
+    OtherImprovementType text references Improvements(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
+);
+create table Building_AdjacentImprovementYieldChangesGlobal (
+    BuildingType text references Buildings(Type),
+    ImprovementType text references Improvements(Type),
+    OtherImprovementType text references Improvements(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
+);

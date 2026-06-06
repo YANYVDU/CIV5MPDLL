@@ -3818,6 +3818,35 @@ int CvCity::GetImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes e
 }
 
 //	--------------------------------------------------------------------------------
+/// Get adjacent improvement yield change from buildings in this city
+int CvCity::GetAdjacentImprovementYieldChangeFromBuildings(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield) const
+{
+	VALIDATE_OBJECT
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumBuildingInfos(); i++)
+	{
+		if (GetCityBuildings()->GetNumActiveBuilding((BuildingTypes)i) > 0)
+		{
+			CvBuildingEntry* pBuilding = GC.getBuildingInfo((BuildingTypes)i);
+			if (pBuilding)
+			{
+				const auto& vChanges = pBuilding->GetAdjacentImprovementYieldChanges();
+				for (const auto& change : vChanges)
+				{
+					if ((int)change.m_iImprovementType == (int)eImprovement &&
+						(int)change.m_iOtherImprovementType == (int)eOtherImprovement &&
+						(int)change.m_iYieldType == (int)eYield)
+					{
+						rtnValue += change.m_iYield;
+					}
+				}
+			}
+		}
+	}
+	return rtnValue;
+}
+
+//	--------------------------------------------------------------------------------
 void CvCity::ChangeImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes eYield, int iChange)
 {
 	VALIDATE_OBJECT

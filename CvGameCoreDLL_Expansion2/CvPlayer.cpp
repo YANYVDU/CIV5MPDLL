@@ -21318,6 +21318,39 @@ int CvPlayer::GetImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes
 }
 
 //	--------------------------------------------------------------------------------
+/// Get adjacent improvement yield change from buildings with Global scope (any city in the empire)
+int CvPlayer::GetAdjacentImprovementYieldChangeFromBuildingsGlobal(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield) const
+{
+	int rtnValue = 0;
+	int iNumBuildings = GC.getNumBuildingInfos();
+	int iLoop = 0;
+	for (const CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	{
+		for (int i = 0; i < iNumBuildings; i++)
+		{
+			if (pLoopCity->GetCityBuildings()->GetNumActiveBuilding((BuildingTypes)i) > 0)
+			{
+				CvBuildingEntry* pBuilding = GC.getBuildingInfo((BuildingTypes)i);
+				if (pBuilding)
+				{
+					const auto& vChanges = pBuilding->GetAdjacentImprovementYieldChangesGlobal();
+					for (const auto& change : vChanges)
+					{
+						if ((int)change.m_iImprovementType == (int)eImprovement &&
+							(int)change.m_iOtherImprovementType == (int)eOtherImprovement &&
+							(int)change.m_iYieldType == (int)eYield)
+						{
+							rtnValue += change.m_iYield;
+						}
+					}
+				}
+			}
+		}
+	}
+	return rtnValue;
+}
+
+//	--------------------------------------------------------------------------------
 void CvPlayer::ChangeImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes eYield, int iChange)
 {
 	CvAssertMsg(eImprovement >= 0, "eIndex1 is expected to be non-negative (invalid Index)");
@@ -34048,4 +34081,4 @@ UnitTypes CvPlayer::GetCivUnitWithDefault(UnitClassTypes eUnitClass) const
 		if(pUnitClassInfo) eUnitType = (UnitTypes)pUnitClassInfo->getDefaultUnitIndex();
 	}
 	return eUnitType;
-}
+}

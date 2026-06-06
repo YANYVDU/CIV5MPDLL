@@ -1232,6 +1232,60 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 			m_ppaiImprovementYieldChange[ImprovementID][YieldID] = yield;
 		}
 	}
+	//AdjacentImprovementYieldChanges
+	{
+		std::string strKey("Building_AdjacentImprovementYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Building_AdjacentImprovementYieldChanges "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE BuildingType = ?");
+		}
+		pResults->Bind(1, szBuildingType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChanges.push_back(change);
+		}
+		pResults->Reset();
+	}
+	//AdjacentImprovementYieldChangesGlobal
+	{
+		std::string strKey("Building_AdjacentImprovementYieldChangesGlobal");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Building_AdjacentImprovementYieldChangesGlobal "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE BuildingType = ?");
+		}
+		pResults->Bind(1, szBuildingType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChangesGlobal.push_back(change);
+		}
+		pResults->Reset();
+	}
 	//ImprovementYieldChangesGlobal
 	{
 		kUtility.Initialize2DArray(m_ppaiImprovementYieldChangeGlobal, "Improvements", "Yields");
