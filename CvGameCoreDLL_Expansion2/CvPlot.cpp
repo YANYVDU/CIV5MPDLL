@@ -10256,6 +10256,63 @@ void CvPlot::SetNoSettling(PlayerTypes eMajor, bool bValue)
 
 //	--------------------------------------------------------------------------------
 #if defined(MOD_API_EXTENSIONS)
+//	--------------------------------------------------------------------------------
+// Helper: send Natural Wonder finder reward notifications to the active player
+//	--------------------------------------------------------------------------------
+static void SendNWFinderNotifications(
+	CvPlayerAI& player,
+	int iTraitTech, int iTraitPolicy,
+	int iPolicyTech, int iPolicyPolicy,
+	const char* szFinderKey,
+	const char* szFeatureKey,
+	int iX, int iY)
+{
+	CvNotifications* pNotifications = player.GetNotifications();
+	if (!pNotifications)
+		return;
+
+	if (iTraitTech > 0)
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_TECH");
+		strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT";
+		strText << szFinderKey;
+		strText << szFeatureKey;
+		strText << iTraitTech;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
+		pNotifications->Add(NOTIFICATION_FREE_TECH, strText.toUTF8(), strSummary.toUTF8(), iX, iY, 0);
+	}
+	if (iTraitPolicy > 0)
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_POLICY");
+		strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT";
+		strText << szFinderKey;
+		strText << szFeatureKey;
+		strText << iTraitPolicy;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
+		pNotifications->Add(NOTIFICATION_FREE_POLICY, strText.toUTF8(), strSummary.toUTF8(), iX, iY, 0);
+	}
+	if (iPolicyTech > 0)
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_TECH");
+		strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY";
+		strText << szFinderKey;
+		strText << szFeatureKey;
+		strText << iPolicyTech;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
+		pNotifications->Add(NOTIFICATION_FREE_TECH, strText.toUTF8(), strSummary.toUTF8(), iX, iY, 0);
+	}
+	if (iPolicyPolicy > 0)
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_POLICY");
+		strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY";
+		strText << szFinderKey;
+		strText << szFeatureKey;
+		strText << iPolicyPolicy;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
+		pNotifications->Add(NOTIFICATION_FREE_POLICY, strText.toUTF8(), strSummary.toUTF8(), iX, iY, 0);
+	}
+}
+
 bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, CvUnit* pUnit, bool bTerrainOnly, TeamTypes eFromTeam)
 #else
 bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, TeamTypes eFromTeam)
@@ -10447,52 +10504,9 @@ bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, Tea
 
 										if(playerI.GetID() == GC.getGame().getActivePlayer())
 										{
-											CvNotifications* pNotifications = playerI.GetNotifications();
-											if(pNotifications)
-											{
-												const char* szFeatureKey = GC.getFeatureInfo(getFeatureType())->GetTextKey();
-
-												if(iTraitTech > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_TECH");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT";
-													strText << "TXT_KEY_NOTIFICATION_NW_FIRST";
-													strText << szFeatureKey;
-													strText << iTraitTech;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_TECH, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-												if(iTraitPolicy > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_POLICY");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT";
-													strText << "TXT_KEY_NOTIFICATION_NW_FIRST";
-													strText << szFeatureKey;
-													strText << iTraitPolicy;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_POLICY, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-												if(iPolicyTech > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_TECH");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY";
-													strText << "TXT_KEY_NOTIFICATION_NW_FIRST";
-													strText << szFeatureKey;
-													strText << iPolicyTech;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_TECH, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-												if(iPolicyPolicy > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_POLICY");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY";
-													strText << "TXT_KEY_NOTIFICATION_NW_FIRST";
-													strText << szFeatureKey;
-													strText << iPolicyPolicy;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_POLICY, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-											}
+											const char* szFeatureKey = GC.getFeatureInfo(getFeatureType())->GetTextKey();
+											SendNWFinderNotifications(playerI, iTraitTech, iTraitPolicy, iPolicyTech, iPolicyPolicy,
+												"TXT_KEY_NOTIFICATION_NW_FIRST", szFeatureKey, getX(), getY());
 										}
 									}
 								}
@@ -10528,52 +10542,9 @@ bool CvPlot::setRevealed(TeamTypes eTeam, bool bNewValue, bool bTerrainOnly, Tea
 
 										if(playerI.GetID() == GC.getGame().getActivePlayer())
 										{
-											CvNotifications* pNotifications = playerI.GetNotifications();
-											if(pNotifications)
-											{
-												const char* szFeatureKey = GC.getFeatureInfo(getFeatureType())->GetTextKey();
-
-												if(iTraitTech > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_TECH");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT";
-													strText << "TXT_KEY_NOTIFICATION_NW_SUBSEQUENT";
-													strText << szFeatureKey;
-													strText << iTraitTech;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_TECH, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-												if(iTraitPolicy > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_POLICY");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT";
-													strText << "TXT_KEY_NOTIFICATION_NW_SUBSEQUENT";
-													strText << szFeatureKey;
-													strText << iTraitPolicy;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_POLICY, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-												if(iPolicyTech > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_TECH");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY";
-													strText << "TXT_KEY_NOTIFICATION_NW_SUBSEQUENT";
-													strText << szFeatureKey;
-													strText << iPolicyTech;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_TECH, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-												if(iPolicyPolicy > 0)
-												{
-													Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_NW_FINDER_POLICY");
-													strText << "TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY";
-													strText << "TXT_KEY_NOTIFICATION_NW_SUBSEQUENT";
-													strText << szFeatureKey;
-													strText << iPolicyPolicy;
-													Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER");
-													pNotifications->Add(NOTIFICATION_FREE_POLICY, strText.toUTF8(), strSummary.toUTF8(), getX(), getY(), 0);
-												}
-											}
+											const char* szFeatureKey = GC.getFeatureInfo(getFeatureType())->GetTextKey();
+											SendNWFinderNotifications(playerI, iTraitTech, iTraitPolicy, iPolicyTech, iPolicyPolicy,
+												"TXT_KEY_NOTIFICATION_NW_SUBSEQUENT", szFeatureKey, getX(), getY());
 										}
 									}
 								}

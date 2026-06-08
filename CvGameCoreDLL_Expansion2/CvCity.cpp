@@ -7885,8 +7885,9 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		ChangeCorruptionScoreChangeFromBuilding(pBuildingInfo->GetCorruptionScoreChange() * iChange);
 		ChangeCorruptionLevelChangeFromBuilding(pBuildingInfo->GetCorruptionLevelChange() * iChange);
 
-		if (pBuildingInfo->GetCorruptionScoreChange() * iChange != 0 || 
-			pBuildingInfo->GetCorruptionLevelChange() * iChange != 0)
+		if (pBuildingInfo->GetCorruptionScoreChange() * iChange != 0 ||
+			pBuildingInfo->GetCorruptionLevelChange() * iChange != 0 ||
+			pBuildingInfo->GetCorruptionScoreGlobalChange() * iChange != 0)
 		{
 			UpdateCorruption();
 		}

@@ -1244,6 +1244,7 @@ protected:
 	LUAAPIEXTN(IsCorruptionLevelReduceByOne, bool);
 	LUAAPIEXTN(GetCorruptionScoreModifierFromPolicy, int);
 	LUAAPIEXTN(GetCorruptionScoreGlobalChangeFromBuilding, int);
+	
 #endif
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)

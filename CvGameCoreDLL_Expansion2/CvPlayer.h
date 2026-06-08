@@ -785,12 +785,12 @@ public:
 	void SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue);
 	void ChangeInstantTourismBombWhenFirstConquerMajorCapital(int iChange);
 
-	int GetNaturalWonderFirstFinderTech() const;
-	void SetNaturalWonderFirstFinderTech(int iValue);
-	void ChangeNaturalWonderFirstFinderTech(int iChange);
 	int GetNaturalWonderFirstFinderPolicies() const;
 	void SetNaturalWonderFirstFinderPolicies(int iValue);
 	void ChangeNaturalWonderFirstFinderPolicies(int iChange);
+	int GetNaturalWonderFirstFinderTech() const;
+	void SetNaturalWonderFirstFinderTech(int iValue);
+	void ChangeNaturalWonderFirstFinderTech(int iChange);
 	int GetNaturalWonderSubsequentFinderPolicies() const;
 	void SetNaturalWonderSubsequentFinderPolicies(int iValue);
 	void ChangeNaturalWonderSubsequentFinderPolicies(int iChange);

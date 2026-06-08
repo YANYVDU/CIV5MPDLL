@@ -1337,6 +1337,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(IsCorruptionLevelReduceByOne);
 	Method(GetCorruptionScoreModifierFromPolicy);
 	Method(GetCorruptionScoreGlobalChangeFromBuilding);
+	
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	Method(GetDomainTroopsTotalTimes100);
@@ -12825,6 +12826,7 @@ int CvLuaPlayer::lGetGlobalYieldModifierFromResource(lua_State* L)
 LUAAPIIMPL(Player, IsCorruptionLevelReduceByOne)
 LUAAPIIMPL(Player, GetCorruptionScoreModifierFromPolicy)
 LUAAPIIMPL(Player, GetCorruptionScoreGlobalChangeFromBuilding)
+
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 int CvLuaPlayer::lGetDomainTroopsTotalTimes100(lua_State* L)

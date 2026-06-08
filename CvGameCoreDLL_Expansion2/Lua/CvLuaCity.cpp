@@ -797,6 +797,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(CalculateCorruptionScoreFromTrait);
 	Method(GetCorruptionScoreModifierFromPolicy);
 	Method(GetCorruptionScoreGlobalChangeFromBuilding);
+	
 	Method(DecideCorruptionLevelForNormalCity);
 	Method(GetMaxCorruptionLevel);
 	Method(IsCorruptionLevelReduceByOne);
@@ -5300,6 +5301,7 @@ LUAAPIIMPL(City, CalculateCorruptionScoreFromResource);
 LUAAPIIMPL(City, CalculateCorruptionScoreFromTrait);
 LUAAPIIMPL(City, GetCorruptionScoreModifierFromPolicy);
 LUAAPIIMPL(City, GetCorruptionScoreGlobalChangeFromBuilding);
+
 LUAAPIIMPL(City, GetMaxCorruptionLevel);
 LUAAPIIMPL(City, IsCorruptionLevelReduceByOne);
 
