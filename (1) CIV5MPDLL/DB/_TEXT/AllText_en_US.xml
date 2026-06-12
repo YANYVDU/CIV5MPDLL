@@ -471,6 +471,9 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING">
 			<Text>Global change from Building: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING_GLOBAL">
+			<Text>From Building (Global): {1_score}</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_TECH">
 			<Text>Because of your {1_Source}, {2_Order} discovered {3_Feature} and received {4_Num} free technologies.</Text>
 		</Row>

@@ -471,6 +471,9 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING">
 			<Text>来自建筑的全局变化: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING_GLOBAL">
+			<Text>来自建筑(全局): {1_score}</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_TECH">
 			<Text>因为你拥有的{1_Source}，{2_Order}发现{3_Feature}后，获得了{4_Num}项免费科技。</Text>
 		</Row>
