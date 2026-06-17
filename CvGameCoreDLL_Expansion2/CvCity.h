@@ -1388,6 +1388,7 @@ public:
 	void ChangeCorruptionLevelChangeFromBuilding(int value);
 
 	int GetCorruptionScoreModifierFromPolicy() const;
+	int GetCorruptionScoreGlobalChangeFromBuilding() const;
 	int GetMaxCorruptionLevel() const;
 	bool IsCorruptionLevelReduceByOne() const;
 #endif

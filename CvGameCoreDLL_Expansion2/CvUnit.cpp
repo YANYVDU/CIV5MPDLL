@@ -32521,6 +32521,13 @@ CvString CvUnit::GetPlotCorruptionScoreReport() const
 			szRtnValue += "[NEWLINE][ICON_BULLET]";
 			szRtnValue += GetLocalizedText("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_TRAIT", tmp);
 		}
+		tmp = kOwner.GetCorruptionScoreGlobalChangeFromBuilding();
+		if(tmp != 0)
+		{
+			iTotalScore += tmp;
+			szRtnValue += "[NEWLINE][ICON_BULLET]";
+			szRtnValue += GetLocalizedText("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING", tmp);
+		}
 
 		int modifier = 100;
 		tmp = kOwner.GetCorruptionScoreModifierFromPolicy();

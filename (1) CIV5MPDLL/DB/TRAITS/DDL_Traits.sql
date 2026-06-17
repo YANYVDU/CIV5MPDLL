@@ -42,6 +42,10 @@ create table Trait_GoldenAgeYieldModifiers (
     YieldType text references Yields(Type),
     Yield integer default 0
 );
+alter table Traits add NaturalWonderSubsequentFinderPolicies int default 0;
+alter table Traits add NaturalWonderSubsequentFinderTech int default 0;
+alter table Traits add NaturalWonderFirstFinderPolicies int default 0;
+alter table Traits add NaturalWonderFirstFinderTech int default 0;
 --******************** New Unit/Combat Bonus ********************--
 alter table Traits add TrainedAll boolean default 0;
 alter table Traits add NoDoDeficit boolean default 0;

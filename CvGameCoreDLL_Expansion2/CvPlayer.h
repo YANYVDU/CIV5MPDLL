@@ -781,6 +781,24 @@ public:
 	void SetGreatScientistBeakerPolicyMod(int iValue);
 	void ChangeGreatScientistBeakerPolicyMod(int iChange);
 
+	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
+	void SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue);
+	void ChangeInstantTourismBombWhenFirstConquerMajorCapital(int iChange);
+
+	int GetNaturalWonderFirstFinderPolicies() const;
+	void SetNaturalWonderFirstFinderPolicies(int iValue);
+	void ChangeNaturalWonderFirstFinderPolicies(int iChange);
+	int GetNaturalWonderFirstFinderTech() const;
+	void SetNaturalWonderFirstFinderTech(int iValue);
+	void ChangeNaturalWonderFirstFinderTech(int iChange);
+	int GetNaturalWonderSubsequentFinderPolicies() const;
+	void SetNaturalWonderSubsequentFinderPolicies(int iValue);
+	void ChangeNaturalWonderSubsequentFinderPolicies(int iChange);
+	int GetNaturalWonderSubsequentFinderTech() const;
+	void SetNaturalWonderSubsequentFinderTech(int iValue);
+	void ChangeNaturalWonderSubsequentFinderTech(int iChange);
+
+
 	int GetGreatScientistBeakerMod() const;
 	void SetGreatScientistBeakerMod(int iValue);
 	void ChangeGreatScientistBeakerMod(int iChange);
@@ -2195,6 +2213,9 @@ public:
 	bool IsCorruptionLevelReduceByOne() const;
 	void ChangeCorruptionLevelReduceByOneRC(int change);
 
+	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	void ChangeCorruptionScoreGlobalChangeFromBuilding(int change);
+
 	int GetCorruptionPolicyCostModifier() const;
 	void ChangeCorruptionPolicyCostModifier(int change);
 
@@ -2485,6 +2506,11 @@ protected:
 	int m_iGreatScientistRateModifier;
 	int m_iGreatScientistBeakerModifier;
 	int m_iGreatScientistBeakerPolicyModifier;
+	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
+	int m_iNaturalWonderFirstFinderPolicies;
+	int m_iNaturalWonderFirstFinderTech;
+	int m_iNaturalWonderSubsequentFinderPolicies;
+	int m_iNaturalWonderSubsequentFinderTech;
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;
@@ -2998,6 +3024,7 @@ protected:
 	int m_iCorruptionScoreModifierFromPolicy = 0;
 	int m_iCorruptionLevelReduceByOneRC = 0;
 	int m_iCorruptionPolicyCostModifier = 0;
+	int m_iCorruptionScoreGlobalChangeFromBuilding = 0;
 
 	std::vector<int> m_paiCorruptionLevelPolicyCostModifier;
 #endif

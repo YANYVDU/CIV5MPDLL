@@ -329,6 +329,11 @@ public:
 	int GetFreePopulationCapital() const;
 	int GetExtraSpies() const;
 	int GetGreatScientistBeakerPolicyModifier() const;
+	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
+	int GetNaturalWonderFirstFinderTech() const;
+	int GetNaturalWonderSubsequentFinderPolicies() const;
+	int GetNaturalWonderSubsequentFinderTech() const;
+	int GetNaturalWonderFirstFinderPolicies() const;
 	int GetProductionBeakerMod() const;
 	bool IsOneShot() const;
 	bool IncludesOneShotFreeUnits() const;
@@ -577,6 +582,11 @@ private:
 	int m_iFreePopulationCapital;
 	int m_iExtraSpies;
 	int m_iGreatScientistBeakerPolicyModifier;
+	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
+	int m_iNaturalWonderFirstFinderTech;
+	int m_iNaturalWonderFirstFinderPolicies;
+	int m_iNaturalWonderSubsequentFinderTech;
+	int m_iNaturalWonderSubsequentFinderPolicies;
 	int m_iProductionBeakerMod;
 	bool m_bOneShot;
 	bool m_bIncludesOneShotFreeUnits;
