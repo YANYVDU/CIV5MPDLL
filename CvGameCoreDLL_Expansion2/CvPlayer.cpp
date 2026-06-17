@@ -10131,8 +10131,8 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 	ChangeResearchTotalCostModifier(pBuildingInfo->GetResearchTotalCostModifier()* iChange);
 	ChangeResearchTotalCostModifierGoldenAge(pBuildingInfo->GetResearchTotalCostModifierGoldenAge()* iChange);
 	ChangeImmigrationRegressandModifier(pBuildingInfo->GetImmigrationRegressandModifier() * iChange);
-	ChangeCorruptionScoreGlobalChangeFromBuilding(pBuildingInfo->GetCorruptionScoreGlobalChange() * iChange);
 #ifdef MOD_GLOBAL_CORRUPTION
+	ChangeCorruptionScoreGlobalChangeFromBuilding(pBuildingInfo->GetCorruptionScoreGlobalChange() * iChange);
 	if (pBuildingInfo->GetCorruptionScoreGlobalChange() * iChange != 0)
 	{
 		int iLoop = 0;
@@ -28430,8 +28430,8 @@ void CvPlayer::Read(FDataStream& kStream)
 
 	kStream >> m_iGreatScientistBeakerPolicyModifier;
 	MOD_SERIALIZE_READ(160, kStream, m_iInstantTourismBombWhenFirstConquerMajorCapital, 0);
-	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderTech, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderTech, 0);
 	kStream >> m_iProductionBeakerMod;
