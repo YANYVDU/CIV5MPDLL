@@ -2071,9 +2071,11 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 
 		pResults->Bind(1, szTraitType);
 
+		const int iNumBuildingClasses = kUtility.MaxRows("BuildingClasses");
+		kUtility.InitializeArray(m_piBuildingClassFaithCost, iNumBuildingClasses, 0);
+
 		while(pResults->Step())
 		{
-			if(!m_piBuildingClassFaithCost) m_piBuildingClassFaithCost = FNEW(int[kUtility.MaxRows("BuildingClasses")], c_eCiv5GameplayDLL, 0);
 			const int BuildingClassID = pResults->GetInt(0);
 			const int iCost = pResults->GetInt(1);
 
