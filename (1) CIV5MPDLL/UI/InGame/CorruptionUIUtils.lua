@@ -32,6 +32,11 @@ function getCorruptionScoreReport(player, city)
 	if tmp ~= 0 then
 		result = result .. "[ICON_BULLET]" .. Locale.ConvertTextKey("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING", tmp) .. "[NEWLINE]";
 	end
+	tmp = city:GetCorruptionScoreGlobalChangeFromBuilding();
+	if tmp ~= 0 then
+		result = result .. "[ICON_BULLET]" .. Locale.ConvertTextKey("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING_GLOBAL", tmp) .. "[NEWLINE]";
+	end
+	
 	tmp = city:CalculateCorruptionScoreFromResource();
 	if tmp ~= 0 then
 		result = result .. "[ICON_BULLET]" .. Locale.ConvertTextKey("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RESOURCE", tmp) .. "[NEWLINE]";
