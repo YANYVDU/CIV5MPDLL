@@ -2943,6 +2943,95 @@ bool CvPlot::canBuild(BuildTypes eBuild, PlayerTypes ePlayer, bool bTestVisible,
 		}
 	}
 
+	// TerrainChange Build extra validation:
+	//   - Cannot change terrain on a city plot (setPlotType would kill the city)
+	//   - Cannot change terrain on a plot with resources (resources would be destroyed)
+	//   - Water→Land: cannot have naval units on the plot (they can't survive on land)
+	//   - Land→Water: building player must have embarkation (otherwise the worker strands)
+	TerrainTypes eNewTerrain = (TerrainTypes)thisBuildInfo.getTerrainChange();
+	if (eNewTerrain != NO_TERRAIN)
+	{
+		if (getPlotCity() != NULL)
+			return false;
+
+		if (getResourceType() != NO_RESOURCE)
+			return false;
+
+		bool bNewWater = GC.getTerrainInfo(eNewTerrain)->isWater();
+		bool bOldWater = isWater();
+		if (bOldWater != bNewWater)
+		{
+			// Land→Water: building player MUST have embarkation, else worker strands
+			if (bNewWater)
+			{
+				if (!GET_TEAM(eTeam).canEmbark() && !GET_PLAYER(ePlayer).GetPlayerTraits()->IsEmbarkedAllWater())
+					return false;
+			}
+			// Water→Land: naval domain units cannot survive on land
+			else
+			{
+				const IDInfo* pUnitNode = headUnitNode();
+				while (pUnitNode != NULL)
+				{
+					CvUnit* pLoopUnit = ::getUnit(*pUnitNode);
+					pUnitNode = nextUnitNode(pUnitNode);
+					if (pLoopUnit)
+					{
+						if (pLoopUnit->getDomainType() == DOMAIN_SEA)
+							return false;
+					}
+				}
+			}
+		}
+
+		// TerrainChange Build is valid even without Improvement/Route/Feature
+		bValid = true;
+	}
+
+	// Build_ValidTerrains: if the table has entries, only those terrains are valid.
+	// Empty table = no terrain restriction (backward compatible).
+	{
+		bool bHasTerrainList = false;
+		for (int iI = 0; iI < GC.getNumTerrainInfos(); iI++)
+		{
+			if (thisBuildInfo.isTerrainMakesValid(iI))
+			{
+				bHasTerrainList = true;
+				break;
+			}
+		}
+		if (bHasTerrainList && !thisBuildInfo.isTerrainMakesValid(getTerrainType()))
+			return false;
+	}
+
+	// Build_AdjacentTerrainRequired: if entries exist, at least one adjacent plot must match
+	{
+		bool bHasAdjTerrainList = false;
+		for (int iI = 0; iI < GC.getNumTerrainInfos(); iI++)
+		{
+			if (thisBuildInfo.isAdjacentTerrainRequired(iI))
+			{
+				bHasAdjTerrainList = true;
+				break;
+			}
+		}
+		if (bHasAdjTerrainList)
+		{
+			bool bFoundAdjTerrain = false;
+			for (int iI = 0; iI < NUM_DIRECTION_TYPES; iI++)
+			{
+				CvPlot* pAdjacentPlot = plotDirection(getX(), getY(), ((DirectionTypes)iI));
+				if (pAdjacentPlot != NULL && thisBuildInfo.isAdjacentTerrainRequired(pAdjacentPlot->getTerrainType()))
+				{
+					bFoundAdjTerrain = true;
+					break;
+				}
+			}
+			if (!bFoundAdjTerrain)
+				return false;
+		}
+	}
+
 	return bValid;
 }
 
@@ -11060,6 +11149,81 @@ bool CvPlot::changeBuildProgress(BuildTypes eBuild, int iChange, PlayerTypes ePl
 		{
 			m_paiBuildProgress[eBuild] = 0;
 
+			// ★★★ TerrainChange: must execute BEFORE improvement construction ★★★
+			// When setPlotType() is triggered by water↔land transition, it clears
+			// improvements/resources/routes/features. By doing terrain change first,
+			// the subsequent improvement/route construction happens on the new terrain.
+			{
+				TerrainTypes eNewTerrain = (TerrainTypes)pkBuildInfo->getTerrainChange();
+				if (eNewTerrain != NO_TERRAIN && eNewTerrain != getTerrainType())
+				{
+					bool bOldWater = GC.getTerrainInfo(getTerrainType())->isWater();
+					bool bNewWater = GC.getTerrainInfo(eNewTerrain)->isWater();
+
+					if (bOldWater != bNewWater)
+					{
+						// Water↔Land transition: switch plot type first.
+						// bEraseUnitsIfWater=false → do NOT kill units on the plot
+						// (the worker itself is a land unit and would die on land→water).
+						PlayerTypes eOwner = getOwner();
+						setPlotType(bNewWater ? PLOT_OCEAN : PLOT_LAND, true,  false, false);
+						if (eOwner != NO_PLAYER)
+							setOwner(eOwner, -1, false, false);
+
+						// After land→water conversion, auto-embark land units
+						if (bNewWater)
+						{
+							const IDInfo* pUnitNode = headUnitNode();
+							while (pUnitNode != NULL)
+							{
+								CvUnit* pLoopUnit = ::getUnit(*pUnitNode);
+								pUnitNode = nextUnitNode(pUnitNode);
+								if (pLoopUnit && pLoopUnit->getDomainType() == DOMAIN_LAND && !pLoopUnit->isEmbarked())
+								{
+									CvPlayer& kUnitPlayer = GET_PLAYER(pLoopUnit->getOwner());
+									if (GET_TEAM(kUnitPlayer.getTeam()).canEmbark() || kUnitPlayer.GetPlayerTraits()->IsEmbarkedAllWater())
+									{
+										pLoopUnit->setEmbarked(true);
+									}
+									// else: unit stranded on water — modder's responsibility
+									// to ensure embarkation tech is available before terraforming
+								}
+							}
+						}
+						// After water→land conversion, auto-disembark all embarked land units
+						else
+						{
+							const IDInfo* pUnitNode = headUnitNode();
+							while (pUnitNode != NULL)
+							{
+								CvUnit* pLoopUnit = ::getUnit(*pUnitNode);
+								pUnitNode = nextUnitNode(pUnitNode);
+								if (pLoopUnit && pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->isEmbarked())
+								{
+									pLoopUnit->setEmbarked(false);
+								}
+							}
+						}
+					}
+
+					setTerrainType(eNewTerrain, false, false);
+					updateYield();
+					updateImpassable();
+
+					// Update 3D map graphics immediately
+					setLayoutDirty(true);
+					// Adjacent plots also need reblending (terrain texture transitions)
+					for (int iI = 0; iI < NUM_DIRECTION_TYPES; ++iI)
+					{
+						CvPlot* pAdjacentPlot = plotDirection(getX(), getY(), ((DirectionTypes)iI));
+						if (pAdjacentPlot != NULL)
+						{
+							pAdjacentPlot->setLayoutDirty(true);
+						}
+					}
+				}
+			}
+
 			// Constructed Improvement
 			if (eImprovement != NO_IMPROVEMENT)
 			{
@@ -14228,4 +14392,4 @@ int CvPlot::GetNumSpecificPlayerUnitsAdjacent(PlayerTypes ePlayer, const CvUnit*
 	return iNumUnitsAdjacent;
 }
 
-#endif
+#endif
