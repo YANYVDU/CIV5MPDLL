@@ -4430,7 +4430,8 @@ int CvUnit::getCombatDamage(int iStrength, int iOpponentStrength, int iCurrentDa
 		fStrengthRatio = 1 / fStrengthRatio;
 	}
 
-	tDamage = __int64(tDamage * fStrengthRatio);
+	double dNewDamage = (double)tDamage * fStrengthRatio;
+	tDamage = (dNewDamage > (double)0x7FFFFFF0) ? 0x7FFFFFF0 : (__int64)dNewDamage;
 
 	// Modify damage for when a city "attacks" a unit
 	if(bAttackerIsCity)
@@ -15693,7 +15694,8 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 	if(iModifier < -90)
 		iModifier = -90;
 
-	iCombat = GetBaseCombatStrength(bIsEmbarkedAttackingLand) * (iModifier + 100);
+	__int64 iCombat64 = (__int64)GetBaseCombatStrength(bIsEmbarkedAttackingLand) * (iModifier + 100);
+	iCombat = (iCombat64 > 0x7FFFFFFF) ? 0x7FFFFFFF : (int)iCombat64;
 
 	return std::max(1, iCombat);
 }
@@ -15990,7 +15992,8 @@ int CvUnit::GetMaxDefenseStrength(const CvPlot* pInPlot, const CvUnit* pAttacker
 	if(iModifier < -90)
 		iModifier = -90;
 
-	iCombat = GetBaseCombatStrength() * (iModifier + 100);
+	__int64 iCombat64 = (__int64)GetBaseCombatStrength() * (iModifier + 100);
+	iCombat = (iCombat64 > 0x7FFFFFFF) ? 0x7FFFFFFF : (int)iCombat64;
 
 	// Boats do more damage VS one another
 	if(pAttacker != NULL)
@@ -16900,7 +16903,8 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 	iModifier += GC.GetIndependentPromotion()->GetResourceCombatModifier(*this);
 	iModifier += GC.GetIndependentPromotion()->GetNearbyUnitPromotionBonus(*this);
 
-	iCombat = (iStr * (iModifier + 100));
+	__int64 iCombat64 = (__int64)iStr * (iModifier + 100);
+	iCombat = (iCombat64 > 0x7FFFFFFF) ? 0x7FFFFFFF : (int)iCombat64;
 
 	return std::max(1, iCombat);
 }
