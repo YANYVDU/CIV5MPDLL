@@ -857,6 +857,9 @@
 		<Row Tag="TXT_KEY_MPDLL_ERROR_VERSION">
 			<Text>[COLOR_NEGATIVE_TEXT]An error occurred with the MPDLL. If you are using the latest versions, please contact the administrator.[COLOR_NEGATIVE_TEXT]</Text>
 		</Row>
+		<Row Tag="TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE">
+			<Text>[COLOR_NEGATIVE_TEXT]No new post-combat promotion available; all candidates have already been acquired.[ENDCOLOR]</Text>
+		</Row>
 	</Language_en_US>
 
 </GameData>

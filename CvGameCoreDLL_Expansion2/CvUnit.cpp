@@ -21984,10 +21984,10 @@ void CvUnit::changeExperience(int iChange, int iMax, bool bFromCombat, bool bInB
 				if (pkPromotionInfo->HasPostCombatPromotions() && m_Promotions.HasPromotion(eLoopPromotion))
 				{
 					eNewPromotion = m_Promotions.ChangePromotionAfterCombat(eLoopPromotion);
-					setHasPromotion(eLoopPromotion, false);
 
 					if (eNewPromotion != NO_PROMOTION)
 					{
+						setHasPromotion(eLoopPromotion, false);
 						setHasPromotion(eNewPromotion, true);
 
 #if defined(MOD_EVENTS_UNIT_UPGRADES)
@@ -21998,6 +21998,17 @@ void CvUnit::changeExperience(int iChange, int iMax, bool bFromCombat, bool bInB
 
 						CvPromotionEntry* pkNewPromotionInfo = GC.getPromotionInfo(eNewPromotion);
 						Localization::String localizedText = Localization::Lookup(pkNewPromotionInfo->GetDescriptionKey());
+#if defined(SHOW_PLOT_POPUP)
+						SHOW_PLOT_POPUP(plot(), getOwner(), localizedText.toUTF8(), 0.0f);
+#else
+						float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 2;
+						DLLUI->AddPopupText(getX(), getY(), localizedText.toUTF8(), fDelay);
+#endif
+					}
+					else
+					{
+						// All candidate promotions exhausted, keep source promotion
+						Localization::String localizedText = Localization::Lookup("TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE");
 #if defined(SHOW_PLOT_POPUP)
 						SHOW_PLOT_POPUP(plot(), getOwner(), localizedText.toUTF8(), 0.0f);
 #else

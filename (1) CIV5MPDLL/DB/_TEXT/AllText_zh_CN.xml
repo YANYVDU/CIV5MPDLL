@@ -857,6 +857,9 @@
 		<Row Tag="TXT_KEY_MPDLL_ERROR_VERSION">
 			<Text>[COLOR_NEGATIVE_TEXT]MPDLL出现错误，如果你使用的都是最新版本，请和管理员联系[COLOR_NEGATIVE_TEXT]</Text>
 		</Row>
+		<Row Tag="TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE">
+			<Text>[COLOR_NEGATIVE_TEXT]无法获得新的战后晋升，所有候选晋升已被获取。[ENDCOLOR]</Text>
+		</Row>
 	</Language_zh_CN>
 
 </GameData>
