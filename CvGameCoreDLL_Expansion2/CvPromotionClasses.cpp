@@ -4456,7 +4456,7 @@ PromotionTypes CvUnitPromotions::ChangePromotionAfterCombat(PromotionTypes eInde
 		CvPromotionEntry *pkEntry = m_pPromotions->GetEntry(eIndex);
 		if (pkEntry && pkEntry->IsPostCombatRandomPromotion(iI))
 		{
-			if (!pkEntry->ArePostCombatPromotionsExclusive() || !IsInUseByPlayer((PromotionTypes)iI, m_pUnit->getOwner()))
+			if (pkEntry->ArePostCombatPromotionsExclusive() ? !IsInUseByPlayer((PromotionTypes)iI, m_pUnit->getOwner()) : !m_pUnit->isHasPromotion((PromotionTypes)iI))
 			{
 #if defined(MOD_EVENTS_UNIT_UPGRADES)
 				if (MOD_EVENTS_UNIT_UPGRADES) {
