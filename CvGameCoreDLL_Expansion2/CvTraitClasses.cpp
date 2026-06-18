@@ -2072,14 +2072,19 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 		pResults->Bind(1, szTraitType);
 
 		const int iNumBuildingClasses = kUtility.MaxRows("BuildingClasses");
-		kUtility.InitializeArray(m_piBuildingClassFaithCost, iNumBuildingClasses, 0);
 
-		while(pResults->Step())
+		if(pResults->Step())
 		{
-			const int BuildingClassID = pResults->GetInt(0);
-			const int iCost = pResults->GetInt(1);
+			kUtility.InitializeArray(m_piBuildingClassFaithCost, iNumBuildingClasses, 0);
 
-			m_piBuildingClassFaithCost[BuildingClassID] = iCost;
+			do
+			{
+				const int BuildingClassID = pResults->GetInt(0);
+				const int iCost = pResults->GetInt(1);
+
+				m_piBuildingClassFaithCost[BuildingClassID] = iCost;
+			}
+			while(pResults->Step());
 		}
 		pResults->Reset();
 	}
