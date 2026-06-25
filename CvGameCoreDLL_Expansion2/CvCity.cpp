@@ -23733,6 +23733,8 @@ int CvCity::CalculateTotalCorruptionScore() const
 	score += GetCorruptionScoreChangeFromBuilding();
 	score += GetCorruptionScoreGlobalChangeFromBuilding();
 	score += CalculateCorruptionScoreFromTrait();
+	if (owner.isGoldenAge()) score -= owner.GetGoldenAgeCorruptionScoreReduction();
+	score += GetCorruptionScoreFromLocalHappiness();
 	score = std::max(0, score);
 
 	// Score Modifier
@@ -23757,6 +23759,12 @@ int CvCity::GetCorruptionScoreGlobalChangeFromBuilding() const
 {
 	CvPlayerAI &owner = GET_PLAYER(getOwner());
 	return owner.GetCorruptionScoreGlobalChangeFromBuilding();
+}
+
+int CvCity::GetCorruptionScoreFromLocalHappiness() const
+{
+	CvPlayerAI& owner = GET_PLAYER(getOwner());
+	return GetLocalHappiness() * owner.GetLocalHappinessCorruptionScoreMod() / 100;
 }
 
 int CvCity::CalculateCorruptionScoreFromDistance() const

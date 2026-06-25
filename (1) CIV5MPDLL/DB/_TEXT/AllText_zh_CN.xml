@@ -504,6 +504,9 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RELIGION">
 			<Text>来自宗教: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_LOCAL_HAPPINESS">
+			<Text>来自本地幸福度: {1_score}</Text>
+		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_MOD_FROM_SPY">
 			<Text>来自间谍: {1_score}%</Text>
 		</Row>

@@ -49,6 +49,10 @@ function getCorruptionScoreReport(player, city)
 	if tmp ~= 0 then
 		result = result .. "[ICON_BULLET]" .. Locale.ConvertTextKey("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RELIGION", tmp) .. "[NEWLINE]";
 	end
+	tmp = city:GetCorruptionScoreFromLocalHappiness();
+	if tmp ~= 0 then
+		result = result .. "[ICON_BULLET]" .. Locale.ConvertTextKey("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_LOCAL_HAPPINESS", tmp) .. "[NEWLINE]";
+	end
 	tmp = city:CalculateCorruptionScoreModifierFromSpy();
 	if tmp ~= 0 then
 		result = result .. "[ICON_BULLET]" .. Locale.ConvertTextKey("TXT_KEY_CITYBANNER_CORRUPTION_SCORE_MOD_FROM_SPY", tmp) .. "[NEWLINE]";

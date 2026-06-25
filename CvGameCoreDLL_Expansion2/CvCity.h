@@ -1390,6 +1390,7 @@ public:
 
 	int GetCorruptionScoreModifierFromPolicy() const;
 	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	int GetCorruptionScoreFromLocalHappiness() const;
 	int GetMaxCorruptionLevel() const;
 	bool IsCorruptionLevelReduceByOne() const;
 #endif

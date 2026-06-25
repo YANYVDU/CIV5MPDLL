@@ -375,6 +375,8 @@ public:
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	int GetCorruptionScoreModifier() const;
+	int GetLocalHappinessCorruptionScoreMod() const;
+	int GetGoldenAgeCorruptionScoreReduction() const;
 	bool GetCorruptionLevelReduceByOne() const;
 	bool IsInvolveCorruption() const;
 	int GetCorruptionLevelPolicyCostModifier(CorruptionLevelTypes level) const;
@@ -698,7 +700,9 @@ private:
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	int m_iCorruptionScoreModifier = 0;
+	int m_iGoldenAgeCorruptionScoreReduction = 0;
 	bool m_bCorruptionLevelReduceByOne = false;
+	int m_iLocalHappinessCorruptionScoreMod = 0;
 	std::vector<int> m_paiCorruptionLevelPolicyCostModifier;
 #endif
 };

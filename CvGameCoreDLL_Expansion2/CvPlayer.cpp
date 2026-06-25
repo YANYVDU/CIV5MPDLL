@@ -1276,6 +1276,8 @@ void CvPlayer::uninit()
 #endif
 #ifdef MOD_GLOBAL_CORRUPTION
 	m_iCorruptionScoreModifierFromPolicy = 0;
+	m_iGoldenAgeCorruptionScoreReduction = 0;
+	m_iLocalHappinessCorruptionScoreMod = 0;
 	m_iCorruptionScoreGlobalChangeFromBuilding = 0;
 	m_iCorruptionLevelReduceByOneRC = 0;
 	m_iCorruptionPolicyCostModifier = 0;
@@ -27571,6 +27573,8 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 		ChangeCorruptionLevelReduceByOneRC(iChange);
 	}
 	ChangeCorruptionScoreModifierFromPolicy(iChange * pPolicy->GetCorruptionScoreModifier());
+	ChangeGoldenAgeCorruptionScoreReduction(iChange * pPolicy->GetGoldenAgeCorruptionScoreReduction());
+	ChangeLocalHappinessCorruptionScoreMod(iChange * pPolicy->GetLocalHappinessCorruptionScoreMod());
 #endif
 
 	bool bGarrisonFreeMaintenance = pPolicy->IsGarrisonFreeMaintenance();
@@ -29057,6 +29061,8 @@ void CvPlayer::Read(FDataStream& kStream)
 #ifdef MOD_GLOBAL_CORRUPTION
 	kStream >> m_iCorruptionScoreModifierFromPolicy;
 	MOD_SERIALIZE_READ(160, kStream, m_iCorruptionScoreGlobalChangeFromBuilding, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeCorruptionScoreReduction, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iLocalHappinessCorruptionScoreMod, 0);
 	kStream >> m_iCorruptionLevelReduceByOneRC;
 	kStream >> m_iCorruptionPolicyCostModifier;
 	
@@ -29768,6 +29774,8 @@ void CvPlayer::Write(FDataStream& kStream) const
 #ifdef MOD_GLOBAL_CORRUPTION
 	kStream << m_iCorruptionScoreModifierFromPolicy;
 	MOD_SERIALIZE_WRITE(kStream, m_iCorruptionScoreGlobalChangeFromBuilding);
+	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeCorruptionScoreReduction);
+	MOD_SERIALIZE_WRITE(kStream, m_iLocalHappinessCorruptionScoreMod);
 	kStream << m_iCorruptionLevelReduceByOneRC;
 	kStream << m_iCorruptionPolicyCostModifier;
 
@@ -33612,6 +33620,26 @@ int CvPlayer::GetCorruptionScoreModifierFromPolicy() const
 void CvPlayer::ChangeCorruptionScoreModifierFromPolicy(int change)
 {
 	m_iCorruptionScoreModifierFromPolicy += change;
+}
+
+int CvPlayer::GetGoldenAgeCorruptionScoreReduction() const
+{
+	return m_iGoldenAgeCorruptionScoreReduction;
+}
+
+void CvPlayer::ChangeGoldenAgeCorruptionScoreReduction(int change)
+{
+	m_iGoldenAgeCorruptionScoreReduction += change;
+}
+
+int CvPlayer::GetLocalHappinessCorruptionScoreMod() const
+{
+	return m_iLocalHappinessCorruptionScoreMod;
+}
+
+void CvPlayer::ChangeLocalHappinessCorruptionScoreMod(int change)
+{
+	m_iLocalHappinessCorruptionScoreMod += change;
 }
 
 int CvPlayer::GetCorruptionScoreGlobalChangeFromBuilding() const

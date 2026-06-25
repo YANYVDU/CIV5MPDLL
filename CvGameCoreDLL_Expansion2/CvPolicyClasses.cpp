@@ -1275,6 +1275,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	m_iCorruptionScoreModifier = kResults.GetInt("CorruptionScoreModifier");
+	m_iGoldenAgeCorruptionScoreReduction = kResults.GetInt("GoldenAgeCorruptionScoreReduction");
+	m_iLocalHappinessCorruptionScoreMod = kResults.GetInt("LocalHappinessCorruptionScoreMod");
 	m_bCorruptionLevelReduceByOne = kResults.GetBool("CorruptionLevelReduceByOne");
 #endif
 
@@ -3173,7 +3175,17 @@ bool CvPolicyEntry::GetCorruptionLevelReduceByOne() const
 
 bool CvPolicyEntry::IsInvolveCorruption() const
 {
-	return m_iCorruptionScoreModifier != 0 || m_bCorruptionLevelReduceByOne;
+	return m_iCorruptionScoreModifier != 0 || m_bCorruptionLevelReduceByOne || m_iGoldenAgeCorruptionScoreReduction != 0 || m_iLocalHappinessCorruptionScoreMod != 0;
+}
+
+int CvPolicyEntry::GetGoldenAgeCorruptionScoreReduction() const
+{
+	return m_iGoldenAgeCorruptionScoreReduction;
+}
+
+int CvPolicyEntry::GetLocalHappinessCorruptionScoreMod() const
+{
+	return m_iLocalHappinessCorruptionScoreMod;
 }
 
 int CvPolicyEntry::GetCorruptionLevelPolicyCostModifier(CorruptionLevelTypes level) const
