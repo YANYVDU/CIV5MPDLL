@@ -732,6 +732,7 @@ protected:
 	
 	LUAAPIEXTN(GetMaxCorruptionLevel, int);
 	LUAAPIEXTN(IsCorruptionLevelReduceByOne, bool);
+	LUAAPIEXTN(GetReligionDamageModifier, int);
 #endif
 	LUAAPIEXTN(GetHurryModifier, int);
 	LUAAPIEXTN(GetHurryModifierLocal, int);

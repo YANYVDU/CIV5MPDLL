@@ -803,6 +803,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(DecideCorruptionLevelForNormalCity);
 	Method(GetMaxCorruptionLevel);
 	Method(IsCorruptionLevelReduceByOne);
+	Method(GetReligionDamageModifier);
 #endif
 	Method(GetHurryModifier);
 	Method(GetHurryModifierLocal);
@@ -5308,6 +5309,7 @@ LUAAPIIMPL(City, GetCorruptionScoreFromLocalHappiness);
 
 LUAAPIIMPL(City, GetMaxCorruptionLevel);
 LUAAPIIMPL(City, IsCorruptionLevelReduceByOne);
+LUAAPIIMPL(City, GetReligionDamageModifier);
 
 int CvLuaCity::lDecideCorruptionLevelForNormalCity(lua_State* L)
 {

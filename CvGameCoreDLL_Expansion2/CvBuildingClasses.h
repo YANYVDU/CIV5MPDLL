@@ -539,6 +539,8 @@ public:
 	int GetTradeRouteLandGoldBonusGlobal() const;
 	bool IsAnyWater() const;
 	bool IsRiverOrCoastal() const;
+	int GetFollowerCountDamageModifier() const;
+	int GetFollowingCityCountDamageModifier() const;
 #endif
 	int GetNumFreeUnit() const;
 	int GetNumFreeUnitTotal() const;
@@ -1008,6 +1010,8 @@ private:
 	int m_iTradeRouteLandGoldBonusGlobal;
 	bool m_bAnyWater;
 	bool m_bRiverOrCoastal;
+	int m_iFollowerCountDamageModifier;
+	int m_iFollowingCityCountDamageModifier;
 #endif
 	int m_iNumFreeUnit;
 	int m_iNumFreeUnitTotal;

@@ -170,6 +170,8 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iExtraUnitPlayerInstances(0),
 	m_iResetDamageValue(0),
 	m_iReduceDamageValue(0),
+	m_iFollowerCountDamageModifier(0),
+	m_iFollowingCityCountDamageModifier(0),
 
 	m_iGlobalCityStrengthMod(0),
 	m_iGlobalRangedStrikeModifier(0),
@@ -543,6 +545,8 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iExtraUnitPlayerInstances = kResults.GetInt("ExtraUnitPlayerInstances");
 	m_iResetDamageValue = kResults.GetInt("ResetDamageValue");
 	m_iReduceDamageValue = kResults.GetInt("ReduceDamageValue");
+	m_iFollowerCountDamageModifier = kResults.GetInt("FollowerCountDamageModifier");
+	m_iFollowingCityCountDamageModifier = kResults.GetInt("FollowingCityCountDamageModifier");
 
 	m_iGlobalCityStrengthMod = kResults.GetInt("GlobalCityStrengthMod");
 	m_iGlobalRangedStrikeModifier = kResults.GetInt("GlobalRangedStrikeModifier");
@@ -2529,6 +2533,16 @@ int CvBuildingEntry::GetResetDamageValue() const
 int CvBuildingEntry::GetReduceDamageValue() const
 {
 	return m_iReduceDamageValue;
+}
+
+int CvBuildingEntry::GetFollowerCountDamageModifier() const
+{
+	return m_iFollowerCountDamageModifier;
+}
+
+int CvBuildingEntry::GetFollowingCityCountDamageModifier() const
+{
+	return m_iFollowingCityCountDamageModifier;
 }
 
 

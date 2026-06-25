@@ -4731,11 +4731,31 @@ void CityDamageChangeInterveneNoCondition(CvCity* thisCity, int* enemyInflictDam
 	{
 		*enemyInflictDamage += thisCity->getReduceDamageValue();
 	}
+#if defined(MOD_BUILDING_NEW_EFFECT_FOR_SP)
+	if (thisCity->getFollowerCountDamageModifier() != 0 || thisCity->getFollowingCityCountDamageModifier() != 0)
+	{
+		ReligionTypes eReligion = thisCity->GetCityReligions()->GetReligiousMajority();
+		if (eReligion != NO_RELIGION && thisCity->GetCityReligions()->IsHolyCityForReligion(eReligion))
+		{
+			if (thisCity->getFollowerCountDamageModifier() != 0)
+			{
+				int iFollowers = GC.getGame().GetGameReligions()->GetNumFollowers(eReligion);
+				*enemyInflictDamage += thisCity->getFollowerCountDamageModifier() * iFollowers / 100;
+			}
+			if (thisCity->getFollowingCityCountDamageModifier() != 0)
+			{
+				int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eReligion);
+				*enemyInflictDamage += thisCity->getFollowingCityCountDamageModifier() * iCities / 100;
+			}
+		}
+	}
+#endif
 }
 
 void CityDamageChangeIntervene(InflictDamageContext* ctx)
 {
 	CityDamageChangeInterveneNoCondition(ctx->pDefenderCity, ctx->piAttackInflictDamage);
+	CityDamageChangeInterveneNoCondition(ctx->pAttackerCity, ctx->piAttackInflictDamage);
 }
 
 void UnitAttackInflictDamageIntervene(InflictDamageContext* ctx)

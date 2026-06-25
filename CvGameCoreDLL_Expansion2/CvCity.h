@@ -1110,6 +1110,11 @@ public:
 	int getReduceDamageValue()const;
 	void changeReduceDamageValue(int iChange);
 
+	int getFollowerCountDamageModifier() const;
+	void changeFollowerCountDamageModifier(int iChange);
+	int getFollowingCityCountDamageModifier() const;
+	void changeFollowingCityCountDamageModifier(int iChange);
+	int GetReligionDamageModifier() const;
 
 
 	int getWaterTileDamage()const;
@@ -1573,6 +1578,8 @@ protected:
 
 	FAutoVariable<int, CvCity> m_iResetDamageValue;
 	FAutoVariable<int, CvCity> m_iReduceDamageValue;
+	FAutoVariable<int, CvCity> m_iFollowerCountDamageModifier;
+	FAutoVariable<int, CvCity> m_iFollowingCityCountDamageModifier;
 
 
 	FAutoVariable<int, CvCity> m_iWaterTileDamage;

@@ -213,6 +213,8 @@ CvCity::CvCity() :
 
 	, m_iResetDamageValue("CvCity::m_iResetDamageValue", m_syncArchive)
 	, m_iReduceDamageValue("CvCity::m_iReduceDamageValue", m_syncArchive)
+	, m_iFollowerCountDamageModifier("CvCity::m_iFollowerCountDamageModifier", m_syncArchive)
+	, m_iFollowingCityCountDamageModifier("CvCity::m_iFollowingCityCountDamageModifier", m_syncArchive)
 
 
 	, m_iWaterTileDamage("CvCity::m_iWaterTileDamage", m_syncArchive)
@@ -1108,6 +1110,8 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 
 	m_iResetDamageValue = 0;
 	m_iReduceDamageValue = 0;
+	m_iFollowerCountDamageModifier = 0;
+	m_iFollowingCityCountDamageModifier = 0;
 
 
 	m_iWaterTileDamage = 0;
@@ -7772,6 +7776,8 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 		changeResetDamageValue(pBuildingInfo->GetResetDamageValue()* iChange);
 		changeReduceDamageValue(pBuildingInfo->GetReduceDamageValue()* iChange);
+		changeFollowerCountDamageModifier(pBuildingInfo->GetFollowerCountDamageModifier()* iChange);
+		changeFollowingCityCountDamageModifier(pBuildingInfo->GetFollowingCityCountDamageModifier()* iChange);
 
 		changeWaterTileDamage(pBuildingInfo->GetWaterTileDamage()* iChange);
 		changeWaterTileMovementReduce(pBuildingInfo->GetWaterTileMovementReduce()* iChange);
@@ -19968,6 +19974,8 @@ void CvCity::read(FDataStream& kStream)
 	
 	kStream >> m_iResetDamageValue;
 	kStream >> m_iReduceDamageValue;
+	MOD_SERIALIZE_READ(161, kStream, m_iFollowerCountDamageModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iFollowingCityCountDamageModifier, 0);
 
 
 	kStream >> m_iWaterTileDamage;
@@ -20484,6 +20492,8 @@ void CvCity::write(FDataStream& kStream) const
 
 	kStream << m_iResetDamageValue;
 	kStream << m_iReduceDamageValue;
+	MOD_SERIALIZE_WRITE(kStream, m_iFollowerCountDamageModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iFollowingCityCountDamageModifier);
 
 	kStream << m_iWaterTileDamage;
 	kStream << m_iWaterTileMovementReduce;
@@ -21139,8 +21149,61 @@ void CvCity::changeReduceDamageValue(int iChange)
 		}
 }
 
+int CvCity::getFollowerCountDamageModifier() const
+{
+	VALIDATE_OBJECT
+	return m_iFollowerCountDamageModifier;
+}
 
+void CvCity::changeFollowerCountDamageModifier(int iChange)
+{
+	VALIDATE_OBJECT
+	if (iChange != 0)
+	{
+		m_iFollowerCountDamageModifier += iChange;
+	}
+}
 
+int CvCity::getFollowingCityCountDamageModifier() const
+{
+	VALIDATE_OBJECT
+	return m_iFollowingCityCountDamageModifier;
+}
+
+void CvCity::changeFollowingCityCountDamageModifier(int iChange)
+{
+	VALIDATE_OBJECT
+	if (iChange != 0)
+	{
+		m_iFollowingCityCountDamageModifier += iChange;
+	}
+}
+
+int CvCity::GetReligionDamageModifier() const
+{
+	VALIDATE_OBJECT
+	int iModifier = 0;
+#if defined(MOD_BUILDING_NEW_EFFECT_FOR_SP)
+	if (getFollowerCountDamageModifier() != 0 || getFollowingCityCountDamageModifier() != 0)
+	{
+		ReligionTypes eReligion = GetCityReligions()->GetReligiousMajority();
+		if (eReligion != NO_RELIGION && GetCityReligions()->IsHolyCityForReligion(eReligion))
+		{
+			if (getFollowerCountDamageModifier() != 0)
+			{
+				int iFollowers = GC.getGame().GetGameReligions()->GetNumFollowers(eReligion);
+				iModifier += getFollowerCountDamageModifier() * iFollowers / 100;
+			}
+			if (getFollowingCityCountDamageModifier() != 0)
+			{
+				int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eReligion);
+				iModifier += getFollowingCityCountDamageModifier() * iCities / 100;
+			}
+		}
+	}
+#endif
+	return iModifier;
+}
 
 //	--------------------------------------------------------------------------------
 int CvCity::getWaterTileDamage() const
