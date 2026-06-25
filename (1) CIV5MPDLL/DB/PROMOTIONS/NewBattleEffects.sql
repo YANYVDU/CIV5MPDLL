@@ -36,3 +36,5 @@ alter table UnitPromotions add HeavyChargeAddMoves integer default 0;
 alter table UnitPromotions add HeavyChargeExtraDamage integer default 0;
 alter table UnitPromotions add HeavyChargeCollateralFixed integer default 0;
 alter table UnitPromotions add HeavyChargeCollateralPercent integer default 0;
+alter table UnitPromotions add DifferentReligionAttackModifier integer default 0;
+alter table UnitPromotions add DifferentReligionDefenseModifier integer default 0;

@@ -501,6 +501,8 @@ CvUnit::CvUnit() :
 	, m_eMovementFromAttackDamageFormula(NO_LUA_FORMULA)
 	, m_eHealPercentFromAttackDamageFormula(NO_LUA_FORMULA)
 	, m_veCombatBonusFormulas()
+	, m_iDifferentReligionAttackModifier(0)
+	, m_iDifferentReligionDefenseModifier(0)
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	, m_iCrops(0)
@@ -1516,6 +1518,8 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_eMovementFromAttackDamageFormula = NO_LUA_FORMULA;
 	m_eHealPercentFromAttackDamageFormula = NO_LUA_FORMULA;
 	m_veCombatBonusFormulas.clear();
+	m_iDifferentReligionAttackModifier = 0;
+	m_iDifferentReligionDefenseModifier = 0;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_iCrops = 0;
@@ -7584,6 +7588,45 @@ void CvUnit::setHealPercentFromAttackDamageFormula(int iValue)
 const int CvUnit::GetHealPercentFromAttackDamageFormula() const
 {
 	return m_eHealPercentFromAttackDamageFormula;
+}
+
+const int CvUnit::GetDifferentReligionAttackModifier() const
+{
+	return m_iDifferentReligionAttackModifier;
+}
+
+void CvUnit::ChangeDifferentReligionAttackModifier(int iValue)
+{
+	m_iDifferentReligionAttackModifier += iValue;
+}
+
+const int CvUnit::GetDifferentReligionDefenseModifier() const
+{
+	return m_iDifferentReligionDefenseModifier;
+}
+
+void CvUnit::ChangeDifferentReligionDefenseModifier(int iValue)
+{
+	m_iDifferentReligionDefenseModifier += iValue;
+}
+int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, bool bAttacking) const
+{
+	int iModifier = 0;
+
+	// Different religion combat bonus
+	if (pOtherUnit)
+	{
+		CvGameReligions* pReligions = GC.getGame().GetGameReligions();
+		ReligionTypes eOurReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(getOwner()).GetID());
+		ReligionTypes eTheirReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(pOtherUnit->getOwner()).GetID());
+		if (eOurReligion != NO_RELIGION && eTheirReligion != NO_RELIGION && eOurReligion != eTheirReligion)
+		{
+			if (bAttacking)
+				iModifier += m_iDifferentReligionAttackModifier;
+			else
+				iModifier += m_iDifferentReligionDefenseModifier;
+		}
+	return iModifier;
 }
 #endif
 //	--------------------------------------------------------------------------------
@@ -15583,6 +15626,7 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 			//}
 #if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
 			iModifier += GetTotalHeightMod(*const_cast<CvPlot*>(pToPlot));
+			iModifier += GetDynamicCombatModifierFromPromotions(pDefender, true);
 #endif
 		}
 
@@ -16443,6 +16487,7 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 
 #if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
 				iModifier += GetTotalHeightMod(*pTargetPlot);
+				iModifier += GetDynamicCombatModifierFromPromotions(pOtherUnit, bAttacking);
 #endif
 
 				// Bonus for fighting in one's lands
@@ -26529,6 +26574,9 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		AddCombatBonusFormula(thisPromotion.GetCultureDefenseBonusFormula() ? thisPromotion.GetCultureDefenseBonusFormula() : NO_LUA_FORMULA, YIELD_CULTURE, false);
 		AddCombatBonusFormula(thisPromotion.GetFaithAttackBonusFormula() ? thisPromotion.GetFaithAttackBonusFormula() : NO_LUA_FORMULA, YIELD_FAITH, true);
 		AddCombatBonusFormula(thisPromotion.GetFaithDefenseBonusFormula() ? thisPromotion.GetFaithDefenseBonusFormula() : NO_LUA_FORMULA, YIELD_FAITH, false);
+
+		ChangeDifferentReligionAttackModifier(thisPromotion.GetDifferentReligionAttackModifier() * iChange);
+		ChangeDifferentReligionDefenseModifier(thisPromotion.GetDifferentReligionDefenseModifier() * iChange);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 		if(thisPromotion.IsCrops()) ChangeCrops(iChange);
@@ -27169,6 +27217,8 @@ void CvUnit::read(FDataStream& kStream)
 		MOD_SERIALIZE_READ(159, kStream, iTemp, 0);
 		if (iTemp != 0) { CombatBonusFormulaEntry e; e.m_iFormulaId = iTemp; e.m_iInputType = YIELD_FAITH; e.m_bIsAttack = false; m_veCombatBonusFormulas.push_back(e); }
 	}
+	MOD_SERIALIZE_READ(161, kStream, m_iDifferentReligionAttackModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iDifferentReligionDefenseModifier, 0);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream >> m_iCrops;
@@ -27588,6 +27638,8 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_eMovementFromAttackDamageFormula;
 	kStream << m_eHealPercentFromAttackDamageFormula;
 	MOD_SERIALIZE_WRITE_VECTOR(kStream, m_veCombatBonusFormulas);
+	MOD_SERIALIZE_WRITE(kStream, m_iDifferentReligionAttackModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iDifferentReligionDefenseModifier);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream << m_iCrops;

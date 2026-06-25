@@ -1977,6 +1977,11 @@ public:
 	int GetCultureDefenseBonus() const;
 	int GetFaithAttackBonus() const;
 	int GetFaithDefenseBonus() const;
+	int GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, bool bAttacking) const;
+	const int GetDifferentReligionAttackModifier() const;
+	void ChangeDifferentReligionAttackModifier(int iValue);
+	const int GetDifferentReligionDefenseModifier() const;
+	void ChangeDifferentReligionDefenseModifier(int iValue);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	const int GetCrops() const;
@@ -2638,6 +2643,8 @@ protected:
 	int m_eMovementFromAttackDamageFormula;
 	int m_eHealPercentFromAttackDamageFormula;
 	std::vector<CombatBonusFormulaEntry> m_veCombatBonusFormulas;
+	int m_iDifferentReligionAttackModifier;
+	int m_iDifferentReligionDefenseModifier;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	int m_iCrops;

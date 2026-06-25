@@ -230,6 +230,8 @@ CvPromotionEntry::CvPromotionEntry():
 	m_eCultureDefenseBonusFormula(NO_LUA_FORMULA),
 	m_eFaithAttackBonusFormula(NO_LUA_FORMULA),
 	m_eFaithDefenseBonusFormula(NO_LUA_FORMULA),
+	m_iDifferentReligionAttackModifier(0),
+	m_iDifferentReligionDefenseModifier(0),
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops(false),
@@ -796,6 +798,8 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_eCultureDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("CultureDefenseBonusFormula")));
 	m_eFaithAttackBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("FaithAttackBonusFormula")));
 	m_eFaithDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("FaithDefenseBonusFormula")));
+	m_iDifferentReligionAttackModifier = kResults.GetInt("DifferentReligionAttackModifier");
+	m_iDifferentReligionDefenseModifier = kResults.GetInt("DifferentReligionDefenseModifier");
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops = kResults.GetBool("IsCrops");
@@ -2847,6 +2851,16 @@ int CvPromotionEntry::GetFaithAttackBonusFormula() const
 int CvPromotionEntry::GetFaithDefenseBonusFormula() const
 {
 	return m_eFaithDefenseBonusFormula;
+}
+
+int CvPromotionEntry::GetDifferentReligionAttackModifier() const
+{
+	return m_iDifferentReligionAttackModifier;
+}
+
+int CvPromotionEntry::GetDifferentReligionDefenseModifier() const
+{
+	return m_iDifferentReligionDefenseModifier;
 }
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
