@@ -67,6 +67,8 @@ alter table Beliefs add HolyCityUnitExperence integer default 0;
 alter table Beliefs add CityExtraMissionarySpreads integer default 0;
 alter table Beliefs add HolyCityPressureModifier integer default 0;
 alter table Beliefs add InquisitorProhibitSpreadInAlly boolean default 0;
+alter table Beliefs add FirstConversionCitiesPerGoldenAge integer default 0;--Trigger a Golden Age every X first-time city conversions
+alter table Beliefs add FirstConversionCitiesPerPop integer default 0;
 alter table Beliefs add InquisitionFervorTimeModifier integer default 0;
 alter table Beliefs add SameReligionMinorRecoveryModifier integer default 0;
 

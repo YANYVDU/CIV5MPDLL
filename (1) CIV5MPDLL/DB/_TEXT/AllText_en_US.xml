@@ -860,6 +860,12 @@
 		<Row Tag="TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE">
 			<Text>[COLOR_NEGATIVE_TEXT]No new post-combat promotion available; all candidates have already been acquired.[ENDCOLOR]</Text>
 		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_GOLDEN_AGE">
+			<Text>[COLOR_YELLOW]Due to your belief, a [ICON_GOLDEN_AGE] Golden Age has begun![ENDCOLOR]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
+			<Text>[COLOR_YELLOW]Due to your belief, {1_CityName} has gained +1[ICON_CITIZEN] Population![ENDCOLOR]</Text>
+		</Row>
 	</Language_en_US>
 
 </GameData>

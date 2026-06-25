@@ -75,6 +75,8 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_iSameReligionMinorRecoveryModifier(0),
 	m_iInquisitionFervorTimeModifier(0),
 	m_iCuttingBonusModifier(0),
+	m_iFirstConversionCitiesPerGoldenAge(0),
+	m_iFirstConversionCitiesPerPop(0),
 	m_iCityExtraMissionarySpreads(0),
 	m_bAllowYieldPerBirth(false),
 	m_piYieldPerBirth(NULL),
@@ -894,6 +896,14 @@ int CvBeliefEntry::GetCuttingBonusModifier() const
 {
 	return m_iCuttingBonusModifier;
 }
+int CvBeliefEntry::GetFirstConversionCitiesPerGoldenAge() const
+{
+	return m_iFirstConversionCitiesPerGoldenAge;
+}
+int CvBeliefEntry::GetFirstConversionCitiesPerPop() const
+{
+	return m_iFirstConversionCitiesPerPop;
+}
 //Extra Missionary Spreads
 int CvBeliefEntry::GetCityExtraMissionarySpreads() const
 {
@@ -1077,6 +1087,8 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iSameReligionMinorRecoveryModifier = kResults.GetInt("SameReligionMinorRecoveryModifier");
 	m_iInquisitionFervorTimeModifier = kResults.GetInt("InquisitionFervorTimeModifier");
 	m_iCuttingBonusModifier = kResults.GetInt("CuttingBonusModifier");
+	m_iFirstConversionCitiesPerGoldenAge = kResults.GetInt("FirstConversionCitiesPerGoldenAge");
+	m_iFirstConversionCitiesPerPop = kResults.GetInt("FirstConversionCitiesPerPop");
 #endif
 
 	m_bPantheon						  = kResults.GetBool("Pantheon");
@@ -1618,6 +1630,8 @@ CvReligionBeliefs::CvReligionBeliefs(const CvReligionBeliefs& source)
 	m_iInquisitionFervorTimeModifier = source.m_iInquisitionFervorTimeModifier;
 	m_iNumInquisitorProhibitSpreadInAlly = source.m_iNumInquisitorProhibitSpreadInAlly;
 	m_iCuttingBonusModifier = source.m_iCuttingBonusModifier;
+	m_iFirstConversionCitiesPerGoldenAge = source.m_iFirstConversionCitiesPerGoldenAge;
+	m_iFirstConversionCitiesPerPop = source.m_iFirstConversionCitiesPerPop;
 	m_iCityExtraMissionarySpreads = source.m_iCityExtraMissionarySpreads;
 	m_bAllowYieldPerBirth = source.m_bAllowYieldPerBirth;
 #endif
@@ -1690,6 +1704,8 @@ void CvReligionBeliefs::Reset()
 	m_iInquisitionFervorTimeModifier = 0;
 	m_iNumInquisitorProhibitSpreadInAlly = 0;
 	m_iCuttingBonusModifier = 0;
+	m_iFirstConversionCitiesPerGoldenAge = 0;
+	m_iFirstConversionCitiesPerPop = 0;
 	m_iCityExtraMissionarySpreads = 0;
 	m_bAllowYieldPerBirth = false;
 #endif
@@ -1772,6 +1788,8 @@ void CvReligionBeliefs::AddBelief(BeliefTypes eBelief, PlayerTypes ePlayer)
 	m_iInquisitionFervorTimeModifier += belief->GetInquisitionFervorTimeModifier();
 	m_iNumInquisitorProhibitSpreadInAlly += belief->IsInquisitorProhibitSpreadInAlly() ? 1 : 0;
 	m_iCuttingBonusModifier += belief->GetCuttingBonusModifier();
+	m_iFirstConversionCitiesPerGoldenAge += belief->GetFirstConversionCitiesPerGoldenAge();
+	m_iFirstConversionCitiesPerPop += belief->GetFirstConversionCitiesPerPop();
 	m_iCityExtraMissionarySpreads += belief->GetCityExtraMissionarySpreads();
 	m_bAllowYieldPerBirth = m_bAllowYieldPerBirth || belief->AllowYieldPerBirth();
 #endif
@@ -2830,6 +2848,8 @@ void CvReligionBeliefs::Read(FDataStream& kStream)
 	kStream >> m_iInquisitionFervorTimeModifier;
 	kStream >> m_iNumInquisitorProhibitSpreadInAlly;
 	kStream >> m_iCuttingBonusModifier;
+	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerGoldenAge, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerPop, 0);
 	kStream >> m_iCityExtraMissionarySpreads;
 	kStream >> m_bAllowYieldPerBirth;
 #endif
@@ -2898,6 +2918,8 @@ void CvReligionBeliefs::Write(FDataStream& kStream) const
 	kStream << m_iInquisitionFervorTimeModifier;
 	kStream << m_iNumInquisitorProhibitSpreadInAlly;
 	kStream << m_iCuttingBonusModifier;
+	MOD_SERIALIZE_WRITE(kStream, m_iFirstConversionCitiesPerGoldenAge);
+	MOD_SERIALIZE_WRITE(kStream, m_iFirstConversionCitiesPerPop);
 	kStream << m_iCityExtraMissionarySpreads;
 	kStream << m_bAllowYieldPerBirth;
 #endif

@@ -157,6 +157,8 @@ public:
 	int GetSameReligionMinorRecoveryModifier() const;
 	int GetInquisitionFervorTimeModifier() const;
 	int GetCuttingBonusModifier() const;
+	int GetFirstConversionCitiesPerGoldenAge() const;
+	int GetFirstConversionCitiesPerPop() const;
 	int GetCityExtraMissionarySpreads() const;
 	bool AllowYieldPerBirth() const;
 	int GetYieldPerBirth(int i) const;
@@ -237,6 +239,8 @@ protected:
 	int m_iSameReligionMinorRecoveryModifier;
 	int m_iInquisitionFervorTimeModifier;
 	int m_iCuttingBonusModifier;
+	int m_iFirstConversionCitiesPerGoldenAge;
+	int m_iFirstConversionCitiesPerPop;
 	int m_iCityExtraMissionarySpreads;
 	bool m_bAllowYieldPerBirth;
 	int* m_piYieldPerBirth;
@@ -523,6 +527,14 @@ public:
 	{
 		return m_iCuttingBonusModifier;
 	}
+	int GetFirstConversionCitiesPerGoldenAge() const
+	{
+		return m_iFirstConversionCitiesPerGoldenAge;
+	}
+	int GetFirstConversionCitiesPerPop() const
+	{
+		return m_iFirstConversionCitiesPerPop;
+	}
 	int GetCityExtraMissionarySpreads() const
 	{
 		return m_iCityExtraMissionarySpreads;
@@ -668,6 +680,8 @@ private:
 	int m_iInquisitionFervorTimeModifier;
 	int m_iNumInquisitorProhibitSpreadInAlly;
 	int m_iCuttingBonusModifier;
+	int m_iFirstConversionCitiesPerGoldenAge;
+	int m_iFirstConversionCitiesPerPop;
 	int m_iCityExtraMissionarySpreads;
 	bool m_bAllowYieldPerBirth;
 #endif
