@@ -3025,6 +3025,7 @@ protected:
 	int m_iCorruptionLevelReduceByOneRC = 0;
 	int m_iCorruptionPolicyCostModifier = 0;
 	int m_iCorruptionScoreGlobalChangeFromBuilding = 0;
+	bool m_bUpdatingReligion = false; // recursion guard for UpdateReligion()
 
 	std::vector<int> m_paiCorruptionLevelPolicyCostModifier;
 #endif

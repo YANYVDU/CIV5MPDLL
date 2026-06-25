@@ -5891,6 +5891,22 @@ void CvPlayer::UpdateNotifications()
 void CvPlayer::UpdateReligion()
 {
 	DoUpdateHappiness();
+
+#ifdef MOD_GLOBAL_CORRUPTION
+	// Guard against recursion: CvCity::UpdateReligion() calls us back at its end
+	if (m_bUpdatingReligion)
+		return;
+	m_bUpdatingReligion = true;
+
+	// Update each city's religion yields after belief changes (e.g., corruption score)
+	int iLoop = 0;
+	for(CvCity* pCity = firstCity(&iLoop); pCity != NULL; pCity = nextCity(&iLoop))
+	{
+		pCity->UpdateReligion(pCity->GetCityReligions()->GetReligiousMajority());
+	}
+
+	m_bUpdatingReligion = false;
+#endif
 }
 
 //	--------------------------------------------------------------------------------
@@ -34214,4 +34230,4 @@ UnitTypes CvPlayer::GetCivUnitWithDefault(UnitClassTypes eUnitClass) const
 		if(pUnitClassInfo) eUnitType = (UnitTypes)pUnitClassInfo->getDefaultUnitIndex();
 	}
 	return eUnitType;
-}
+}

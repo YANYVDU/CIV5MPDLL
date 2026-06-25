@@ -157,6 +157,7 @@ public:
 	int GetSameReligionMinorRecoveryModifier() const;
 	int GetInquisitionFervorTimeModifier() const;
 	int GetCuttingBonusModifier() const;
+	int GetCityCorruptionScoreChange() const;
 	int GetFirstConversionCitiesPerGoldenAge() const;
 	int GetFirstConversionCitiesPerPop() const;
 	int GetCityExtraMissionarySpreads() const;
@@ -239,6 +240,7 @@ protected:
 	int m_iSameReligionMinorRecoveryModifier;
 	int m_iInquisitionFervorTimeModifier;
 	int m_iCuttingBonusModifier;
+	int m_iCityCorruptionScoreChange;
 	int m_iFirstConversionCitiesPerGoldenAge;
 	int m_iFirstConversionCitiesPerPop;
 	int m_iCityExtraMissionarySpreads;
@@ -527,6 +529,10 @@ public:
 	{
 		return m_iCuttingBonusModifier;
 	}
+	int GetCityCorruptionScoreChange() const
+	{
+		return m_iCityCorruptionScoreChange;
+	}
 	int GetFirstConversionCitiesPerGoldenAge() const
 	{
 		return m_iFirstConversionCitiesPerGoldenAge;
@@ -680,6 +686,7 @@ private:
 	int m_iInquisitionFervorTimeModifier;
 	int m_iNumInquisitorProhibitSpreadInAlly;
 	int m_iCuttingBonusModifier;
+	int m_iCityCorruptionScoreChange;
 	int m_iFirstConversionCitiesPerGoldenAge;
 	int m_iFirstConversionCitiesPerPop;
 	int m_iCityExtraMissionarySpreads;

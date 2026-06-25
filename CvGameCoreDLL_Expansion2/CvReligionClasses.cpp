@@ -4625,6 +4625,9 @@ void CvCityReligions::CityConvertsReligion(ReligionTypes eMajority, ReligionType
 	CvGameReligions* pReligions = GC.getGame().GetGameReligions();
 
 	m_pCity->UpdateReligion(eMajority);
+#if defined(MOD_GLOBAL_CORRUPTION)
+	m_pCity->UpdateCorruption();
+#endif
 
 	if(eOldMajority > RELIGION_PANTHEON)
 	{

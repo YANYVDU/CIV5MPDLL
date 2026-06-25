@@ -75,6 +75,7 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_iSameReligionMinorRecoveryModifier(0),
 	m_iInquisitionFervorTimeModifier(0),
 	m_iCuttingBonusModifier(0),
+	m_iCityCorruptionScoreChange(0),
 	m_iFirstConversionCitiesPerGoldenAge(0),
 	m_iFirstConversionCitiesPerPop(0),
 	m_iCityExtraMissionarySpreads(0),
@@ -896,6 +897,10 @@ int CvBeliefEntry::GetCuttingBonusModifier() const
 {
 	return m_iCuttingBonusModifier;
 }
+int CvBeliefEntry::GetCityCorruptionScoreChange() const
+{
+	return m_iCityCorruptionScoreChange;
+}
 int CvBeliefEntry::GetFirstConversionCitiesPerGoldenAge() const
 {
 	return m_iFirstConversionCitiesPerGoldenAge;
@@ -1089,6 +1094,7 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iCuttingBonusModifier = kResults.GetInt("CuttingBonusModifier");
 	m_iFirstConversionCitiesPerGoldenAge = kResults.GetInt("FirstConversionCitiesPerGoldenAge");
 	m_iFirstConversionCitiesPerPop = kResults.GetInt("FirstConversionCitiesPerPop");
+	m_iCityCorruptionScoreChange = kResults.GetInt("CityCorruptionScoreChange");
 #endif
 
 	m_bPantheon						  = kResults.GetBool("Pantheon");
@@ -1632,6 +1638,7 @@ CvReligionBeliefs::CvReligionBeliefs(const CvReligionBeliefs& source)
 	m_iCuttingBonusModifier = source.m_iCuttingBonusModifier;
 	m_iFirstConversionCitiesPerGoldenAge = source.m_iFirstConversionCitiesPerGoldenAge;
 	m_iFirstConversionCitiesPerPop = source.m_iFirstConversionCitiesPerPop;
+	m_iCityCorruptionScoreChange = source.m_iCityCorruptionScoreChange;
 	m_iCityExtraMissionarySpreads = source.m_iCityExtraMissionarySpreads;
 	m_bAllowYieldPerBirth = source.m_bAllowYieldPerBirth;
 #endif
@@ -1706,6 +1713,7 @@ void CvReligionBeliefs::Reset()
 	m_iCuttingBonusModifier = 0;
 	m_iFirstConversionCitiesPerGoldenAge = 0;
 	m_iFirstConversionCitiesPerPop = 0;
+	m_iCityCorruptionScoreChange = 0;
 	m_iCityExtraMissionarySpreads = 0;
 	m_bAllowYieldPerBirth = false;
 #endif
@@ -1790,6 +1798,7 @@ void CvReligionBeliefs::AddBelief(BeliefTypes eBelief, PlayerTypes ePlayer)
 	m_iCuttingBonusModifier += belief->GetCuttingBonusModifier();
 	m_iFirstConversionCitiesPerGoldenAge += belief->GetFirstConversionCitiesPerGoldenAge();
 	m_iFirstConversionCitiesPerPop += belief->GetFirstConversionCitiesPerPop();
+	m_iCityCorruptionScoreChange += belief->GetCityCorruptionScoreChange();
 	m_iCityExtraMissionarySpreads += belief->GetCityExtraMissionarySpreads();
 	m_bAllowYieldPerBirth = m_bAllowYieldPerBirth || belief->AllowYieldPerBirth();
 #endif
@@ -2850,6 +2859,7 @@ void CvReligionBeliefs::Read(FDataStream& kStream)
 	kStream >> m_iCuttingBonusModifier;
 	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerGoldenAge, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerPop, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iCityCorruptionScoreChange, 0);
 	kStream >> m_iCityExtraMissionarySpreads;
 	kStream >> m_bAllowYieldPerBirth;
 #endif
@@ -2920,6 +2930,7 @@ void CvReligionBeliefs::Write(FDataStream& kStream) const
 	kStream << m_iCuttingBonusModifier;
 	MOD_SERIALIZE_WRITE(kStream, m_iFirstConversionCitiesPerGoldenAge);
 	MOD_SERIALIZE_WRITE(kStream, m_iFirstConversionCitiesPerPop);
+	MOD_SERIALIZE_WRITE(kStream, m_iCityCorruptionScoreChange);
 	kStream << m_iCityExtraMissionarySpreads;
 	kStream << m_bAllowYieldPerBirth;
 #endif

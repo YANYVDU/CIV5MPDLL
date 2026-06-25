@@ -23682,6 +23682,33 @@ int CvCity::CalculateCorruptionScoreFromResource() const
 	return resourceInfo != nullptr ? resourceInfo->GetCorruptionScoreChange() : 0;
 }
 
+int CvCity::CalculateCorruptionScoreFromReligion() const
+{
+	int iChange = 0;
+
+	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+	if (eMajority >= RELIGION_PANTHEON)
+	{
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if (pReligion)
+		{
+			iChange += pReligion->m_Beliefs.GetCityCorruptionScoreChange();
+		}
+	}
+
+	BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
+	if (eSecondaryPantheon != NO_BELIEF)
+	{
+		CvBeliefEntry* pBelief = GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon);
+		if (pBelief)
+		{
+			iChange += pBelief->GetCityCorruptionScoreChange();
+		}
+	}
+
+	return iChange;
+}
+
 int CvCity::CalculateCorruptionScoreFromTrait() const
 {
 	CvPlayerAI& owner = GET_PLAYER(getOwner());
@@ -23702,6 +23729,7 @@ int CvCity::CalculateTotalCorruptionScore() const
 	score += CalculateCorruptionScoreFromDistance();
 	score += CalculateCorruptionScoreFromCoastalBonus();
 	score += CalculateCorruptionScoreFromResource();
+	score += CalculateCorruptionScoreFromReligion();
 	score += GetCorruptionScoreChangeFromBuilding();
 	score += GetCorruptionScoreGlobalChangeFromBuilding();
 	score += CalculateCorruptionScoreFromTrait();

@@ -718,6 +718,7 @@ protected:
 	LUAAPIEXTN(CalculateTotalCorruptionScore, int);
 	LUAAPIEXTN(CalculateCorruptionScoreFromDistance, int);
 	LUAAPIEXTN(CalculateCorruptionScoreFromCoastalBonus, int);
+	LUAAPIEXTN(CalculateCorruptionScoreFromReligion, int);
 	LUAAPIEXTN(CalculateCorruptionScoreModifierFromSpy, int);
 	LUAAPIEXTN(CalculateCorruptionScoreModifierFromTrait, int);
 	LUAAPIEXTN(GetCorruptionScoreChangeFromBuilding, int);

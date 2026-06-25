@@ -71,6 +71,8 @@ alter table Beliefs add FirstConversionCitiesPerGoldenAge integer default 0;--Tr
 alter table Beliefs add FirstConversionCitiesPerPop integer default 0;
 alter table Beliefs add InquisitionFervorTimeModifier integer default 0;
 alter table Beliefs add SameReligionMinorRecoveryModifier integer default 0;
+--Positive increases corruption score, negative reduces it
+alter table Beliefs add CityCorruptionScoreChange integer default 0;
 
 create table Belief_GreatPersonPoints (
     BeliefType text references Beliefs(Type),
