@@ -170,6 +170,7 @@ public:
 	int GetCiviliansFreePromotion() const;
 	int GetTradeRouteLandGoldBonus() const;
 	int GetTradeRouteSeaGoldBonus() const;
+	bool IsNewCityAutomaticReligion() const;
 #endif
 
 	TechTypes GetFreeUnitPrereqTech() const;
@@ -478,6 +479,7 @@ protected:
 	int m_iCiviliansFreePromotion;
 	int m_iTradeRouteLandGoldBonus;
 	int m_iTradeRouteSeaGoldBonus;
+	bool m_bNewCityAutomaticReligion;
 #endif
 
 	TechTypes m_eFreeUnitPrereqTech;
@@ -1134,6 +1136,10 @@ public:
 	{
 		return m_bTrainedAll;
 	};
+	bool IsNewCityAutomaticReligion() const
+	{
+		return m_bNewCityAutomaticReligion;
+	};
 	bool IsCanConquerUC() const
 	{
 		return m_bCanConquerUC;
@@ -1610,6 +1616,7 @@ private:
 #endif
 	// Saved
 	bool m_bTrainedAll = false;
+	bool m_bNewCityAutomaticReligion = false;
 	bool m_bCanConquerUC = false;
 	bool m_bFightWellDamaged = false;
 	bool m_bBuyOwnedTiles = false;

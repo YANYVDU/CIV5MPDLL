@@ -8266,6 +8266,14 @@ void CvPlayer::found(int iX, int iY)
 
 	SetTurnsSinceSettledLastCity(0);
 
+	// Trait: automatically set new city religion to founded religion
+	if (GetPlayerTraits()->IsNewCityAutomaticReligion())
+	{
+		ReligionTypes eOurReligion = GC.getGame().GetGameReligions()->GetFounderBenefitsReligion(GetID());
+		if (eOurReligion != NO_RELIGION)
+			eReligion = eOurReligion;
+	}
+
 	CvCity* pCity = initCity(iX, iY, true, true, eReligion);
 	CvAssertMsg(pCity != NULL, "City is not assigned a valid value");
 	if(pCity == NULL)

@@ -877,6 +877,11 @@ int CvTraitEntry::GetTradeRouteSeaGoldBonus() const
 {
 	return m_iTradeRouteSeaGoldBonus;
 }
+
+bool CvTraitEntry::IsNewCityAutomaticReligion() const
+{
+	return m_bNewCityAutomaticReligion;
+}
 #endif
 
 /// Accessor: tech that triggers this free unit
@@ -1874,6 +1879,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	}
 	m_iTradeRouteLandGoldBonus = kResults.GetInt("TradeRouteLandGoldBonus");
 	m_iTradeRouteSeaGoldBonus = kResults.GetInt("TradeRouteSeaGoldBonus");
+	m_bNewCityAutomaticReligion = kResults.GetBool("NewCityAutomaticReligion");
 #endif
 
 #if defined(MOD_TRAITS_OTHER_PREREQS)
@@ -2936,6 +2942,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			{
 				m_bTrainedAll = true;
 			}
+			if (trait->IsNewCityAutomaticReligion())
+			{
+				m_bNewCityAutomaticReligion = true;
+			}
 			if (trait->IsCanConquerUC())
 			{
 				m_bCanConquerUC = true;
@@ -3477,6 +3487,7 @@ void CvPlayerTraits::Reset()
 	m_iTradeRouteSeaGoldBonus = 0;
 #endif
 	m_bTrainedAll = false;
+	m_bNewCityAutomaticReligion = false;
 	m_bCanConquerUC = false;
 	m_bFightWellDamaged = false;
 	m_bBuyOwnedTiles = false;
@@ -5023,6 +5034,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(52, kStream, m_iSeaTradeRouteRangeBonus, 0);
 #endif
 	kStream >> m_bTrainedAll;
+	MOD_SERIALIZE_READ(161, kStream, m_bNewCityAutomaticReligion, false);
 	kStream >> m_bCanConquerUC;
 	kStream >> m_bFightWellDamaged;
 	kStream >> m_bBuyOwnedTiles;
@@ -5451,6 +5463,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	MOD_SERIALIZE_WRITE(kStream, m_iSeaTradeRouteRangeBonus);
 #endif
 	kStream << m_bTrainedAll;
+	MOD_SERIALIZE_WRITE(kStream, m_bNewCityAutomaticReligion);
 	kStream << m_bCanConquerUC;
 	kStream << m_bFightWellDamaged;
 	kStream << m_bBuyOwnedTiles;

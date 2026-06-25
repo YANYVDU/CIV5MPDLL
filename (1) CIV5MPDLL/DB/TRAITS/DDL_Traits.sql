@@ -122,3 +122,4 @@ create table Trait_AdjacentImprovementYieldChanges (
     YieldType text references Yields(Type),
     Yield integer default 0
 );
+alter table Traits add NewCityAutomaticReligion boolean default 0;

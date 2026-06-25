@@ -1107,6 +1107,17 @@ void CvGameReligions::FoundReligion(PlayerTypes ePlayer, ReligionTypes eReligion
 	kPlayer.UpdateReligion();
 	kPlayer.GetReligions()->SetFoundingReligion(false);
 
+	// Trait: all existing cities immediately follow the new religion
+	if (kPlayer.GetPlayerTraits()->IsNewCityAutomaticReligion())
+	{
+		int iLoopCity;
+		CvCity* pLoopCity;
+		for(pLoopCity = kPlayer.firstCity(&iLoopCity); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iLoopCity))
+		{
+			pLoopCity->GetCityReligions()->AdoptReligionFully(kReligion.m_eReligion);
+		}
+	}
+
 	// In case we have another prophet sitting around, make sure he's set to this religion
 	int iLoopUnit;
 	CvUnit* pLoopUnit;
