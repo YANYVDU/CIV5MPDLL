@@ -150,6 +150,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iCiviliansFreePromotion(NO_PROMOTION),
 	m_iTradeRouteLandGoldBonus(0),
 	m_iTradeRouteSeaGoldBonus(0),
+	m_bNewCityAutomaticReligion(false),
 #endif
 
 	m_eFreeUnitPrereqTech(NO_TECH),
@@ -207,6 +208,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_paiGoldenAgeYieldModifier(NULL),
 	m_piStrategicResourceQuantityModifier(NULL),
 	m_piResourceQuantityModifiers(NULL),
+	m_piBuildCostChange(NULL),
 	m_ppiImprovementYieldChanges(NULL),
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
 	m_ppiPlotYieldChanges(NULL),
@@ -252,6 +254,7 @@ CvTraitEntry::~CvTraitEntry()
 	SAFE_DELETE_ARRAY(m_paiGoldenAgeYieldModifier);
 	SAFE_DELETE_ARRAY(m_piStrategicResourceQuantityModifier);
 	SAFE_DELETE_ARRAY(m_piResourceQuantityModifiers);
+	SAFE_DELETE_ARRAY(m_piBuildCostChange);
 	SAFE_DELETE_ARRAY(m_piMovesChangeUnitCombats);
 	SAFE_DELETE_ARRAY(m_piMaintenanceModifierUnitCombats);
 #if defined(MOD_API_UNIFIED_YIELDS)
@@ -1165,6 +1168,13 @@ int CvTraitEntry::GetResourceQuantityModifier(int i) const
 	return m_piResourceQuantityModifiers ? m_piResourceQuantityModifiers[i] : -1;
 }
 
+int CvTraitEntry::GetBuildCostChange(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piBuildCostChange ? m_piBuildCostChange[i] : 0;
+}
+
 /// Accessor:: Extra yield from an improvement
 int CvTraitEntry::GetImprovementYieldChanges(ImprovementTypes eIndex1, YieldTypes eIndex2) const
 {
@@ -2038,6 +2048,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 		std::multimap<int,int>(m_FreePromotionUnitCombats).swap(m_FreePromotionUnitCombats);
 
 		kUtility.PopulateArrayByValue(m_piResourceQuantityModifiers, "Resources", "Trait_ResourceQuantityModifiers", "ResourceType", "TraitType", szTraitType, "ResourceQuantityModifier");
+		kUtility.PopulateArrayByValue(m_piBuildCostChange, "Builds", "Trait_BuildCostChange", "BuildType", "TraitType", szTraitType, "Change");
 	}
 
 #if defined(MOD_TRAIT_NEW_EFFECT_FOR_SP)
@@ -3301,6 +3312,11 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_aiResourceQuantityModifier[iResource] = trait->GetResourceQuantityModifier(iResource);
 			}
 
+			for(int iBuild = 0; iBuild < GC.getNumBuildInfos(); iBuild++)
+			{
+				m_aiBuildCostChange[iBuild] = trait->GetBuildCostChange(iBuild);
+			}
+
 			for (int iUnitClass = 0; iUnitClass < GC.getNumUnitClassInfos(); iUnitClass++)
 			{
 				m_abNoTrain[iUnitClass] = trait->NoTrain((UnitClassTypes)iUnitClass);
@@ -3675,6 +3691,13 @@ void CvPlayerTraits::Reset()
 	for(int iResource = 0; iResource < GC.getNumResourceInfos(); iResource++)
 	{
 		m_aiResourceQuantityModifier[iResource] = 0;
+	}
+
+	m_aiBuildCostChange.clear();
+	m_aiBuildCostChange.resize(GC.getNumBuildInfos());
+	for(int iBuild = 0; iBuild < GC.getNumBuildInfos(); iBuild++)
+	{
+		m_aiBuildCostChange[iBuild] = 0;
 	}
 
 	m_abNoTrain.clear();
@@ -5177,6 +5200,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, &m_iStrategicResourceQuantityModifier[0], GC.getNumTerrainInfos());
 
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_aiResourceQuantityModifier);
+	MOD_SERIALIZE_READ_HASH_VECTOR(161, kStream, m_aiBuildCostChange, GC.getNumBuildInfos(), 0);
 
 	kStream >> iNumEntries;
 	m_abNoTrain.clear();
@@ -5535,6 +5559,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	
 	CvInfosSerializationHelper::WriteHashedDataArray<TerrainTypes>(kStream, &m_iStrategicResourceQuantityModifier[0], GC.getNumTerrainInfos());
 	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes>(kStream, m_aiResourceQuantityModifier);
+	MOD_SERIALIZE_WRITE_HASH_VECTOR(kStream, m_aiBuildCostChange, BuildTypes);
 
 	kStream << m_abNoTrain.size();
 	for (uint ui = 0; ui < m_abNoTrain.size(); ui++)

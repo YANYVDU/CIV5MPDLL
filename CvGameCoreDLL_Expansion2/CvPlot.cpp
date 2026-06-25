@@ -3086,6 +3086,16 @@ int CvPlot::getBuildTime(BuildTypes eBuild, PlayerTypes ePlayer) const
 		iTime += GC.getBuildInfo(eBuild)->getFeatureTime(getFeatureType());
 	}
 
+	// MOD_TRAIT_BUILD_COST_MODIFIER (positive = increases cost, negative = reduces cost)
+	if (ePlayer != NO_PLAYER)
+	{
+		int iTraitModifier = GET_PLAYER(ePlayer).GetPlayerTraits()->GetBuildCostChange(eBuild);
+		if (iTraitModifier != 0)
+		{
+			iTime += iTraitModifier;
+		}
+	}
+
 	iTime *= std::max(0, (GC.getTerrainInfo(getTerrainType())->getBuildModifier() + 100));
 	iTime /= 100;
 
@@ -3094,6 +3104,9 @@ int CvPlot::getBuildTime(BuildTypes eBuild, PlayerTypes ePlayer) const
 
 	iTime *= GC.getGame().getStartEraInfo().getBuildPercent();
 	iTime /= 100;
+
+	// Minimum build time: no build action can complete in 0 or negative turns
+	iTime = std::max(100, iTime);
 
 	return iTime;
 }

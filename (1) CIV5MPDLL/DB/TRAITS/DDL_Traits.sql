@@ -123,3 +123,8 @@ create table Trait_AdjacentImprovementYieldChanges (
     Yield integer default 0
 );
 alter table Traits add NewCityAutomaticReligion boolean default 0;
+create table Trait_BuildCostChange (
+    TraitType text references Traits(Type),
+    BuildType text references Builds(Type),
+    Change int default 0
+);
