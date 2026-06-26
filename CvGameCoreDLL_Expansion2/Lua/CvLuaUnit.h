@@ -798,6 +798,8 @@ protected:
 	LUAAPIEXTN(GetAllyCityStateCombatModifier, int);
 	LUAAPIEXTN(GetHappinessCombatModifier, int);
 	LUAAPIEXTN(GetResourceCombatModifier, int);
+	LUAAPIEXTN(GetDifferentReligionAttackModifier, int);
+	LUAAPIEXTN(GetDifferentReligionDefenseModifier, int);
 	LUAAPIEXTN(GetGoldenAgeTurnAttackModifier, int);
 	LUAAPIEXTN(GetGoldenAgeTurnDefenseModifier, int);
 	LUAAPIEXTN(GetFollowerCountCombatModifier, int);

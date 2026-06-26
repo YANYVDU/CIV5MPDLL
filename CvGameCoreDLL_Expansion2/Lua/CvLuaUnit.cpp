@@ -869,6 +869,8 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetAllyCityStateCombatModifier);
 	Method(GetHappinessCombatModifier);
 	Method(GetResourceCombatModifier);
+	Method(GetDifferentReligionAttackModifier);
+	Method(GetDifferentReligionDefenseModifier);
 	Method(GetGoldenAgeTurnAttackModifier);
 	Method(GetGoldenAgeTurnDefenseModifier);
 	Method(GetFollowerCountCombatModifier);
@@ -6897,6 +6899,8 @@ LUAAPIIMPL(Unit, SetIsBatchMark)
 
 LUAAPIIMPL(Unit, IsCheat)
 LUAAPIIMPL(Unit, SetIsCheat)
+LUAAPIIMPL(Unit, GetDifferentReligionAttackModifier)
+LUAAPIIMPL(Unit, GetDifferentReligionDefenseModifier)
 LUAAPIIMPL(Unit, GetGoldenAgeTurnAttackModifier)
 LUAAPIIMPL(Unit, GetGoldenAgeTurnDefenseModifier)
 LUAAPIIMPL(Unit, GetFollowerCountCombatModifier)
