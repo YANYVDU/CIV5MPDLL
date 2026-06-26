@@ -503,6 +503,8 @@ CvUnit::CvUnit() :
 	, m_veCombatBonusFormulas()
 	, m_iDifferentReligionAttackModifier(0)
 	, m_iDifferentReligionDefenseModifier(0)
+	, m_iGoldenAgeTurnAttackModifier(0)
+	, m_iGoldenAgeTurnDefenseModifier(0)
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	, m_iCrops(0)
@@ -1520,6 +1522,8 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_veCombatBonusFormulas.clear();
 	m_iDifferentReligionAttackModifier = 0;
 	m_iDifferentReligionDefenseModifier = 0;
+	m_iGoldenAgeTurnAttackModifier = 0;
+	m_iGoldenAgeTurnDefenseModifier = 0;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_iCrops = 0;
@@ -7609,6 +7613,26 @@ void CvUnit::ChangeDifferentReligionDefenseModifier(int iValue)
 {
 	m_iDifferentReligionDefenseModifier += iValue;
 }
+
+const int CvUnit::GetGoldenAgeTurnAttackModifier() const
+{
+	return m_iGoldenAgeTurnAttackModifier;
+}
+
+void CvUnit::ChangeGoldenAgeTurnAttackModifier(int iValue)
+{
+	m_iGoldenAgeTurnAttackModifier += iValue;
+}
+
+const int CvUnit::GetGoldenAgeTurnDefenseModifier() const
+{
+	return m_iGoldenAgeTurnDefenseModifier;
+}
+
+void CvUnit::ChangeGoldenAgeTurnDefenseModifier(int iValue)
+{
+	m_iGoldenAgeTurnDefenseModifier += iValue;
+}
 int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, bool bAttacking) const
 {
 	int iModifier = 0;
@@ -7626,6 +7650,21 @@ int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, boo
 			else
 				iModifier += m_iDifferentReligionDefenseModifier;
 		}
+	}
+
+	// Golden age combat bonus
+	if (m_iGoldenAgeTurnAttackModifier != 0 || m_iGoldenAgeTurnDefenseModifier != 0)
+	{
+		CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
+		if (kPlayer.isGoldenAge())
+		{
+			int iGoldenAgeTurns = kPlayer.GetGoldenAgeProgressMeter() / 100;
+			if (bAttacking)
+				iModifier += iGoldenAgeTurns * m_iGoldenAgeTurnAttackModifier / 100;
+			else
+				iModifier += iGoldenAgeTurns * m_iGoldenAgeTurnDefenseModifier / 100;
+		}
+	}
 	return iModifier;
 }
 #endif
@@ -26577,6 +26616,8 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 
 		ChangeDifferentReligionAttackModifier(thisPromotion.GetDifferentReligionAttackModifier() * iChange);
 		ChangeDifferentReligionDefenseModifier(thisPromotion.GetDifferentReligionDefenseModifier() * iChange);
+		ChangeGoldenAgeTurnAttackModifier(thisPromotion.GetGoldenAgeTurnAttackModifier() * iChange);
+		ChangeGoldenAgeTurnDefenseModifier(thisPromotion.GetGoldenAgeTurnDefenseModifier() * iChange);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 		if(thisPromotion.IsCrops()) ChangeCrops(iChange);
@@ -27219,6 +27260,8 @@ void CvUnit::read(FDataStream& kStream)
 	}
 	MOD_SERIALIZE_READ(161, kStream, m_iDifferentReligionAttackModifier, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iDifferentReligionDefenseModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeTurnAttackModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeTurnDefenseModifier, 0);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream >> m_iCrops;
@@ -27640,6 +27683,8 @@ void CvUnit::write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE_VECTOR(kStream, m_veCombatBonusFormulas);
 	MOD_SERIALIZE_WRITE(kStream, m_iDifferentReligionAttackModifier);
 	MOD_SERIALIZE_WRITE(kStream, m_iDifferentReligionDefenseModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeTurnAttackModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeTurnDefenseModifier);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream << m_iCrops;

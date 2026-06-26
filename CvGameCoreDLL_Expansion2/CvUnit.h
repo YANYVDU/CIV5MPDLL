@@ -1982,6 +1982,10 @@ public:
 	void ChangeDifferentReligionAttackModifier(int iValue);
 	const int GetDifferentReligionDefenseModifier() const;
 	void ChangeDifferentReligionDefenseModifier(int iValue);
+	const int GetGoldenAgeTurnAttackModifier() const;
+	void ChangeGoldenAgeTurnAttackModifier(int iValue);
+	const int GetGoldenAgeTurnDefenseModifier() const;
+	void ChangeGoldenAgeTurnDefenseModifier(int iValue);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	const int GetCrops() const;
@@ -2645,6 +2649,8 @@ protected:
 	std::vector<CombatBonusFormulaEntry> m_veCombatBonusFormulas;
 	int m_iDifferentReligionAttackModifier;
 	int m_iDifferentReligionDefenseModifier;
+	int m_iGoldenAgeTurnAttackModifier;
+	int m_iGoldenAgeTurnDefenseModifier;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	int m_iCrops;

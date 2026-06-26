@@ -232,6 +232,8 @@ CvPromotionEntry::CvPromotionEntry():
 	m_eFaithDefenseBonusFormula(NO_LUA_FORMULA),
 	m_iDifferentReligionAttackModifier(0),
 	m_iDifferentReligionDefenseModifier(0),
+	m_iGoldenAgeTurnAttackModifier(0),
+	m_iGoldenAgeTurnDefenseModifier(0),
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops(false),
@@ -800,6 +802,8 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_eFaithDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("FaithDefenseBonusFormula")));
 	m_iDifferentReligionAttackModifier = kResults.GetInt("DifferentReligionAttackModifier");
 	m_iDifferentReligionDefenseModifier = kResults.GetInt("DifferentReligionDefenseModifier");
+	m_iGoldenAgeTurnAttackModifier = kResults.GetInt("GoldenAgeTurnAttackModifier");
+	m_iGoldenAgeTurnDefenseModifier = kResults.GetInt("GoldenAgeTurnDefenseModifier");
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops = kResults.GetBool("IsCrops");
@@ -2861,6 +2865,16 @@ int CvPromotionEntry::GetDifferentReligionAttackModifier() const
 int CvPromotionEntry::GetDifferentReligionDefenseModifier() const
 {
 	return m_iDifferentReligionDefenseModifier;
+}
+
+int CvPromotionEntry::GetGoldenAgeTurnAttackModifier() const
+{
+	return m_iGoldenAgeTurnAttackModifier;
+}
+
+int CvPromotionEntry::GetGoldenAgeTurnDefenseModifier() const
+{
+	return m_iGoldenAgeTurnDefenseModifier;
 }
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)

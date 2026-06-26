@@ -798,6 +798,8 @@ protected:
 	LUAAPIEXTN(GetAllyCityStateCombatModifier, int);
 	LUAAPIEXTN(GetHappinessCombatModifier, int);
 	LUAAPIEXTN(GetResourceCombatModifier, int);
+	LUAAPIEXTN(GetGoldenAgeTurnAttackModifier, int);
+	LUAAPIEXTN(GetGoldenAgeTurnDefenseModifier, int);
 	LUAAPIEXTN(GetNearbyUnitPromotionBonus, int);
 	LUAAPIEXTN(GetBarbarianCombatBonusTotal, int);
 	LUAAPIEXTN(IsBatchMark, bool);

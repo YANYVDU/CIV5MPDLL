@@ -291,6 +291,8 @@ public:
 	int GetFaithDefenseBonusFormula() const;
 	int GetDifferentReligionAttackModifier() const;
 	int GetDifferentReligionDefenseModifier() const;
+	int GetGoldenAgeTurnAttackModifier() const;
+	int GetGoldenAgeTurnDefenseModifier() const;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool IsCrops() const;
@@ -684,6 +686,8 @@ protected:
 	int m_eFaithDefenseBonusFormula;
 	int m_iDifferentReligionAttackModifier;
 	int m_iDifferentReligionDefenseModifier;
+	int m_iGoldenAgeTurnAttackModifier;
+	int m_iGoldenAgeTurnDefenseModifier;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool m_bCrops;

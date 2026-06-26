@@ -869,6 +869,8 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetAllyCityStateCombatModifier);
 	Method(GetHappinessCombatModifier);
 	Method(GetResourceCombatModifier);
+	Method(GetGoldenAgeTurnAttackModifier);
+	Method(GetGoldenAgeTurnDefenseModifier);
 	Method(GetNearbyUnitPromotionBonus);
 	Method(GetBarbarianCombatBonusTotal);
 	Method(IsBatchMark);
@@ -6893,6 +6895,8 @@ LUAAPIIMPL(Unit, SetIsBatchMark)
 
 LUAAPIIMPL(Unit, IsCheat)
 LUAAPIIMPL(Unit, SetIsCheat)
+LUAAPIIMPL(Unit, GetGoldenAgeTurnAttackModifier)
+LUAAPIIMPL(Unit, GetGoldenAgeTurnDefenseModifier)
 int CvLuaUnit::lLoadUnit(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);
