@@ -61,6 +61,21 @@ create table Belief_YieldModifierPerFollowerTimes100 (
     YieldType text references Yields(Type),
     Modifier integer default 0
 );
+create table Belief_TradeRouteToHolyCityYield (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
+);
+create table Belief_TradeRouteToHolyCityDestYield (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
+);
+create table Belief_TradeRouteSameReligionYieldModifier (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Modifier integer default 0
+);
 --******************** New Other Bonus ********************--
 alter table Beliefs add GoldenAgeModifier integer default 0;
 alter table Beliefs add HolyCityUnitExperence integer default 0;

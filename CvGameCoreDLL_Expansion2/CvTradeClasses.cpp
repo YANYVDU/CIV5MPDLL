@@ -2689,6 +2689,28 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 		iValue += pOriginCity->GetTradeRouteFromTheCityYieldsPerEra(eYield) * 100 * (kOriginPlayer.GetCurrentEra() + 1);
 		if(kTradeConnection.m_eDomain == DOMAIN_SEA) iValue += kOriginPlayer.GetPlayerTraits()->GetSeaTradeRouteYieldPerEraTimes100(eYield) * (kOriginPlayer.GetCurrentEra() + 1);
 		if(kTradeConnection.m_eDomain == DOMAIN_SEA) iValue += kOriginPlayer.GetPlayerTraits()->GetSeaTradeRouteYieldTimes100(eYield);
+
+		// Trade route to holy city bonus for origin city
+		{
+			CvCity* pDestCity = CvGameTrade::GetDestCity(kTradeConnection);
+			if (pDestCity)
+			{
+				ReligionTypes eMajority = pOriginCity->GetCityReligions()->GetReligiousMajority();
+				if (eMajority > RELIGION_PANTHEON)
+				{
+					const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, pOriginCity->getOwner());
+					if (pReligion && pDestCity->getX() == pReligion->m_iHolyCityX && pDestCity->getY() == pReligion->m_iHolyCityY)
+					{
+						iValue += pReligion->m_Beliefs.GetTradeRouteToHolyCityYield(eYield) * 100;
+						BeliefTypes eSecondaryPantheon = pOriginCity->GetCityReligions()->GetSecondaryReligionPantheonBelief();
+						if (eSecondaryPantheon != NO_BELIEF)
+						{
+							iValue += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetTradeRouteToHolyCityYield(eYield) * 100;
+						}
+					}
+				}
+			}
+		}
 	}
 	else
 	{
@@ -2745,6 +2767,7 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 
 				iValue *= iModifier;
 				iValue /= 100;
+
 			}
 		}
 		else
@@ -2859,7 +2882,48 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 		}
 	}
 
-	return iValue;	
+	// Same religion trade route modifier
+	CvCity* pDestCitySameReligion = CvGameTrade::GetDestCity(kTradeConnection);
+	if (pDestCitySameReligion && pOriginCity)
+	{
+		ReligionTypes eOriginReligion = pOriginCity->GetCityReligions()->GetReligiousMajority();
+		if (eOriginReligion > RELIGION_PANTHEON && eOriginReligion == pDestCitySameReligion->GetCityReligions()->GetReligiousMajority())
+		{
+			const CvReligion* pReligionSame = GC.getGame().GetGameReligions()->GetReligion(eOriginReligion, pOriginCity->getOwner());
+			if (pReligionSame)
+			{
+				int iSameReligionMod = pReligionSame->m_Beliefs.GetTradeRouteSameReligionYieldModifier(eYield);
+				if (iSameReligionMod != 0)
+				{
+					iValue = iValue * (100 + iSameReligionMod) / 100;
+				}
+			}
+		}
+	}
+
+
+	// Trade route to holy city bonus for the holy city (destination)
+	{
+		CvCity* pHolyDestCity = CvGameTrade::GetDestCity(kTradeConnection);
+		if (pHolyDestCity && pOriginCity)
+		{
+			ReligionTypes eMajorityDest = pOriginCity->GetCityReligions()->GetReligiousMajority();
+			if (eMajorityDest > RELIGION_PANTHEON)
+			{
+				const CvReligion* pHolyReligion = GC.getGame().GetGameReligions()->GetReligion(eMajorityDest, pOriginCity->getOwner());
+				if (pHolyReligion && pHolyDestCity->getX() == pHolyReligion->m_iHolyCityX && pHolyDestCity->getY() == pHolyReligion->m_iHolyCityY)
+				{
+					iValue += pHolyReligion->m_Beliefs.GetTradeRouteToHolyCityDestYield(eYield) * 100;
+					BeliefTypes eSecondaryPantheonDest = pOriginCity->GetCityReligions()->GetSecondaryReligionPantheonBelief();
+					if (eSecondaryPantheonDest != NO_BELIEF)
+					{
+						iValue += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheonDest)->GetTradeRouteToHolyCityDestYield(eYield) * 100;
+					}
+				}
+			}
+		}
+	}
+	return iValue;
 }
 
 //	--------------------------------------------------------------------------------

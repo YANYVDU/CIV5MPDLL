@@ -162,6 +162,9 @@ public:
 	int GetFirstConversionCitiesPerPop() const;
 	int GetLocalHappinessYieldRate(int i) const;
 	int GetCorruptionScoreYieldRate(int i) const;
+	int GetTradeRouteToHolyCityYield(int i) const;
+	int GetTradeRouteToHolyCityDestYield(int i) const;
+	int GetTradeRouteSameReligionYieldModifier(int i) const;
 	int GetCityExtraMissionarySpreads() const;
 	bool AllowYieldPerBirth() const;
 	int GetYieldPerBirth(int i) const;
@@ -252,6 +255,9 @@ protected:
 	int* m_piYieldPerBirth;
 	int* m_piLakePlotYieldChange;
 	int* m_piRiverPlotYieldChange;
+	int* m_piTradeRouteToHolyCityYield;
+	int* m_piTradeRouteToHolyCityDestYield;
+	int* m_piTradeRouteSameReligionYieldModifier;
 #endif
 
 	bool m_bPantheon;
@@ -633,6 +639,9 @@ public:
 	int GetRiverPlotYieldChange(YieldTypes eYieldType) const;
 	int GetLocalHappinessYieldRate(YieldTypes eYieldType) const;
 	int GetCorruptionScoreYieldRate(YieldTypes eYieldType) const;
+	int GetTradeRouteToHolyCityYield(YieldTypes eYieldType) const;
+	int GetTradeRouteToHolyCityDestYield(YieldTypes eYieldType) const;
+	int GetTradeRouteSameReligionYieldModifier(YieldTypes eYieldType) const;
 #endif
 	int GetResourceHappiness(ResourceTypes eResource) const;
 	int GetYieldChangeAnySpecialist(YieldTypes eYieldType) const;

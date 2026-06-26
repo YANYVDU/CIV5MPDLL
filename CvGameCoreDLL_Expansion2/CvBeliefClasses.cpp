@@ -85,6 +85,9 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_piYieldPerBirth(NULL),
 	m_piLakePlotYieldChange(NULL),
 	m_piRiverPlotYieldChange(NULL),
+	m_piTradeRouteToHolyCityYield(NULL),
+	m_piTradeRouteToHolyCityDestYield(NULL),
+	m_piTradeRouteSameReligionYieldModifier(NULL),
 #endif
 
 	m_bPantheon(false),
@@ -170,6 +173,9 @@ CvBeliefEntry::~CvBeliefEntry()
 	SAFE_DELETE_ARRAY(m_piRiverPlotYieldChange);
 	SAFE_DELETE_ARRAY(m_piLocalHappinessYieldRate);
 	SAFE_DELETE_ARRAY(m_piCorruptionScoreYieldRate);
+	SAFE_DELETE_ARRAY(m_piTradeRouteToHolyCityYield);
+	SAFE_DELETE_ARRAY(m_piTradeRouteToHolyCityDestYield);
+	SAFE_DELETE_ARRAY(m_piTradeRouteSameReligionYieldModifier);
 
 	SAFE_DELETE_ARRAY(m_paiCityYieldChange);
 	SAFE_DELETE_ARRAY(m_paiHolyCityYieldChange);
@@ -917,6 +923,18 @@ int CvBeliefEntry::GetLocalHappinessYieldRate(int i) const
 {
 	return m_piLocalHappinessYieldRate ? m_piLocalHappinessYieldRate[i] : 0;
 }
+int CvBeliefEntry::GetTradeRouteToHolyCityYield(int i) const
+{
+	return m_piTradeRouteToHolyCityYield ? m_piTradeRouteToHolyCityYield[i] : 0;
+}
+int CvBeliefEntry::GetTradeRouteToHolyCityDestYield(int i) const
+{
+	return m_piTradeRouteToHolyCityDestYield ? m_piTradeRouteToHolyCityDestYield[i] : 0;
+}
+int CvBeliefEntry::GetTradeRouteSameReligionYieldModifier(int i) const
+{
+	return m_piTradeRouteSameReligionYieldModifier ? m_piTradeRouteSameReligionYieldModifier[i] : 0;
+}
 //Extra Missionary Spreads
 int CvBeliefEntry::GetCityExtraMissionarySpreads() const
 {
@@ -1149,6 +1167,9 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	kUtility.SetYields(m_piYieldPerBirth, "Belief_YieldPerBirth", "BeliefType", szBeliefType);
 	kUtility.SetYields(m_piLakePlotYieldChange, "Belief_LakePlotYieldChanges", "BeliefType", szBeliefType);
 	kUtility.SetYields(m_piRiverPlotYieldChange, "Belief_RiverPlotYieldChanges", "BeliefType", szBeliefType);
+	kUtility.SetYields(m_piTradeRouteToHolyCityYield, "Belief_TradeRouteToHolyCityYield", "BeliefType", szBeliefType);
+	kUtility.SetYields(m_piTradeRouteToHolyCityDestYield, "Belief_TradeRouteToHolyCityDestYield", "BeliefType", szBeliefType);
+	kUtility.PopulateArrayByValue(m_piTradeRouteSameReligionYieldModifier, "Yields", "Belief_TradeRouteSameReligionYieldModifier", "YieldType", "BeliefType", szBeliefType, "Modifier");
 #endif
 	kUtility.SetYields(m_paiCityYieldChange, "Belief_CityYieldChanges", "BeliefType", szBeliefType);
 	kUtility.SetYields(m_paiHolyCityYieldChange, "Belief_HolyCityYieldChanges", "BeliefType", szBeliefType);
@@ -2672,6 +2693,39 @@ int CvReligionBeliefs::GetCorruptionScoreYieldRate(YieldTypes eYieldType) const
 	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
 	{
 		rtnValue += pBeliefs->GetEntry(*i)->GetCorruptionScoreYieldRate(eYieldType);
+	}
+	return rtnValue;
+}
+
+int CvReligionBeliefs::GetTradeRouteToHolyCityYield(YieldTypes eYieldType) const
+{
+	CvBeliefXMLEntries* pBeliefs = GC.GetGameBeliefs();
+	int rtnValue = 0;
+	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
+	{
+		rtnValue += pBeliefs->GetEntry(*i)->GetTradeRouteToHolyCityYield(eYieldType);
+	}
+	return rtnValue;
+}
+
+int CvReligionBeliefs::GetTradeRouteToHolyCityDestYield(YieldTypes eYieldType) const
+{
+	CvBeliefXMLEntries* pBeliefs = GC.GetGameBeliefs();
+	int rtnValue = 0;
+	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
+	{
+		rtnValue += pBeliefs->GetEntry(*i)->GetTradeRouteToHolyCityDestYield(eYieldType);
+	}
+	return rtnValue;
+}
+
+int CvReligionBeliefs::GetTradeRouteSameReligionYieldModifier(YieldTypes eYieldType) const
+{
+	CvBeliefXMLEntries* pBeliefs = GC.GetGameBeliefs();
+	int rtnValue = 0;
+	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
+	{
+		rtnValue += pBeliefs->GetEntry(*i)->GetTradeRouteSameReligionYieldModifier(eYieldType);
 	}
 	return rtnValue;
 }
