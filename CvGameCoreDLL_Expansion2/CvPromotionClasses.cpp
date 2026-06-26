@@ -234,6 +234,8 @@ CvPromotionEntry::CvPromotionEntry():
 	m_iDifferentReligionDefenseModifier(0),
 	m_iGoldenAgeTurnAttackModifier(0),
 	m_iGoldenAgeTurnDefenseModifier(0),
+	m_iFollowerCountCombatModifier(0),
+	m_iFollowingCityCountCombatModifier(0),
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops(false),
@@ -804,6 +806,8 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_iDifferentReligionDefenseModifier = kResults.GetInt("DifferentReligionDefenseModifier");
 	m_iGoldenAgeTurnAttackModifier = kResults.GetInt("GoldenAgeTurnAttackModifier");
 	m_iGoldenAgeTurnDefenseModifier = kResults.GetInt("GoldenAgeTurnDefenseModifier");
+	m_iFollowerCountCombatModifier = kResults.GetInt("FollowerCountCombatModifier");
+	m_iFollowingCityCountCombatModifier = kResults.GetInt("FollowingCityCountCombatModifier");
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops = kResults.GetBool("IsCrops");
@@ -2875,6 +2879,16 @@ int CvPromotionEntry::GetGoldenAgeTurnAttackModifier() const
 int CvPromotionEntry::GetGoldenAgeTurnDefenseModifier() const
 {
 	return m_iGoldenAgeTurnDefenseModifier;
+}
+
+int CvPromotionEntry::GetFollowerCountCombatModifier() const
+{
+	return m_iFollowerCountCombatModifier;
+}
+
+int CvPromotionEntry::GetFollowingCityCountCombatModifier() const
+{
+	return m_iFollowingCityCountCombatModifier;
 }
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)

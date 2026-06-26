@@ -688,6 +688,8 @@ protected:
 	int m_iDifferentReligionDefenseModifier;
 	int m_iGoldenAgeTurnAttackModifier;
 	int m_iGoldenAgeTurnDefenseModifier;
+	int m_iFollowerCountCombatModifier;
+	int m_iFollowingCityCountCombatModifier;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool m_bCrops;

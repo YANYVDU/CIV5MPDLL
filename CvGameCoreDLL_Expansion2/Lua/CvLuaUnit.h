@@ -800,6 +800,8 @@ protected:
 	LUAAPIEXTN(GetResourceCombatModifier, int);
 	LUAAPIEXTN(GetGoldenAgeTurnAttackModifier, int);
 	LUAAPIEXTN(GetGoldenAgeTurnDefenseModifier, int);
+	LUAAPIEXTN(GetFollowerCountCombatModifier, int);
+	LUAAPIEXTN(GetFollowingCityCountCombatModifier, int);
 	LUAAPIEXTN(GetNearbyUnitPromotionBonus, int);
 	LUAAPIEXTN(GetBarbarianCombatBonusTotal, int);
 	LUAAPIEXTN(IsBatchMark, bool);

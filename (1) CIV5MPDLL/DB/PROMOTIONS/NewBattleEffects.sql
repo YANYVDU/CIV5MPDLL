@@ -40,3 +40,5 @@ alter table UnitPromotions add DifferentReligionAttackModifier integer default 0
 alter table UnitPromotions add DifferentReligionDefenseModifier integer default 0;
 alter table UnitPromotions add GoldenAgeTurnAttackModifier integer default 0;
 alter table UnitPromotions add GoldenAgeTurnDefenseModifier integer default 0;
+alter table UnitPromotions add FollowerCountCombatModifier integer default 0;
+alter table UnitPromotions add FollowingCityCountCombatModifier integer default 0;

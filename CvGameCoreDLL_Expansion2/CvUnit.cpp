@@ -505,6 +505,8 @@ CvUnit::CvUnit() :
 	, m_iDifferentReligionDefenseModifier(0)
 	, m_iGoldenAgeTurnAttackModifier(0)
 	, m_iGoldenAgeTurnDefenseModifier(0)
+	, m_iFollowerCountCombatModifier(0)
+	, m_iFollowingCityCountCombatModifier(0)
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	, m_iCrops(0)
@@ -1524,6 +1526,8 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iDifferentReligionDefenseModifier = 0;
 	m_iGoldenAgeTurnAttackModifier = 0;
 	m_iGoldenAgeTurnDefenseModifier = 0;
+	m_iFollowerCountCombatModifier = 0;
+	m_iFollowingCityCountCombatModifier = 0;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_iCrops = 0;
@@ -7633,6 +7637,27 @@ void CvUnit::ChangeGoldenAgeTurnDefenseModifier(int iValue)
 {
 	m_iGoldenAgeTurnDefenseModifier += iValue;
 }
+
+const int CvUnit::GetFollowerCountCombatModifier() const
+{
+	return m_iFollowerCountCombatModifier;
+}
+
+void CvUnit::ChangeFollowerCountCombatModifier(int iValue)
+{
+	m_iFollowerCountCombatModifier += iValue;
+}
+
+const int CvUnit::GetFollowingCityCountCombatModifier() const
+{
+	return m_iFollowingCityCountCombatModifier;
+}
+
+void CvUnit::ChangeFollowingCityCountCombatModifier(int iValue)
+{
+	m_iFollowingCityCountCombatModifier += iValue;
+}
+
 int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, bool bAttacking) const
 {
 	int iModifier = 0;
@@ -7665,6 +7690,31 @@ int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, boo
 				iModifier += iGoldenAgeTurns * m_iGoldenAgeTurnDefenseModifier / 100;
 		}
 	}
+
+	// Follower count combat bonus
+	if (m_iFollowerCountCombatModifier != 0)
+	{
+		CvGameReligions* pReligions = GC.getGame().GetGameReligions();
+		ReligionTypes eFoundedReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(getOwner()).GetID());
+		if (eFoundedReligion != NO_RELIGION)
+		{
+			int iFollowerCount = pReligions->GetNumFollowers(eFoundedReligion);
+			iModifier += iFollowerCount * m_iFollowerCountCombatModifier / 100;
+		}
+	}
+
+	// Following city count combat bonus
+	if (m_iFollowingCityCountCombatModifier != 0)
+	{
+		CvGameReligions* pReligions = GC.getGame().GetGameReligions();
+		ReligionTypes eFoundedReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(getOwner()).GetID());
+		if (eFoundedReligion != NO_RELIGION)
+		{
+			int iCityCount = pReligions->GetNumCitiesFollowing(eFoundedReligion);
+			iModifier += iCityCount * m_iFollowingCityCountCombatModifier / 100;
+		}
+	}
+
 	return iModifier;
 }
 #endif
@@ -26618,6 +26668,8 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeDifferentReligionDefenseModifier(thisPromotion.GetDifferentReligionDefenseModifier() * iChange);
 		ChangeGoldenAgeTurnAttackModifier(thisPromotion.GetGoldenAgeTurnAttackModifier() * iChange);
 		ChangeGoldenAgeTurnDefenseModifier(thisPromotion.GetGoldenAgeTurnDefenseModifier() * iChange);
+		ChangeFollowerCountCombatModifier(thisPromotion.GetFollowerCountCombatModifier() * iChange);
+		ChangeFollowingCityCountCombatModifier(thisPromotion.GetFollowingCityCountCombatModifier() * iChange);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 		if(thisPromotion.IsCrops()) ChangeCrops(iChange);
@@ -27262,6 +27314,8 @@ void CvUnit::read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(161, kStream, m_iDifferentReligionDefenseModifier, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeTurnAttackModifier, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeTurnDefenseModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iFollowerCountCombatModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iFollowingCityCountCombatModifier, 0);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream >> m_iCrops;
@@ -27685,6 +27739,8 @@ void CvUnit::write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iDifferentReligionDefenseModifier);
 	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeTurnAttackModifier);
 	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeTurnDefenseModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iFollowerCountCombatModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iFollowingCityCountCombatModifier);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream << m_iCrops;
