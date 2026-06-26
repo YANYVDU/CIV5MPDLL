@@ -80,6 +80,8 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_iFirstConversionCitiesPerPop(0),
 	m_iCityExtraMissionarySpreads(0),
 	m_bAllowYieldPerBirth(false),
+	m_piLocalHappinessYieldRate(NULL),
+	m_piCorruptionScoreYieldRate(NULL),
 	m_piYieldPerBirth(NULL),
 	m_piLakePlotYieldChange(NULL),
 	m_piRiverPlotYieldChange(NULL),
@@ -166,6 +168,8 @@ CvBeliefEntry::~CvBeliefEntry()
 	SAFE_DELETE_ARRAY(m_piYieldPerBirth);
 	SAFE_DELETE_ARRAY(m_piLakePlotYieldChange);
 	SAFE_DELETE_ARRAY(m_piRiverPlotYieldChange);
+	SAFE_DELETE_ARRAY(m_piLocalHappinessYieldRate);
+	SAFE_DELETE_ARRAY(m_piCorruptionScoreYieldRate);
 
 	SAFE_DELETE_ARRAY(m_paiCityYieldChange);
 	SAFE_DELETE_ARRAY(m_paiHolyCityYieldChange);
@@ -909,6 +913,10 @@ int CvBeliefEntry::GetFirstConversionCitiesPerPop() const
 {
 	return m_iFirstConversionCitiesPerPop;
 }
+int CvBeliefEntry::GetLocalHappinessYieldRate(int i) const
+{
+	return m_piLocalHappinessYieldRate ? m_piLocalHappinessYieldRate[i] : 0;
+}
 //Extra Missionary Spreads
 int CvBeliefEntry::GetCityExtraMissionarySpreads() const
 {
@@ -933,6 +941,10 @@ int CvBeliefEntry::GetLakePlotYieldChange(int i) const
 	return m_piLakePlotYieldChange ? m_piLakePlotYieldChange[i] : -1;
 }
 
+int CvBeliefEntry::GetCorruptionScoreYieldRate(int i) const
+{
+	return m_piCorruptionScoreYieldRate ? m_piCorruptionScoreYieldRate[i] : 0;
+}
 //River Yield
 int CvBeliefEntry::GetRiverPlotYieldChange(int i) const
 {
@@ -1132,6 +1144,8 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	//Arrays
 	const char* szBeliefType = GetType();
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+	kUtility.PopulateArrayByValue(m_piLocalHappinessYieldRate, "Yields", "Belief_LocalHappinessYieldRate", "YieldType", "BeliefType", szBeliefType, "Rate");
+	kUtility.PopulateArrayByValue(m_piCorruptionScoreYieldRate, "Yields", "Belief_CorruptionScoreYieldRate", "YieldType", "BeliefType", szBeliefType, "Rate");
 	kUtility.SetYields(m_piYieldPerBirth, "Belief_YieldPerBirth", "BeliefType", szBeliefType);
 	kUtility.SetYields(m_piLakePlotYieldChange, "Belief_LakePlotYieldChanges", "BeliefType", szBeliefType);
 	kUtility.SetYields(m_piRiverPlotYieldChange, "Belief_RiverPlotYieldChanges", "BeliefType", szBeliefType);
@@ -2635,6 +2649,30 @@ int CvReligionBeliefs::GetRiverPlotYieldChange(YieldTypes eYieldType) const
 		rtnValue += pBeliefs->GetEntry(*i)->GetRiverPlotYieldChange(eYieldType);
 	}
 
+	return rtnValue;
+}
+
+int CvReligionBeliefs::GetLocalHappinessYieldRate(YieldTypes eYieldType) const
+{
+	CvBeliefXMLEntries* pBeliefs = GC.GetGameBeliefs();
+	int rtnValue = 0;
+
+	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
+	{
+		rtnValue += pBeliefs->GetEntry(*i)->GetLocalHappinessYieldRate(eYieldType);
+	}
+
+	return rtnValue;
+}
+
+int CvReligionBeliefs::GetCorruptionScoreYieldRate(YieldTypes eYieldType) const
+{
+	CvBeliefXMLEntries* pBeliefs = GC.GetGameBeliefs();
+	int rtnValue = 0;
+	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
+	{
+		rtnValue += pBeliefs->GetEntry(*i)->GetCorruptionScoreYieldRate(eYieldType);
+	}
 	return rtnValue;
 }
 

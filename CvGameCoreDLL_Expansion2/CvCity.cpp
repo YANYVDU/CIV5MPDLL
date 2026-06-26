@@ -8595,6 +8595,11 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 {
 	updateYield();
 
+#ifdef MOD_GLOBAL_CORRUPTION
+	// Ensure corruption cache is fresh before computing Belief_CorruptionScoreYieldRate
+	UpdateCorruption();
+#endif
+
 	// Reset city level yields
 	for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -8648,6 +8653,41 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 					}
 				}
 
+				if (pReligion)
+				{
+					int iLocalHappinessRate = pReligion->m_Beliefs.GetLocalHappinessYieldRate(eYield);
+					if (iLocalHappinessRate != 0)
+					{
+						iReligionYieldChange += GetLocalHappiness() * iLocalHappinessRate / 100;
+					}
+				}
+				if (eSecondaryPantheon != NO_BELIEF)
+				{
+					int iSecondaryRate = pSecondaryPantheon->GetLocalHappinessYieldRate(eYield);
+					if (iSecondaryRate != 0)
+					{
+						iReligionYieldChange += GetLocalHappiness() * iSecondaryRate / 100;
+					}
+				}
+
+
+					if (pReligion)
+					{
+						int iCorruptionRate = pReligion->m_Beliefs.GetCorruptionScoreYieldRate(eYield);
+						if (iCorruptionRate != 0)
+						{
+							// Use CalculateTotalCorruptionScore() directly to avoid stale cache
+							iReligionYieldChange += CalculateTotalCorruptionScore() * iCorruptionRate / 10000;
+						}
+					}
+					if (eSecondaryPantheon != NO_BELIEF)
+					{
+						int iSecCorruptionRate = pSecondaryPantheon->GetCorruptionScoreYieldRate(eYield);
+						if (iSecCorruptionRate != 0)
+						{
+							iReligionYieldChange += CalculateTotalCorruptionScore() * iSecCorruptionRate / 10000;
+						}
+					}
 				ChangeBaseYieldRateFromReligion(eYield, iReligionYieldChange);
 
 				if(IsRouteToCapitalConnected())

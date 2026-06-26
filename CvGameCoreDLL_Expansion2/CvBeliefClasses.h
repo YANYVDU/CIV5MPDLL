@@ -160,6 +160,8 @@ public:
 	int GetCityCorruptionScoreChange() const;
 	int GetFirstConversionCitiesPerGoldenAge() const;
 	int GetFirstConversionCitiesPerPop() const;
+	int GetLocalHappinessYieldRate(int i) const;
+	int GetCorruptionScoreYieldRate(int i) const;
 	int GetCityExtraMissionarySpreads() const;
 	bool AllowYieldPerBirth() const;
 	int GetYieldPerBirth(int i) const;
@@ -245,6 +247,8 @@ protected:
 	int m_iFirstConversionCitiesPerPop;
 	int m_iCityExtraMissionarySpreads;
 	bool m_bAllowYieldPerBirth;
+	int* m_piLocalHappinessYieldRate;
+	int* m_piCorruptionScoreYieldRate;
 	int* m_piYieldPerBirth;
 	int* m_piLakePlotYieldChange;
 	int* m_piRiverPlotYieldChange;
@@ -627,6 +631,8 @@ public:
 	int GetYieldPerBirth(YieldTypes eYieldType) const;
 	int GetLakePlotYieldChange(YieldTypes eYieldType) const;
 	int GetRiverPlotYieldChange(YieldTypes eYieldType) const;
+	int GetLocalHappinessYieldRate(YieldTypes eYieldType) const;
+	int GetCorruptionScoreYieldRate(YieldTypes eYieldType) const;
 #endif
 	int GetResourceHappiness(ResourceTypes eResource) const;
 	int GetYieldChangeAnySpecialist(YieldTypes eYieldType) const;
