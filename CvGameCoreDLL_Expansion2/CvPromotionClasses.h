@@ -293,6 +293,8 @@ public:
 	int GetDifferentReligionDefenseModifier() const;
 	int GetGoldenAgeTurnAttackModifier() const;
 	int GetGoldenAgeTurnDefenseModifier() const;
+	int GetFollowerCountCombatModifier() const;
+	int GetFollowingCityCountCombatModifier() const;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool IsCrops() const;
