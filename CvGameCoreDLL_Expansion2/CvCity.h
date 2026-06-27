@@ -1115,7 +1115,9 @@ public:
 	int getFollowingCityCountDamageModifier() const;
 	void changeFollowingCityCountDamageModifier(int iChange);
 	int GetReligionDamageModifier() const;
-
+	int GetReligionTradeRouteHolyCityYield(CvCity* pDestCity, YieldTypes eYield) const;
+	int GetReligionTradeRouteHolyCityDestYield(CvCity* pDestCity, YieldTypes eYield) const;
+	int GetReligionTradeRouteSameReligionModifier(CvCity* pDestCity, YieldTypes eYield) const;
 
 	int getWaterTileDamage()const;
 	void changeWaterTileDamage(int iChange);

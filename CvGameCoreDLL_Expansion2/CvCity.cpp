@@ -21245,6 +21245,67 @@ int CvCity::GetReligionDamageModifier() const
 	return iModifier;
 }
 
+int CvCity::GetReligionTradeRouteHolyCityYield(CvCity* pDestCity, YieldTypes eYield) const
+{
+	VALIDATE_OBJECT
+	int iValue = 0;
+	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+	if (eMajority > RELIGION_PANTHEON && pDestCity)
+	{
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if (pReligion && pDestCity->getX() == pReligion->m_iHolyCityX && pDestCity->getY() == pReligion->m_iHolyCityY)
+		{
+			iValue += pReligion->m_Beliefs.GetTradeRouteToHolyCityYield(eYield);
+			BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
+			if (eSecondaryPantheon != NO_BELIEF)
+			{
+				iValue += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetTradeRouteToHolyCityYield(eYield);
+			}
+		}
+	}
+	return iValue;
+}
+
+int CvCity::GetReligionTradeRouteHolyCityDestYield(CvCity* pDestCity, YieldTypes eYield) const
+{
+	VALIDATE_OBJECT
+	int iValue = 0;
+	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+	if (eMajority > RELIGION_PANTHEON && pDestCity)
+	{
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if (pReligion && pDestCity->getX() == pReligion->m_iHolyCityX && pDestCity->getY() == pReligion->m_iHolyCityY)
+		{
+			iValue += pReligion->m_Beliefs.GetTradeRouteToHolyCityDestYield(eYield);
+			BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
+			if (eSecondaryPantheon != NO_BELIEF)
+			{
+				iValue += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetTradeRouteToHolyCityDestYield(eYield);
+			}
+		}
+	}
+	return iValue;
+}
+
+int CvCity::GetReligionTradeRouteSameReligionModifier(CvCity* pDestCity, YieldTypes eYield) const
+{
+	VALIDATE_OBJECT
+	int iModifier = 0;
+	if (pDestCity)
+	{
+		ReligionTypes eOriginReligion = GetCityReligions()->GetReligiousMajority();
+		if (eOriginReligion > RELIGION_PANTHEON && eOriginReligion == pDestCity->GetCityReligions()->GetReligiousMajority())
+		{
+			const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eOriginReligion, getOwner());
+			if (pReligion)
+			{
+				iModifier = pReligion->m_Beliefs.GetTradeRouteSameReligionYieldModifier(eYield);
+			}
+		}
+	}
+	return iModifier;
+}
+
 //	--------------------------------------------------------------------------------
 int CvCity::getWaterTileDamage() const
 {
