@@ -230,6 +230,12 @@ CvPromotionEntry::CvPromotionEntry():
 	m_eCultureDefenseBonusFormula(NO_LUA_FORMULA),
 	m_eFaithAttackBonusFormula(NO_LUA_FORMULA),
 	m_eFaithDefenseBonusFormula(NO_LUA_FORMULA),
+	m_iDifferentReligionAttackModifier(0),
+	m_iDifferentReligionDefenseModifier(0),
+	m_iGoldenAgeTurnAttackModifier(0),
+	m_iGoldenAgeTurnDefenseModifier(0),
+	m_iFollowerCountCombatModifier(0),
+	m_iFollowingCityCountCombatModifier(0),
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops(false),
@@ -796,6 +802,12 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_eCultureDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("CultureDefenseBonusFormula")));
 	m_eFaithAttackBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("FaithAttackBonusFormula")));
 	m_eFaithDefenseBonusFormula = (int)static_cast<LuaFormulaTypes>(GC.getInfoTypeForString(kResults.GetText("FaithDefenseBonusFormula")));
+	m_iDifferentReligionAttackModifier = kResults.GetInt("DifferentReligionAttackModifier");
+	m_iDifferentReligionDefenseModifier = kResults.GetInt("DifferentReligionDefenseModifier");
+	m_iGoldenAgeTurnAttackModifier = kResults.GetInt("GoldenAgeTurnAttackModifier");
+	m_iGoldenAgeTurnDefenseModifier = kResults.GetInt("GoldenAgeTurnDefenseModifier");
+	m_iFollowerCountCombatModifier = kResults.GetInt("FollowerCountCombatModifier");
+	m_iFollowingCityCountCombatModifier = kResults.GetInt("FollowingCityCountCombatModifier");
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops = kResults.GetBool("IsCrops");
@@ -2848,6 +2860,36 @@ int CvPromotionEntry::GetFaithDefenseBonusFormula() const
 {
 	return m_eFaithDefenseBonusFormula;
 }
+
+int CvPromotionEntry::GetDifferentReligionAttackModifier() const
+{
+	return m_iDifferentReligionAttackModifier;
+}
+
+int CvPromotionEntry::GetDifferentReligionDefenseModifier() const
+{
+	return m_iDifferentReligionDefenseModifier;
+}
+
+int CvPromotionEntry::GetGoldenAgeTurnAttackModifier() const
+{
+	return m_iGoldenAgeTurnAttackModifier;
+}
+
+int CvPromotionEntry::GetGoldenAgeTurnDefenseModifier() const
+{
+	return m_iGoldenAgeTurnDefenseModifier;
+}
+
+int CvPromotionEntry::GetFollowerCountCombatModifier() const
+{
+	return m_iFollowerCountCombatModifier;
+}
+
+int CvPromotionEntry::GetFollowingCityCountCombatModifier() const
+{
+	return m_iFollowingCityCountCombatModifier;
+}
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 bool CvPromotionEntry::IsCrops() const
@@ -4456,7 +4498,7 @@ PromotionTypes CvUnitPromotions::ChangePromotionAfterCombat(PromotionTypes eInde
 		CvPromotionEntry *pkEntry = m_pPromotions->GetEntry(eIndex);
 		if (pkEntry && pkEntry->IsPostCombatRandomPromotion(iI))
 		{
-			if (!pkEntry->ArePostCombatPromotionsExclusive() || !IsInUseByPlayer((PromotionTypes)iI, m_pUnit->getOwner()))
+			if (pkEntry->ArePostCombatPromotionsExclusive() ? !IsInUseByPlayer((PromotionTypes)iI, m_pUnit->getOwner()) : !m_pUnit->isHasPromotion((PromotionTypes)iI))
 			{
 #if defined(MOD_EVENTS_UNIT_UPGRADES)
 				if (MOD_EVENTS_UNIT_UPGRADES) {

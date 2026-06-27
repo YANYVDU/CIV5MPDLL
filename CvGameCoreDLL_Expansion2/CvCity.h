@@ -1110,7 +1110,14 @@ public:
 	int getReduceDamageValue()const;
 	void changeReduceDamageValue(int iChange);
 
-
+	int getFollowerCountDamageModifier() const;
+	void changeFollowerCountDamageModifier(int iChange);
+	int getFollowingCityCountDamageModifier() const;
+	void changeFollowingCityCountDamageModifier(int iChange);
+	int GetReligionDamageModifier() const;
+	int GetReligionTradeRouteHolyCityYield(CvCity* pDestCity, YieldTypes eYield) const;
+	int GetReligionTradeRouteHolyCityDestYield(CvCity* pDestCity, YieldTypes eYield) const;
+	int GetReligionTradeRouteSameReligionModifier(CvCity* pDestCity, YieldTypes eYield) const;
 
 	int getWaterTileDamage()const;
 	void changeWaterTileDamage(int iChange);
@@ -1375,6 +1382,7 @@ public:
 	int CalculateCorruptionScoreFromDistance() const;
 	int CalculateCorruptionScoreFromCoastalBonus() const;
 	int CalculateCorruptionScoreFromResource() const;
+	int CalculateCorruptionScoreFromReligion() const;
 	int CalculateCorruptionScoreFromTrait() const;
 	int CalculateCorruptionScoreModifierFromSpy() const;
 	int CalculateCorruptionScoreModifierFromTrait() const;
@@ -1389,6 +1397,7 @@ public:
 
 	int GetCorruptionScoreModifierFromPolicy() const;
 	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	int GetCorruptionScoreFromLocalHappiness() const;
 	int GetMaxCorruptionLevel() const;
 	bool IsCorruptionLevelReduceByOne() const;
 #endif
@@ -1571,6 +1580,8 @@ protected:
 
 	FAutoVariable<int, CvCity> m_iResetDamageValue;
 	FAutoVariable<int, CvCity> m_iReduceDamageValue;
+	FAutoVariable<int, CvCity> m_iFollowerCountDamageModifier;
+	FAutoVariable<int, CvCity> m_iFollowingCityCountDamageModifier;
 
 
 	FAutoVariable<int, CvCity> m_iWaterTileDamage;

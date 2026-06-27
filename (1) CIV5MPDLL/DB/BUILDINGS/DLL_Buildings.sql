@@ -483,3 +483,5 @@ create table Building_AdjacentImprovementYieldChangesGlobal (
     YieldType text references Yields(Type),
     Yield integer default 0
 );
+alter table Buildings add column FollowerCountDamageModifier integer default 0;
+alter table Buildings add column FollowingCityCountDamageModifier integer default 0;

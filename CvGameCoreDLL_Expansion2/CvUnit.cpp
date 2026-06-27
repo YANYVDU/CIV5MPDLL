@@ -501,6 +501,12 @@ CvUnit::CvUnit() :
 	, m_eMovementFromAttackDamageFormula(NO_LUA_FORMULA)
 	, m_eHealPercentFromAttackDamageFormula(NO_LUA_FORMULA)
 	, m_veCombatBonusFormulas()
+	, m_iDifferentReligionAttackModifier(0)
+	, m_iDifferentReligionDefenseModifier(0)
+	, m_iGoldenAgeTurnAttackModifier(0)
+	, m_iGoldenAgeTurnDefenseModifier(0)
+	, m_iFollowerCountCombatModifier(0)
+	, m_iFollowingCityCountCombatModifier(0)
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	, m_iCrops(0)
@@ -1516,6 +1522,12 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_eMovementFromAttackDamageFormula = NO_LUA_FORMULA;
 	m_eHealPercentFromAttackDamageFormula = NO_LUA_FORMULA;
 	m_veCombatBonusFormulas.clear();
+	m_iDifferentReligionAttackModifier = 0;
+	m_iDifferentReligionDefenseModifier = 0;
+	m_iGoldenAgeTurnAttackModifier = 0;
+	m_iGoldenAgeTurnDefenseModifier = 0;
+	m_iFollowerCountCombatModifier = 0;
+	m_iFollowingCityCountCombatModifier = 0;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_iCrops = 0;
@@ -4430,7 +4442,8 @@ int CvUnit::getCombatDamage(int iStrength, int iOpponentStrength, int iCurrentDa
 		fStrengthRatio = 1 / fStrengthRatio;
 	}
 
-	tDamage = __int64(tDamage * fStrengthRatio);
+	double dNewDamage = (double)tDamage * fStrengthRatio;
+	tDamage = (dNewDamage > (double)0x7FFFFFF0) ? 0x7FFFFFF0 : (__int64)dNewDamage;
 
 	// Modify damage for when a city "attacks" a unit
 	if(bAttackerIsCity)
@@ -7583,6 +7596,126 @@ void CvUnit::setHealPercentFromAttackDamageFormula(int iValue)
 const int CvUnit::GetHealPercentFromAttackDamageFormula() const
 {
 	return m_eHealPercentFromAttackDamageFormula;
+}
+
+const int CvUnit::GetDifferentReligionAttackModifier() const
+{
+	return m_iDifferentReligionAttackModifier;
+}
+
+void CvUnit::ChangeDifferentReligionAttackModifier(int iValue)
+{
+	m_iDifferentReligionAttackModifier += iValue;
+}
+
+const int CvUnit::GetDifferentReligionDefenseModifier() const
+{
+	return m_iDifferentReligionDefenseModifier;
+}
+
+void CvUnit::ChangeDifferentReligionDefenseModifier(int iValue)
+{
+	m_iDifferentReligionDefenseModifier += iValue;
+}
+
+const int CvUnit::GetGoldenAgeTurnAttackModifier() const
+{
+	return m_iGoldenAgeTurnAttackModifier;
+}
+
+void CvUnit::ChangeGoldenAgeTurnAttackModifier(int iValue)
+{
+	m_iGoldenAgeTurnAttackModifier += iValue;
+}
+
+const int CvUnit::GetGoldenAgeTurnDefenseModifier() const
+{
+	return m_iGoldenAgeTurnDefenseModifier;
+}
+
+void CvUnit::ChangeGoldenAgeTurnDefenseModifier(int iValue)
+{
+	m_iGoldenAgeTurnDefenseModifier += iValue;
+}
+
+const int CvUnit::GetFollowerCountCombatModifier() const
+{
+	return m_iFollowerCountCombatModifier;
+}
+
+void CvUnit::ChangeFollowerCountCombatModifier(int iValue)
+{
+	m_iFollowerCountCombatModifier += iValue;
+}
+
+const int CvUnit::GetFollowingCityCountCombatModifier() const
+{
+	return m_iFollowingCityCountCombatModifier;
+}
+
+void CvUnit::ChangeFollowingCityCountCombatModifier(int iValue)
+{
+	m_iFollowingCityCountCombatModifier += iValue;
+}
+
+int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, bool bAttacking) const
+{
+	int iModifier = 0;
+
+	// Different religion combat bonus
+	if (pOtherUnit)
+	{
+		CvGameReligions* pReligions = GC.getGame().GetGameReligions();
+		ReligionTypes eOurReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(getOwner()).GetID());
+		ReligionTypes eTheirReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(pOtherUnit->getOwner()).GetID());
+		if (eOurReligion != NO_RELIGION && eTheirReligion != NO_RELIGION && eOurReligion != eTheirReligion)
+		{
+			if (bAttacking)
+				iModifier += m_iDifferentReligionAttackModifier;
+			else
+				iModifier += m_iDifferentReligionDefenseModifier;
+		}
+	}
+
+	// Golden age combat bonus
+	if (m_iGoldenAgeTurnAttackModifier != 0 || m_iGoldenAgeTurnDefenseModifier != 0)
+	{
+		CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
+		if (kPlayer.isGoldenAge())
+		{
+			int iGoldenAgeTurns = kPlayer.GetGoldenAgeProgressMeter() / 100;
+			if (bAttacking)
+				iModifier += iGoldenAgeTurns * m_iGoldenAgeTurnAttackModifier / 100;
+			else
+				iModifier += iGoldenAgeTurns * m_iGoldenAgeTurnDefenseModifier / 100;
+		}
+	}
+
+	// Follower count combat bonus
+	if (m_iFollowerCountCombatModifier != 0)
+	{
+		CvGameReligions* pReligions = GC.getGame().GetGameReligions();
+		ReligionTypes eFoundedReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(getOwner()).GetID());
+		if (eFoundedReligion != NO_RELIGION)
+		{
+			int iFollowerCount = pReligions->GetNumFollowers(eFoundedReligion);
+			iModifier += iFollowerCount * m_iFollowerCountCombatModifier / 100;
+		}
+	}
+
+	// Following city count combat bonus
+	if (m_iFollowingCityCountCombatModifier != 0)
+	{
+		CvGameReligions* pReligions = GC.getGame().GetGameReligions();
+		ReligionTypes eFoundedReligion = pReligions->GetFounderBenefitsReligion(GET_PLAYER(getOwner()).GetID());
+		if (eFoundedReligion != NO_RELIGION)
+		{
+			int iCityCount = pReligions->GetNumCitiesFollowing(eFoundedReligion);
+			iModifier += iCityCount * m_iFollowingCityCountCombatModifier / 100;
+		}
+	}
+
+	return iModifier;
 }
 #endif
 //	--------------------------------------------------------------------------------
@@ -15582,6 +15715,7 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 			//}
 #if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
 			iModifier += GetTotalHeightMod(*const_cast<CvPlot*>(pToPlot));
+			iModifier += GetDynamicCombatModifierFromPromotions(pDefender, true);
 #endif
 		}
 
@@ -15693,7 +15827,8 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 	if(iModifier < -90)
 		iModifier = -90;
 
-	iCombat = GetBaseCombatStrength(bIsEmbarkedAttackingLand) * (iModifier + 100);
+	__int64 iCombat64 = (__int64)GetBaseCombatStrength(bIsEmbarkedAttackingLand) * (iModifier + 100);
+	iCombat = (iCombat64 > 0x7FFFFFFF) ? 0x7FFFFFFF : (int)iCombat64;
 
 	return std::max(1, iCombat);
 }
@@ -15990,7 +16125,8 @@ int CvUnit::GetMaxDefenseStrength(const CvPlot* pInPlot, const CvUnit* pAttacker
 	if(iModifier < -90)
 		iModifier = -90;
 
-	iCombat = GetBaseCombatStrength() * (iModifier + 100);
+	__int64 iCombat64 = (__int64)GetBaseCombatStrength() * (iModifier + 100);
+	iCombat = (iCombat64 > 0x7FFFFFFF) ? 0x7FFFFFFF : (int)iCombat64;
 
 	// Boats do more damage VS one another
 	if(pAttacker != NULL)
@@ -16440,6 +16576,7 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 
 #if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
 				iModifier += GetTotalHeightMod(*pTargetPlot);
+				iModifier += GetDynamicCombatModifierFromPromotions(pOtherUnit, bAttacking);
 #endif
 
 				// Bonus for fighting in one's lands
@@ -16900,7 +17037,8 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 	iModifier += GC.GetIndependentPromotion()->GetResourceCombatModifier(*this);
 	iModifier += GC.GetIndependentPromotion()->GetNearbyUnitPromotionBonus(*this);
 
-	iCombat = (iStr * (iModifier + 100));
+	__int64 iCombat64 = (__int64)iStr * (iModifier + 100);
+	iCombat = (iCombat64 > 0x7FFFFFFF) ? 0x7FFFFFFF : (int)iCombat64;
 
 	return std::max(1, iCombat);
 }
@@ -21984,10 +22122,10 @@ void CvUnit::changeExperience(int iChange, int iMax, bool bFromCombat, bool bInB
 				if (pkPromotionInfo->HasPostCombatPromotions() && m_Promotions.HasPromotion(eLoopPromotion))
 				{
 					eNewPromotion = m_Promotions.ChangePromotionAfterCombat(eLoopPromotion);
-					setHasPromotion(eLoopPromotion, false);
 
 					if (eNewPromotion != NO_PROMOTION)
 					{
+						setHasPromotion(eLoopPromotion, false);
 						setHasPromotion(eNewPromotion, true);
 
 #if defined(MOD_EVENTS_UNIT_UPGRADES)
@@ -21998,6 +22136,17 @@ void CvUnit::changeExperience(int iChange, int iMax, bool bFromCombat, bool bInB
 
 						CvPromotionEntry* pkNewPromotionInfo = GC.getPromotionInfo(eNewPromotion);
 						Localization::String localizedText = Localization::Lookup(pkNewPromotionInfo->GetDescriptionKey());
+#if defined(SHOW_PLOT_POPUP)
+						SHOW_PLOT_POPUP(plot(), getOwner(), localizedText.toUTF8(), 0.0f);
+#else
+						float fDelay = GC.getPOST_COMBAT_TEXT_DELAY() * 2;
+						DLLUI->AddPopupText(getX(), getY(), localizedText.toUTF8(), fDelay);
+#endif
+					}
+					else
+					{
+						// All candidate promotions exhausted, keep source promotion
+						Localization::String localizedText = Localization::Lookup("TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE");
 #if defined(SHOW_PLOT_POPUP)
 						SHOW_PLOT_POPUP(plot(), getOwner(), localizedText.toUTF8(), 0.0f);
 #else
@@ -26514,6 +26663,13 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		AddCombatBonusFormula(thisPromotion.GetCultureDefenseBonusFormula() ? thisPromotion.GetCultureDefenseBonusFormula() : NO_LUA_FORMULA, YIELD_CULTURE, false);
 		AddCombatBonusFormula(thisPromotion.GetFaithAttackBonusFormula() ? thisPromotion.GetFaithAttackBonusFormula() : NO_LUA_FORMULA, YIELD_FAITH, true);
 		AddCombatBonusFormula(thisPromotion.GetFaithDefenseBonusFormula() ? thisPromotion.GetFaithDefenseBonusFormula() : NO_LUA_FORMULA, YIELD_FAITH, false);
+
+		ChangeDifferentReligionAttackModifier(thisPromotion.GetDifferentReligionAttackModifier() * iChange);
+		ChangeDifferentReligionDefenseModifier(thisPromotion.GetDifferentReligionDefenseModifier() * iChange);
+		ChangeGoldenAgeTurnAttackModifier(thisPromotion.GetGoldenAgeTurnAttackModifier() * iChange);
+		ChangeGoldenAgeTurnDefenseModifier(thisPromotion.GetGoldenAgeTurnDefenseModifier() * iChange);
+		ChangeFollowerCountCombatModifier(thisPromotion.GetFollowerCountCombatModifier() * iChange);
+		ChangeFollowingCityCountCombatModifier(thisPromotion.GetFollowingCityCountCombatModifier() * iChange);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 		if(thisPromotion.IsCrops()) ChangeCrops(iChange);
@@ -27154,6 +27310,12 @@ void CvUnit::read(FDataStream& kStream)
 		MOD_SERIALIZE_READ(159, kStream, iTemp, 0);
 		if (iTemp != 0) { CombatBonusFormulaEntry e; e.m_iFormulaId = iTemp; e.m_iInputType = YIELD_FAITH; e.m_bIsAttack = false; m_veCombatBonusFormulas.push_back(e); }
 	}
+	MOD_SERIALIZE_READ(161, kStream, m_iDifferentReligionAttackModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iDifferentReligionDefenseModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeTurnAttackModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeTurnDefenseModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iFollowerCountCombatModifier, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iFollowingCityCountCombatModifier, 0);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream >> m_iCrops;
@@ -27573,6 +27735,12 @@ void CvUnit::write(FDataStream& kStream) const
 	kStream << m_eMovementFromAttackDamageFormula;
 	kStream << m_eHealPercentFromAttackDamageFormula;
 	MOD_SERIALIZE_WRITE_VECTOR(kStream, m_veCombatBonusFormulas);
+	MOD_SERIALIZE_WRITE(kStream, m_iDifferentReligionAttackModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iDifferentReligionDefenseModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeTurnAttackModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeTurnDefenseModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iFollowerCountCombatModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iFollowingCityCountCombatModifier);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	kStream << m_iCrops;

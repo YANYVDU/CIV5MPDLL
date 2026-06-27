@@ -61,14 +61,45 @@ create table Belief_YieldModifierPerFollowerTimes100 (
     YieldType text references Yields(Type),
     Modifier integer default 0
 );
+create table Belief_TradeRouteToHolyCityYield (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
+);
+create table Belief_TradeRouteToHolyCityDestYield (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
+);
+create table Belief_TradeRouteSameReligionYieldModifier (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Modifier integer default 0
+);
 --******************** New Other Bonus ********************--
 alter table Beliefs add GoldenAgeModifier integer default 0;
 alter table Beliefs add HolyCityUnitExperence integer default 0;
 alter table Beliefs add CityExtraMissionarySpreads integer default 0;
 alter table Beliefs add HolyCityPressureModifier integer default 0;
 alter table Beliefs add InquisitorProhibitSpreadInAlly boolean default 0;
+alter table Beliefs add FirstConversionCitiesPerGoldenAge integer default 0;--Trigger a Golden Age every X first-time city conversions
+alter table Beliefs add FirstConversionCitiesPerPop integer default 0;
 alter table Beliefs add InquisitionFervorTimeModifier integer default 0;
 alter table Beliefs add SameReligionMinorRecoveryModifier integer default 0;
+--Positive increases corruption score, negative reduces it
+alter table Beliefs add CityCorruptionScoreChange integer default 0;
+--Corruption score to yield conversion rate (100 = 1 yield per 100 corruption, formula: score × Rate / 10000)
+create table Belief_CorruptionScoreYieldRate (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Rate integer default 0
+);
+
+create table Belief_LocalHappinessYieldRate (
+    BeliefType text references Beliefs(Type),
+    YieldType text references Yields(Type),
+    Rate integer default 0
+);
 
 create table Belief_GreatPersonPoints (
     BeliefType text references Beliefs(Type),

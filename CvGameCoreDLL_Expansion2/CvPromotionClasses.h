@@ -289,6 +289,12 @@ public:
 	int GetCultureDefenseBonusFormula() const;
 	int GetFaithAttackBonusFormula() const;
 	int GetFaithDefenseBonusFormula() const;
+	int GetDifferentReligionAttackModifier() const;
+	int GetDifferentReligionDefenseModifier() const;
+	int GetGoldenAgeTurnAttackModifier() const;
+	int GetGoldenAgeTurnDefenseModifier() const;
+	int GetFollowerCountCombatModifier() const;
+	int GetFollowingCityCountCombatModifier() const;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool IsCrops() const;
@@ -680,6 +686,12 @@ protected:
 	int m_eCultureDefenseBonusFormula;
 	int m_eFaithAttackBonusFormula;
 	int m_eFaithDefenseBonusFormula;
+	int m_iDifferentReligionAttackModifier;
+	int m_iDifferentReligionDefenseModifier;
+	int m_iGoldenAgeTurnAttackModifier;
+	int m_iGoldenAgeTurnDefenseModifier;
+	int m_iFollowerCountCombatModifier;
+	int m_iFollowingCityCountCombatModifier;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool m_bCrops;

@@ -170,6 +170,7 @@ public:
 	int GetCiviliansFreePromotion() const;
 	int GetTradeRouteLandGoldBonus() const;
 	int GetTradeRouteSeaGoldBonus() const;
+	bool IsNewCityAutomaticReligion() const;
 #endif
 
 	TechTypes GetFreeUnitPrereqTech() const;
@@ -239,6 +240,7 @@ public:
 	int GetPrereqPolicy() const;
 #endif
 	int GetResourceQuantityModifier(int i) const;
+	int GetBuildCostChange(int i) const;
 	int GetMovesChangeUnitCombat(const int unitCombatID) const;
 	int GetMaintenanceModifierUnitCombat(const int unitCombatID) const;
 	int GetImprovementYieldChanges(ImprovementTypes eIndex1, YieldTypes eIndex2) const;
@@ -478,6 +480,7 @@ protected:
 	int m_iCiviliansFreePromotion;
 	int m_iTradeRouteLandGoldBonus;
 	int m_iTradeRouteSeaGoldBonus;
+	bool m_bNewCityAutomaticReligion;
 #endif
 
 	TechTypes m_eFreeUnitPrereqTech;
@@ -545,6 +548,7 @@ protected:
 	int* m_paiGoldenAgeYieldModifier;
 	int* m_piStrategicResourceQuantityModifier;
 	int* m_piResourceQuantityModifiers;
+	int* m_piBuildCostChange;
 	int* m_piMovesChangeUnitCombats;
 	int* m_piMaintenanceModifierUnitCombats;
 	int** m_ppiImprovementYieldChanges;
@@ -1134,6 +1138,10 @@ public:
 	{
 		return m_bTrainedAll;
 	};
+	bool IsNewCityAutomaticReligion() const
+	{
+		return m_bNewCityAutomaticReligion;
+	};
 	bool IsCanConquerUC() const
 	{
 		return m_bCanConquerUC;
@@ -1300,6 +1308,10 @@ public:
 	int GetResourceQuantityModifier(ResourceTypes eResource) const
 	{
 		return ((uint)eResource < m_aiResourceQuantityModifier.size())?m_aiResourceQuantityModifier[(int)eResource]:0;
+	};
+	int GetBuildCostChange(BuildTypes eBuild) const
+	{
+		return ((uint)eBuild < m_aiBuildCostChange.size())?m_aiBuildCostChange[(int)eBuild]:0;
 	};
 	int GetMovesChangeUnitCombat(const int unitCombatID) const;
 	int GetMaintenanceModifierUnitCombat(const int unitCombatID) const;
@@ -1610,6 +1622,7 @@ private:
 #endif
 	// Saved
 	bool m_bTrainedAll = false;
+	bool m_bNewCityAutomaticReligion = false;
 	bool m_bCanConquerUC = false;
 	bool m_bFightWellDamaged = false;
 	bool m_bBuyOwnedTiles = false;
@@ -1671,6 +1684,7 @@ private:
 	int m_iGoldenAgeYieldRateModifier[NUM_YIELD_TYPES];
 	int m_iStrategicResourceQuantityModifier[NUM_TERRAIN_TYPES];
 	std::vector<int> m_aiResourceQuantityModifier;
+	std::vector<int> m_aiBuildCostChange;
 	std::vector<bool> m_abNoTrain;
 	FStaticVector<FreeTraitUnit, SAFE_ESTIMATE_NUM_FREE_UNITS, true, c_eCiv5GameplayDLL, 0> m_aFreeTraitUnits;
 	std::vector<int> m_aiBuildingClassFaithCost;

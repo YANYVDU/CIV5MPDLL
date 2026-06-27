@@ -33,7 +33,7 @@
  ****************************************************************************/
 #define MOD_DLL_GUID {0xcf7d28a8, 0x1684, 0x4420, { 0xaf, 0x45, 0x11, 0x7, 0xc, 0xb, 0x8c, 0x4a }} // {CF7D28A8-1684-4420-AF45-11070C0B8C4A}
 #define MOD_DLL_NAME "CIV5 MPDLL"
-#define MOD_DLL_VERSION_NUMBER ((uint) 160)
+#define MOD_DLL_VERSION_NUMBER ((uint) 161)
 #define MOD_DLL_VERSION_STATUS ""			// a (alpha), b (beta) or blank (released)
 #define MOD_DLL_CUSTOM_BUILD_NAME ""
 
@@ -1398,6 +1398,13 @@ enum BattleTypeTypes
 	if (uiDllSaveVersion >= version) { stream >> member; } \
 	else { member.clear(); member.resize(size, def_val); }
 #define MOD_SERIALIZE_WRITE_VECTOR(stream, member) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); stream << member
+#define MOD_SERIALIZE_READ_HASH_VECTOR(version, stream, member, size, def_val) \
+	if (uiDllSaveVersion >= version) { \
+		CvInfosSerializationHelper::ReadHashedDataArray(stream, member); \
+	} else { \
+		member.clear(); member.resize(size, def_val); \
+	}
+#define MOD_SERIALIZE_WRITE_HASH_VECTOR(stream, member, type) CvAssert(uiDllSaveVersion == MOD_DLL_VERSION_NUMBER); CvInfosSerializationHelper::WriteHashedDataArray<type>(stream, member)
 #else
 #define MOD_SERIALIZE_INIT_READ(stream) __noop
 #define MOD_SERIALIZE_READ(version, stream, member, def) __noop
@@ -1414,6 +1421,8 @@ enum BattleTypeTypes
 #define MOD_SERIALIZE_WRITE_UNORDERED_MAP(stream, map) __noop
 #define MOD_SERIALIZE_READ_VECTOR(version, stream, member, size, def_val) __noop
 #define MOD_SERIALIZE_WRITE_VECTOR(stream, member) __noop
+#define MOD_SERIALIZE_READ_HASH_VECTOR(version, stream, member, size, def_val) __noop
+#define MOD_SERIALIZE_WRITE_HASH_VECTOR(stream, member, type) __noop
 #endif
 
 #define SERIALIZE_READ_UNORDERED_MAP(stream, map) \

@@ -503,6 +503,12 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_TRAIT">
 			<Text>來自領袖特性: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RELIGION">
+			<Text>來自宗教: {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_LOCAL_HAPPINESS">
+			<Text>來自本地幸福度: {1_score}</Text>
+		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_MOD_FROM_SPY">
 			<Text>來自間諜: {1_score}%</Text>
 		</Row>
@@ -852,6 +858,15 @@
 		</Row>
 		<Row Tag="TXT_KEY_MPDLL_ERROR_VERSION">
 			<Text>[COLOR_NEGATIVE_TEXT]MPDLL出現錯誤，如果你使用的都是最新版本，請和管理員聯系[COLOR_NEGATIVE_TEXT]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE">
+			<Text>[COLOR_NEGATIVE_TEXT]無法獲得新的戰後晉升，所有候選晉升已被獲取。[ENDCOLOR]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_GOLDEN_AGE">
+			<Text>[COLOR_YELLOW]由於你採納的信條，一次[ICON_GOLDEN_AGE]黃金時代開啟了！[ENDCOLOR]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
+			<Text>[COLOR_YELLOW]由於你採納的信條，{1_CityName}獲得了+1[ICON_CITIZEN]人口！[ENDCOLOR]</Text>
 		</Row>
 	</Language_zh_Hant_HK>
 </GameData>

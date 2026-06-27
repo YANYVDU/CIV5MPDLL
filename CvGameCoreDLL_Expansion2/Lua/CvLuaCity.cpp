@@ -790,6 +790,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(CalculateCorruptionScoreFromDistance);
 	Method(CalculateCorruptionScoreFromCoastalBonus);
 	Method(CalculateCorruptionScoreModifierFromSpy);
+	Method(CalculateCorruptionScoreFromReligion);
 	Method(CalculateCorruptionScoreModifierFromTrait);
 	Method(GetCorruptionScoreChangeFromBuilding);
 	Method(GetCorruptionLevelChangeFromBuilding);
@@ -797,10 +798,15 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(CalculateCorruptionScoreFromTrait);
 	Method(GetCorruptionScoreModifierFromPolicy);
 	Method(GetCorruptionScoreGlobalChangeFromBuilding);
+	Method(GetCorruptionScoreFromLocalHappiness);
 	
 	Method(DecideCorruptionLevelForNormalCity);
 	Method(GetMaxCorruptionLevel);
 	Method(IsCorruptionLevelReduceByOne);
+	Method(GetReligionDamageModifier);
+	Method(GetReligionTradeRouteHolyCityYield);
+	Method(GetReligionTradeRouteHolyCityDestYield);
+	Method(GetReligionTradeRouteSameReligionModifier);
 #endif
 	Method(GetHurryModifier);
 	Method(GetHurryModifierLocal);
@@ -5292,6 +5298,7 @@ LUAAPIIMPL(City, GetCorruptionLevel);
 LUAAPIIMPL(City, UpdateCorruption);
 LUAAPIIMPL(City, CalculateTotalCorruptionScore);
 LUAAPIIMPL(City, CalculateCorruptionScoreFromDistance);
+LUAAPIIMPL(City, CalculateCorruptionScoreFromReligion);
 LUAAPIIMPL(City, CalculateCorruptionScoreFromCoastalBonus);
 LUAAPIIMPL(City, CalculateCorruptionScoreModifierFromSpy);
 LUAAPIIMPL(City, CalculateCorruptionScoreModifierFromTrait);
@@ -5301,9 +5308,11 @@ LUAAPIIMPL(City, CalculateCorruptionScoreFromResource);
 LUAAPIIMPL(City, CalculateCorruptionScoreFromTrait);
 LUAAPIIMPL(City, GetCorruptionScoreModifierFromPolicy);
 LUAAPIIMPL(City, GetCorruptionScoreGlobalChangeFromBuilding);
+LUAAPIIMPL(City, GetCorruptionScoreFromLocalHappiness);
 
 LUAAPIIMPL(City, GetMaxCorruptionLevel);
 LUAAPIIMPL(City, IsCorruptionLevelReduceByOne);
+LUAAPIIMPL(City, GetReligionDamageModifier);
 
 int CvLuaCity::lDecideCorruptionLevelForNormalCity(lua_State* L)
 {
@@ -5351,6 +5360,33 @@ int CvLuaCity::lGetFoodConsumptionPerPopTimes100(lua_State* L)
 	iResult = iResult * iConsumptionModifier;
 	iResult /= 100;
 	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaCity::lGetReligionTradeRouteHolyCityYield(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	CvCity* pkDestCity = GetInstance(L, 2);
+	const YieldTypes eYield = (YieldTypes)lua_tointeger(L, 3);
+	lua_pushinteger(L, pkCity->GetReligionTradeRouteHolyCityYield(pkDestCity, eYield));
+	return 1;
+}
+
+int CvLuaCity::lGetReligionTradeRouteHolyCityDestYield(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	CvCity* pkDestCity = GetInstance(L, 2);
+	const YieldTypes eYield = (YieldTypes)lua_tointeger(L, 3);
+	lua_pushinteger(L, pkCity->GetReligionTradeRouteHolyCityDestYield(pkDestCity, eYield));
+	return 1;
+}
+
+int CvLuaCity::lGetReligionTradeRouteSameReligionModifier(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	CvCity* pkDestCity = GetInstance(L, 2);
+	const YieldTypes eYield = (YieldTypes)lua_tointeger(L, 3);
+	lua_pushinteger(L, pkCity->GetReligionTradeRouteSameReligionModifier(pkDestCity, eYield));
 	return 1;
 }
 

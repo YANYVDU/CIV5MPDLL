@@ -2209,6 +2209,10 @@ public:
 
 	int GetCorruptionScoreModifierFromPolicy() const;
 	void ChangeCorruptionScoreModifierFromPolicy(int change);
+	int GetGoldenAgeCorruptionScoreReduction() const;
+	void ChangeGoldenAgeCorruptionScoreReduction(int change);
+	int GetLocalHappinessCorruptionScoreMod() const;
+	void ChangeLocalHappinessCorruptionScoreMod(int change);
 	int GetCorruptionLevelReduceByOneRC() const;
 	bool IsCorruptionLevelReduceByOne() const;
 	void ChangeCorruptionLevelReduceByOneRC(int change);
@@ -3022,9 +3026,12 @@ protected:
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	int m_iCorruptionScoreModifierFromPolicy = 0;
+	int m_iGoldenAgeCorruptionScoreReduction = 0;
+	int m_iLocalHappinessCorruptionScoreMod = 0;
 	int m_iCorruptionLevelReduceByOneRC = 0;
 	int m_iCorruptionPolicyCostModifier = 0;
 	int m_iCorruptionScoreGlobalChangeFromBuilding = 0;
+	bool m_bUpdatingReligion = false; // recursion guard for UpdateReligion()
 
 	std::vector<int> m_paiCorruptionLevelPolicyCostModifier;
 #endif
