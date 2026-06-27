@@ -3105,9 +3105,6 @@ int CvPlot::getBuildTime(BuildTypes eBuild, PlayerTypes ePlayer) const
 	iTime *= GC.getGame().getStartEraInfo().getBuildPercent();
 	iTime /= 100;
 
-	// Minimum build time: no build action can complete in 0 or negative turns
-	iTime = std::max(100, iTime);
-
 	return iTime;
 }
 
