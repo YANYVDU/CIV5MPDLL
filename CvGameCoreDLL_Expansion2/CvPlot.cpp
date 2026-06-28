@@ -9265,11 +9265,11 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 				{
 					ImprovementTypes eOtherImp = pAdjacentPlot->getImprovementType();
 					iYield += kPlayer.GetPlayerPolicies()->GetAdjacentImprovementYieldChange(
-						eImprovement, eOtherImp, eYield);
+						eOtherImp, eImprovement, eYield);
 					iYield += kPlayer.GetPlayerTraits()->GetAdjacentImprovementYieldChange(
-						eImprovement, eOtherImp, eYield);
+						eOtherImp, eImprovement, eYield);
 					iYield += kPlayer.GetAdjacentImprovementYieldChangeFromBuildingsGlobal(
-						eImprovement, eOtherImp, eYield);
+						eOtherImp, eImprovement, eYield);
 				}
 			}
 		}
@@ -9510,7 +9510,7 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 					{
 						ImprovementTypes eOtherImp = pAdjacentPlot->getImprovementType();
 						iYield += pWorkingCity->GetAdjacentImprovementYieldChangeFromBuildings(
-							eImprovement, eOtherImp, eYield);
+							eOtherImp, eImprovement, eYield);
 					}
 				}
 			}
