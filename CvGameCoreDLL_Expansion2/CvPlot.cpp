@@ -9476,7 +9476,7 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 					{
 						ImprovementTypes eOtherImp = pAdjacentPlot->getImprovementType();
 						iYield += pReligion->m_Beliefs.GetAdjacentImprovementYieldChange(
-							eImprovement, eOtherImp, eYield);
+							eOtherImp, eImprovement, eYield);
 						if (eSecondaryPantheon != NO_BELIEF)
 						{
 							CvBeliefEntry* pSecBelief = GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon);
@@ -9485,8 +9485,8 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 								const auto& vChanges = pSecBelief->GetAdjacentImprovementYieldChanges();
 								for (const auto& change : vChanges)
 								{
-									if ((int)change.m_iImprovementType == (int)eImprovement &&
-										(int)change.m_iOtherImprovementType == (int)eOtherImp &&
+									if ((int)change.m_iImprovementType == (int)eOtherImp &&
+										(int)change.m_iOtherImprovementType == (int)eImprovement &&
 										(int)change.m_iYieldType == (int)eYield)
 									{
 										iYield += change.m_iYield;
