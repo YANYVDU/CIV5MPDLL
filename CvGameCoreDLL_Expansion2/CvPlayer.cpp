@@ -555,6 +555,7 @@ CvPlayer::CvPlayer() :
 	, m_ownedNaturalWonders()
 	, m_iMaxEffectiveCities(1)
 	, m_iLastSliceMoved(0)
+	, m_iNoProgressCount(0)
 	, m_eEndTurnBlockingType(NO_ENDTURN_BLOCKING_TYPE)
 	, m_iEndTurnBlockingNotificationIndex(0)
 	, m_activeWaitingForEndTurnMessage(false)
@@ -1261,6 +1262,7 @@ void CvPlayer::uninit()
 	m_iFaithPurchaseIndex = 0;
 	m_iMaxEffectiveCities = 1;
 	m_iLastSliceMoved = 0;
+	m_iNoProgressCount = 0;
 
 	m_iDishonestyCounter = 0;
 #ifdef MOD_GLOBAL_WAR_CASUALTIES
@@ -32069,6 +32071,24 @@ int CvPlayer::GetLastSliceMoved() const
 void CvPlayer::SetLastSliceMoved(int iValue)
 {
 	m_iLastSliceMoved = iValue;
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNoProgressCount() const
+{
+	return m_iNoProgressCount;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetNoProgressCount(int iValue)
+{
+	m_iNoProgressCount = iValue;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNoProgressCount(int iChange)
+{
+	m_iNoProgressCount += iChange;
 }
 
 //	--------------------------------------------------------------------------------
