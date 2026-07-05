@@ -325,6 +325,10 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 
 	Method(SetPlotExtraYield);
 	Method(ChangePlotExtraCost);
+	Method(SetPlotName);
+	Method(GetPlotName);
+	Method(RemovePlotName);
+	Method(GetAllPlotNames);
 
 	Method(IsCivEverActive);
 	Method(IsLeaderEverActive);
@@ -1891,6 +1895,61 @@ int CvLuaGame::lSetPlotExtraYield(lua_State* L)
 int CvLuaGame::lChangePlotExtraCost(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::changePlotExtraCost);
+}
+//------------------------------------------------------------------------------
+//void SetPlotName(int iX, int iY, const char* szName);
+int CvLuaGame::lSetPlotName(lua_State* L)
+{
+	CvGame& kGame = GC.getGame();
+	const int iX = lua_tointeger(L, 1);
+	const int iY = lua_tointeger(L, 2);
+	const char* szName = lua_tostring(L, 3);
+	kGame.SetPlotName(iX, iY, szName ? szName : "");
+	return 0;
+}
+//------------------------------------------------------------------------------
+//const char* GetPlotName(int iX, int iY);
+int CvLuaGame::lGetPlotName(lua_State* L)
+{
+	CvGame& kGame = GC.getGame();
+	const int iX = lua_tointeger(L, 1);
+	const int iY = lua_tointeger(L, 2);
+	const char* szName = kGame.GetPlotName(iX, iY);
+	if (szName)
+		lua_pushstring(L, szName);
+	else
+		lua_pushnil(L);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void RemovePlotName(int iX, int iY);
+int CvLuaGame::lRemovePlotName(lua_State* L)
+{
+	CvGame& kGame = GC.getGame();
+	kGame.RemovePlotName(lua_tointeger(L, 1), lua_tointeger(L, 2));
+	return 0;
+}
+//------------------------------------------------------------------------------
+//table GetAllPlotNames();
+int CvLuaGame::lGetAllPlotNames(lua_State* L)
+{
+	CvGame& kGame = GC.getGame();
+	const std::map<int, std::string>& mapNames = kGame.GetAllPlotNames();
+	lua_createtable(L, mapNames.size(), 0);
+	int idx = 1;
+	for (std::map<int, std::string>::const_iterator it = mapNames.begin(); it != mapNames.end(); ++it)
+	{
+		lua_createtable(L, 0, 3);
+		const int t = lua_gettop(L);
+		lua_pushinteger(L, it->first / 10000);
+		lua_setfield(L, t, "x");
+		lua_pushinteger(L, it->first % 10000);
+		lua_setfield(L, t, "y");
+		lua_pushstring(L, it->second.c_str());
+		lua_setfield(L, t, "name");
+		lua_rawseti(L, -2, idx++);
+	}
+	return 1;
 }
 //------------------------------------------------------------------------------
 //bool isCivEverActive(CivilizationTypes eCivilization);

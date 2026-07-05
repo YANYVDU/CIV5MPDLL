@@ -975,6 +975,7 @@ void CvGame::uninit()
 
 	m_aPlotExtraYields.clear();
 	m_aPlotExtraCosts.clear();
+	m_mapPlotNames.clear();
 
 	SAFE_DELETE(m_pDiploResponseQuery);
 
@@ -9942,6 +9943,8 @@ void CvGame::Read(FDataStream& kStream)
 	kStream >> m_aPlotExtraYields;
 	kStream >> m_aPlotExtraCosts;
 
+	// Read plot names
+	MOD_SERIALIZE_READ_UNORDERED_MAP(161, kStream, m_mapPlotNames);
 
 	// Get the active player information from the initialization structure
 	if(!isGameMultiPlayer())
@@ -10151,6 +10154,9 @@ void CvGame::Write(FDataStream& kStream) const
 
 	kStream << m_aPlotExtraYields;
 	kStream << m_aPlotExtraCosts;
+
+	// Write plot names
+	MOD_SERIALIZE_WRITE_UNORDERED_MAP(kStream, m_mapPlotNames);
 
 	kStream << m_bArchaeologyTriggered;
 
@@ -10437,6 +10443,35 @@ void CvGame::removePlotExtraCost(int iX, int iY)
 			break;
 		}
 	}
+}
+
+//	--------------------------------------------------------------------------------
+void CvGame::SetPlotName(int iX, int iY, const char* szName)
+{
+	int iKey = iX * 10000 + iY;
+	if (szName && szName[0] != '\0')
+		m_mapPlotNames[iKey] = szName;
+	else
+		m_mapPlotNames.erase(iKey);
+}
+//	--------------------------------------------------------------------------------
+const char* CvGame::GetPlotName(int iX, int iY) const
+{
+	int iKey = iX * 10000 + iY;
+	std::map<int, std::string>::const_iterator it = m_mapPlotNames.find(iKey);
+	if (it != m_mapPlotNames.end())
+		return it->second.c_str();
+	return NULL;
+}
+//	--------------------------------------------------------------------------------
+void CvGame::RemovePlotName(int iX, int iY)
+{
+	m_mapPlotNames.erase(iX * 10000 + iY);
+}
+//	--------------------------------------------------------------------------------
+const std::map<int, std::string>& CvGame::GetAllPlotNames() const
+{
+	return m_mapPlotNames;
 }
 
 
