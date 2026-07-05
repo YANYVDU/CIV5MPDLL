@@ -329,6 +329,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetPlotName);
 	Method(RemovePlotName);
 	Method(GetAllPlotNames);
+	Method(GetProjectFirstData);
 
 	Method(IsCivEverActive);
 	Method(IsLeaderEverActive);
@@ -1949,6 +1950,29 @@ int CvLuaGame::lGetAllPlotNames(lua_State* L)
 		lua_setfield(L, t, "name");
 		lua_rawseti(L, -2, idx++);
 	}
+	return 1;
+}
+//------------------------------------------------------------------------------
+// GetProjectFirstData(int projectID) -> {playerID, cityName} or nil
+int CvLuaGame::lGetProjectFirstData(lua_State* L)
+{
+	CvGame& kGame = GC.getGame();
+	const int iProject = lua_tointeger(L, 1);
+	const int iPlayer = kGame.GetProjectFirstPlayer((ProjectTypes)iProject);
+	if (iPlayer < 0)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+	lua_createtable(L, 0, 2);
+	lua_pushinteger(L, iPlayer);
+	lua_setfield(L, -2, "playerID");
+	const char* szCityName = kGame.GetProjectFirstCityName((ProjectTypes)iProject);
+	if (szCityName)
+		lua_pushstring(L, szCityName);
+	else
+		lua_pushstring(L, "");
+	lua_setfield(L, -2, "cityName");
 	return 1;
 }
 //------------------------------------------------------------------------------
