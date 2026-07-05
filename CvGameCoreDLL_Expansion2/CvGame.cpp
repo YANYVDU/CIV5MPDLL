@@ -8535,9 +8535,33 @@ void CvGame::updateMoves()
 				{
 					if(needsAIUpdate || !player.isHuman())
 					{
+						int iLastSliceMovedBefore = player.GetLastSliceMoved();
 						player.AI_unitUpdate();
 
-						NET_MESSAGE_DEBUG_OSTR_ALWAYS("UpdateMoves() : player.AI_unitUpdate() called for player " << player.GetID() << " " << player.getName()); 
+						NET_MESSAGE_DEBUG_OSTR_ALWAYS("UpdateMoves() : player.AI_unitUpdate() called for player " << player.GetID() << " " << player.getName());
+
+						// Detect units stuck in AI loop: if no unit moved this slice but units
+						// remain ready, count consecutive no-progress slices.  After N slices
+						// without any unit moving, force-skip the remaining ready units.
+						// This catches stuck air units (no valid target in range) and any
+						// other unit type that the tactical AI cannot assign a move to.
+						if(!player.isHuman() && !player.hasBusyUnitOrCity())
+						{
+							int iReadyUnitsNow = player.GetCountReadyUnits();
+							if(iReadyUnitsNow > 0 && player.GetLastSliceMoved() == iLastSliceMovedBefore)
+							{
+								player.ChangeNoProgressCount(1);
+								if(player.GetNoProgressCount() > 5)
+								{
+									player.EndTurnsForReadyUnits();
+									player.SetNoProgressCount(0);
+								}
+							}
+							else
+							{
+								player.SetNoProgressCount(0);
+							}
+						}
 					}
 
 					int iReadyUnitsNow = player.GetCountReadyUnits();
