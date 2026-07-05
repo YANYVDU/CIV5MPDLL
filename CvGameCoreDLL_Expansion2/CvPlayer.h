@@ -1915,6 +1915,10 @@ public:
 	int GetLastSliceMoved() const;
 	void SetLastSliceMoved(int iValue);
 
+	int GetNoProgressCount() const;
+	void SetNoProgressCount(int iValue);
+	void ChangeNoProgressCount(int iChange);
+
 	void SetEverConqueredBy(PlayerTypes ePlayer, bool bValue);
 	bool IsEverConqueredBy(PlayerTypes ePlayer);
 
@@ -2701,6 +2705,7 @@ protected:
     int m_iMaxEffectiveCities;
 
 	int m_iLastSliceMoved;
+	int m_iNoProgressCount;  // Tracks consecutive AI slices where no unit moved (for stuck-unit detection)
 
 	FAutoVariable<uint, CvPlayer> m_uiStartTime;  // XXX save these?
 
