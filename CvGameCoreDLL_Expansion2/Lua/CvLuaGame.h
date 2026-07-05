@@ -265,6 +265,8 @@ protected:
 	static int lRemovePlotName(lua_State* L);
 	static int lGetAllPlotNames(lua_State* L);
 
+	static int lGetProjectFirstData(lua_State* L);
+
 	static int lIsCivEverActive(lua_State* L);
 	static int lIsLeaderEverActive(lua_State* L);
 	static int lIsUnitEverActive(lua_State* L);
