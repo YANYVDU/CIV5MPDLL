@@ -1373,7 +1373,7 @@ enum BattleTypeTypes
 		map.clear(); \
 		for (int i = 0; i < iLen; i++) { \
 			decltype(map)::key_type key = 0; \
-			decltype(map)::mapped_type value = 0; \
+			decltype(map)::mapped_type value; \
 			stream >> key; \
 			stream >> value; \
 			map[key] = value; \
