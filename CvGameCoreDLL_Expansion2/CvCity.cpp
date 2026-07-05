@@ -18487,6 +18487,20 @@ bool CvCity::CreateProject(ProjectTypes eProjectType, bool bIsCapture)
 
 	changeProjectCount(eProjectType, 1);
 
+	// Record first completion for global projects (like wonder builder display)
+	if (!bIsCapture)
+	{
+		CvProjectEntry* pkProjectInfo = GC.getProjectInfo(eProjectType);
+		if (pkProjectInfo && pkProjectInfo->GetMaxGlobalInstances() > 0)
+		{
+			CvGame& kGame = GC.getGame();
+			if (kGame.GetProjectFirstPlayer(eProjectType) == -1)
+			{
+				kGame.SetProjectFirstCompletion(eProjectType, getOwner(), getName().c_str());
+			}
+		}
+	}
+
 	ProjectTypes ApolloProgram = (ProjectTypes) GC.getSPACE_RACE_TRIGGER_PROJECT();
 	ProjectTypes capsuleID = (ProjectTypes) GC.getSPACESHIP_CAPSULE();
 	ProjectTypes boosterID = (ProjectTypes) GC.getSPACESHIP_BOOSTER();
