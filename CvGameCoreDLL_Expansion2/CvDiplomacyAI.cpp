@@ -2024,7 +2024,8 @@ void CvDiplomacyAI::DoTurn(PlayerTypes eTargetPlayer)
 #if defined(MOD_AI_MP_DIPLOMACY)
 	m_eTargetPlayerType = eTargetPlayerType;
 #endif
-	m_eTargetPlayer = eTargetPlayer;
+	AI_PERF_FORMAT("AI-perf.csv", ("DiplomacyAI DoTurn, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription()) );
+		m_eTargetPlayer = eTargetPlayer;
 	// Military Stuff
 	DoWarDamageDecay();
 	DoUpdateWarDamageLevel();

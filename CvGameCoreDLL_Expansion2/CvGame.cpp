@@ -7752,6 +7752,7 @@ void CvGame::removeGreatPersonBornName(const CvString& szName)
 //	--------------------------------------------------------------------------------
 void CvGame::doTurn()
 {
+	AI_PERF_FORMAT("AI-perf.csv", ("CvGame::doTurn, Turn %03d", GC.getGame().getElapsedGameTurns()) );
 #ifndef FINAL_RELEASE
 	char temp[256];
 	sprintf_s(temp, "Turn %i\n", getGameTurn());

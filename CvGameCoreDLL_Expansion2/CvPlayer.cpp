@@ -2362,6 +2362,10 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 {
 	if(pOldCity == NULL) return NULL;
 
+	DWORD dwStartTotal = GetTickCount();
+	DWORD dwStage = dwStartTotal;
+	std::string strPerfCityName;
+
 	IDInfo* pUnitNode;
 	CvCity* pNewCity;
 	CvUnit* pLoopUnit;
@@ -2387,6 +2391,8 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 	CvCityReligions tempReligions;
 	bool bIsMinorCivBuyout = (pOldCity->GetPlayer()->isMinorCiv() && bGift && (IsAbleToAnnexCityStates() || GetPlayerTraits()->IsNoAnnexing())); // Austria and Venice UA
 	if(bIsMinorCivBuyout) bNoKillPunishment = true;
+
+	strPerfCityName = pOldCity->getName();
 
 	pCityPlot = pOldCity->plot();
 
@@ -2920,6 +2926,8 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 #else
 	pOldCity->PreKill();
 #endif
+
+		dwStage = GetTickCount();
 
 	{
 		auto_ptr<ICvCity1> pkDllOldCity(new CvDllCity(pOldCity));
@@ -3686,6 +3694,14 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 #ifdef _MSC_VER
 #pragma warning ( pop ) // restore warning level suppressed for pNewCity null check
 #endif// _MSC_VER
+
+	if (bConquest)
+	{
+		DWORD dwElapsed = GetTickCount() - dwStartTotal;
+		DWORD dwStage1 = dwStage - dwStartTotal;
+		DWORD dwStage2 = dwElapsed - dwStage1;
+		NET_MESSAGE_DEBUG_OSTR_ALWAYS("[PERF] acquireCity total=" << dwElapsed << "ms pre=" << dwStage1 << "ms post=" << dwStage2 << "ms city=" << strPerfCityName.c_str() << " old=" << (int)eOldOwner << "->new=" << (int)GetID());
+	}
 }
 
 
