@@ -8810,7 +8810,7 @@ bool CvPlayer::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestV
 		}
 	}
 
-	if(CanNoTechForWonder() && pBuildingInfo.GetBuildingClassInfo().getMaxGlobalInstances() == 1)
+	if(CanNoTechForWonder() && ::isWorldWonderClass(pBuildingInfo.GetBuildingClassInfo()))
 	{
 		// skip Tech
 	}
@@ -28426,8 +28426,8 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iAlwaysWeLoveKindDayInGoldenAge;
 	kStream >> m_iNoResistance;
 	kStream >> m_iUpgradeAllTerritory;
-	kStream >> m_iNoTechForProject;
 	kStream >> m_iNoTechForWonder;
+	kStream >> m_iNoTechForProject;
 	kStream >> m_iCityCaptureHealGlobal;
 	kStream >> m_iOriginalCapitalCaptureTech;
 	kStream >> m_iOriginalCapitalCapturePolicy;
