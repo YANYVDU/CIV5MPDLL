@@ -17771,15 +17771,18 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 					bool bScriptResult;
 					LuaSupport::CallHook(pkScriptSystem, "CityConstructed", args.get(), bScriptResult);
 				}
-				int iTechBoostModifier = kOwner.getPolicyModifiers(POLICYMOD_TECH_BOOST_FROM_CITY_WONDER_BUILDINGS);
+#if defined(MOD_EVENTS_CITY)
+				}
+#endif
+                int iTechBoostModifier = kOwner.CanTechBoostFromCityWonderBuildings();
 				if (iTechBoostModifier > 0)
 				{
 					const BuildingClassTypes eBuildingClass = (BuildingClassTypes)pkBuildingInfo->GetBuildingClassType();
-						CvBuildingClassInfo* pBuildingClass = GC.getBuildingClassInfo(eBuildingClass);
-					if (pBuildingClass && ::isWorldWonderClass(*pBuildingClass))
+					CvBuildingClassInfo* pBuildingClass = GC.getBuildingClassInfo(eBuildingClass);
+					if (pBuildingClass &&
 						(::isWorldWonderClass(*pBuildingClass) ||
-							::isTeamWonderClass(*pBuildingClass) ||
-							::isNationalWonderClass(*pBuildingClass));
+						 ::isTeamWonderClass(*pBuildingClass) ||
+						 ::isNationalWonderClass(*pBuildingClass)))
 					{
 						int iMedianTechResearch = kOwner.GetPlayerTechs()->GetMedianTechResearch();
 						iMedianTechResearch = (iMedianTechResearch * kOwner.GetMedianTechPercentage()) / 100;
@@ -17791,18 +17794,10 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 						else
 						{
 							GET_TEAM(getTeam()).GetTeamTechs()->ChangeResearchProgress(
-								eCurrentTech, 
-								iMedianTechResearch, 
-								kOwner.GetID()
-							);
+								eCurrentTech, iMedianTechResearch, kOwner.GetID());
 						}
 					}
 				}
-#if defined(MOD_EVENTS_CITY)
-				}
-#endif
-
-
 #if defined(MOD_ROG_CORE)
 				if (MOD_ROG_CORE) {
 					YieldTypes eYield;
