@@ -831,6 +831,7 @@ UnitHandle CvArmyAI::GetFirstUnitInDomain(DomainTypes eDomain)
 void CvArmyAI::DoTurn()
 {
 	// do something with the army
+	AI_PERF_FORMAT("AI-perf.csv", ("ArmyAI DoTurn, Turn %03d", GC.getGame().getElapsedGameTurns()) );
 	DoDelayedDeath();
 }
 
