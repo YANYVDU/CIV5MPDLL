@@ -188,7 +188,6 @@ public:
 	int GetRiggingElectionInfluenceModifier() const;
 	bool IsSpyLevelUpWhenRigging() const;
 	bool IsNoOccupiedUnhappinessGarrisonedCity() const;
-	bool IsTechBoostFromCityWonderBuildings() const;
 	int GetMilitaryUnitGiftExtraInfluence() const;
 	int GetProtectedMinorPerTurnInfluence() const;
 	int GetAfraidMinorPerTurnInfluence() const;
@@ -319,6 +318,7 @@ public:
 #endif
 	bool IsAlwaysWeLoveKindDayInGoldenAge() const;
 	bool IsNoResistance() const;
+	bool IsTechBoostFromCityWonderBuildings() const;
 	bool IsUpgradeAllTerritory() const;
 	bool IsNoTechForWonder() const;
 	bool IsNoTechForProject() const;
@@ -527,7 +527,6 @@ private:
 	int m_iRiggingElectionInfluenceModifier;
 	bool m_bSpyLevelUpWhenRigging;
 	bool m_bNoOccupiedUnhappinessGarrisonedCity;
-	bool m_bTechBoostFromCityWonderBuildings;
 	int m_iMilitaryUnitGiftExtraInfluence;
 	int m_iProtectedMinorPerTurnInfluence;
 	int m_iAfraidMinorPerTurnInfluence;
@@ -576,6 +575,7 @@ private:
 #endif
 	bool m_bAlwaysWeLoveKindDayInGoldenAge;
 	bool m_bNoResistance;
+	bool m_bTechBoostFromCityWonderBuildings;
 	bool m_bUpgradeAllTerritory;
 	bool m_bNoTechForWonder;
 	bool m_bNoTechForProject;

@@ -254,6 +254,7 @@ CvPlayer::CvPlayer() :
 	, m_iGreatAdmiralsThresholdModifier(0)
 	, m_iAlwaysWeLoveKindDayInGoldenAge()
 	, m_iNoResistance()
+	, m_iTechBoostFromCityWonderBuildings(0)
 	, m_iUpgradeAllTerritory()
 	, m_iNoTechForWonder()
 	, m_iNoTechForProject()
@@ -1056,6 +1057,7 @@ void CvPlayer::uninit()
 	m_iGreatAdmiralsThresholdModifier = 0;
 	m_iAlwaysWeLoveKindDayInGoldenAge = 0;
 	m_iNoResistance = 0;
+	m_iTechBoostFromCityWonderBuildings = 0;
 	m_iUpgradeAllTerritory = 0;
 	m_iNoTechForWonder = 0;
 	m_iNoTechForProject = 0;
@@ -16598,6 +16600,28 @@ void CvPlayer::ChangeNoResistance(int iChange)
 {
 	m_iNoResistance += iChange;
 }
+//	--------------------------------------------------------------------------------
+bool CvPlayer::CanTechBoostFromCityWonderBuildings() const
+{
+	if (GetTechBoostFromCityWonderBuildings() > 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetTechBoostFromCityWonderBuildings() const
+{
+	return m_iTechBoostFromCityWonderBuildings;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeTechBoostFromCityWonderBuildings(int iChange)
+{
+	m_iTechBoostFromCityWonderBuildings += iChange;
+}
+
 
 //	--------------------------------------------------------------------------------
 bool CvPlayer::CanUpgradeAllTerritory() const
@@ -27152,7 +27176,6 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changePolicyModifiers(POLICYMOD_RIGGING_ELECTION_INFLUENCE_MODIFIER, pPolicy->GetRiggingElectionInfluenceModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_SPY_LEVEL_UP_WHEN_RIGGING, pPolicy->IsSpyLevelUpWhenRigging() ? iChange : 0);
 	changePolicyModifiers(POLICYMOD_NO_OCCUPIED_UNHAPPINESS_GARRISONED_CITY, pPolicy->IsNoOccupiedUnhappinessGarrisonedCity() ? iChange : 0);
-	changePolicyModifiers(POLICYMOD_TECH_BOOST_FROM_CITY_WONDER_BUILDINGS, pPolicy->IsTechBoostFromCityWonderBuildings() ? iChange : 0);
 	changePolicyModifiers(POLICYMOD_MILITARY_UNIT_GIFT_INFLUENCE, pPolicy->GetMilitaryUnitGiftExtraInfluence() * iChange);
 	changePolicyModifiers(POLICYMOD_PROTECTED_MINOR_INFLUENCE, pPolicy->GetProtectedMinorPerTurnInfluence() * iChange);
 	changePolicyModifiers(POLICYMOD_AFRAID_INFLUENCE, pPolicy->GetAfraidMinorPerTurnInfluence() * iChange);
@@ -27276,6 +27299,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changeOriginalCapitalCaptureGreatPerson(pPolicy->GetOriginalCapitalCaptureGreatPerson() * iChange);
 
 	ChangeNoResistance(pPolicy->IsNoResistance() ? iChange : 0);
+	ChangeTechBoostFromCityWonderBuildings(pPolicy->IsTechBoostFromCityWonderBuildings() ? iChange : 0);
 	ChangeUpgradeAllTerritory(pPolicy->IsUpgradeAllTerritory() ? iChange : 0);
 	ChangeNoTechForWonder(pPolicy->IsNoTechForWonder() ? iChange : 0);
 	ChangeNoTechForProject(pPolicy->IsNoTechForProject() ? iChange : 0);
@@ -28478,6 +28502,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iGreatAdmiralsThresholdModifier;
 	kStream >> m_iAlwaysWeLoveKindDayInGoldenAge;
 	kStream >> m_iNoResistance;
+	MOD_SERIALIZE_READ(162, kStream, m_iTechBoostFromCityWonderBuildings, 0);
 	kStream >> m_iUpgradeAllTerritory;
 	kStream >> m_iNoTechForWonder;
 	kStream >> m_iNoTechForProject;
@@ -29306,6 +29331,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iGreatAdmiralsThresholdModifier;
 	kStream << m_iAlwaysWeLoveKindDayInGoldenAge;
 	kStream << m_iNoResistance;
+	MOD_SERIALIZE_WRITE(kStream, m_iTechBoostFromCityWonderBuildings);
 	kStream << m_iUpgradeAllTerritory;
 	kStream << m_iNoTechForWonder;
 	kStream << m_iNoTechForProject;

@@ -165,7 +165,6 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iRiggingElectionInfluenceModifier(0),
 	m_bSpyLevelUpWhenRigging(false),
 	m_bNoOccupiedUnhappinessGarrisonedCity(false),
-	m_bTechBoostFromCityWonderBuildings(false),
 	m_iMilitaryUnitGiftExtraInfluence(0),
 	m_iProtectedMinorPerTurnInfluence(0),
 	m_iAfraidMinorPerTurnInfluence(0),
@@ -210,6 +209,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 #endif
 	m_bAlwaysWeLoveKindDayInGoldenAge(false),
 	m_bNoResistance(false),
+	m_bTechBoostFromCityWonderBuildings(false),
 	m_bUpgradeAllTerritory(false),
 	m_bNoTechForWonder(false),
 	m_bNoTechForProject(false),
@@ -518,7 +518,6 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iRiggingElectionInfluenceModifier = kResults.GetInt("RiggingElectionInfluenceModifier");
 	m_bSpyLevelUpWhenRigging = kResults.GetBool("SpyLevelUpWhenRigging");
 	m_bNoOccupiedUnhappinessGarrisonedCity = kResults.GetBool("NoOccupiedUnhappinessGarrisonedCity");
-	m_bTechBoostFromCityWonderBuildings = kResults.GetBool("TechBoostFromCityWonderBuildings");
 	m_iMilitaryUnitGiftExtraInfluence = kResults.GetInt("MilitaryUnitGiftExtraInfluence");
 	m_iProtectedMinorPerTurnInfluence = kResults.GetInt("ProtectedMinorPerTurnInfluence");
 	m_iAfraidMinorPerTurnInfluence = kResults.GetInt("AfraidMinorPerTurnInfluence");
@@ -550,6 +549,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 #endif
 	m_bAlwaysWeLoveKindDayInGoldenAge = kResults.GetInt("AlwaysWeLoveKindDayInGoldenAge");
 	m_bNoResistance = kResults.GetInt("NoResistance");
+	m_bTechBoostFromCityWonderBuildings = kResults.GetInt("TechBoostFromCityWonderBuildings");
 	m_bUpgradeAllTerritory = kResults.GetInt("UpgradeAllTerritory");
 	m_bNoTechForWonder = kResults.GetBool("NoTechForWonder");
 	m_bNoTechForProject = kResults.GetBool("NoTechForProject");
@@ -2222,12 +2222,6 @@ bool CvPolicyEntry::IsNoOccupiedUnhappinessGarrisonedCity() const
 	return m_bNoOccupiedUnhappinessGarrisonedCity;
 }
 
-///Tech boost from city wonder buildings
-bool CvPolicyEntry::IsTechBoostFromCityWonderBuildings() const
-{
-	return m_bTechBoostFromCityWonderBuildings;
-}
-
 ///Influence boost upon gifting a military unit
 int CvPolicyEntry::GetMilitaryUnitGiftExtraInfluence() const
 {
@@ -2469,6 +2463,10 @@ bool CvPolicyEntry::IsAlwaysWeLoveKindDayInGoldenAge() const
 bool CvPolicyEntry::IsNoResistance() const
 {
 	return m_bNoResistance;
+}
+bool CvPolicyEntry::IsTechBoostFromCityWonderBuildings() const
+{
+	return m_bTechBoostFromCityWonderBuildings;
 }
 
 bool CvPolicyEntry::IsUpgradeAllTerritory() const
