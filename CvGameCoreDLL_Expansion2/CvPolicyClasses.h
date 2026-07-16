@@ -188,6 +188,7 @@ public:
 	int GetRiggingElectionInfluenceModifier() const;
 	bool IsSpyLevelUpWhenRigging() const;
 	bool IsNoOccupiedUnhappinessGarrisonedCity() const;
+	bool IsTechBoostFromCityWonderBuildings() const;
 	int GetMilitaryUnitGiftExtraInfluence() const;
 	int GetProtectedMinorPerTurnInfluence() const;
 	int GetAfraidMinorPerTurnInfluence() const;
@@ -526,6 +527,7 @@ private:
 	int m_iRiggingElectionInfluenceModifier;
 	bool m_bSpyLevelUpWhenRigging;
 	bool m_bNoOccupiedUnhappinessGarrisonedCity;
+	bool m_bTechBoostFromCityWonderBuildings;
 	int m_iMilitaryUnitGiftExtraInfluence;
 	int m_iProtectedMinorPerTurnInfluence;
 	int m_iAfraidMinorPerTurnInfluence;
