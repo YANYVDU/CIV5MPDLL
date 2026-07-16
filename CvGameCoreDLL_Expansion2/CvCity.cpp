@@ -8593,6 +8593,13 @@ void CvCity::initFreeUnit(CvPlayer& owningPlayer, UnitTypes eUnit, int iCount, b
 /// Process the majority religion changing for a city
 void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 {
+#ifdef MOD_GLOBAL_CORRUPTION
+	// Guard against recursion: UpdateCorruption() → SetNumRealBuilding() → processBuilding() → UpdateReligion()
+	if (m_bUpdatingReligion)
+		return;
+	m_bUpdatingReligion = true;
+#endif
+
 	updateYield();
 
 #ifdef MOD_GLOBAL_CORRUPTION
@@ -8760,6 +8767,10 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 #endif
 
 	GET_PLAYER(getOwner()).UpdateReligion();
+
+#ifdef MOD_GLOBAL_CORRUPTION
+	m_bUpdatingReligion = false;
+#endif
 }
 
 //	--------------------------------------------------------------------------------

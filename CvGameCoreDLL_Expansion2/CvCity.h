@@ -1751,6 +1751,8 @@ protected:
 
 	int m_iCorruptionScoreChangeFromBuilding = 0;
 	int m_iCorruptionLevelChangeFromBuilding = 0;
+
+	bool m_bUpdatingReligion = false; // recursion guard for UpdateReligion() ↔ UpdateCorruption()
 #endif
 
 	bool m_bIsSecondCapital = false;
