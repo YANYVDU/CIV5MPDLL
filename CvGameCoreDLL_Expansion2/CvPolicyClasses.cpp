@@ -164,6 +164,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iRiggingElectionInfluenceModifier(0),
 	m_bSpyLevelUpWhenRigging(false),
 	m_bNoOccupiedUnhappinessGarrisonedCity(false),
+	m_bTechBoostFromCityWonderBuildings(false),
 	m_iMilitaryUnitGiftExtraInfluence(0),
 	m_iProtectedMinorPerTurnInfluence(0),
 	m_iAfraidMinorPerTurnInfluence(0),
@@ -515,6 +516,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iRiggingElectionInfluenceModifier = kResults.GetInt("RiggingElectionInfluenceModifier");
 	m_bSpyLevelUpWhenRigging = kResults.GetBool("SpyLevelUpWhenRigging");
 	m_bNoOccupiedUnhappinessGarrisonedCity = kResults.GetBool("NoOccupiedUnhappinessGarrisonedCity");
+	m_bTechBoostFromCityWonderBuildings = kResults.GetBool("TechBoostFromCityWonderBuildings");
 	m_iMilitaryUnitGiftExtraInfluence = kResults.GetInt("MilitaryUnitGiftExtraInfluence");
 	m_iProtectedMinorPerTurnInfluence = kResults.GetInt("ProtectedMinorPerTurnInfluence");
 	m_iAfraidMinorPerTurnInfluence = kResults.GetInt("AfraidMinorPerTurnInfluence");
@@ -2211,6 +2213,12 @@ bool CvPolicyEntry::IsSpyLevelUpWhenRigging() const
 bool CvPolicyEntry::IsNoOccupiedUnhappinessGarrisonedCity() const
 {
 	return m_bNoOccupiedUnhappinessGarrisonedCity;
+}
+
+///Tech boost from city wonder buildings
+bool CvPolicyEntry::IsTechBoostFromCityWonderBuildings() const
+{
+	return m_bTechBoostFromCityWonderBuildings;
 }
 
 ///Influence boost upon gifting a military unit

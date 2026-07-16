@@ -118,6 +118,7 @@ alter table Policies add column NaturalWonderFirstFinderTech integer not null de
 alter table Policies add column NaturalWonderFirstFinderPolicies integer not null default 0;
 alter table Policies add column NaturalWonderSubsequentFinderPolicies integer not null default 0;
 alter table Policies add column NaturalWonderSubsequentFinderTech integer not null default 0;
+alter table Policies add TechBoostFromCityWonderBuildings boolean default 0;
 --******************** New Condition ********************--
 create table PolicyBranch_CivilizationLocked (
     PolicyBranchType text references PolicyBranchTypes(Type),

@@ -27101,6 +27101,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changePolicyModifiers(POLICYMOD_RIGGING_ELECTION_INFLUENCE_MODIFIER, pPolicy->GetRiggingElectionInfluenceModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_SPY_LEVEL_UP_WHEN_RIGGING, pPolicy->IsSpyLevelUpWhenRigging() ? iChange : 0);
 	changePolicyModifiers(POLICYMOD_NO_OCCUPIED_UNHAPPINESS_GARRISONED_CITY, pPolicy->IsNoOccupiedUnhappinessGarrisonedCity() ? iChange : 0);
+	changePolicyModifiers(POLICYMOD_TECH_BOOST_FROM_CITY_WONDER_BUILDINGS, pPolicy->IsTechBoostFromCityWonderBuildings() ? iChange : 0);
 	changePolicyModifiers(POLICYMOD_MILITARY_UNIT_GIFT_INFLUENCE, pPolicy->GetMilitaryUnitGiftExtraInfluence() * iChange);
 	changePolicyModifiers(POLICYMOD_PROTECTED_MINOR_INFLUENCE, pPolicy->GetProtectedMinorPerTurnInfluence() * iChange);
 	changePolicyModifiers(POLICYMOD_AFRAID_INFLUENCE, pPolicy->GetAfraidMinorPerTurnInfluence() * iChange);
