@@ -4800,6 +4800,12 @@ void FixReduceDamageIntervene(InflictDamageContext* ctx)
 		{
 			*ctx->piDefenseInflictDamage -= ctx->pAttackerUnit->GetNumPromotions() * iFixReducePerPromotion / 100;
 		}
+		// Per Kill stacking fixed damage reduction (both directions)
+		const int iPerKillDefenseReduceAtk = ctx->pAttackerUnit->GetPerKillDefenseDamageChangeValue();
+		if (iPerKillDefenseReduceAtk != 0)
+		{
+			*ctx->piDefenseInflictDamage -= iPerKillDefenseReduceAtk;
+		}
 	}
 
 	if (ctx->pDefenderUnit != nullptr && ctx->piAttackInflictDamage != nullptr)
@@ -4808,6 +4814,12 @@ void FixReduceDamageIntervene(InflictDamageContext* ctx)
 		if (iFixReducePerPromotion != 0)
 		{
 			*ctx->piAttackInflictDamage -= ctx->pDefenderUnit->GetNumPromotions() * iFixReducePerPromotion / 100;
+		}
+		// Per Kill stacking fixed damage reduction (both directions)
+		const int iPerKillDefenseReduceDef = ctx->pDefenderUnit->GetPerKillDefenseDamageChangeValue();
+		if (iPerKillDefenseReduceDef != 0)
+		{
+			*ctx->piAttackInflictDamage -= iPerKillDefenseReduceDef;
 		}
 	}
 }
@@ -4821,6 +4833,8 @@ void FixAddDamageIntervene(InflictDamageContext* ctx)
 		{
 			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetNumPromotions() * iFixDamagePerPromotion / 100;
 		}
+		// Per Kill stacking fixed damage (both directions)
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetPerKillInflictDamageChangeValue();
 	}
 
 	if (ctx->pDefenderUnit != nullptr && ctx->piDefenseInflictDamage != nullptr && ctx->pAttackerCity == nullptr)
@@ -4830,6 +4844,8 @@ void FixAddDamageIntervene(InflictDamageContext* ctx)
 		{
 			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetNumPromotions() * iFixDamagePerPromotion / 100;
 		}
+		// Per Kill stacking fixed damage (both directions)
+		*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetPerKillInflictDamageChangeValue();
 	}
 }
 void SiegeInflictDamageIntervene(InflictDamageContext* ctx)

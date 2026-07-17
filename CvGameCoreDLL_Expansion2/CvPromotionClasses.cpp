@@ -236,6 +236,13 @@ CvPromotionEntry::CvPromotionEntry():
 	m_iGoldenAgeTurnDefenseModifier(0),
 	m_iFollowerCountCombatModifier(0),
 	m_iFollowingCityCountCombatModifier(0),
+	m_iPerKillAttackMod(0),
+	m_iPerKillDefenseMod(0),
+	m_iPerKillBaseCombatMod(0),
+	m_iPerKillRangedCombatMod(0),
+	m_iPerKillMaxHpMod(0),
+	m_iPerKillInflictDamageChange(0),
+	m_iPerKillDefenseDamageChange(0),
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops(false),
@@ -808,6 +815,13 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_iGoldenAgeTurnDefenseModifier = kResults.GetInt("GoldenAgeTurnDefenseModifier");
 	m_iFollowerCountCombatModifier = kResults.GetInt("FollowerCountCombatModifier");
 	m_iFollowingCityCountCombatModifier = kResults.GetInt("FollowingCityCountCombatModifier");
+	m_iPerKillAttackMod = kResults.GetInt("PerKillAttackMod");
+	m_iPerKillDefenseMod = kResults.GetInt("PerKillDefenseMod");
+	m_iPerKillBaseCombatMod = kResults.GetInt("PerKillBaseCombatMod");
+	m_iPerKillRangedCombatMod = kResults.GetInt("PerKillRangedCombatMod");
+	m_iPerKillMaxHpMod = kResults.GetInt("PerKillMaxHpMod");
+	m_iPerKillInflictDamageChange = kResults.GetInt("PerKillInflictDamageChange");
+	m_iPerKillDefenseDamageChange = kResults.GetInt("PerKillDefenseDamageChange");
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_bCrops = kResults.GetBool("IsCrops");
@@ -2889,6 +2903,41 @@ int CvPromotionEntry::GetFollowerCountCombatModifier() const
 int CvPromotionEntry::GetFollowingCityCountCombatModifier() const
 {
 	return m_iFollowingCityCountCombatModifier;
+}
+
+int CvPromotionEntry::GetPerKillAttackMod() const
+{
+	return m_iPerKillAttackMod;
+}
+
+int CvPromotionEntry::GetPerKillDefenseMod() const
+{
+	return m_iPerKillDefenseMod;
+}
+
+int CvPromotionEntry::GetPerKillBaseCombatMod() const
+{
+	return m_iPerKillBaseCombatMod;
+}
+
+int CvPromotionEntry::GetPerKillRangedCombatMod() const
+{
+	return m_iPerKillRangedCombatMod;
+}
+
+int CvPromotionEntry::GetPerKillMaxHpMod() const
+{
+	return m_iPerKillMaxHpMod;
+}
+
+int CvPromotionEntry::GetPerKillInflictDamageChange() const
+{
+	return m_iPerKillInflictDamageChange;
+}
+
+int CvPromotionEntry::GetPerKillDefenseDamageChange() const
+{
+	return m_iPerKillDefenseDamageChange;
 }
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)

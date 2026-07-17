@@ -1528,6 +1528,13 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iGoldenAgeTurnDefenseModifier = 0;
 	m_iFollowerCountCombatModifier = 0;
 	m_iFollowingCityCountCombatModifier = 0;
+	m_iPerKillAttackMod = 0;
+	m_iPerKillDefenseMod = 0;
+	m_iPerKillBaseCombatMod = 0;
+	m_iPerKillRangedCombatMod = 0;
+	m_iPerKillMaxHpMod = 0;
+	m_iPerKillInflictDamageChange = 0;
+	m_iPerKillDefenseDamageChange = 0;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_iCrops = 0;
@@ -2115,6 +2122,8 @@ void CvUnit::convert(CvUnit* pUnit, bool bIsUpgrade)
 
 	SetCombatStrengthChangeFromKilledUnits(pUnit->GetCombatStrengthChangeFromKilledUnits());
 	SetRangedCombatStrengthChangeFromKilledUnits(pUnit->GetRangedCombatStrengthChangeFromKilledUnits());
+	// Transfer total kills (per-kill stacking bonuses are inheritable)
+	SetTotalKills(pUnit->GetTotalKills());
 
 	pTransportUnit = pUnit->getTransportUnit();
 
@@ -7656,6 +7665,136 @@ const int CvUnit::GetFollowingCityCountCombatModifier() const
 void CvUnit::ChangeFollowingCityCountCombatModifier(int iValue)
 {
 	m_iFollowingCityCountCombatModifier += iValue;
+}
+
+// Per Kill Stacking cache getters/setters
+const int CvUnit::GetPerKillAttackMod() const
+{
+	return m_iPerKillAttackMod;
+}
+
+void CvUnit::ChangePerKillAttackMod(int iValue)
+{
+	m_iPerKillAttackMod += iValue;
+}
+
+const int CvUnit::GetPerKillDefenseMod() const
+{
+	return m_iPerKillDefenseMod;
+}
+
+void CvUnit::ChangePerKillDefenseMod(int iValue)
+{
+	m_iPerKillDefenseMod += iValue;
+}
+
+const int CvUnit::GetPerKillBaseCombatMod() const
+{
+	return m_iPerKillBaseCombatMod;
+}
+
+void CvUnit::ChangePerKillBaseCombatMod(int iValue)
+{
+	m_iPerKillBaseCombatMod += iValue;
+}
+
+const int CvUnit::GetPerKillRangedCombatMod() const
+{
+	return m_iPerKillRangedCombatMod;
+}
+
+void CvUnit::ChangePerKillRangedCombatMod(int iValue)
+{
+	m_iPerKillRangedCombatMod += iValue;
+}
+
+const int CvUnit::GetPerKillMaxHpMod() const
+{
+	return m_iPerKillMaxHpMod;
+}
+
+void CvUnit::ChangePerKillMaxHpMod(int iValue)
+{
+	m_iPerKillMaxHpMod += iValue;
+}
+
+const int CvUnit::GetPerKillInflictDamageChange() const
+{
+	return m_iPerKillInflictDamageChange;
+}
+
+void CvUnit::ChangePerKillInflictDamageChange(int iValue)
+{
+	m_iPerKillInflictDamageChange += iValue;
+}
+
+const int CvUnit::GetPerKillDefenseDamageChange() const
+{
+	return m_iPerKillDefenseDamageChange;
+}
+
+void CvUnit::ChangePerKillDefenseDamageChange(int iValue)
+{
+	m_iPerKillDefenseDamageChange += iValue;
+}
+
+// Total Kills (inheritable)
+int CvUnit::GetTotalKills() const
+{
+	return m_iTotalKills;
+}
+
+void CvUnit::ChangeTotalKills(int iChange)
+{
+	m_iTotalKills += iChange;
+}
+
+void CvUnit::SetTotalKills(int iValue)
+{
+	m_iTotalKills = iValue;
+}
+
+// Per Kill combat-time bonus calculations (centi-percent * kills / 100)
+int CvUnit::GetPerKillAttackBonusPercent() const
+{
+	if (m_iTotalKills <= 0 || m_iPerKillAttackMod == 0) return 0;
+	return (m_iTotalKills * m_iPerKillAttackMod) / 100;
+}
+
+int CvUnit::GetPerKillDefenseBonusPercent() const
+{
+	if (m_iTotalKills <= 0 || m_iPerKillDefenseMod == 0) return 0;
+	return (m_iTotalKills * m_iPerKillDefenseMod) / 100;
+}
+
+int CvUnit::GetPerKillBaseCombatBonus() const
+{
+	if (m_iTotalKills <= 0 || m_iPerKillBaseCombatMod == 0) return 0;
+	return (m_iTotalKills * m_iPerKillBaseCombatMod) / 100;
+}
+
+int CvUnit::GetPerKillRangedCombatBonus() const
+{
+	if (m_iTotalKills <= 0 || m_iPerKillRangedCombatMod == 0) return 0;
+	return (m_iTotalKills * m_iPerKillRangedCombatMod) / 100;
+}
+
+int CvUnit::GetPerKillMaxHpBonus() const
+{
+	if (m_iTotalKills <= 0 || m_iPerKillMaxHpMod == 0) return 0;
+	return (m_iTotalKills * m_iPerKillMaxHpMod) / 100;
+}
+
+int CvUnit::GetPerKillInflictDamageChangeValue() const
+{
+	if (m_iTotalKills <= 0 || m_iPerKillInflictDamageChange == 0) return 0;
+	return (m_iTotalKills * m_iPerKillInflictDamageChange) / 100;
+}
+
+int CvUnit::GetPerKillDefenseDamageChangeValue() const
+{
+	if (m_iTotalKills <= 0 || m_iPerKillDefenseDamageChange == 0) return 0;
+	return (m_iTotalKills * m_iPerKillDefenseDamageChange) / 100;
 }
 
 int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, bool bAttacking) const
@@ -14933,8 +15072,10 @@ int CvUnit::GetMaxHitPoints() const
 
 	iMaxHP *= (100 + getMaxHitPointsModifier());
 	iMaxHP /= 100;
-	
+
 	iMaxHP += getMaxHitPointsChange();
+	// Per Kill max HP is a flat addition: kills * promotionValue / 100
+	iMaxHP += GetPerKillMaxHpBonus();
 
 	return iMaxHP;
 #else
@@ -15055,7 +15196,10 @@ int CvUnit::GetBaseCombatStrength(bool bIgnoreEmbarked) const
 		return GetEmbarkedUnitDefense() / 100;
 	}
 
-	return m_iBaseCombat + m_iCombatStrengthChangeFromKilledUnits;
+	int iBase = m_iBaseCombat + m_iCombatStrengthChangeFromKilledUnits;
+	// Per Kill base combat is a flat addition: kills * promotionValue / 100
+	iBase += GetPerKillBaseCombatBonus();
+	return iBase;
 }
 
 
@@ -15602,6 +15746,9 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 	}
 #endif
 
+	// Per Kill stacking attack bonus
+	iModifier += GetPerKillAttackBonusPercent();
+
 	// Damage modifier always applies for melee attack
 	iModifier += GetDamageCombatModifier();
 
@@ -15965,6 +16112,9 @@ int CvUnit::GetMaxDefenseStrength(const CvPlot* pInPlot, const CvUnit* pAttacker
 		iModifier += getMeleeDefenseModifier();
 #endif 
 
+	// Per Kill stacking defense bonus
+	iModifier += GetPerKillDefenseBonusPercent();
+
 	// this may be always zero for defense against ranged
 	iModifier += GetDamageCombatModifier(bFromRangedAttack);
 
@@ -16204,7 +16354,12 @@ int CvUnit::GetBaseRangedCombatStrength() const
 #endif
 
 #if defined(MOD_API_EXTENSIONS)
-	return m_iBaseRangedCombat + m_iRangedCombatStrengthChangeFromKilledUnits;
+	{
+		int iBase = m_iBaseRangedCombat + m_iRangedCombatStrengthChangeFromKilledUnits;
+		// Per Kill ranged combat is a flat addition: kills * promotionValue / 100
+		iBase += GetPerKillRangedCombatBonus();
+		return iBase;
+	}
 #else
 	return m_pUnitInfo->GetRangedCombat();
 #endif
@@ -27005,6 +27160,14 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeSiegeInflictDamageChangeMaxHPPercent(iChange * thisPromotion.GetSiegeInflictDamageChangeMaxHPPercent());
 		ChangeFixDamagePerPromotionTotal(iChange * thisPromotion.GetFixDamagePerPromotionMod());
 		ChangeFixReducePerPromotionTotal(iChange * thisPromotion.GetFixReducePerPromotionMod());
+		// Per Kill Stacking bonuses accumulation
+		ChangePerKillAttackMod(iChange * thisPromotion.GetPerKillAttackMod());
+		ChangePerKillDefenseMod(iChange * thisPromotion.GetPerKillDefenseMod());
+		ChangePerKillBaseCombatMod(iChange * thisPromotion.GetPerKillBaseCombatMod());
+		ChangePerKillRangedCombatMod(iChange * thisPromotion.GetPerKillRangedCombatMod());
+		ChangePerKillMaxHpMod(iChange * thisPromotion.GetPerKillMaxHpMod());
+		ChangePerKillInflictDamageChange(iChange * thisPromotion.GetPerKillInflictDamageChange());
+		ChangePerKillDefenseDamageChange(iChange * thisPromotion.GetPerKillDefenseDamageChange());
 		ChangeNumRangeBackWhenDefense(thisPromotion.IsRangeBackWhenDefense() ? iChange : 0);
 		ChangeHeavyChargeAddMoves(iChange * thisPromotion.GetHeavyChargeAddMoves());
 		ChangeHeavyChargeExtraDamage(iChange * thisPromotion.GetHeavyChargeExtraDamage());
@@ -27619,6 +27782,16 @@ void CvUnit::read(FDataStream& kStream)
 
 	kStream >> m_iCombatStrengthChangeFromKilledUnits;
 	kStream >> m_iRangedCombatStrengthChangeFromKilledUnits;
+	MOD_SERIALIZE_READ(161, kStream, m_iTotalKills, 0);
+#if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
+	MOD_SERIALIZE_READ(161, kStream, m_iPerKillAttackMod, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iPerKillDefenseMod, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iPerKillBaseCombatMod, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iPerKillRangedCombatMod, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iPerKillMaxHpMod, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iPerKillInflictDamageChange, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iPerKillDefenseDamageChange, 0);
+#endif
 
 	kStream >> m_aiInstantYieldPerReligionFollowerConverted;
 	MOD_SERIALIZE_READ(159, kStream, m_aiExploreYield, {});
@@ -27970,6 +28143,16 @@ void CvUnit::write(FDataStream& kStream) const
 
 	kStream << m_iCombatStrengthChangeFromKilledUnits;
 	kStream << m_iRangedCombatStrengthChangeFromKilledUnits;
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalKills);
+#if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
+	MOD_SERIALIZE_WRITE(kStream, m_iPerKillAttackMod);
+	MOD_SERIALIZE_WRITE(kStream, m_iPerKillDefenseMod);
+	MOD_SERIALIZE_WRITE(kStream, m_iPerKillBaseCombatMod);
+	MOD_SERIALIZE_WRITE(kStream, m_iPerKillRangedCombatMod);
+	MOD_SERIALIZE_WRITE(kStream, m_iPerKillMaxHpMod);
+	MOD_SERIALIZE_WRITE(kStream, m_iPerKillInflictDamageChange);
+	MOD_SERIALIZE_WRITE(kStream, m_iPerKillDefenseDamageChange);
+#endif
 
 	kStream << m_aiInstantYieldPerReligionFollowerConverted;
 	kStream << m_aiExploreYield;

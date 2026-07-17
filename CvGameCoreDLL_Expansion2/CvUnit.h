@@ -1990,6 +1990,33 @@ public:
 	void ChangeFollowerCountCombatModifier(int iValue);
 	const int GetFollowingCityCountCombatModifier() const;
 	void ChangeFollowingCityCountCombatModifier(int iValue);
+	// Per Kill Stacking cache methods
+	const int GetPerKillAttackMod() const;
+	void ChangePerKillAttackMod(int iValue);
+	const int GetPerKillDefenseMod() const;
+	void ChangePerKillDefenseMod(int iValue);
+	const int GetPerKillBaseCombatMod() const;
+	void ChangePerKillBaseCombatMod(int iValue);
+	const int GetPerKillRangedCombatMod() const;
+	void ChangePerKillRangedCombatMod(int iValue);
+	const int GetPerKillMaxHpMod() const;
+	void ChangePerKillMaxHpMod(int iValue);
+	const int GetPerKillInflictDamageChange() const;
+	void ChangePerKillInflictDamageChange(int iValue);
+	const int GetPerKillDefenseDamageChange() const;
+	void ChangePerKillDefenseDamageChange(int iValue);
+	// Total Kills (inheritable, persisted across upgrades)
+	int GetTotalKills() const;
+	void ChangeTotalKills(int iChange);
+	void SetTotalKills(int iValue);
+	// Per Kill combat-time bonus calculation (centi-percent * kills / 100)
+	int GetPerKillAttackBonusPercent() const;
+	int GetPerKillDefenseBonusPercent() const;
+	int GetPerKillBaseCombatBonus() const;
+	int GetPerKillRangedCombatBonus() const;
+	int GetPerKillMaxHpBonus() const;
+	int GetPerKillInflictDamageChangeValue() const;
+	int GetPerKillDefenseDamageChangeValue() const;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	const int GetCrops() const;
@@ -2657,6 +2684,14 @@ protected:
 	int m_iGoldenAgeTurnDefenseModifier;
 	int m_iFollowerCountCombatModifier;
 	int m_iFollowingCityCountCombatModifier;
+	// Per Kill Stacking cache (sum of all promotion PerKill values)
+	int m_iPerKillAttackMod = 0;
+	int m_iPerKillDefenseMod = 0;
+	int m_iPerKillBaseCombatMod = 0;
+	int m_iPerKillRangedCombatMod = 0;
+	int m_iPerKillMaxHpMod = 0;
+	int m_iPerKillInflictDamageChange = 0;
+	int m_iPerKillDefenseDamageChange = 0;
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	int m_iCrops;
@@ -2732,6 +2767,7 @@ protected:
 
 	int m_iCombatStrengthChangeFromKilledUnits = 0;
 	int m_iRangedCombatStrengthChangeFromKilledUnits = 0;
+	int m_iTotalKills = 0;
     int m_iEraPercent = 0;
 
 	std::tr1::array<int, NUM_YIELD_TYPES> m_aiInstantYieldPerReligionFollowerConverted;
