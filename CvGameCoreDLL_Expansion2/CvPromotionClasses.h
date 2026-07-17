@@ -295,6 +295,7 @@ public:
 	int GetGoldenAgeTurnDefenseModifier() const;
 	int GetFollowerCountCombatModifier() const;
 	int GetFollowingCityCountCombatModifier() const;
+#endif
 	// Per Kill Stacking Bonuses (value is in centi-percent, e.g. 50 = 0.5% per kill)
 	int GetPerKillAttackMod() const;
 	int GetPerKillDefenseMod() const;
@@ -303,7 +304,6 @@ public:
 	int GetPerKillMaxHpMod() const;
 	int GetPerKillInflictDamageChange() const;
 	int GetPerKillDefenseDamageChange() const;
-#endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool IsCrops() const;
 	bool IsArmee() const;
@@ -700,6 +700,7 @@ protected:
 	int m_iGoldenAgeTurnDefenseModifier;
 	int m_iFollowerCountCombatModifier;
 	int m_iFollowingCityCountCombatModifier;
+#endif
 	// Per Kill Stacking Bonuses
 	int m_iPerKillAttackMod;
 	int m_iPerKillDefenseMod;
@@ -708,7 +709,6 @@ protected:
 	int m_iPerKillMaxHpMod;
 	int m_iPerKillInflictDamageChange;
 	int m_iPerKillDefenseDamageChange;
-#endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	bool m_bCrops;
 	bool m_bArmee;

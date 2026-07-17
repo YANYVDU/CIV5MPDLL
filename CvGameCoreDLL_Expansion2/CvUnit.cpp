@@ -15746,9 +15746,6 @@ int CvUnit::GetMaxAttackStrength(const CvPlot* pFromPlot, const CvPlot* pToPlot,
 	}
 #endif
 
-	// Per Kill stacking attack bonus
-	iModifier += GetPerKillAttackBonusPercent();
-
 	// Damage modifier always applies for melee attack
 	iModifier += GetDamageCombatModifier();
 
@@ -16111,9 +16108,6 @@ int CvUnit::GetMaxDefenseStrength(const CvPlot* pInPlot, const CvUnit* pAttacker
 	if (!bFromRangedAttack)
 		iModifier += getMeleeDefenseModifier();
 #endif 
-
-	// Per Kill stacking defense bonus
-	iModifier += GetPerKillDefenseBonusPercent();
 
 	// this may be always zero for defense against ranged
 	iModifier += GetDamageCombatModifier(bFromRangedAttack);
@@ -19764,7 +19758,7 @@ void CvUnit::ChangeAirSweepCombatModifier(int iValue)
 int CvUnit::getAttackModifier() const
 {
 	VALIDATE_OBJECT
-	return m_iAttackModifier;
+	return m_iAttackModifier + GetPerKillAttackBonusPercent();
 }
 
 //	--------------------------------------------------------------------------------
@@ -19782,7 +19776,7 @@ void CvUnit::changeAttackModifier(int iValue)
 int CvUnit::getDefenseModifier() const
 {
 	VALIDATE_OBJECT
-	return m_iDefenseModifier;
+	return m_iDefenseModifier + GetPerKillDefenseBonusPercent();
 }
 
 //	--------------------------------------------------------------------------------
