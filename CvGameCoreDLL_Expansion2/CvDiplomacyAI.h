@@ -875,6 +875,7 @@ public:
 	AggressivePostureTypes GetPlayerExpansionPromiseData(PlayerTypes ePlayer);
 	void SetPlayerExpansionPromiseData(PlayerTypes ePlayer, AggressivePostureTypes eValue);
 	bool EverMadeExpansionPromise(PlayerTypes ePlayer);
+	short GetExpansionPromiseTurnsLeft(PlayerTypes ePlayer) const;
 
 	bool IsPlayerMadeBorderPromise(PlayerTypes ePlayer, int iTestGameTurn = -1);
 	void SetPlayerMadeBorderPromise(PlayerTypes ePlayer, bool bValue);
@@ -885,6 +886,7 @@ public:
 	AggressivePostureTypes GetPlayerBorderPromiseData(PlayerTypes ePlayer);
 	void SetPlayerBorderPromiseData(PlayerTypes ePlayer, AggressivePostureTypes eValue);
 	bool EverMadeBorderPromise(PlayerTypes ePlayer);
+	short GetBorderPromiseTurnsLeft(PlayerTypes ePlayer) const;
 
 	// Promise to not attack a City-State
 	bool IsPlayerMadeAttackCityStatePromise(PlayerTypes ePlayer);
