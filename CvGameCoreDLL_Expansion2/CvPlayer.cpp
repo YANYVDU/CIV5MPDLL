@@ -16603,12 +16603,7 @@ void CvPlayer::ChangeNoResistance(int iChange)
 //	--------------------------------------------------------------------------------
 bool CvPlayer::CanTechBoostFromCityWonderBuildings() const
 {
-	if (GetTechBoostFromCityWonderBuildings() > 0)
-	{
-		return true;
-	}
-
-	return false;
+	return GetTechBoostFromCityWonderBuildings() > 0;
 }
 
 //	--------------------------------------------------------------------------------
@@ -28502,7 +28497,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iGreatAdmiralsThresholdModifier;
 	kStream >> m_iAlwaysWeLoveKindDayInGoldenAge;
 	kStream >> m_iNoResistance;
-	MOD_SERIALIZE_READ(162, kStream, m_iTechBoostFromCityWonderBuildings, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iTechBoostFromCityWonderBuildings, 0);
 	kStream >> m_iUpgradeAllTerritory;
 	kStream >> m_iNoTechForWonder;
 	kStream >> m_iNoTechForProject;
