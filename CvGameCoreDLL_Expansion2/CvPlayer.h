@@ -817,7 +817,7 @@ public:
 	
 	bool CanTechBoostFromCityWonderBuildings() const;
 	int GetTechBoostFromCityWonderBuildings() const;
-	void ChangeTechBoostFromCityWonderBuildings(int ivalue);
+	void ChangeTechBoostFromCityWonderBuildings(int iValue);
 
 	bool CanUpgradeAllTerritory() const;
 	int GetUpgradeAllTerritory() const;

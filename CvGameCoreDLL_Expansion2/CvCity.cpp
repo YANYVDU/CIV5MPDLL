@@ -17774,8 +17774,7 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 #if defined(MOD_EVENTS_CITY)
 				}
 #endif
-                int iTechBoostModifier = kOwner.CanTechBoostFromCityWonderBuildings();
-				if (iTechBoostModifier > 0)
+				if (kOwner.CanTechBoostFromCityWonderBuildings())
 				{
 					const BuildingClassTypes eBuildingClass = (BuildingClassTypes)pkBuildingInfo->GetBuildingClassType();
 					CvBuildingClassInfo* pBuildingClass = GC.getBuildingClassInfo(eBuildingClass);
