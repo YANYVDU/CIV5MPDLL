@@ -60,6 +60,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iExtraHappinessPerCity(0),
 	m_iUnhappinessMod(0),
 	m_iCityCountUnhappinessMod(0),
+	m_iCorruptionUnhappinessModifier(0),
 	m_iOccupiedPopulationUnhappinessMod(0),
 	m_iCapitalUnhappinessMod(0),
 	m_iFreeExperience(0),
@@ -396,6 +397,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iExtraHappinessPerCity = kResults.GetInt("ExtraHappinessPerCity");
 	m_iUnhappinessMod = kResults.GetInt("UnhappinessMod");
 	m_iCityCountUnhappinessMod = kResults.GetInt("CityCountUnhappinessMod");
+	m_iCorruptionUnhappinessModifier = kResults.GetInt("CorruptionUnhappinessModifier");
 	m_iOccupiedPopulationUnhappinessMod = kResults.GetInt("OccupiedPopulationUnhappinessMod");
 	m_iCapitalUnhappinessMod = kResults.GetInt("CapitalUnhappinessMod");
 	m_iFreeExperience = kResults.GetInt("FreeExperience");
@@ -1655,6 +1657,11 @@ int CvPolicyEntry::GetUnhappinessMod() const
 int CvPolicyEntry::GetCityCountUnhappinessMod() const
 {
 	return m_iCityCountUnhappinessMod;
+}
+
+int CvPolicyEntry::GetCorruptionUnhappinessModifier() const
+{
+	return m_iCorruptionUnhappinessModifier;
 }
 
 ///  Occupied Population Unhappiness mod (-50 = 50% of normal Unhappiness)

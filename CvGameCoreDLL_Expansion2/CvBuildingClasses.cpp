@@ -93,6 +93,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iHappinessPerCity(0),
 	m_iHappinessPerXPolicies(0),
 	m_iCityCountUnhappinessMod(0),
+	m_iCorruptionUnhappinessModifier(0),
 	m_bNoOccupiedUnhappiness(false),
 	m_bNotNeedOccupied(false),
 	m_bAllowSpaceshipLaunch(false),
@@ -643,6 +644,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iHappinessPerCity = kResults.GetInt("HappinessPerCity");
 	m_iHappinessPerXPolicies = kResults.GetInt("HappinessPerXPolicies");
 	m_iCityCountUnhappinessMod = kResults.GetInt("CityCountUnhappinessMod");
+	m_iCorruptionUnhappinessModifier = kResults.GetInt("CorruptionUnhappinessModifier");
 	m_bNoOccupiedUnhappiness = kResults.GetBool("NoOccupiedUnhappiness");
 	m_bNotNeedOccupied = kResults.GetBool("NotNeedOccupied");
 	m_bAllowSpaceshipLaunch = kResults.GetBool("AllowSpaceshipLaunch");
@@ -2738,6 +2740,11 @@ int CvBuildingEntry::GetHappinessPerXPolicies() const
 int CvBuildingEntry::GetCityCountUnhappinessMod() const
 {
 	return m_iCityCountUnhappinessMod;
+}
+
+int CvBuildingEntry::GetCorruptionUnhappinessModifier() const
+{
+	return m_iCorruptionUnhappinessModifier;
 }
 
 /// NoOccupiedUnhappiness

@@ -442,11 +442,13 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(GetUnhappinessFromCityForUI);
 
-	Method(GetUnhappinessFromCityCount);
+	Method(GetUnhappinessFromCorruption);
 	Method(GetUnhappinessFromCapturedCityCount);
 	Method(GetUnhappinessFromCityPopulation);
 	Method(GetUnhappinessFromCitySpecialists);
 	Method(GetUnhappinessFromOccupiedCities);
+	Method(GetUnhappinessFromCityCount);
+	Method(GetUnhappinessFromCorruption);
 	Method(GetUnhappinessFromPuppetCityPopulation);
 	Method(GetUnhappinessFromPublicOpinion);
 	Method(GetUnhappinessFromUnits);
@@ -3512,13 +3514,24 @@ int CvLuaPlayer::lGetUnhappinessFromCityForUI(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
-//int GetUnhappinessFromCityCount() const;
 int CvLuaPlayer::lGetUnhappinessFromCityCount(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	CvCity* pAnnexedCity = CvLuaCity::GetInstance(L, 2, false);
 	CvCity* pPuppetedCity = CvLuaCity::GetInstance(L, 3, false);
 	const int iResult = pkPlayer->GetUnhappinessFromCityCount(pAnnexedCity, pPuppetedCity);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetUnhappinessFromCorruption() const;
+int CvLuaPlayer::lGetUnhappinessFromCorruption(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvCity* pAnnexedCity = CvLuaCity::GetInstance(L, 2, false);
+	CvCity* pPuppetedCity = CvLuaCity::GetInstance(L, 3, false);
+	const int iResult = pkPlayer->GetUnhappinessFromCorruption(pAnnexedCity, pPuppetedCity);
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -13051,3 +13064,5 @@ int CvLuaPlayer::lGetMilitaryPromiseTurnLeft(lua_State* L)
 	}
 	return 1;
 }
+
+

@@ -544,6 +544,7 @@ public:
 	int GetUnhappinessFromCityForUI(CvCity* pCity) const;
 
 	int GetUnhappinessFromCityCount(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
+	int GetUnhappinessFromCorruption(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
 	int GetUnhappinessFromCapturedCityCount(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
 	int GetUnhappinessFromCityPopulation(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
 	int GetUnhappinessFromCitySpecialists(CvCity* pAssumeCityAnnexed, CvCity* pAssumeCityPuppeted) const;
@@ -561,6 +562,8 @@ public:
 
 	int GetCityCountUnhappinessMod() const;
 	void ChangeCityCountUnhappinessMod(int iChange);
+	int GetCorruptionUnhappinessModifier() const;
+	void ChangeCorruptionUnhappinessModifier(int iChange);
 
 	int GetOccupiedPopulationUnhappinessMod() const;
 	void ChangeOccupiedPopulationUnhappinessMod(int iChange);
@@ -2425,6 +2428,7 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iUnhappinessFromUnitsMod;
 	FAutoVariable<int, CvPlayer> m_iUnhappinessMod;
 	FAutoVariable<int, CvPlayer> m_iCityCountUnhappinessMod;
+	FAutoVariable<int, CvPlayer> m_iCorruptionUnhappinessModifier;
 	FAutoVariable<int, CvPlayer> m_iOccupiedPopulationUnhappinessMod;
 	FAutoVariable<int, CvPlayer> m_iCapitalUnhappinessMod;
 	FAutoVariable<int, CvPlayer> m_iCityRevoltCounter;

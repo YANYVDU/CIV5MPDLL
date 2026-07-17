@@ -188,6 +188,7 @@ CvPlayer::CvPlayer() :
 	, m_iUnhappinessFromUnitsMod("CvPlayer::m_iUnhappinessFromUnitsMod", m_syncArchive)
 	, m_iUnhappinessMod("CvPlayer::m_iUnhappinessMod", m_syncArchive)
 	, m_iCityCountUnhappinessMod("CvPlayer::m_iCityCountUnhappinessMod", m_syncArchive)
+	, m_iCorruptionUnhappinessModifier("CvPlayer::m_iCorruptionUnhappinessModifier", m_syncArchive)
 	, m_iOccupiedPopulationUnhappinessMod("CvPlayer::m_iOccupiedPopulationUnhappinessMod", m_syncArchive)
 	, m_iCapitalUnhappinessMod("CvPlayer::m_iCapitalUnhappinessMod", m_syncArchive)
 	, m_iCityRevoltCounter("CvPlayer::m_iCityRevoltCounter", m_syncArchive)
@@ -980,6 +981,7 @@ void CvPlayer::uninit()
 	m_iUnhappinessFromUnitsMod = 0;
 	m_iUnhappinessMod = 0;
 	m_iCityCountUnhappinessMod = 0;
+	m_iCorruptionUnhappinessModifier = 0;
 	m_iOccupiedPopulationUnhappinessMod = 0;
 	m_iCapitalUnhappinessMod = 0;
 	m_iCityRevoltCounter = 0;
@@ -10254,6 +10256,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 
 	// City Count Unhappiness Mod
 	ChangeCityCountUnhappinessMod(pBuildingInfo->GetCityCountUnhappinessMod() * iChange);
+	ChangeCorruptionUnhappinessModifier(pBuildingInfo->GetCorruptionUnhappinessModifier() * iChange);
 
 	// Hurries
 	for(iI = 0; iI < GC.getNumHurryInfos(); iI++)
@@ -12054,6 +12057,8 @@ void CvPlayer::DoCombatStrengthChangeFromKill(CvUnit* pAttackingUnit, CvUnit* pD
 		if (pInfo.GetRangedCombatStrengthChangeAfterKilling() != 0) {
 			pAttackingUnit->ChangeRangedCombatStrengthChangeFromKilledUnits(pInfo.GetRangedCombatStrengthChangeAfterKilling());
 		}
+		// Increment total kills for per-kill stacking bonuses
+		pAttackingUnit->ChangeTotalKills(1);
 	}
 }
 
@@ -13796,7 +13801,7 @@ int CvPlayer::DoUpdateTotalUnhappiness(CvCity* pAssumeCityAnnexed, CvCity* pAssu
 {
 	int iUnhappiness = 0;
 	// City Count Unhappiness
-	iUnhappiness += GetUnhappinessFromCityCount(pAssumeCityAnnexed, pAssumeCityPuppeted);
+	iUnhappiness += GetUnhappinessFromCorruption(pAssumeCityAnnexed, pAssumeCityPuppeted);
 
 	// Occupied City Count Unhappiness
 	iUnhappiness += GetUnhappinessFromCapturedCityCount(pAssumeCityAnnexed, pAssumeCityPuppeted);
@@ -13896,8 +13901,15 @@ int CvPlayer::GetUnhappinessFromCityForUI(CvCity* pCity) const
 }
 
 //	--------------------------------------------------------------------------------
-/// Unhappiness from number of Cities
+/// Unhappiness from number of Cities (compat wrapper)
 int CvPlayer::GetUnhappinessFromCityCount(CvCity* pAssumeCityAnnexed, CvCity* pAssumeCityPuppeted) const
+{
+	return GetUnhappinessFromCorruption(pAssumeCityAnnexed, pAssumeCityPuppeted);
+}
+
+//	--------------------------------------------------------------------------------
+/// Unhappiness from Corruption
+int CvPlayer::GetUnhappinessFromCorruption(CvCity* pAssumeCityAnnexed, CvCity* pAssumeCityPuppeted) const
 {
 	int iUnhappiness = 0;
 	int iUnhappinessPerCity = /*2*/ GC.getUNHAPPINESS_PER_CITY() * 100;
@@ -13923,7 +13935,27 @@ int CvPlayer::GetUnhappinessFromCityCount(CvCity* pAssumeCityAnnexed, CvCity* pA
 			bCityValid = true;
 
 		if(bCityValid)
+		{
+#ifdef MOD_GLOBAL_CORRUPTION
+			CorruptionLevelTypes eLevel = pLoopCity->GetCorruptionLevel();
+			CvCorruptionLevel* pLevel = GC.getCorruptionLevelInfo(eLevel);
+			if (pLevel)
+				iUnhappiness += pLevel->GetCorruptionUnhappiness();
+			else
+				iUnhappiness += iUnhappinessPerCity;
+#else
 			iUnhappiness += iUnhappinessPerCity;
+#endif
+		}
+	}
+
+	// Corruption unhappiness modifier (e.g. -50 = -50% reduction), min 0
+	int iCorruptionMod = GetCorruptionUnhappinessModifier();
+	if (iCorruptionMod != 0)
+	{
+		iUnhappiness *= (100 + iCorruptionMod);
+		iUnhappiness /= 100;
+		if (iUnhappiness < 0) iUnhappiness = 0;
 	}
 
 	// Player count mod
@@ -14309,6 +14341,23 @@ void CvPlayer::ChangeCityCountUnhappinessMod(int iChange)
 	if(iChange != 0)
 	{
 		m_iCityCountUnhappinessMod += iChange;
+	}
+}
+
+//	--------------------------------------------------------------------------------
+/// Corruption Unhappiness Modifier (-50 = 50% reduction of corruption unhappiness)
+int CvPlayer::GetCorruptionUnhappinessModifier() const
+{
+	return m_iCorruptionUnhappinessModifier;
+}
+
+//	--------------------------------------------------------------------------------
+/// Change Corruption Unhappiness Modifier
+void CvPlayer::ChangeCorruptionUnhappinessModifier(int iChange)
+{
+	if(iChange != 0)
+	{
+		m_iCorruptionUnhappinessModifier += iChange;
 	}
 }
 
@@ -27157,6 +27206,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	ChangeUnhappinessFromUnitsMod(pPolicy->GetUnhappinessFromUnitsMod() * iChange);
 	ChangeUnhappinessMod(pPolicy->GetUnhappinessMod() * iChange);
 	ChangeCityCountUnhappinessMod(pPolicy->GetCityCountUnhappinessMod() * iChange);
+	ChangeCorruptionUnhappinessModifier(pPolicy->GetCorruptionUnhappinessModifier() * iChange);
 	ChangeOccupiedPopulationUnhappinessMod(pPolicy->GetOccupiedPopulationUnhappinessMod() * iChange);
 	ChangeCapitalUnhappinessMod(pPolicy->GetCapitalUnhappinessMod() * iChange);
 	ChangeWoundedUnitDamageMod(pPolicy->GetWoundedUnitDamageMod() * iChange);
@@ -29073,6 +29123,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(160, kStream, m_iCorruptionScoreGlobalChangeFromBuilding, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iGoldenAgeCorruptionScoreReduction, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iLocalHappinessCorruptionScoreMod, 0);
+	MOD_SERIALIZE_READ(161, kStream, m_iCorruptionUnhappinessModifier, 0);
 	kStream >> m_iCorruptionLevelReduceByOneRC;
 	kStream >> m_iCorruptionPolicyCostModifier;
 	
@@ -29786,6 +29837,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iCorruptionScoreGlobalChangeFromBuilding);
 	MOD_SERIALIZE_WRITE(kStream, m_iGoldenAgeCorruptionScoreReduction);
 	MOD_SERIALIZE_WRITE(kStream, m_iLocalHappinessCorruptionScoreMod);
+	MOD_SERIALIZE_WRITE(kStream, m_iCorruptionUnhappinessModifier);
 	kStream << m_iCorruptionLevelReduceByOneRC;
 	kStream << m_iCorruptionPolicyCostModifier;
 
