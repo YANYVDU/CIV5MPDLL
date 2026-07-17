@@ -70,6 +70,7 @@ public:
 	int GetExtraHappinessPerCity() const;
 	int GetUnhappinessMod() const;
 	int GetCityCountUnhappinessMod() const;
+	int GetCorruptionUnhappinessModifier() const;
 	int GetOccupiedPopulationUnhappinessMod() const;
 	int GetCapitalUnhappinessMod() const;
 	int GetFreeExperience() const;
@@ -423,6 +424,7 @@ private:
 	int m_iExtraHappinessPerCity;
 	int m_iUnhappinessMod;
 	int m_iCityCountUnhappinessMod;
+	int m_iCorruptionUnhappinessModifier;
 	int m_iOccupiedPopulationUnhappinessMod;
 	int m_iCapitalUnhappinessMod;
 	int m_iFreeExperience;

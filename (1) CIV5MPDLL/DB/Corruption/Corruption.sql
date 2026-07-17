@@ -12,7 +12,8 @@ create table CorruptionLevels (
     IsPuppet boolean not null default 0,
 
     CityHallBuildingClass text null,
-    PublicSecurityBuildingClass text null
+    PublicSecurityBuildingClass text null,
+    CorruptionUnhappiness integer not null default 0
 );
 
 alter table Buildings add SecondCapitalsExtraScore integer default 0;
@@ -46,3 +47,6 @@ alter table Policies add column LocalHappinessCorruptionScoreMod integer not nul
 
 alter table Buildings add column CorruptionPolicyCostModifier integer not null default 0;
 alter table Buildings add column CorruptionScoreGlobalChange integer not null default 0;
+alter table CorruptionLevels add column CorruptionUnhappiness integer not null default 0;
+alter table Buildings add column CorruptionUnhappinessModifier integer not null default 0;
+alter table Policies add column CorruptionUnhappinessModifier integer not null default 0;
