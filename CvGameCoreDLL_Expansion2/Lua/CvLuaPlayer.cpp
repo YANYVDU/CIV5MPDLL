@@ -1398,6 +1398,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(ChangeFreeBuildingCount);
 
 	Method(GetMilitaryPromiseTurnLeft);
+	Method(GetExpansionPromiseTurnLeft);
+	Method(GetBorderPromiseTurnLeft);
 }
 //------------------------------------------------------------------------------
 void CvLuaPlayer::HandleMissingInstance(lua_State* L)
@@ -13064,5 +13066,22 @@ int CvLuaPlayer::lGetMilitaryPromiseTurnLeft(lua_State* L)
 	}
 	return 1;
 }
+
+int CvLuaPlayer::lGetExpansionPromiseTurnLeft(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTargetPlayer = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDiplomacyAI()->GetExpansionPromiseTurnsLeft(eTargetPlayer));
+	return 1;
+}
+
+int CvLuaPlayer::lGetBorderPromiseTurnLeft(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTargetPlayer = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDiplomacyAI()->GetBorderPromiseTurnsLeft(eTargetPlayer));
+	return 1;
+}
+
 
 
