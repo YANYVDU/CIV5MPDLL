@@ -23858,6 +23858,7 @@ void CvCity::UpdateCorruption()
 
 	if (pNewLevel == pOldLevel)
 	{
+		m_bUpdatingCorruption = false;
 		return;
 	}
 
