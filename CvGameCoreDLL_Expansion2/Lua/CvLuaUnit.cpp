@@ -607,6 +607,8 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(SetExperience);
 
 	Method(ChangeExperience);
+	Method(GetTotalKills);
+	Method(ChangeTotalKills);
 
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_UNITS_XP_TIMES_100)
 	Method(GetExperienceTimes100);
@@ -5216,6 +5218,22 @@ int CvLuaUnit::lChangeExperience(lua_State* L)
 #endif
 	return 0;
 }
+
+#if defined(MOD_API_LUA_EXTENSIONS)
+int CvLuaUnit::lGetTotalKills(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	lua_pushinteger(L, pkUnit->GetTotalKills());
+	return 1;
+}
+int CvLuaUnit::lChangeTotalKills(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	const int iChange = lua_tointeger(L, 2);
+	pkUnit->ChangeTotalKills(iChange);
+	return 0;
+}
+#endif
 
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_UNITS_XP_TIMES_100)
 //------------------------------------------------------------------------------

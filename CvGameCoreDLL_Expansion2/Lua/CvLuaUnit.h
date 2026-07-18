@@ -242,6 +242,8 @@ protected:
 	LUAAPIEXTN(GetMaxHitPointsChangeFromRazedCityPop, int);
 	LUAAPIEXTN(SetMaxHitPointsChangeFromRazedCityPop, void, int);
 #endif
+	static int lGetTotalKills(lua_State* L);
+	static int lChangeTotalKills(lua_State* L);
 
 	static int lGetCombatStrengthChangeFromKilledUnits(lua_State* L);
 	static int lChangeCombatStrengthChangeFromKilledUnits(lua_State* L);
