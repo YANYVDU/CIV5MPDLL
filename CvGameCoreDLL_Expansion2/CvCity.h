@@ -1752,8 +1752,10 @@ protected:
 	int m_iCorruptionScoreChangeFromBuilding = 0;
 	int m_iCorruptionLevelChangeFromBuilding = 0;
 
-	bool m_bUpdatingReligion = false; // recursion guard for UpdateReligion() ↔ UpdateCorruption()
+	bool m_bUpdatingReligion = false;
 #endif
+	// guard during acquireCity building transfer
+	bool m_bUpdatingCorruption = false; 
 
 	bool m_bIsSecondCapital = false;
 
