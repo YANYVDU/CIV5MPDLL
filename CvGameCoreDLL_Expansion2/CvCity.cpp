@@ -717,7 +717,7 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 			GET_PLAYER(ePlayer).GetCityConnections()->Update();
 		}
 	}
-	owningPlayer.DoUpdateHappiness();
+	// PERF: DoUpdateHappiness moved to end of acquireCity
 
 	// Policy changes
 	PolicyTypes ePolicy;
@@ -8355,8 +8355,8 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			changeDomainFriendsCombatModifierLocal(((DomainTypes)iI), pBuildingInfo->GetDomainFriendsCombatModifierLocal(iI) * iChange);
 		}
 
-		// Process for our player
-		for(int iI = 0; iI < MAX_PLAYERS; iI++)
+		// Process for our player (skip team loop during building transfer)
+		if (!m_bUpdatingCorruption) for(int iI = 0; iI < MAX_PLAYERS; iI++)
 		{
 			if(GET_PLAYER((PlayerTypes)iI).getTeam() == getTeam())
 			{
@@ -8430,7 +8430,9 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 	UpdateReligion(GetCityReligions()->GetReligiousMajority());
 
-	owningPlayer.DoUpdateHappiness();
+	// Skip during building transfer; called once at end of acquireCity
+	if (!m_bUpdatingCorruption)
+		owningPlayer.DoUpdateHappiness();
 
 	setLayoutDirty(true);
 }
@@ -8766,7 +8768,9 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 	}
 #endif
 
-	GET_PLAYER(getOwner()).UpdateReligion();
+	// Skip player-level religion update during building transfer
+	if (!m_bUpdatingCorruption)
+		GET_PLAYER(getOwner()).UpdateReligion();
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	m_bUpdatingReligion = false;
@@ -23825,6 +23829,11 @@ void CvCity::UpdateCorruption()
 		return;
 	}
 
+	// Guard against cascade during building transfer
+	if (m_bUpdatingCorruption)
+		return;
+	m_bUpdatingCorruption = true;
+
 	const int oldScore = m_iCachedCorruptionScore;
 	const CorruptionLevelTypes eOldLevel = m_eCachedCorruptionLevel;
 	auto* pOldLevel = GC.getCorruptionLevelInfo(eOldLevel);
@@ -23883,6 +23892,8 @@ void CvCity::UpdateCorruption()
 			GetCityBuildings()->SetNumRealBuilding(publicSecurity, 1);
 		}
 	}
+
+	m_bUpdatingCorruption = false;
 }
 
 int CvCity::CalculateCorruptionScoreFromResource() const

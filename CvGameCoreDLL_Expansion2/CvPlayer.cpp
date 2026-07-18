@@ -3618,6 +3618,10 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 		LuaSupport::CallHook(pkScriptSystem, "CityCaptureComplete", args.get(), bResult);
 	}
 
+	// Batch happiness + religion update once after all buildings transferred
+	DoUpdateHappiness();
+	UpdateReligion();
+
 #if defined(MOD_API_EXTENSIONS)
 		return pNewCity;
 #endif
