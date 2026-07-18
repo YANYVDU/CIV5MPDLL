@@ -10111,28 +10111,28 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 		if (eDomain != NO_DOMAIN)
 		{
 			int iNewValue = 0;
-			iNewValue = pBuildingInfo->GetDomainFreeExperiencePerGreatWorkGlobal(iDomains);
-			if (iNewValue > 0)
+			iNewValue = pBuildingInfo->GetDomainFreeExperiencePerGreatWorkGlobal(iDomains) * iChange;
+			if (iNewValue != 0)
 			{
 				ChangeDomainFreeExperiencePerGreatWorkGlobal(eDomain, iNewValue);
 			}
-			iNewValue = pBuildingInfo->GetDomainFreeExperiencesPerTurnGlobal(iDomains);
-			if (iNewValue > 0)
+			iNewValue = pBuildingInfo->GetDomainFreeExperiencesPerTurnGlobal(iDomains) * iChange;
+			if (iNewValue != 0)
 			{
 				ChangeDomainFreeExperiencesPerTurnGlobal(eDomain, iNewValue);
 			}
-			iNewValue = pBuildingInfo->GetDomainEnemyCombatModifierGlobal(iDomains);
+			iNewValue = pBuildingInfo->GetDomainEnemyCombatModifierGlobal(iDomains) * iChange;
 			if (iNewValue != 0)
 			{
 				ChangeDomainEnemyCombatModifierGlobal(eDomain, iNewValue);
 			}
-			iNewValue = pBuildingInfo->GetDomainFriendsCombatModifierGlobal(iDomains);
+			iNewValue = pBuildingInfo->GetDomainFriendsCombatModifierGlobal(iDomains) * iChange;
 			if (iNewValue != 0)
 			{
 				ChangeDomainFriendsCombatModifierGlobal(eDomain, iNewValue);
 			}
-			iNewValue = pBuildingInfo->GetDomainFreeExperienceGlobal(iDomains);
-			if (iNewValue > 0)
+			iNewValue = pBuildingInfo->GetDomainFreeExperienceGlobal(iDomains) * iChange;
+			if (iNewValue != 0)
 			{
 				ChangeDomainFreeExperience(eDomain, iNewValue);
 			}
