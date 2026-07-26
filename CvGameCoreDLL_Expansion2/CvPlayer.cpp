@@ -14121,6 +14121,19 @@ int CvPlayer::GetUnhappinessFromCityPopulation(CvCity* pAssumeCityAnnexed, CvCit
 	iUnhappiness *= getHandicapInfo().getPopulationUnhappinessMod();
 	iUnhappiness /= 100;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Diplomatic Overextension Penalty: increase unhappiness from population
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		int iOverUnhappy = GetDiplomaticOverextensionUnhappinessPercent();
+		if (iOverUnhappy > 0)
+		{
+			iUnhappiness *= (100 + iOverUnhappy);
+			iUnhappiness /= 100;
+		}
+	}
+#endif
+
 	return iUnhappiness;
 }
 
@@ -18904,7 +18917,14 @@ void CvPlayer::ChangeMinorFriendshipAnchorMod(int iChange)
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetMinorFriendshipDecayMod() const
 {
-	return m_iMinorFriendshipDecayMod;
+	int iDecay = m_iMinorFriendshipDecayMod;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		iDecay += GetDiplomaticOverextensionDecayPenalty();
+	}
+#endif
+	return iDecay;
 }
 
 
@@ -30684,6 +30704,33 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 		SetNumCityStateAllies(GetNumCityStateAllies() + iChange);
 	}
 }
+
+	int CvPlayer::GetDiplomaticOverextensionCount() const
+	{
+		int iOver = GetNumCityStateAllies() - GetDiplomaticPrestige();
+		return iOver > 0 ? iOver : 0;
+	}
+
+	int CvPlayer::GetDiplomaticOverextensionDecayPenalty() const
+	{
+		int iOver = GetDiplomaticOverextensionCount();
+		int iPenalty = iOver * GC.getDIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER();
+		if (iPenalty < -100) iPenalty = -100;
+		if (iPenalty > 100) iPenalty = 100;
+		return iPenalty;
+	}
+
+	int CvPlayer::GetDiplomaticOverextensionRisePenalty() const
+	{
+		int iOver = GetDiplomaticOverextensionCount();
+		return (iOver * GC.getDIPLOMATIC_OVEREXTENSION_RISE_MODIFIER());
+	}
+
+	int CvPlayer::GetDiplomaticOverextensionUnhappinessPercent() const
+	{
+		int iOver = GetDiplomaticOverextensionCount();
+		return iOver * GC.getDIPLOMATIC_OVEREXTENSION_UNHAPPINESS_MODIFIER();
+	}
 #endif
 
 //	--------------------------------------------------------------------------------

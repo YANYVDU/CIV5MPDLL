@@ -1750,6 +1750,10 @@ public:
 	int GetNumCityStateAllies() const;
 	void SetNumCityStateAllies(int iValue);
 	void ChangeNumCityStateAllies(int iChange);
+	int GetDiplomaticOverextensionCount() const;
+	int GetDiplomaticOverextensionDecayPenalty() const;
+	int GetDiplomaticOverextensionRisePenalty() const;
+	int GetDiplomaticOverextensionUnhappinessPercent() const;
 #endif
 
 	int GetExtraUnitPlayerInstances() const;

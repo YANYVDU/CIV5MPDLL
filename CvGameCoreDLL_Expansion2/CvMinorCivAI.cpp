@@ -6241,6 +6241,19 @@ void CvMinorCivAI::ChangeFriendshipWithMajorTimes100(PlayerTypes ePlayer, int iC
 			}
 		}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Diplomatic Overextension Penalty: all sources of influence gain are reduced
+		if (MOD_SP_UNIQUE_CITYSTATE && iChange > 0)
+		{
+			int iRisePenalty = GET_PLAYER(ePlayer).GetDiplomaticOverextensionRisePenalty();
+			if (iRisePenalty != 0)
+			{
+				iChange = iChange * (100 + iRisePenalty) / 100;
+				if (iChange < 0) iChange = 0;
+			}
+		}
+#endif
+
 		SetFriendshipWithMajorTimes100(ePlayer, GetBaseFriendshipWithMajorTimes100(ePlayer) + iChange, bFromQuest);
 	}
 }
