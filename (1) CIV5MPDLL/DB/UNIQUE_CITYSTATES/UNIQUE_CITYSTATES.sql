@@ -7,3 +7,12 @@ alter table Traits    add DiplomaticPrestige int default 0;
 INSERT INTO Defines (Name, Value) VALUES ('DIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER', 10);
 INSERT INTO Defines (Name, Value) VALUES ('DIPLOMATIC_OVEREXTENSION_RISE_MODIFIER', -10);
 INSERT INTO Defines (Name, Value) VALUES ('DIPLOMATIC_OVEREXTENSION_UNHAPPINESS_MODIFIER', 3);
+
+
+-- MinorCivAlliesThresholdExtra: per-era ally threshold increase (Rule 8)
+alter table Eras add column MinorCivAlliesThresholdExtra int default 0;
+
+-- MinorCivAlliesThresholdModifier: per-building/policy/trait threshold modifier
+alter table Buildings add column MinorCivAlliesThresholdModifier int default 0;
+alter table Policies  add column MinorCivAlliesThresholdModifier int default 0;
+alter table Traits    add column MinorCivAlliesThresholdModifier int default 0;

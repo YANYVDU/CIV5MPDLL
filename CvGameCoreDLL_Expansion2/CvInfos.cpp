@@ -7023,6 +7023,9 @@ CvEraInfo::CvEraInfo() :
 	m_iDiplpEmphasisLatePolicies(0),
 	m_iTradeRouteFoodBonusTimes100(0),
 	m_iTradeRouteProductionBonusTimes100(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdExtra(0),
+#endif
 	m_iLeaguePercent(0),
 	m_iWarmongerPercent(0),
 	m_bNoGoodies(false),
@@ -7182,6 +7185,14 @@ int CvEraInfo::getTradeRouteProductionBonusTimes100() const
 {
 	return m_iTradeRouteProductionBonusTimes100;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//------------------------------------------------------------------------------
+	int CvEraInfo::getMinorCivAlliesThresholdExtra() const
+	{
+		return m_iMinorCivAlliesThresholdExtra;
+	}
+#endif
 
 //------------------------------------------------------------------------------
 int CvEraInfo::getLeaguePercent() const

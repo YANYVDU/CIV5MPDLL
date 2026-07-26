@@ -6016,7 +6016,7 @@ void CvMinorCivAI::DoFriendship()
 			if(GetPlayer()->isAlive() && IsHasMetPlayer(ePlayer))
 			{
 				const int iTurnsWarning = 2;
-				const int iAlliesThreshold = GetAlliesThreshold() * 100;
+				const int iAlliesThreshold = GetAlliesThresholdForPlayer(ePlayer) * 100;
 				const int iFriendsThreshold = GetFriendsThreshold() * 100;
 				int iEffectiveFriendship = GetEffectiveFriendshipWithMajorTimes100(ePlayer);
 				if(IsAllies(ePlayer))
@@ -6654,7 +6654,7 @@ void CvMinorCivAI::SetEverFriends(PlayerTypes ePlayer, bool bValue)
 /// Are we about to lose our status? (used in Diplo AI)
 bool CvMinorCivAI::IsCloseToNotBeingAllies(PlayerTypes ePlayer)
 {
-	int iBuffer = GetEffectiveFriendshipWithMajor(ePlayer) - GetAlliesThreshold();
+	int iBuffer = GetEffectiveFriendshipWithMajor(ePlayer) - GetAlliesThresholdForPlayer(ePlayer);
 
 	if(iBuffer >= 0 && iBuffer < /*8*/ GC.getMINOR_FRIENDSHIP_CLOSE_AMOUNT())
 		return true;
@@ -6783,8 +6783,8 @@ void CvMinorCivAI::DoFriendshipChangeEffects(PlayerTypes ePlayer, int iOldFriend
 	}
 
 	// Resolve Allies status
-	bool bWasAboveAlliesThreshold = IsFriendshipAboveAlliesThreshold(iOldFriendship);
-	bool bNowAboveAlliesThreshold = IsFriendshipAboveAlliesThreshold(iNewFriendship);
+	bool bWasAboveAlliesThreshold = IsFriendshipAboveAlliesThresholdForPlayer(ePlayer, iOldFriendship);
+	bool bNowAboveAlliesThreshold = IsFriendshipAboveAlliesThresholdForPlayer(ePlayer, iNewFriendship);
 	PlayerTypes eOldAlly = GetAlly();
 
 	// No old ally and our friendship is now above the threshold, OR our friendship is now higher than a previous ally
@@ -6887,6 +6887,19 @@ int CvMinorCivAI::GetFriendsThreshold() const
 }
 
 /// Is the player above the treshold to get the Allies bonus?
+bool CvMinorCivAI::IsFriendshipAboveAlliesThresholdForPlayer(PlayerTypes ePlayer, int iFriendship) const
+{
+	int iFriendshipThresholdAllies = GetAlliesThresholdForPlayer(ePlayer);
+
+	if(iFriendship >= iFriendshipThresholdAllies)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+/// What is the allies threshold (global)?
 bool CvMinorCivAI::IsFriendshipAboveAlliesThreshold(int iFriendship) const
 {
 	int iFriendshipThresholdAllies = GetAlliesThreshold();
@@ -6903,6 +6916,18 @@ bool CvMinorCivAI::IsFriendshipAboveAlliesThreshold(int iFriendship) const
 int CvMinorCivAI::GetAlliesThreshold() const
 {
 	return /*60*/ GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+}
+
+/// Per-player allies threshold (Rule 20+Rule 8)
+int CvMinorCivAI::GetAlliesThresholdForPlayer(PlayerTypes ePlayer) const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		return GET_PLAYER(ePlayer).GetMinorCivAlliesThreshold();
+	}
+#endif
+	return GetAlliesThreshold();
 }
 
 /// Sets a major to get a Bonus (or not) - set both bFriends and bAllies to be true if you're adding/removing both states at once

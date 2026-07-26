@@ -2274,6 +2274,9 @@ public:
 	int getDiplpEmphasisLatePolicies() const;
 	int getTradeRouteFoodBonusTimes100() const;
 	int getTradeRouteProductionBonusTimes100() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int getMinorCivAlliesThresholdExtra() const;
+#endif
 	int getLeaguePercent() const;
 	int getWarmongerPercent() const;
 
@@ -2335,6 +2338,9 @@ protected:
 	int m_iDiplpEmphasisLatePolicies;
 	int m_iTradeRouteFoodBonusTimes100;
 	int m_iTradeRouteProductionBonusTimes100;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iMinorCivAlliesThresholdExtra;
+#endif
 	int m_iLeaguePercent;
 	int m_iWarmongerPercent;
 

@@ -391,7 +391,9 @@ public:
 	bool IsFriendshipAboveFriendsThreshold(int iFriendship) const;
 	int GetFriendsThreshold() const;
 	bool IsFriendshipAboveAlliesThreshold(int iFriendship) const;
+	bool IsFriendshipAboveAlliesThresholdForPlayer(PlayerTypes ePlayer, int iFriendship) const;
 	int GetAlliesThreshold() const;
+	int GetAlliesThresholdForPlayer(PlayerTypes ePlayer) const;
 	void DoSetBonus(PlayerTypes ePlayer, bool bAdd, bool bFriends, bool bAllies, bool bSuppressNotifications = false, bool bPassedBySomeone = false, PlayerTypes eNewAlly = NO_PLAYER);
 
 	void DoIntrusion();

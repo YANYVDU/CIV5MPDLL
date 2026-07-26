@@ -807,6 +807,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetPersonalityType);
 	Method(SetPersonalityType);
 	Method(GetCurrentEra);
+	Method(GetMinorCivAlliesThreshold);
 
 	Method(GetTeam);
 
@@ -7700,6 +7701,11 @@ int CvLuaPlayer::lSetPersonalityType(lua_State* L)
 int CvLuaPlayer::lGetCurrentEra(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::GetCurrentEra);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetMinorCivAlliesThreshold(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetMinorCivAlliesThreshold);
 }
 //------------------------------------------------------------------------------
 //int getTeam();

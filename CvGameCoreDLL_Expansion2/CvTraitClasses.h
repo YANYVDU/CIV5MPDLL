@@ -71,6 +71,7 @@ public:
 	int GetCityStateCombatModifier() const;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetDiplomaticPrestige() const;
+	int GetMinorCivAlliesThresholdModifier() const;
 #endif
 	int GetLandBarbarianConversionPercent() const;
 	int GetLandBarbarianConversionExtraUnits() const;
@@ -376,6 +377,7 @@ protected:
 	int m_iCityStateCombatModifier;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int m_iDiplomaticPrestige;

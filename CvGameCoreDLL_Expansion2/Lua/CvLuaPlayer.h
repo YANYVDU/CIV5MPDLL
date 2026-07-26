@@ -694,6 +694,7 @@ protected:
 	static int lGetPersonalityType(lua_State* L);
 	static int lSetPersonalityType(lua_State* L);
 	static int lGetCurrentEra(lua_State* L);
+	static int lGetMinorCivAlliesThreshold(lua_State* L);
 
 	static int lGetTeam(lua_State* L);
 

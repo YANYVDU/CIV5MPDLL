@@ -37,6 +37,7 @@ public:
 	int GetLevel() const;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetDiplomaticPrestige() const;
+	int GetMinorCivAlliesThresholdModifier() const;
 #endif
 	int GetPolicyCostModifier() const;
 	int GetCulturePerCity() const;
@@ -395,6 +396,7 @@ private:
 	int m_iLevel;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
 #endif
 	int m_iPolicyCostModifier;
 	int m_iCulturePerCity;

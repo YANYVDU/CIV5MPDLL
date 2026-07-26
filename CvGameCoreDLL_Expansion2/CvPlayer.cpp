@@ -402,6 +402,7 @@ CvPlayer::CvPlayer() :
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	, m_iExtraDiplomaticPrestige(0)
 	, m_iCityStateAllyCount(0)
+	, m_iMinorCivAlliesThresholdModifier(0)
 #endif
 	, m_iExtraUnitPlayerInstances(0)
 	, m_iConquestCasualtiesModifier(0)
@@ -1209,6 +1210,7 @@ void CvPlayer::uninit()
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iExtraDiplomaticPrestige = 0;
 	m_iCityStateAllyCount = 0;
+	m_iMinorCivAlliesThresholdModifier = 0;
 #endif
 	m_iExtraUnitPlayerInstances = 0;
 	m_iConquestCasualtiesModifier = 0;
@@ -14926,6 +14928,8 @@ void CvPlayer::doAdoptPolicy(PolicyTypes ePolicy)
 	if (MOD_SP_UNIQUE_CITYSTATE && pkPolicyInfo->GetDiplomaticPrestige() != 0)
 	{
 		ChangeExtraDiplomaticPrestige(pkPolicyInfo->GetDiplomaticPrestige());
+		if (pkPolicyInfo->GetMinorCivAlliesThresholdModifier() != 0)
+			ChangeMinorCivAlliesThresholdModifier(pkPolicyInfo->GetMinorCivAlliesThresholdModifier());
 	}
 #endif
 
@@ -28754,6 +28758,7 @@ void CvPlayer::Read(FDataStream& kStream)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_READ(162, kStream, m_iExtraDiplomaticPrestige, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iCityStateAllyCount, 0);
+	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
 #endif
 	kStream >> m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_READ(159, kStream, m_iConquestCasualtiesModifier, 0);
@@ -29544,6 +29549,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_WRITE(kStream, m_iExtraDiplomaticPrestige);
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateAllyCount);
+	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
 #endif
 	kStream << m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_WRITE(kStream, m_iConquestCasualtiesModifier);
@@ -30730,6 +30736,34 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 	{
 		int iOver = GetDiplomaticOverextensionCount();
 		return iOver * GC.getDIPLOMATIC_OVEREXTENSION_UNHAPPINESS_MODIFIER();
+	}
+
+	int CvPlayer::GetMinorCivAlliesThresholdModifier() const
+	{
+		return m_iMinorCivAlliesThresholdModifier;
+	}
+
+	void CvPlayer::SetMinorCivAlliesThresholdModifier(int iValue)
+	{
+		m_iMinorCivAlliesThresholdModifier = iValue;
+	}
+
+	void CvPlayer::ChangeMinorCivAlliesThresholdModifier(int iChange)
+	{
+		if (iChange != 0)
+		{
+			SetMinorCivAlliesThresholdModifier(GetMinorCivAlliesThresholdModifier() + iChange);
+		}
+	}
+
+	int CvPlayer::GetMinorCivAlliesThreshold() const
+	{
+		int iBase = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+		EraTypes eWorldEra = LeagueHelpers::GetGameEraForTrigger();
+		int iExtra = (eWorldEra != NO_ERA) ? GC.getEraInfo(eWorldEra)->getMinorCivAlliesThresholdExtra() : 0;
+		int iMod = GetMinorCivAlliesThresholdModifier();
+		int iRaw = iBase + iExtra;
+		return (iRaw * (100 + iMod)) / 100;
 	}
 #endif
 

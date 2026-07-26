@@ -156,6 +156,7 @@ public:
 	int GetGreatPeopleRateChange() const;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetDiplomaticPrestige() const;
+	int GetMinorCivAlliesThresholdModifier() const;
 #endif
 	GreatWorkSlotType GetGreatWorkSlotType() const;
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
@@ -666,6 +667,7 @@ private:
 	int m_iGreatPeopleRateChange;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
 #endif
 	GreatWorkSlotType m_eGreatWorkSlotType;
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)

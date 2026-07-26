@@ -47,6 +47,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iGreatPeopleRateChange(0),
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
 #endif
 	m_eGreatWorkSlotType(NO_GREAT_WORK_SLOT),
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
@@ -858,6 +859,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iGreatPeopleRateChange= kResults.GetInt("GreatPeopleRateChange");
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier = kResults.GetInt("MinorCivAlliesThresholdModifier");
 #endif
 
 	szTextVal = kResults.GetText("GreatWorkSlotType");
@@ -2141,6 +2143,11 @@ int CvBuildingEntry::GetGreatPeopleRateChange() const
 int CvBuildingEntry::GetDiplomaticPrestige() const
 {
 	return m_iDiplomaticPrestige;
+}
+
+int CvBuildingEntry::GetMinorCivAlliesThresholdModifier() const
+{
+	return m_iMinorCivAlliesThresholdModifier;
 }
 #endif
 

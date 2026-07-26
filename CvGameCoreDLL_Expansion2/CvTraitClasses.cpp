@@ -37,6 +37,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iCityStateCombatModifier(0),
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
 #endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iLandBarbarianConversionExtraUnits(0),
@@ -386,6 +387,11 @@ int CvTraitEntry::GetCityStateCombatModifier() const
 	int CvTraitEntry::GetDiplomaticPrestige() const
 	{
 		return m_iDiplomaticPrestige;
+	}
+
+	int CvTraitEntry::GetMinorCivAlliesThresholdModifier() const
+	{
+		return m_iMinorCivAlliesThresholdModifier;
 	}
 #endif
 
@@ -1754,6 +1760,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iCityStateFriendshipModifier          = kResults.GetInt("CityStateFriendshipModifier");
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige					= kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier					= kResults.GetInt("MinorCivAlliesThresholdModifier");
 #endif
 	m_iCityStateCombatModifier				= kResults.GetInt("CityStateCombatModifier");
 	m_iLandBarbarianConversionPercent       = kResults.GetInt("LandBarbarianConversionPercent");
@@ -2830,6 +2837,7 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iCityStateCombatModifier += trait->GetCityStateCombatModifier();
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 			m_iDiplomaticPrestige += trait->GetDiplomaticPrestige();
+			m_iMinorCivAlliesThresholdModifier += trait->GetMinorCivAlliesThresholdModifier();
 #endif
 			m_iLandBarbarianConversionPercent += trait->GetLandBarbarianConversionPercent();
 			m_iLandBarbarianConversionExtraUnits += trait->GetLandBarbarianConversionExtraUnits();
@@ -3420,6 +3428,7 @@ void CvPlayerTraits::Reset()
 	m_iCityStateCombatModifier = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige = 0;
+	m_iMinorCivAlliesThresholdModifier = 0;
 #endif
 	m_iLandBarbarianConversionPercent = 0;
 	m_iLandBarbarianConversionExtraUnits = 0;
@@ -4832,6 +4841,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iCityStateCombatModifier;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_READ(162, kStream, m_iDiplomaticPrestige, 0);
+	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
 #endif
 	kStream >> m_iLandBarbarianConversionPercent;
 	kStream >> m_iLandBarbarianConversionExtraUnits;
@@ -5409,6 +5419,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iCityStateCombatModifier;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_WRITE(kStream, m_iDiplomaticPrestige);
+	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
 #endif
 	kStream << m_iLandBarbarianConversionPercent;
 	kStream << m_iLandBarbarianConversionExtraUnits;

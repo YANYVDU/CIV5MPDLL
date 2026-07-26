@@ -27,6 +27,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iLevel(0),
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
 #endif
 	m_iPolicyCostModifier(0),
 	m_iCulturePerCity(0),
@@ -367,6 +368,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iGridY = kResults.GetInt("GridY");
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier = kResults.GetInt("MinorCivAlliesThresholdModifier");
 #endif
 	m_iLevel = kResults.GetInt("Level");
 	m_iPolicyCostModifier = kResults.GetInt("PolicyCostModifier");
@@ -1462,6 +1464,11 @@ int CvPolicyEntry::GetLevel() const
 	int CvPolicyEntry::GetDiplomaticPrestige() const
 	{
 		return m_iDiplomaticPrestige;
+	}
+
+	int CvPolicyEntry::GetMinorCivAlliesThresholdModifier() const
+	{
+		return m_iMinorCivAlliesThresholdModifier;
 	}
 #endif
 

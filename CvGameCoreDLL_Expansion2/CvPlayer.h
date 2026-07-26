@@ -1754,6 +1754,10 @@ public:
 	int GetDiplomaticOverextensionDecayPenalty() const;
 	int GetDiplomaticOverextensionRisePenalty() const;
 	int GetDiplomaticOverextensionUnhappinessPercent() const;
+	int GetMinorCivAlliesThresholdModifier() const;
+	void SetMinorCivAlliesThresholdModifier(int iValue);
+	void ChangeMinorCivAlliesThresholdModifier(int iChange);
+	int GetMinorCivAlliesThreshold() const;
 #endif
 
 	int GetExtraUnitPlayerInstances() const;
@@ -2681,6 +2685,7 @@ protected:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int m_iExtraDiplomaticPrestige;
 	int m_iCityStateAllyCount;
+	int m_iMinorCivAlliesThresholdModifier;
 #endif
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;
