@@ -2394,6 +2394,9 @@ int CvPlayerTrade::GetTradeConnectionPolicyValueTimes100(const TradeConnection& 
 		else if (kTradeConnection.m_eDomain == DOMAIN_SEA)
 		{
 			iValue += GET_PLAYER(kTradeConnection.m_eOriginOwner).getPolicyModifiers(POLICYMOD_SEA_TRADE_GOLD_CHANGE);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			iValue += GET_PLAYER(kTradeConnection.m_eOriginOwner).GetCSSeaTradeGoldBonus();
+#endif
 		}
 		int iCapitalPolicyChanges = GET_PLAYER(kTradeConnection.m_eOriginOwner).getPolicyModifiers(POLICYMOD_CAPITAL_TRADE_GOLD_CHANGE);
 		if(iCapitalPolicyChanges != 0)

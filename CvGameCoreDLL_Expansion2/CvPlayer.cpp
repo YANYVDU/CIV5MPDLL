@@ -612,6 +612,9 @@ CvPlayer::CvPlayer() :
 	m_pDiplomacyRequests = NULL;
 	m_iNextOperationID = 0;
 	m_aiPlots.clear();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
+#endif
 	m_bfEverConqueredBy.ClearAll();
 	m_aiGreatWorkYieldChange.clear();
 	m_aiSiphonLuxuryCount.clear();
@@ -1211,6 +1214,7 @@ void CvPlayer::uninit()
 	m_iExtraDiplomaticPrestige = 0;
 	m_iCityStateAllyCount = 0;
 	m_iMinorCivAlliesThresholdModifier = 0;
+	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
 	m_iExtraUnitPlayerInstances = 0;
 	m_iConquestCasualtiesModifier = 0;
@@ -5282,6 +5286,29 @@ void CvPlayer::doTurn()
 	{
 		doTurnPostDiplomacy();
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Mercantile CS basic effect: treasury interest
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		int iInterestRate = GetCSTreasuryInterestRate();
+		if (iInterestRate > 0)
+		{
+			int iGoldBalance = GetTreasury()->GetGold();
+			if (iGoldBalance > 0)
+			{
+				int iInterest = (iGoldBalance * iInterestRate) / 100;
+				// Interest cap = (era + 1) x 100 x game speed modifier
+				int iMaxInterest = (GetCurrentEra() + 1) * GC.getCS_TREASURY_INTEREST_CAP_MULTIPLIER();
+				iMaxInterest = iMaxInterest * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
+				if (iInterest > iMaxInterest)
+					iInterest = iMaxInterest;
+				if (iInterest > 0)
+					GetTreasury()->ChangeGold(iInterest);
+			}
+		}
+	}
+#endif
 
 	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
 	if(pkScriptSystem)
@@ -13544,6 +13571,14 @@ int CvPlayer::GetHappinessFromResources() const
 			iTotalHappiness += GetExtraHappinessPerLuxury();
 		}
 	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Mercantile CS basic effect: +5% luxury happiness per ally
+			{
+				int iCSLuxuryMod = GetCSLuxuryHappinessModifier();
+				if (iCSLuxuryMod > 0)
+					iTotalHappiness = (iTotalHappiness * (100 + iCSLuxuryMod)) / 100;
+			}
+#endif
 
 	// Happiness bonus for multiple Resource types
 	iTotalHappiness += GetHappinessFromResourceVariety();
@@ -15923,6 +15958,9 @@ void CvPlayer::recomputePolicyCostModifier()
 	iCost += GetPolicyCostBuildingModifier();
 	iCost += GetPolicyCostMinorCivModifier();
 	iCost += GetPlayerTraits()->GetPolicyCostModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	iCost += GetCSPolicyCostModifier();
+#endif
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	if (MOD_GLOBAL_CORRUPTION && EnableCorruption())
@@ -18052,7 +18090,12 @@ int CvPlayer::GetDomainFreeExperiencesPerTurnGlobal(DomainTypes eIndex) const
 	VALIDATE_OBJECT
 	CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
 	CvAssertMsg(eIndex < NUM_DOMAIN_TYPES, "eIndex expected to be < NUM_DOMAIN_TYPES");
-	return m_aiDomainFreeExperiencesPerTurnGlobal[eIndex];
+	int iRtnValue = m_aiDomainFreeExperiencesPerTurnGlobal[eIndex];
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (eIndex == DOMAIN_LAND)
+		iRtnValue += GetCSLandXPPerTurn();
+#endif
+	return iRtnValue;
 }
 
 
@@ -18735,6 +18778,10 @@ void CvPlayer::RefreshCSAlliesFriends()
 {
 	int iFriends = 0;
 	int iAllies = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Reset per-trait ally counts each turn
+	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
+#endif
 	// Loop through all minors and get the total number we've met.
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
 	{
@@ -18745,6 +18792,11 @@ void CvPlayer::RefreshCSAlliesFriends()
 			if (GET_PLAYER(eMinor).GetMinorCivAI()->IsAllies(GetID()))
 			{
 				iAllies++;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				MinorCivTraitTypes eTrait = GET_PLAYER(eMinor).GetMinorCivAI()->GetTrait();
+				if (eTrait >= 0 && eTrait < 5)
+					m_aiCSAllyCountByTrait[eTrait]++;
+#endif
 			}
 			else if (GET_PLAYER(eMinor).GetMinorCivAI()->IsFriends(GetID()))
 			{
@@ -30629,7 +30681,11 @@ void CvPlayer::ChangeResearchTotalCostModifierGoldenAge(int iChange)
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetImmigrationRegressandModifier() const
 {
-	return m_iImmigrationRegressandModifier;
+	int iRtn = m_iImmigrationRegressandModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	iRtn += GetCSImmigrationRegressandModifier();
+#endif
+	return iRtn;
 }
 
 void CvPlayer::ChangeImmigrationRegressandModifier(int iChange)
@@ -30765,6 +30821,65 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 		int iRaw = iBase + iExtra;
 		return (iRaw * (100 + iMod)) / 100;
 	}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const
+{
+	if (eTrait >= 0 && eTrait < 5)
+		return m_aiCSAllyCountByTrait[eTrait];
+	return 0;
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSPolicyCostModifier() const
+{
+	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_CULTURED) * GC.getCS_CULTURED_POLICY_COST_MODIFIER();
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSImmigrationRegressandModifier() const
+{
+	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_CULTURED) * GC.getCS_CULTURED_IMMIGRATION_REGRESSAND_MODIFIER();
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSLandXPPerTurn() const
+{
+	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MILITARISTIC) * GC.getCS_MILITARISTIC_LAND_XP_PER_TURN();
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSSeaTradeGoldBonus() const
+{
+	int iAllies = GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MARITIME);
+	if (iAllies <= 0) return 0;
+	return iAllies * GC.getCS_MARITIME_SEA_TRADE_GOLD_PER_ERA() * (GetCurrentEra() + 1);
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSFaithCostModifier() const
+{
+	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_RELIGIOUS) * GC.getCS_RELIGIOUS_FAITH_COST_MODIFIER();
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSReligiousPressureModifier() const
+{
+	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_RELIGIOUS) * GC.getCS_RELIGIOUS_PRESSURE_MODIFIER();
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSLuxuryHappinessModifier() const
+{
+	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MERCANTILE) * GC.getCS_MERCANTILE_LUXURY_HAPPINESS_MODIFIER();
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSTreasuryInterestRate() const
+{
+	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MERCANTILE) * GC.getCS_MERCANTILE_TREASURY_INTEREST_RATE();
+}
+
 #endif
 
 //	--------------------------------------------------------------------------------

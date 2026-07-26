@@ -1758,6 +1758,15 @@ public:
 	void SetMinorCivAlliesThresholdModifier(int iValue);
 	void ChangeMinorCivAlliesThresholdModifier(int iChange);
 	int GetMinorCivAlliesThreshold() const;
+	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
+	int GetCSPolicyCostModifier() const;
+	int GetCSImmigrationRegressandModifier() const;
+	int GetCSLandXPPerTurn() const;
+	int GetCSSeaTradeGoldBonus() const;
+	int GetCSFaithCostModifier() const;
+	int GetCSReligiousPressureModifier() const;
+	int GetCSLuxuryHappinessModifier() const;
+	int GetCSTreasuryInterestRate() const;
 #endif
 
 	int GetExtraUnitPlayerInstances() const;
@@ -2686,6 +2695,7 @@ protected:
 	int m_iExtraDiplomaticPrestige;
 	int m_iCityStateAllyCount;
 	int m_iMinorCivAlliesThresholdModifier;
+	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
 #endif
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;

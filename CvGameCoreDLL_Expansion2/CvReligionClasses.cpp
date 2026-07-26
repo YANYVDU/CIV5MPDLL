@@ -2402,6 +2402,18 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 	{
 		bool bIncrementTRInfluencing = false;
 		iPressure = GC.getGame().getGameSpeedInfo().getReligiousPressureAdjacentCity();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Religious CS basic effect: boost pressure of religions founded by allies
+		{
+			PlayerTypes eFounder = pReligion->m_eFounder;
+			int iReligiousPressureMod = GET_PLAYER(eFounder).GetCSReligiousPressureModifier();
+			if (iReligiousPressureMod > 0)
+			{
+				iPressure = (iPressure * (100 + iReligiousPressureMod)) / 100;
+			}
+		}
+#endif
+
 		if (bConnectedWithTrade && !bWithinDistance)
 		{
 			if (!bIncrementTRInfluencing)
@@ -2492,7 +2504,7 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 			iPressure *= (100 + iHolyCityModifier);
 			iPressure /=100;
 		}
-#endif		
+#endif
 	}
 
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
