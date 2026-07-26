@@ -7471,6 +7471,45 @@ void CvCity::processResource(ResourceTypes eResource, int iChange)
 
 
 //	--------------------------------------------------------------------------------
+//	--------------------------------------------------------------------------------
+/// Called from CvTeam::changeObsoleteBuildingCount when a building becomes obsolete or un-obsolete.
+/// Reverses ALL building effects in one place: yields/happiness (via processBuilding),
+/// resource consumption (changeNumResourceUsed), and gold maintenance.
+//	--------------------------------------------------------------------------------
+void CvCity::processBuildingObsolete(BuildingTypes eBuilding, bool bObsolete)
+{
+	VALIDATE_OBJECT
+
+	CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+	if (pkBuildingInfo == NULL)
+		return;
+
+	int iNumBuilding = GetCityBuildings()->GetNumBuilding(eBuilding);
+	if (iNumBuilding <= 0)
+		return;
+
+	int iChange = bObsolete ? -iNumBuilding : iNumBuilding;
+
+	// Yields, happiness, specialist slots, Building_ResourceQuantity, etc.
+	processBuilding(eBuilding, iChange, /*bFirst*/ false, /*bObsolete*/ true);
+
+	// Building_ResourceQuantityRequirements (resource consumption tracked as numResourceUsed)
+	// and GoldMaintenance are handled in SetNumRealBuildingTimed, NOT in processBuilding.
+	// We must reverse them here to match the obsolete-state change.
+	CvPlayer& kPlayer = GET_PLAYER(getOwner());
+
+	for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
+	{
+		int iResReq = pkBuildingInfo->GetResourceQuantityRequirement(iRes);
+		if (iResReq > 0)
+			kPlayer.changeNumResourceUsed((ResourceTypes)iRes, iChange * iResReq);
+	}
+
+	int iMaint = pkBuildingInfo->GetGoldMaintenance();
+	if (iMaint != 0)
+		kPlayer.GetTreasury()->ChangeBaseBuildingGoldMaintenance(iMaint * iChange);
+}
+
 void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, bool bObsolete, bool /*bApplyingAllCitiesBonus*/)
 {
 	VALIDATE_OBJECT
@@ -7492,6 +7531,8 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		if (MOD_SP_UNIQUE_CITYSTATE && pBuildingInfo->GetDiplomaticPrestige() != 0)
 		{
 			owningPlayer.ChangeExtraDiplomaticPrestige(iChange * pBuildingInfo->GetDiplomaticPrestige());
+			if (pBuildingInfo->GetMinorCivAlliesThresholdModifier() != 0)
+				owningPlayer.ChangeMinorCivAlliesThresholdModifier(iChange * pBuildingInfo->GetMinorCivAlliesThresholdModifier());
 		}
 #endif
 
