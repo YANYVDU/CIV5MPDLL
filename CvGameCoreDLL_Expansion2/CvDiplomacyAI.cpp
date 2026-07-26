@@ -9,6 +9,7 @@
 #include "CvGameCoreDLLPCH.h"
 #include "ICvDLLUserInterface.h"
 #include "CvDiplomacyAI.h"
+#include "CvMinorCivAI.h"
 #include "CvGrandStrategyAI.h"
 #include "CvEconomicAI.h"
 #include "CvMilitaryAI.h"

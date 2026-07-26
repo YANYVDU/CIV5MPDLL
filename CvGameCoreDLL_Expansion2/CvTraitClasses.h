@@ -379,9 +379,6 @@ protected:
 	int m_iDiplomaticPrestige;
 	int m_iMinorCivAlliesThresholdModifier;
 #endif
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	int m_iDiplomaticPrestige;
-#endif
 	int m_iLandBarbarianConversionPercent;
 	int m_iLandBarbarianConversionExtraUnits;
 	int m_iSeaBarbarianConversionPercent;
@@ -1528,6 +1525,10 @@ private:
 	int m_iPopulationUnhappinessModifier;
 	int m_iCityStateBonusModifier;
 	int m_iCityStateFriendshipModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
 	int m_iCityStateCombatModifier;
 	int m_iLandBarbarianConversionPercent;
 	int m_iLandBarbarianConversionExtraUnits;

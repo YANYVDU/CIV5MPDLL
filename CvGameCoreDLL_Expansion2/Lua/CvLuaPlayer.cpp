@@ -7705,7 +7705,7 @@ int CvLuaPlayer::lGetCurrentEra(lua_State* L)
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetMinorCivAlliesThreshold(lua_State* L)
 {
-	return BasicLuaMethod(L, &CvPlayerAI::GetMinorCivAlliesThreshold);
+	return BasicLuaMethod(L, &CvPlayer::GetMinorCivAlliesThreshold);
 }
 //------------------------------------------------------------------------------
 //int getTeam();
