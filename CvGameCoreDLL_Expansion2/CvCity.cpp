@@ -6152,8 +6152,11 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 
 		if (pkUnitInfo->IsSpreadReligion() || pkUnitInfo->IsRemoveHeresy())
 		{
-			iMultiplier = (100 + kOwner.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER));
-			iCost = iCost * iMultiplier / 100;
+			int iModifier = 100 + kOwner.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			iModifier += kOwner.GetCSFaithCostModifier();
+#endif
+			iCost = iCost * iModifier / 100;
 		}
 	}
 
@@ -6267,8 +6270,11 @@ int CvCity::GetFaithPurchaseCost(BuildingTypes eBuilding)
 	EraTypes eEra = GET_TEAM(GET_PLAYER(getOwner()).getTeam()).GetCurrentEra();
 	int iMultiplier = GC.getEraInfo(eEra)->getFaithCostMultiplier();
 	iCost = iCost * iMultiplier / 100;
-	iMultiplier = (100 + GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER));
-	iCost = iCost * iMultiplier / 100;
+	int iModifier = 100 + GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		iModifier += GET_PLAYER(getOwner()).GetCSFaithCostModifier();
+#endif
+	iCost = iCost * iModifier / 100;
 
 	// Adjust for game speed
 	iCost *= GC.getGame().getGameSpeedInfo().getConstructPercent();
