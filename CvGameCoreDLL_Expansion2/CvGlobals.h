@@ -113,6 +113,10 @@ class CvEmphasisEntry;
 class CvEmphasisXMLEntries;
 class CvTraitEntry;
 class CvTraitXMLEntries;
+class CvCityStateUAEffectEntry;
+class CvCityStateUAEffectXMLEntries;
+class CvCityStateUAEntry;
+class CvCityStateUAXMLEntries;
 class CvNotificationEntry;
 class CvNotificationXMLEntries;
 #if defined(MOD_API_ACHIEVEMENTS) || defined(ACHIEVEMENT_HACKS)
@@ -587,6 +591,9 @@ public:
 	std::vector<CvTraitEntry*>& getTraitInfo();
 	_Ret_maybenull_ CvTraitEntry* getTraitInfo(TraitTypes eTraitNum);
 	CvTraitXMLEntries* GetGameTraits() const;
+	CvCityStateUAEffectXMLEntries* GetGameCityStateUAEffects() const;
+	CvCityStateUAXMLEntries* GetGameCityStateUAs() const;
+	CvCityStateUAEffectEntry* getCityStateUAEffectEntry(int index) const;
 
 	int getNumReligionInfos();
 	std::vector<CvReligionEntry*>& getReligionInfo();
@@ -8057,6 +8064,10 @@ protected:
 	CvImprovementXMLEntries* m_pImprovements;
 	CvEmphasisXMLEntries* m_pEmphases;
 	CvTraitXMLEntries* m_pTraits;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvCityStateUAEffectXMLEntries* m_pCityStateUAEffects;
+	CvCityStateUAXMLEntries* m_pCityStateUAs;
+#endif
 	CvReligionXMLEntries* m_pReligions;
 	CvBeliefXMLEntries* m_pBeliefs;
 	CvLeagueSpecialSessionXMLEntries* m_pLeagueSpecialSessions;

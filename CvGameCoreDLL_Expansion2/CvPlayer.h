@@ -50,6 +50,7 @@ class CvEventLog;
 #endif
 class CvTreasury;
 class CvPlayerTraits;
+class CvPlayerCityStateUA;
 class CvGameInitialItemsOverrides;
 class CvDiplomacyRequests;
 class CvPlayerEspionage;
@@ -1759,6 +1760,7 @@ public:
 	void ChangeMinorCivAlliesThresholdModifier(int iChange);
 	int GetMinorCivAlliesThreshold() const;
 	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
+	void RefreshCSAllUAEffects();
 	int GetCSPolicyCostModifier() const;
 	int GetCSImmigrationRegressandModifier() const;
 	int GetCSLandXPPerTurn() const;
@@ -1970,6 +1972,7 @@ public:
 
 	CvPlayerPolicies* GetPlayerPolicies() const;
 	CvPlayerTraits* GetPlayerTraits() const;
+	CvPlayerCityStateUA* GetPlayerCityStateUA() const;
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
 	CvCitySpecializationAI* GetCitySpecializationAI() const;
@@ -3023,6 +3026,9 @@ protected:
 	CvTreasury* m_pTreasury;
 
 	CvPlayerTraits* m_pTraits;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* m_pCityStateUA;
+#endif
 
 	// human player wanted to end turn processing but hasn't received
 	// the net turn complete message

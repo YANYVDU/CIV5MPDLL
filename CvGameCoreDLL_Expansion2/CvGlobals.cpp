@@ -16,6 +16,7 @@
 #include "ICvDLLUserInterface.h"
 #include "CvMap.h"
 #include "CvPlayerAI.h"
+#include "CvCityStateUAClasses.h"
 #include "CvTeam.h"
 #include "CvInfos.h"
 #include "ICvDLLUtility.h"
@@ -4098,6 +4099,20 @@ CvTraitXMLEntries* CvGlobals::GetGameTraits() const
 {
 	return m_pTraits;
 }
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+CvCityStateUAEffectXMLEntries* CvGlobals::GetGameCityStateUAEffects() const
+{
+	return m_pCityStateUAEffects;
+}
+CvCityStateUAXMLEntries* CvGlobals::GetGameCityStateUAs() const
+{
+	return m_pCityStateUAs;
+}
+CvCityStateUAEffectEntry* CvGlobals::getCityStateUAEffectEntry(int index) const
+{
+	return m_pCityStateUAEffects->GetEntry(index);
+}
+#endif
 
 int CvGlobals::getNumReligionInfos()
 {

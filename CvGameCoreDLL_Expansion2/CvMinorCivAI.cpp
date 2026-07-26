@@ -11220,6 +11220,12 @@ int CvMinorCivInfo::GetMinorCivTrait() const
 {
 	return m_iMinorCivTrait;
 }
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+const char* CvMinorCivInfo::GetUAType() const
+{
+	return m_strUAType.c_str();
+}
+#endif
 //------------------------------------------------------------------------------
 int CvMinorCivInfo::getFlavorValue(int i) const
 {
@@ -11275,6 +11281,9 @@ bool CvMinorCivInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 
 	szTextVal = kResults.GetText("MinorCivTrait");
 	m_iMinorCivTrait = GC.getInfoTypeForString(szTextVal, true);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_strUAType = kResults.GetText("UAType");
+#endif
 
 	//Arrays
 	const char* szType = GetType();

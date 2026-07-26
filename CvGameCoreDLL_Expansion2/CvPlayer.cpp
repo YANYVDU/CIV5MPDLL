@@ -17,6 +17,7 @@
 #include "CvGameCoreUtils.h"
 #include "CvPlayerAI.h"
 #include "CvPlayer.h"
+#include "CvCityStateUAClasses.h"
 #include "CvGameCoreUtils.h"
 #include "CvInfos.h"
 #include "CvAStar.h"
@@ -597,6 +598,9 @@ CvPlayer::CvPlayer() :
 	m_pCityConnections = FNEW(CvCityConnections, c_eCiv5GameplayDLL, 0);
 	m_pTreasury = FNEW(CvTreasury, c_eCiv5GameplayDLL, 0);
 	m_pTraits = FNEW(CvPlayerTraits, c_eCiv5GameplayDLL, 0);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_pCityStateUA = FNEW(CvPlayerCityStateUA, c_eCiv5GameplayDLL, 0);
+#endif
 	m_pEspionage = FNEW(CvPlayerEspionage, c_eCiv5GameplayDLL, 0);
 	m_pEspionageAI = FNEW(CvEspionageAI, c_eCiv5GameplayDLL, 0);
 	m_pTrade = FNEW(CvPlayerTrade, c_eCiv5GameplayDLL, 0);
@@ -653,6 +657,9 @@ CvPlayer::~CvPlayer()
 	SAFE_DELETE(m_pDiplomacyRequests);
 	SAFE_DELETE(m_pTreasury);
 	SAFE_DELETE(m_pTraits);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	SAFE_DELETE(m_pCityStateUA);
+#endif
 	SAFE_DELETE(m_pEspionage);
 	SAFE_DELETE(m_pEspionageAI);
 	SAFE_DELETE(m_pTrade);
@@ -1632,6 +1639,9 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 		m_pDangerPlots->Init(eID, false /*bAllocate*/);
 		m_pTreasury->Init(this);
 		m_pTraits->Init(GC.GetGameTraits(), this);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		m_pCityStateUA->Init(this);
+#endif
 		m_pEspionage->Init(this);
 		m_pEspionageAI->Init(this);
 		m_pTrade->Init(this);
@@ -14837,6 +14847,12 @@ CvPlayerTraits* CvPlayer::GetPlayerTraits() const
 {
 	return m_pTraits;
 }
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+CvPlayerCityStateUA* CvPlayer::GetPlayerCityStateUA() const
+{
+	return m_pCityStateUA;
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 CvFlavorManager* CvPlayer::GetFlavorManager() const
@@ -18806,7 +18822,53 @@ void CvPlayer::RefreshCSAlliesFriends()
 	}
 	SetNumCSAllies(iAllies);
 	SetNumCSFriends(iFriends);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	RefreshCSAllUAEffects();
+#endif
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//	--------------------------------------------------------------------------------
+//	Reapply all active CS UA effects from scratch. Called each turn and on ally/friend change.
+//	This avoids serialization — on game load the first doTurn() call restores everything.
+//	--------------------------------------------------------------------------------
+void CvPlayer::RefreshCSAllUAEffects()
+{
+	if (!m_pCityStateUA)
+		return;
+
+	m_pCityStateUA->Reset();
+
+	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
+		if (!GET_PLAYER(eMinor).isAlive() || !GET_PLAYER(eMinor).isMinorCiv())
+			continue;
+
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+		if (!pkMinorCivInfo)
+			continue;
+
+		const char* szUAType = pkMinorCivInfo->GetUAType();
+		if (!szUAType || szUAType[0] == '\0')
+			continue;
+
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		if (!pUAEntry)
+			continue;
+
+		if (pMinorAI->IsAllies(GetID()))
+		{
+			m_pCityStateUA->ApplyEffect(pUAEntry->GetAllyEffectID(), 1);
+		}
+		else if (pMinorAI->IsFriends(GetID()))
+		{
+			m_pCityStateUA->ApplyEffect(pUAEntry->GetFriendEffectID(), 1);
+		}
+	}
+}
+#endif
 
 
 //	--------------------------------------------------------------------------------

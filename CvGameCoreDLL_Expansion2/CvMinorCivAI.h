@@ -674,6 +674,7 @@ public:
 	void setArtStyleSuffix(const char* szVal);
 
 	int GetMinorCivTrait() const;
+	const char* GetUAType() const;
 
 	// Deprecated Members
 	const char* getAdjectiveKeyWide() const;
@@ -690,6 +691,7 @@ protected:
 	int m_iArtStyleType;
 	int m_iNumLeaders;				 // the number of leaders the Civ has, this is needed so that random leaders can be generated easily
 	int m_iMinorCivTrait;
+	CvString m_strUAType;
 
 	bool m_bAIPlayable;
 	bool m_bPlayable;
