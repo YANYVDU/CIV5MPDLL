@@ -124,7 +124,7 @@ public:
 	void SetIndustrialRouteToCapital(bool bValue);
 	void DoUpdateIndustrialRouteToCapital();
 
-	void SetRouteToCapitalConnected(bool bValue);
+	void SetRouteToCapitalConnected(bool bValue, bool bSkipReligion = false);
 #if defined(MOD_API_EXTENSIONS)
 	bool IsRouteToCapitalConnected(void) const;
 #else
@@ -1377,6 +1377,12 @@ public:
 	int GetCorruptionScore() const;
 	CorruptionLevelTypes GetCorruptionLevel() const;
 	void UpdateCorruption();
+
+	// Guard setters for batch building transfer in CvPlayer::acquireCity.
+	// While set, processBuilding() skips per-building DoUpdateHappiness / player-level UpdateReligion
+	// cascades; one unified update is performed at the end of acquireCity.
+	void SetUpdatingCorruptionGuard(bool bValue) { m_bUpdatingCorruption = bValue; }
+	void SetUpdatingReligionGuard(bool bValue) { m_bUpdatingReligion = bValue; }
 
 	int CalculateTotalCorruptionScore() const;
 	int CalculateCorruptionScoreFromDistance() const;

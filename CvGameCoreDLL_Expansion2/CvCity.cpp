@@ -2657,20 +2657,16 @@ void CvCity::DoUpdateIndustrialRouteToCapital()
 }
 
 //	--------------------------------------------------------------------------------
-void CvCity::SetRouteToCapitalConnected(bool bValue)
+void CvCity::SetRouteToCapitalConnected(bool bValue, bool bSkipReligion)
 {
-	bool bUpdateReligion = false;
-
 	if(bValue != m_bRouteToCapitalConnectedThisTurn)
 	{
-		bUpdateReligion = true;
-	}
-
 	m_bRouteToCapitalConnectedThisTurn = bValue;
 
-	if(bUpdateReligion)
+	if(!bSkipReligion)
 	{
 		UpdateReligion(GetCityReligions()->GetReligiousMajority());
+	}
 	}
 
 	if(GC.getGame().getGameTurn() == 0)

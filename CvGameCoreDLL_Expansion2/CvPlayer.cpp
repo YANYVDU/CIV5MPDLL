@@ -3169,6 +3169,11 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 	}
 #endif
 
+	// Guard: skip per-building DoUpdateHappiness/UpdateReligion/UpdateCorruption cascades during batch transfer.
+	// One unified update is performed at the end of acquireCity (see "Batch happiness + religion update").
+	pNewCity->SetUpdatingCorruptionGuard(true);
+	pNewCity->SetUpdatingReligionGuard(true);
+
 	std::vector<BuildingTypes> freeConquestBuildings = m_pPlayerPolicies->GetFreeBuildingsOnConquest();
 	for(iI = 0; iI < (int)freeConquestBuildings.size(); iI++)
 	{
@@ -3619,8 +3624,16 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 	}
 
 	// Batch happiness + religion update once after all buildings transferred
-	DoUpdateHappiness();
-	UpdateReligion();
+	if (pNewCity)
+	{
+		pNewCity->SetUpdatingCorruptionGuard(false);
+		pNewCity->SetUpdatingReligionGuard(false);
+		DoUpdateHappiness();
+		UpdateReligion();
+#ifdef MOD_PERF_CITY_CONNECTIONS
+		GetCityConnections()->Update();
+#endif
+	}
 
 #if defined(MOD_API_EXTENSIONS)
 		return pNewCity;

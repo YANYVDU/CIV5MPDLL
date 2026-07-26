@@ -64,6 +64,9 @@
 // If minidumps are enabled, do NOT set GenerateDebugInfo=No (Props -> Config Props -> Linker -> Debugging)
 #define MOD_DEBUG_MINIDUMP
 
+// Perf optimization: use O(n) capital-only pathfinding instead of O(n²) all-pairs for city connections
+#define MOD_PERF_CITY_CONNECTIONS
+
 
 // Comment these lines out to remove the associated code from the DLL,
 // Alternatively, set the associated entries in the CustomModOptions table to disable(0) or enable(1) at load-time
