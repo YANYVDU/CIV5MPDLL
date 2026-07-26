@@ -45,6 +45,9 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iSpecialistCount(0),
 	m_iSpecialistExtraCulture(0),
 	m_iGreatPeopleRateChange(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+#endif
 	m_eGreatWorkSlotType(NO_GREAT_WORK_SLOT),
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	m_eGreatWorkYieldType(YIELD_CULTURE),
@@ -853,6 +856,9 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iSpecialistCount = kResults.GetInt("SpecialistCount");
 	m_iSpecialistExtraCulture = kResults.GetInt("SpecialistExtraCulture");
 	m_iGreatPeopleRateChange= kResults.GetInt("GreatPeopleRateChange");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+#endif
 
 	szTextVal = kResults.GetText("GreatWorkSlotType");
 	m_eGreatWorkSlotType = (GreatWorkSlotType)GC.getInfoTypeForString(szTextVal, true);
@@ -2130,6 +2136,13 @@ int CvBuildingEntry::GetGreatPeopleRateChange() const
 {
 	return m_iGreatPeopleRateChange;
 }
+//	--------------------------------------------------------------------------
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvBuildingEntry::GetDiplomaticPrestige() const
+{
+	return m_iDiplomaticPrestige;
+}
+#endif
 
 /// What GreatWorkType is allowed by this Building
 GreatWorkSlotType CvBuildingEntry::GetGreatWorkSlotType() const

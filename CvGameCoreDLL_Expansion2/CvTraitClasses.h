@@ -69,6 +69,9 @@ public:
 	int GetCityStateBonusModifier() const;
 	int GetCityStateFriendshipModifier() const;
 	int GetCityStateCombatModifier() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const;
+#endif
 	int GetLandBarbarianConversionPercent() const;
 	int GetLandBarbarianConversionExtraUnits() const;
 	int GetSeaBarbarianConversionPercent() const;
@@ -371,6 +374,12 @@ protected:
 	int m_iCityStateBonusModifier;
 	int m_iCityStateFriendshipModifier;
 	int m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+#endif
 	int m_iLandBarbarianConversionPercent;
 	int m_iLandBarbarianConversionExtraUnits;
 	int m_iSeaBarbarianConversionPercent;

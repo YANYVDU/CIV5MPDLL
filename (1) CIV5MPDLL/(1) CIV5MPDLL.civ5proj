@@ -443,6 +443,11 @@
       <Action>
         <Set>OnModActivated</Set>
         <Type>UpdateDatabase</Type>
+        <FileName>DB/UNIQUE_CITYSTATES/UNIQUE_CITYSTATES.sql</FileName>
+      </Action>
+      <Action>
+        <Set>OnModActivated</Set>
+        <Type>UpdateDatabase</Type>
         <FileName>DB/ERAS/DDL_NEW_ERAS_EFFECTS.sql</FileName>
       </Action>
       <Action>
@@ -1055,6 +1060,10 @@
       <ImportIntoVFS>False</ImportIntoVFS>
     </Content>
     <Content Include="DB\TRAITS\DDL_Traits.sql">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>False</ImportIntoVFS>
+    </Content>
+    <Content Include="DB\UNIQUE_CITYSTATES\UNIQUE_CITYSTATES.sql">
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
     </Content>

@@ -7488,6 +7488,13 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 	if(!(owningTeam.isObsoleteBuilding(eBuilding)) || bObsolete)
 	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE && pBuildingInfo->GetDiplomaticPrestige() != 0)
+		{
+			owningPlayer.ChangeExtraDiplomaticPrestige(iChange * pBuildingInfo->GetDiplomaticPrestige());
+		}
+#endif
+
 		// One-shot items
 		if(bFirst && iChange > 0)
 		{

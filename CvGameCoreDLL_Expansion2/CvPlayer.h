@@ -1742,6 +1742,16 @@ public:
 	void SetLiberatedInfluence(int iValue);
 	void ChangeLiberatedInfluence(int iChange);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetExtraDiplomaticPrestige() const;
+	void SetExtraDiplomaticPrestige(int iValue);
+	void ChangeExtraDiplomaticPrestige(int iChange);
+	int GetDiplomaticPrestige() const;
+	int GetNumCityStateAllies() const;
+	void SetNumCityStateAllies(int iValue);
+	void ChangeNumCityStateAllies(int iChange);
+#endif
+
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
 	void ChangeExtraUnitPlayerInstances(int iChange);
@@ -2664,6 +2674,10 @@ protected:
 	int m_iResearchTotalCostModifierGoldenAge;
 	int m_iImmigrationRegressandModifier;
 	int m_iLiberatedInfluence;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iExtraDiplomaticPrestige;
+	int m_iCityStateAllyCount;
+#endif
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;
 	int m_iWaterTileDamageGlobal;

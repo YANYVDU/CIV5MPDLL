@@ -25,6 +25,9 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iGridX(0),
 	m_iGridY(0),
 	m_iLevel(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+#endif
 	m_iPolicyCostModifier(0),
 	m_iCulturePerCity(0),
 	m_iCulturePerWonder(0),
@@ -362,6 +365,9 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iCultureCost = kResults.GetInt("CultureCost");
 	m_iGridX = kResults.GetInt("GridX");
 	m_iGridY = kResults.GetInt("GridY");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+#endif
 	m_iLevel = kResults.GetInt("Level");
 	m_iPolicyCostModifier = kResults.GetInt("PolicyCostModifier");
 	m_iCulturePerCity = kResults.GetInt("CulturePerCity");
@@ -1450,6 +1456,14 @@ int CvPolicyEntry::GetLevel() const
 {
 	return m_iLevel;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	/// Diplomatic prestige from this policy
+	int CvPolicyEntry::GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+#endif
 
 /// Percentage change in cost of subsequent policy purchases
 int CvPolicyEntry::GetPolicyCostModifier() const

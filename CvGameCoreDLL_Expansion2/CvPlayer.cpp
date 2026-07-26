@@ -399,6 +399,10 @@ CvPlayer::CvPlayer() :
 	, m_iResearchTotalCostModifierGoldenAge(0)
 	, m_iImmigrationRegressandModifier(0)
 	, m_iLiberatedInfluence(0)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	, m_iExtraDiplomaticPrestige(0)
+	, m_iCityStateAllyCount(0)
+#endif
 	, m_iExtraUnitPlayerInstances(0)
 	, m_iConquestCasualtiesModifier(0)
 	, m_iWaterTileDamageGlobal(0)
@@ -1202,6 +1206,10 @@ void CvPlayer::uninit()
 	m_iResearchTotalCostModifierGoldenAge = 0;
 	m_iImmigrationRegressandModifier = 0;
 	m_iLiberatedInfluence = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iExtraDiplomaticPrestige = 0;
+	m_iCityStateAllyCount = 0;
+#endif
 	m_iExtraUnitPlayerInstances = 0;
 	m_iConquestCasualtiesModifier = 0;
 	m_iWaterTileDamageGlobal = 0;
@@ -14901,6 +14909,12 @@ void CvPlayer::doAdoptPolicy(PolicyTypes ePolicy)
 	}
 
 	setHasPolicy(ePolicy, true);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE && pkPolicyInfo->GetDiplomaticPrestige() != 0)
+	{
+		ChangeExtraDiplomaticPrestige(pkPolicyInfo->GetDiplomaticPrestige());
+	}
+#endif
 
 	// Update cost if trying to buy another policy this turn
 	DoUpdateNextPolicyCost();
@@ -28717,6 +28731,10 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iResearchTotalCostModifierGoldenAge;
 	MOD_SERIALIZE_READ(159, kStream, m_iImmigrationRegressandModifier, 0);
 	kStream >> m_iLiberatedInfluence;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_READ(162, kStream, m_iExtraDiplomaticPrestige, 0);
+	MOD_SERIALIZE_READ(162, kStream, m_iCityStateAllyCount, 0);
+#endif
 	kStream >> m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_READ(159, kStream, m_iConquestCasualtiesModifier, 0);
 	kStream >> m_iWaterTileDamageGlobal;
@@ -29503,6 +29521,10 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iResearchTotalCostModifierGoldenAge;
 	MOD_SERIALIZE_WRITE(kStream, m_iImmigrationRegressandModifier);
 	kStream << m_iLiberatedInfluence;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_WRITE(kStream, m_iExtraDiplomaticPrestige);
+	MOD_SERIALIZE_WRITE(kStream, m_iCityStateAllyCount);
+#endif
 	kStream << m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_WRITE(kStream, m_iConquestCasualtiesModifier);
 	kStream << m_iWaterTileDamageGlobal;
@@ -30613,6 +30635,56 @@ void CvPlayer::ChangeLiberatedInfluence(int iChange)
 		SetLiberatedInfluence(GetLiberatedInfluence() + iChange);
 	}
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetExtraDiplomaticPrestige() const
+{
+	return m_iExtraDiplomaticPrestige;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetExtraDiplomaticPrestige(int iValue)
+{
+	m_iExtraDiplomaticPrestige = iValue;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeExtraDiplomaticPrestige(int iChange)
+{
+	if (iChange != 0)
+	{
+		SetExtraDiplomaticPrestige(GetExtraDiplomaticPrestige() + iChange);
+	}
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetDiplomaticPrestige() const
+{
+	return GetCurrentEra() + GetExtraDiplomaticPrestige();
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNumCityStateAllies() const
+{
+	return m_iCityStateAllyCount;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetNumCityStateAllies(int iValue)
+{
+	m_iCityStateAllyCount = iValue;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNumCityStateAllies(int iChange)
+{
+	if (iChange != 0)
+	{
+		SetNumCityStateAllies(GetNumCityStateAllies() + iChange);
+	}
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetExtraUnitPlayerInstances() const

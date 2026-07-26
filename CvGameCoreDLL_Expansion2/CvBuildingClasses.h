@@ -154,6 +154,9 @@ public:
 	int GetSpecialistCount() const;
 	int GetSpecialistExtraCulture() const;
 	int GetGreatPeopleRateChange() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const;
+#endif
 	GreatWorkSlotType GetGreatWorkSlotType() const;
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	YieldTypes GetGreatWorkYieldType() const;
@@ -661,6 +664,9 @@ private:
 	int m_iSpecialistCount;
 	int m_iSpecialistExtraCulture;
 	int m_iGreatPeopleRateChange;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+#endif
 	GreatWorkSlotType m_eGreatWorkSlotType;
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	YieldTypes m_eGreatWorkYieldType;

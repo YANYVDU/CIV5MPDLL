@@ -35,6 +35,9 @@ CvTraitEntry::CvTraitEntry() :
 	m_iCityStateBonusModifier(0),
 	m_iCityStateFriendshipModifier(0),
 	m_iCityStateCombatModifier(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+#endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iLandBarbarianConversionExtraUnits(0),
 	m_iSeaBarbarianConversionPercent(0),
@@ -377,6 +380,14 @@ int CvTraitEntry::GetCityStateCombatModifier() const
 {
 	return m_iCityStateCombatModifier;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//	--------------------------------------------------------------------------
+	int CvTraitEntry::GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+#endif
 
 /// Accessor:: percent chance a barbarian camp joins this civ
 int CvTraitEntry::GetLandBarbarianConversionPercent() const
@@ -1741,6 +1752,9 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iPopulationUnhappinessModifier    	= kResults.GetInt("PopulationUnhappinessModifier");
 	m_iCityStateBonusModifier               = kResults.GetInt("CityStateBonusModifier");
 	m_iCityStateFriendshipModifier          = kResults.GetInt("CityStateFriendshipModifier");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige					= kResults.GetInt("DiplomaticPrestige");
+#endif
 	m_iCityStateCombatModifier				= kResults.GetInt("CityStateCombatModifier");
 	m_iLandBarbarianConversionPercent       = kResults.GetInt("LandBarbarianConversionPercent");
 	m_iLandBarbarianConversionExtraUnits    = kResults.GetInt("LandBarbarianConversionExtraUnits");
@@ -2814,6 +2828,9 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iCityStateBonusModifier += trait->GetCityStateBonusModifier();
 			m_iCityStateFriendshipModifier += trait->GetCityStateFriendshipModifier();
 			m_iCityStateCombatModifier += trait->GetCityStateCombatModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			m_iDiplomaticPrestige += trait->GetDiplomaticPrestige();
+#endif
 			m_iLandBarbarianConversionPercent += trait->GetLandBarbarianConversionPercent();
 			m_iLandBarbarianConversionExtraUnits += trait->GetLandBarbarianConversionExtraUnits();
 			m_iSeaBarbarianConversionPercent += trait->GetSeaBarbarianConversionPercent();
@@ -3401,6 +3418,9 @@ void CvPlayerTraits::Reset()
 	m_iCityStateBonusModifier = 0;
 	m_iCityStateFriendshipModifier = 0;
 	m_iCityStateCombatModifier = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = 0;
+#endif
 	m_iLandBarbarianConversionPercent = 0;
 	m_iLandBarbarianConversionExtraUnits = 0;
 	m_iSeaBarbarianConversionPercent = 0;
@@ -4810,6 +4830,9 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iCityStateBonusModifier;
 	kStream >> m_iCityStateFriendshipModifier;
 	kStream >> m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_READ(162, kStream, m_iDiplomaticPrestige, 0);
+#endif
 	kStream >> m_iLandBarbarianConversionPercent;
 	kStream >> m_iLandBarbarianConversionExtraUnits;
 	kStream >> m_iSeaBarbarianConversionPercent;
@@ -5384,6 +5407,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iCityStateBonusModifier;
 	kStream << m_iCityStateFriendshipModifier;
 	kStream << m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_WRITE(kStream, m_iDiplomaticPrestige);
+#endif
 	kStream << m_iLandBarbarianConversionPercent;
 	kStream << m_iLandBarbarianConversionExtraUnits;
 	kStream << m_iSeaBarbarianConversionPercent;

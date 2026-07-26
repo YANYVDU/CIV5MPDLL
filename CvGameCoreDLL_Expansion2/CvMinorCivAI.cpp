@@ -6481,6 +6481,16 @@ void CvMinorCivAI::SetAlly(PlayerTypes eNewAlly)
 	m_eAlly = eNewAlly;
 	m_iTurnAllied = GC.getGame().getGameTurn();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		if (eOldAlly != NO_PLAYER)
+			GET_PLAYER(eOldAlly).ChangeNumCityStateAllies(-1);
+		if (eNewAlly != NO_PLAYER)
+			GET_PLAYER(eNewAlly).ChangeNumCityStateAllies(1);
+	}
+#endif
+
 	// Seed the GP counter?
 	if(eNewAlly != NO_PLAYER)
 	{

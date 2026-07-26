@@ -35,6 +35,9 @@ public:
 	int GetGridX() const;
 	int GetGridY() const;
 	int GetLevel() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const;
+#endif
 	int GetPolicyCostModifier() const;
 	int GetCulturePerCity() const;
 	int GetCulturePerWonder() const;
@@ -390,6 +393,9 @@ private:
 	int m_iGridX;
 	int m_iGridY;
 	int m_iLevel;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+#endif
 	int m_iPolicyCostModifier;
 	int m_iCulturePerCity;
 	int m_iCulturePerWonder;
