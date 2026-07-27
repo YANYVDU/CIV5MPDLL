@@ -132,3 +132,9 @@ create table Policy_AdjacentImprovementYieldChanges (
     YieldType text references Yields(Type),
     Yield integer default 0
 );
+--******************** Great Person Points (per SpecialistType) ********************--
+create table Policy_GreatPersonPoints (
+    PolicyType text references Policies(Type),
+    SpecialistType text references Specialists(Type),
+    Points integer default 0
+);

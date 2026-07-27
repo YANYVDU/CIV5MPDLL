@@ -11812,6 +11812,11 @@ int CvCity::GetBeliefExtraMissionarySpreads(BeliefTypes eBelief)
 }
 #endif	
 //	--------------------------------------------------------------------------------
+int CvCity::GetGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const
+{
+	return GET_PLAYER(getOwner()).getGreatPersonPointsFromPolicies(eIndex);
+}
+//	--------------------------------------------------------------------------------
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 void CvCity::doRelogionInstantYield(ReligionTypes eReligion)

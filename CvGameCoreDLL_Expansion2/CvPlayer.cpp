@@ -1805,6 +1805,8 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 
 		m_ppaaiImprovementYieldChange.clear();
 		m_ppaaiImprovementYieldChange.resize(GC.getNumImprovementInfos());
+		m_aiGreatPersonPointsFromPolicies.clear();
+		m_aiGreatPersonPointsFromPolicies.resize(GC.getNumSpecialistInfos(), 0);
 		for(unsigned int i = 0; i < m_ppaaiImprovementYieldChange.size(); ++i)
 		{
 			m_ppaaiImprovementYieldChange.setAt(i, yield);
@@ -25009,6 +25011,22 @@ void CvPlayer::changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes
 		updateYield();
 	}
 }
+int CvPlayer::getGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const
+{
+	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eIndex < GC.getNumSpecialistInfos(), "eIndex is expected to be within maximum bounds (invalid Index)");
+	return m_aiGreatPersonPointsFromPolicies[eIndex];
+}
+void CvPlayer::changeGreatPersonPointsFromPolicies(SpecialistTypes eIndex, int iChange)
+{
+	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eIndex < GC.getNumSpecialistInfos(), "eIndex is expected to be within maximum bounds (invalid Index)");
+
+	if(iChange != 0)
+	{
+		m_aiGreatPersonPointsFromPolicies[eIndex] = (m_aiGreatPersonPointsFromPolicies[eIndex] + iChange);
+	}
+}
 
 //	--------------------------------------------------------------------------------
 bool CvPlayer::removeFromArmy(int iArmyID, int iID)
@@ -27997,6 +28015,10 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 		if(iInstantFoodKeptPercent > 0 && iChange > 0)
 		{
 			pLoopCity->setFoodKept(iInstantFoodKeptPercent * pLoopCity->growthThreshold() / 100);
+		}
+		for(int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+		{ 
+			changeGreatPersonPointsFromPolicies((SpecialistTypes)iSpec, pPolicy->GetGreatPersonPoints(iSpec) * iChange); 
 		}
 	}
 

@@ -678,6 +678,7 @@ public:
 	int GetCuttingBonusModifier() const;
 	void DoCuttingExtraInstantYield(int iBaseYield);
 #endif	
+	int GetGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const;
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 	void doRelogionInstantYield(ReligionTypes eReligion);

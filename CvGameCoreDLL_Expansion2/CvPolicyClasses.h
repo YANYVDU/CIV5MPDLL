@@ -334,6 +334,7 @@ public:
 	int GetFreePopulation() const;
 	int GetFreePopulationCapital() const;
 	int GetExtraSpies() const;
+	int GetGreatPersonPoints(int i) const;
 	int GetGreatScientistBeakerPolicyModifier() const;
 	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
 	int GetNaturalWonderFirstFinderTech() const;

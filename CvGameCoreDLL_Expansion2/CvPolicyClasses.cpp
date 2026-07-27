@@ -223,6 +223,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iOriginalCapitalCapturePolicy(0),
 	m_iOriginalCapitalCaptureGreatPerson(0),
 	m_iFreePopulation(0),
+	m_piGreatPersonPoints(nullptr),
 	m_iFreePopulationCapital(0),
 	m_iExtraSpies(0),
 	m_iGreatScientistBeakerPolicyModifier(0),
@@ -308,6 +309,7 @@ CvPolicyEntry::~CvPolicyEntry(void)
 	SAFE_DELETE_ARRAY(m_piGreatWorkYieldChange);
 	SAFE_DELETE_ARRAY(m_piSpecialistExtraYield);
 	SAFE_DELETE_ARRAY(m_piImprovementCultureChange);
+	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
 	SAFE_DELETE_ARRAY(m_pabFreePromotion);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatProductionModifiers);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatFreeExperiences);
@@ -613,6 +615,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 	//Arrays
 	const char* szPolicyType = GetType();
+	//Policy_GreatPersonPoints
+	kUtility.PopulateArrayByValue(m_piGreatPersonPoints, "Specialists", "Policy_GreatPersonPoints", "SpecialistType", "PolicyType", szPolicyType, "Points");
 	kUtility.SetYields(m_piYieldModifier, "Policy_YieldModifiers", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCityYieldChange, "Policy_CityYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCoastalCityYieldChange, "Policy_CoastalCityYieldChanges", "PolicyType", szPolicyType);
@@ -2546,6 +2550,12 @@ int CvPolicyEntry::GetFreePopulationCapital() const
 int CvPolicyEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
+}
+int CvPolicyEntry::GetGreatPersonPoints(int i) const
+{
+	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piGreatPersonPoints ? m_piGreatPersonPoints[i] : 0;
 }
 
 int CvPolicyEntry::GetGreatScientistBeakerPolicyModifier() const

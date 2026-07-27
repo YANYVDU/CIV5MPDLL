@@ -2307,6 +2307,7 @@ void CvCityCitizens::DoSpecialists()
 
 				// GPP from Buildings
 				iGPPChange += GetBuildingGreatPeopleRateChanges(eSpecialist) * 100;
+				iGPPChange += GetCity()->GetGreatPersonPointsFromPolicies(eSpecialist) * 100;
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 				// GPP from Religion
 				if(MOD_BELIEF_NEW_EFFECT_FOR_SP)

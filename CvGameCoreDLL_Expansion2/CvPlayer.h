@@ -1617,6 +1617,8 @@ public:
 
 	int getImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2) const;
 	void changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2, int iChange);
+	int getGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const;
+	void changeGreatPersonPointsFromPolicies(SpecialistTypes eIndex, int iChange);
 
 	CvUnitCycler& GetUnitCycler() { return m_UnitCycle; };
 
@@ -2857,6 +2859,7 @@ protected:
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiBuildingClassCount;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiBuildingClassMaking;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiProjectMaking;
+	std::vector<int> m_aiGreatPersonPointsFromPolicies;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryCount;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryModifier;
 
