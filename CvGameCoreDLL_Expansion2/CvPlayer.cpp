@@ -944,6 +944,8 @@ void CvPlayer::uninit()
 #endif
 
 	m_ppaaiImprovementYieldChange.clear();
+	m_paiImprovementHappinessFromPolicies.clear();
+	m_aiGreatPersonPointsFromPolicies.clear();
 	m_ppaaiBuildingClassYieldMod.clear();
 
 	m_UnitCycle.Clear();
@@ -1805,6 +1807,8 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 
 		m_ppaaiImprovementYieldChange.clear();
 		m_ppaaiImprovementYieldChange.resize(GC.getNumImprovementInfos());
+		m_paiImprovementHappinessFromPolicies.clear();
+		m_paiImprovementHappinessFromPolicies.resize(GC.getNumImprovementInfos());
 		m_aiGreatPersonPointsFromPolicies.clear();
 		m_aiGreatPersonPointsFromPolicies.resize(GC.getNumSpecialistInfos(), 0);
 		for(unsigned int i = 0; i < m_ppaaiImprovementYieldChange.size(); ++i)
@@ -25011,6 +25015,24 @@ void CvPlayer::changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes
 		updateYield();
 	}
 }
+int CvPlayer::getImprovementHappinessFromPolicies(ImprovementTypes eIndex) const
+{
+	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eIndex < GC.getNumImprovementInfos(), "eIndex is expected to be within maximum bounds (invalid Index)");
+	return m_paiImprovementHappinessFromPolicies[eIndex];
+}
+
+void CvPlayer::changeImprovementHappinessFromPolicies(ImprovementTypes eIndex, int iChange)
+{
+	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eIndex < GC.getNumImprovementInfos(), "eIndex is expected to be within maximum bounds (invalid Index)");
+
+	if(iChange != 0)
+	{
+		m_paiImprovementHappinessFromPolicies[eIndex] += iChange;
+		CvAssert(getImprovementHappinessFromPolicies(eIndex) >= 0);
+	}
+}
 int CvPlayer::getGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const
 {
 	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
@@ -27731,6 +27753,10 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 		{
 			changeImprovementYieldChange(((ImprovementTypes)iI), ((YieldTypes)iJ), (pPolicy->GetImprovementYieldChanges(iI, iJ) * iChange));
 		}
+	}
+	for(iI = 0; iI < GC.getNumImprovementInfos(); iI++)
+	{
+		changeImprovementHappinessFromPolicies(((ImprovementTypes)iI), pPolicy->GetImprovementHappinessWhenWorked(iI) * iChange);
 	}
 
 #if defined(MOD_POLICY_NEW_EFFECT_FOR_SP)

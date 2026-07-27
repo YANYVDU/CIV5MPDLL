@@ -275,6 +275,7 @@ public:
 	std::pair<UnitClassTypes, int>* GetFreeUnitsByClass() const;
 	int GetTourismByUnitClassCreated(int i) const;
 	int GetImprovementCultureChanges(int i) const;
+	int GetImprovementHappinessWhenWorked(int i) const;
 
 	// AdjacentImprovementYieldChanges
 	struct AdjacentImprovementYieldChange {
@@ -597,6 +598,7 @@ private:
 	int m_iFreePopulationCapital;
 	int m_iExtraSpies;
 	int m_iGreatScientistBeakerPolicyModifier;
+	int* m_piGreatPersonPoints;
 	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
 	int m_iNaturalWonderFirstFinderTech;
 	int m_iNaturalWonderFirstFinderPolicies;
@@ -629,6 +631,7 @@ private:
 	int* m_piGreatWorkYieldChange;
 	int* m_piSpecialistExtraYield;
 	int* m_piImprovementCultureChange;
+	int* m_piImprovementHappinessWhenWorked;
 	bool* m_pabFreePromotion;
 	int* m_paiUnitCombatProductionModifiers;
 	int* m_paiUnitCombatFreeExperiences;

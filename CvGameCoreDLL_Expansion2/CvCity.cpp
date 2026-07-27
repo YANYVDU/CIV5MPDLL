@@ -12430,6 +12430,15 @@ int CvCity::GetLocalHappiness() const
 	}
 
 	iLocalHappiness += iSpecialPolicyBuildingHappiness;
+	// Policy_ImprovementHappinessWhenWorked
+	for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
+	{
+		int iImpHappy = kPlayer.getImprovementHappinessFromPolicies((ImprovementTypes)iImp);
+		if (iImpHappy != 0)
+		{
+			iLocalHappiness += iImpHappy * const_cast<CvCity*>(this)->GetNumImprovementWorked((ImprovementTypes)iImp);
+		}
+	}
 
 	if (GetWeLoveTheKingDayCounter() > 0)
 	{

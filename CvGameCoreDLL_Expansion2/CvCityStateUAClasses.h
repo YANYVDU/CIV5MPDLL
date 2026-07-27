@@ -24,6 +24,7 @@ public:
 	int GetFaithPurchaseGreatPeopleCostRiseModifier() const;
 	int GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const;
 	bool IsFaithPurchaseAllGreatPeople() const;
+	int GetGreatPersonPoints(int i) const;
 	// Buenos Aires (BuYiNuoSiAiLiSi)
 	bool IsGPNoDeathAfterGreatWork() const;
 	int GetGPConcertTourismRetentionPercent() const;
@@ -80,6 +81,7 @@ private:
 	// Florence
 	int m_iFaithPurchaseGreatPeopleCostRiseModifier;
 	int m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW;
+	int* m_piGreatPersonPoints;
 	bool m_bFaithPurchaseAllGreatPeople;
 	// Buenos Aires
 	bool m_bGPNoDeathAfterGreatWork;
@@ -212,6 +214,7 @@ public:
 	int GetFaithPurchaseGreatPeopleCostRiseModifier() const;
 	int GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const;
 	bool IsFaithPurchaseAllGreatPeople() const;
+	int GetGreatPersonPoints(int i) const;
 	// Buenos Aires
 	bool IsGPNoDeathAfterGreatWork() const;
 	int GetGPConcertTourismRetentionPercent() const;
@@ -272,6 +275,7 @@ protected:
 	// Accumulated modifier values
 	int m_iFaithPurchaseGreatPeopleCostRiseModifier;
 	int m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW;
+	std::vector<int> m_aiGreatPersonPoints;
 	int m_iFaithPurchaseAllGreatPeopleCount;
 	int m_iGPNoDeathAfterGreatWorkCount;
 	int m_iGPConcertTourismRetentionPercent;

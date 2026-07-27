@@ -138,3 +138,10 @@ create table Policy_GreatPersonPoints (
     SpecialistType text references Specialists(Type),
     Points integer default 0
 );
+
+--******************** Improvement Happiness When Worked ********************--
+create table Policy_ImprovementHappinessWhenWorked (
+    PolicyType text references Policies(Type),
+    ImprovementType text references Improvements(Type),
+    Happiness integer default 0
+);

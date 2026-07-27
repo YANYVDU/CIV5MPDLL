@@ -283,6 +283,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_piYieldModifierFromActiveSpies(NULL),
 	m_piYieldModifierPerArtifacts(NULL),
 	m_piGreatPersonOutputModifierPerGWs(NULL),
+	m_piImprovementHappinessWhenWorked(nullptr),
 	m_ppiBuildingClassYieldModifiers(NULL),
 	m_ppiBuildingClassYieldChanges(NULL),
 	m_piCityLoveKingDayYieldMod(NULL),
@@ -309,6 +310,7 @@ CvPolicyEntry::~CvPolicyEntry(void)
 	SAFE_DELETE_ARRAY(m_piGreatWorkYieldChange);
 	SAFE_DELETE_ARRAY(m_piSpecialistExtraYield);
 	SAFE_DELETE_ARRAY(m_piImprovementCultureChange);
+	SAFE_DELETE_ARRAY(m_piImprovementHappinessWhenWorked);
 	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
 	SAFE_DELETE_ARRAY(m_pabFreePromotion);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatProductionModifiers);
@@ -1032,6 +1034,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	kUtility.PopulateArrayByValue(m_piGreatPersonOutputModifierPerGWs, "GreatPersons", "Policy_GreatPersonOutputModifierPerGWs", "GreatPersonType", "PolicyType", szPolicyType, "Modifier");
 	//ImprovementCultureChanges
 	kUtility.PopulateArrayByValue(m_piImprovementCultureChange, "Improvements", "Policy_ImprovementCultureChanges", "ImprovementType", "PolicyType", szPolicyType, "CultureChange");
+	//ImprovementHappinessWhenWorked
+	kUtility.PopulateArrayByValue(m_piImprovementHappinessWhenWorked, "Improvements", "Policy_ImprovementHappinessWhenWorked", "ImprovementType", "PolicyType", szPolicyType, "Happiness");
 
 	//OrPreReqs
 	{
@@ -3103,6 +3107,12 @@ int CvPolicyEntry::GetImprovementCultureChanges(int i) const
 	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piImprovementCultureChange[i];
+}
+int CvPolicyEntry::GetImprovementHappinessWhenWorked(int i) const
+{
+	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piImprovementHappinessWhenWorked ? m_piImprovementHappinessWhenWorked[i] : 0;
 }
 
 /// Free building in each city conquered
