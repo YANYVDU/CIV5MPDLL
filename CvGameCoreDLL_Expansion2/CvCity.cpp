@@ -6680,7 +6680,15 @@ int CvCity::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSink
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_WONDER_PLAYER", iTempMod);
 		}
 
-		iTempMod = GetLocalResourceWonderProductionMod(eBuilding, toolTipSink);
+		// Dubai CS UA: gold donation happiness -> wonder production modifier
+	int iGoldDonHappy = GET_PLAYER(getOwner()).GetGoldDonationHappiness();
+	if (iGoldDonHappy > 0) {
+		int iDubaiMod = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetWonderProductionPerDonationHappiness();
+		if (iDubaiMod > 0) {
+			iTempMod += iGoldDonHappy * iDubaiMod / 100;
+		}
+	}
+	iTempMod = GetLocalResourceWonderProductionMod(eBuilding, toolTipSink);
 		iMultiplier += iTempMod;
 
 		ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();

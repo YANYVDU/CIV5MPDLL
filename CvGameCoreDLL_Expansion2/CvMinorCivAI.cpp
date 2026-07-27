@@ -6,6 +6,7 @@
 	All rights reserved. 
 	------------------------------------------------------------------------------------------------------- */
 #include "CvGameCoreDLLPCH.h"
+#include "CvCityStateUAClasses.h"
 #include "CvMinorCivAI.h"
 #include "ICvDLLUserInterface.h"
 #include "CvGameCoreUtils.h"
@@ -10028,6 +10029,28 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 		// In case we had a Gold Gift quest active, complete it now
 		DoTestActiveQuestsForPlayer(ePlayer, /*bTestComplete*/ true, /*bTestObsolete*/ false, MINOR_CIV_QUEST_GIVE_GOLD);
 		
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Dubai CS UA: only count gold donated to CSes whose UA has donation effect
+		if (MOD_SP_UNIQUE_CITYSTATE) {
+			MinorCivTypes eMinorType = GetMinorCivType();
+			const char* szUAType = GC.getMinorCivInfo(eMinorType)->GetUAType();
+			if (szUAType && szUAType[0]) {
+				CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+				if (pUAEntry) {
+					CvCityStateUAEffectEntry* pAllyEff = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+					CvCityStateUAEffectEntry* pFriendEff = GC.getCityStateUAEffectEntry(pUAEntry->GetFriendEffectID());
+					int iMinorIdx = GetPlayer()->GetID() - MAX_MAJOR_CIVS;
+					GET_PLAYER(ePlayer).ChangeGoldDonatedToMinor(iMinorIdx, iGold);
+					bool bHasDonation = (pAllyEff && pAllyEff->GetGoldDonationInterval() > 0) || (pFriendEff && pFriendEff->GetGoldDonationInterval() > 0);
+					if (bHasDonation) 
+					{
+						GET_PLAYER(ePlayer).ChangeTotalGoldDonated(iGold);
+					}
+				}
+			}
+		}
+#endif
+
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
 		if (MOD_EVENTS_MINORS_INTERACTION) {
 			GAMEEVENTINVOKE_HOOK(GAMEEVENT_PlayerGifted, ePlayer, GetPlayer()->GetID(), iGold, -1, -1, -1);

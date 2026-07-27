@@ -505,6 +505,7 @@ protected:
 	static int lGetSettlerProductionModifier(lua_State* L);
 	static int lGetCapitalSettlerProductionModifier(lua_State* L);
 	static int lGetWonderProductionModifier(lua_State* L);
+	static int lGetGoldDonationHappiness(lua_State* L);
 
 	static int lGetUnitProductionMaintenanceMod(lua_State* L);
 	static int lGetNumUnitsSupplied(lua_State* L);

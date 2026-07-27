@@ -319,6 +319,10 @@ CvPlayer::CvPlayer() :
 	, m_iUnitFortificationModifier("CvPlayer::m_iUnitFortificationModifier", m_syncArchive)
 	, m_iUnitBaseHealModifier("CvPlayer::m_iUnitBaseHealModifier", m_syncArchive)
 	, m_iWonderProductionModifier("CvPlayer::m_iWonderProductionModifier", m_syncArchive)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	, m_iTotalGoldDonated("CvPlayer::m_iTotalGoldDonated", m_syncArchive)
+
+#endif
 	, m_iSettlerProductionModifier("CvPlayer::m_iSettlerProductionModifier", m_syncArchive)
 	, m_iCapitalSettlerProductionModifier("CvPlayer::m_iCapitalSettlerProductionModifier", m_syncArchive)
 	, m_iUnitProductionMaintenanceMod("CvPlayer::m_iUnitProductionMaintenanceMod", m_syncArchive)
@@ -1142,6 +1146,9 @@ void CvPlayer::uninit()
 	m_iUnitFortificationModifier = 0;
 	m_iUnitBaseHealModifier = 0;
 	m_iWonderProductionModifier = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iTotalGoldDonated = 0;
+#endif
 	m_iSettlerProductionModifier = 0;
 	m_iCapitalSettlerProductionModifier = 0;
 	m_iUnitProductionMaintenanceMod = 0;
@@ -12859,6 +12866,9 @@ void CvPlayer::DoUpdateTotalHappiness()
 
 	// Increase from policies
 	m_iHappiness += GetHappinessFromPolicies();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iHappiness += GetGoldDonationHappiness();
+#endif
 
 	// Increase from num cities (player based, for buildings and such)
 	m_iHappiness += getNumCities() * m_iHappinessPerCity;
@@ -17572,6 +17582,32 @@ void CvPlayer::changeWonderProductionModifier(int iChange)
 {
 	m_iWonderProductionModifier = (m_iWonderProductionModifier + iChange);
 }
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvPlayer::GetGoldDonationHappiness() const
+{
+	if (!m_pCityStateUA) return 0;
+	int iInterval = m_pCityStateUA->GetGoldDonationInterval();
+	if (iInterval <= 0) return 0;
+	return (m_iTotalGoldDonated / iInterval) * m_pCityStateUA->GetHappinessPerGoldDonated();
+}
+int CvPlayer::GetTotalGoldDonated() const
+{
+	return m_iTotalGoldDonated;
+}
+void CvPlayer::ChangeTotalGoldDonated(int iChange)
+{
+	m_iTotalGoldDonated = (m_iTotalGoldDonated + iChange);
+}
+int CvPlayer::GetGoldDonatedToMinor(int iMinor) const
+{
+	return (iMinor>=0&&iMinor<(int)m_paiGoldDonatedToMinor.size())?m_paiGoldDonatedToMinor[iMinor]:0;
+}
+void CvPlayer::ChangeGoldDonatedToMinor(int iMinor, int iChange)
+{
+	if(iMinor>=(int)m_paiGoldDonatedToMinor.size())m_paiGoldDonatedToMinor.resize(iMinor+1,0);
+	m_paiGoldDonatedToMinor[iMinor]=(m_paiGoldDonatedToMinor[iMinor]+iChange);
+}
+#endif
 
 
 //	--------------------------------------------------------------------------------
@@ -29122,6 +29158,9 @@ void CvPlayer::Read(FDataStream& kStream)
 
 	kStream >> m_paiUnitCombatProductionModifiers;
 	kStream >> m_paiUnitCombatFreeExperiences;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_READ(162, kStream, m_paiGoldDonatedToMinor, std::vector<int>());
+#endif
 	kStream >> m_paiUnitClassCount;
 	kStream >> m_paiUnitClassMaking;
 	kStream >> m_paiBuildingClassCount;
@@ -29859,6 +29898,9 @@ void CvPlayer::Write(FDataStream& kStream) const
 
 	kStream << m_paiUnitCombatProductionModifiers;
 	kStream << m_paiUnitCombatFreeExperiences;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_WRITE(kStream, m_paiGoldDonatedToMinor);
+#endif
 	kStream << m_paiUnitClassCount;
 	kStream << m_paiUnitClassMaking;
 	kStream << m_paiBuildingClassCount;

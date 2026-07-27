@@ -619,6 +619,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetSettlerProductionModifier);
 	Method(GetCapitalSettlerProductionModifier);
 	Method(GetWonderProductionModifier);
+	Method(GetGoldDonationHappiness);
 
 	Method(GetUnitProductionMaintenanceMod);
 	Method(GetNumUnitsSupplied);
@@ -6335,6 +6336,12 @@ int CvLuaPlayer::lGetCapitalSettlerProductionModifier(lua_State* L)
 int CvLuaPlayer::lGetWonderProductionModifier(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::getWonderProductionModifier);
+}
+//------------------------------------------------------------------------------
+//int GetGoldDonationHappiness();
+int CvLuaPlayer::lGetGoldDonationHappiness(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetGoldDonationHappiness);
 }
 //------------------------------------------------------------------------------
 //int GetUnitProductionMaintenanceMod();

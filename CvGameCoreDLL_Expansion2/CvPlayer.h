@@ -972,6 +972,13 @@ public:
 
 	int getWonderProductionModifier() const;
 	void changeWonderProductionModifier(int iChange);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetGoldDonationHappiness() const;
+	int GetTotalGoldDonated() const;
+	void ChangeTotalGoldDonated(int iChange);
+	int GetGoldDonatedToMinor(int iMinor) const;
+	void ChangeGoldDonatedToMinor(int iMinor, int iChange);
+#endif
 
 	int getSettlerProductionModifier() const;
 	void changeSettlerProductionModifier(int iChange);
@@ -2603,6 +2610,10 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iUnitFortificationModifier;
 	FAutoVariable<int, CvPlayer> m_iUnitBaseHealModifier;
 	FAutoVariable<int, CvPlayer> m_iWonderProductionModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	FAutoVariable<int, CvPlayer> m_iTotalGoldDonated;
+	std::vector<int> m_paiGoldDonatedToMinor;
+#endif
 	FAutoVariable<int, CvPlayer> m_iSettlerProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iCapitalSettlerProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iUnitProductionMaintenanceMod;
