@@ -12,8 +12,8 @@
 // CvCityStateUAEffectEntry
 //======================================================================================================
 CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
-	: m_iFaithPurchaseGreatPeopleCostModifier(0)
-	, m_iFaithPurchaseGreatPeopleCostModifierPerGW(0)
+	: m_iFaithPurchaseGreatPeopleCostRiseModifier(0)
+	, m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW(0)
 	, m_bFaithPurchaseAllGreatPeople(false)
 	, m_bGPNoDeathAfterGreatWork(false)
 	, m_iGPConcertTourismRetentionPercent(0)
@@ -61,8 +61,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	if (!CvBaseInfo::CacheResults(kResults, kUtility))
 		return false;
 
-	m_iFaithPurchaseGreatPeopleCostModifier			= kResults.GetInt("FaithPurchaseGreatPeopleCostModifier");
-	m_iFaithPurchaseGreatPeopleCostModifierPerGW		= kResults.GetInt("FaithPurchaseGreatPeopleCostModifierPerGW");
+	m_iFaithPurchaseGreatPeopleCostRiseModifier			= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifier");
+	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifierPerGW");
 	m_bFaithPurchaseAllGreatPeople					= kResults.GetBool("FaithPurchaseAllGreatPeople");
 
 	m_bGPNoDeathAfterGreatWork						= kResults.GetBool("GPNoDeathAfterGreatWork");
@@ -119,8 +119,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	return true;
 }
 
-int CvCityStateUAEffectEntry::GetFaithPurchaseGreatPeopleCostModifier() const { return m_iFaithPurchaseGreatPeopleCostModifier; }
-int CvCityStateUAEffectEntry::GetFaithPurchaseGreatPeopleCostModifierPerGW() const { return m_iFaithPurchaseGreatPeopleCostModifierPerGW; }
+int CvCityStateUAEffectEntry::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
+int CvCityStateUAEffectEntry::GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const { return m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW; }
 bool CvCityStateUAEffectEntry::IsFaithPurchaseAllGreatPeople() const { return m_bFaithPurchaseAllGreatPeople; }
 
 bool CvCityStateUAEffectEntry::IsGPNoDeathAfterGreatWork() const { return m_bGPNoDeathAfterGreatWork; }
@@ -304,8 +304,8 @@ void CvCityStateUAXMLEntries::DeleteArray()
 //======================================================================================================
 CvPlayerCityStateUA::CvPlayerCityStateUA()
 	: m_pPlayer(NULL)
-	, m_iFaithPurchaseGreatPeopleCostModifier(0)
-	, m_iFaithPurchaseGreatPeopleCostModifierPerGW(0)
+	, m_iFaithPurchaseGreatPeopleCostRiseModifier(0)
+	, m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW(0)
 	, m_iFaithPurchaseAllGreatPeopleCount(0)
 	, m_iGPNoDeathAfterGreatWorkCount(0)
 	, m_iGPConcertTourismRetentionPercent(0)
@@ -363,8 +363,8 @@ void CvPlayerCityStateUA::Uninit()
 
 void CvPlayerCityStateUA::Reset()
 {
-	m_iFaithPurchaseGreatPeopleCostModifier = 0;
-	m_iFaithPurchaseGreatPeopleCostModifierPerGW = 0;
+	m_iFaithPurchaseGreatPeopleCostRiseModifier = 0;
+	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW = 0;
 	m_iFaithPurchaseAllGreatPeopleCount = 0;
 	m_iGPNoDeathAfterGreatWorkCount = 0;
 	m_iGPConcertTourismRetentionPercent = 0;
@@ -409,8 +409,8 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(iEffectID);
 	if (!pEffect) return;
 
-	m_iFaithPurchaseGreatPeopleCostModifier			+= pEffect->GetFaithPurchaseGreatPeopleCostModifier() * iChange;
-	m_iFaithPurchaseGreatPeopleCostModifierPerGW		+= pEffect->GetFaithPurchaseGreatPeopleCostModifierPerGW() * iChange;
+	m_iFaithPurchaseGreatPeopleCostRiseModifier			+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifier() * iChange;
+	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() * iChange;
 	m_iFaithPurchaseAllGreatPeopleCount += (pEffect->IsFaithPurchaseAllGreatPeople() ? iChange : 0);
 
 	m_iGPNoDeathAfterGreatWorkCount += (pEffect->IsGPNoDeathAfterGreatWork() ? iChange : 0);
@@ -465,8 +465,8 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
 }
 
-int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostModifier() const { return m_iFaithPurchaseGreatPeopleCostModifier; }
-int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostModifierPerGW() const { return m_iFaithPurchaseGreatPeopleCostModifierPerGW; }
+int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
+int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const { return m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW; }
 bool CvPlayerCityStateUA::IsFaithPurchaseAllGreatPeople() const { return m_iFaithPurchaseAllGreatPeopleCount > 0; }
 bool CvPlayerCityStateUA::IsGPNoDeathAfterGreatWork() const { return m_iGPNoDeathAfterGreatWorkCount > 0; }
 int CvPlayerCityStateUA::GetGPConcertTourismRetentionPercent() const { return m_iGPConcertTourismRetentionPercent; }

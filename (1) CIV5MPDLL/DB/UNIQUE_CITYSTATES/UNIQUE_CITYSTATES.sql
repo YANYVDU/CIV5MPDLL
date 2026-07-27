@@ -40,9 +40,9 @@ alter table Traits    add column MinorCivAlliesThresholdModifier int default 0;
 CREATE TABLE CityStateUAEffects (
     ID                                              INTEGER PRIMARY KEY AUTOINCREMENT,
     Type                                            TEXT NOT NULL UNIQUE,
-    -- 佛罗伦萨：信仰购买伟人
-    FaithPurchaseGreatPeopleCostModifier            integer DEFAULT 0,
-    FaithPurchaseGreatPeopleCostModifierPerGW       integer DEFAULT 0,
+    -- 佛罗伦萨：信仰购买伟人成本「上涨幅度（增量）」降速折扣（仅作用于增量，非整体成本）
+    FaithPurchaseGreatPeopleCostRiseModifier       integer DEFAULT 0,
+    FaithPurchaseGreatPeopleCostRiseModifierPerGW  integer DEFAULT 0,
     FaithPurchaseAllGreatPeople                     boolean DEFAULT 0,
     -- 布宜诺斯艾利斯：大音乐家不死+保留演唱会魅力
     GPNoDeathAfterGreatWork                         boolean DEFAULT 0,

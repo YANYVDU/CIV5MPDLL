@@ -21,8 +21,8 @@ public:
 	bool CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility);
 
 	// Florence (Fulolunsi)
-	int GetFaithPurchaseGreatPeopleCostModifier() const;
-	int GetFaithPurchaseGreatPeopleCostModifierPerGW() const;
+	int GetFaithPurchaseGreatPeopleCostRiseModifier() const;
+	int GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const;
 	bool IsFaithPurchaseAllGreatPeople() const;
 	// Buenos Aires (BuYiNuoSiAiLiSi)
 	bool IsGPNoDeathAfterGreatWork() const;
@@ -78,8 +78,8 @@ public:
 
 private:
 	// Florence
-	int m_iFaithPurchaseGreatPeopleCostModifier;
-	int m_iFaithPurchaseGreatPeopleCostModifierPerGW;
+	int m_iFaithPurchaseGreatPeopleCostRiseModifier;
+	int m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW;
 	bool m_bFaithPurchaseAllGreatPeople;
 	// Buenos Aires
 	bool m_bGPNoDeathAfterGreatWork;
@@ -209,8 +209,8 @@ public:
 
 	// Query accumulated modifier values for each effect type
 	// Florence
-	int GetFaithPurchaseGreatPeopleCostModifier() const;
-	int GetFaithPurchaseGreatPeopleCostModifierPerGW() const;
+	int GetFaithPurchaseGreatPeopleCostRiseModifier() const;
+	int GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const;
 	bool IsFaithPurchaseAllGreatPeople() const;
 	// Buenos Aires
 	bool IsGPNoDeathAfterGreatWork() const;
@@ -270,8 +270,8 @@ protected:
 	CvPlayer* m_pPlayer;
 
 	// Accumulated modifier values
-	int m_iFaithPurchaseGreatPeopleCostModifier;
-	int m_iFaithPurchaseGreatPeopleCostModifierPerGW;
+	int m_iFaithPurchaseGreatPeopleCostRiseModifier;
+	int m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW;
 	int m_iFaithPurchaseAllGreatPeopleCount;
 	int m_iGPNoDeathAfterGreatWorkCount;
 	int m_iGPConcertTourismRetentionPercent;
