@@ -110,4 +110,10 @@ CREATE TABLE CityStateUAs (
 
 -- MinorCivilizations 直接挂 UAType（无需映射表）
 alter table MinorCivilizations add column UAType text default null references CityStateUAs(Type);
+-- CityState UA: adds per-turn Great Person Points (per SpecialistType) to all cities
+create table CityStateUAEffect_GreatPersonPoints (
+    EffectType text references CityStateUAEffects(Type),
+    SpecialistType text references Specialists(Type),
+    Points integer default 0
+);
 

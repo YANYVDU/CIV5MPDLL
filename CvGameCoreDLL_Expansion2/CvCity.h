@@ -679,6 +679,9 @@ public:
 	void DoCuttingExtraInstantYield(int iBaseYield);
 #endif	
 	int GetGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetGreatPersonPointsFromUA(SpecialistTypes eIndex) const;
+#endif
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 	void doRelogionInstantYield(ReligionTypes eReligion);

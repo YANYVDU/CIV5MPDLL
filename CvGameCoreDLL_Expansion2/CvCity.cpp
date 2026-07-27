@@ -11816,6 +11816,12 @@ int CvCity::GetGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const
 {
 	return GET_PLAYER(getOwner()).getGreatPersonPointsFromPolicies(eIndex);
 }
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvCity::GetGreatPersonPointsFromUA(SpecialistTypes eIndex) const
+{
+	return GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetGreatPersonPoints(eIndex);
+}
+#endif
 //	--------------------------------------------------------------------------------
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)

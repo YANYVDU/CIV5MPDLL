@@ -14,6 +14,7 @@
 CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	: m_iFaithPurchaseGreatPeopleCostRiseModifier(0)
 	, m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW(0)
+	, m_piGreatPersonPoints(nullptr)
 	, m_bFaithPurchaseAllGreatPeople(false)
 	, m_bGPNoDeathAfterGreatWork(false)
 	, m_iGPConcertTourismRetentionPercent(0)
@@ -54,6 +55,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 
 CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 {
+	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -63,6 +65,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iFaithPurchaseGreatPeopleCostRiseModifier			= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifier");
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifierPerGW");
+	kUtility.PopulateArrayByValue(m_piGreatPersonPoints, "Specialists", "CityStateUAEffect_GreatPersonPoints", "SpecialistType", "EffectType", GetType(), "Points");
 	m_bFaithPurchaseAllGreatPeople					= kResults.GetBool("FaithPurchaseAllGreatPeople");
 
 	m_bGPNoDeathAfterGreatWork						= kResults.GetBool("GPNoDeathAfterGreatWork");
@@ -121,6 +124,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 int CvCityStateUAEffectEntry::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
 int CvCityStateUAEffectEntry::GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const { return m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW; }
+int CvCityStateUAEffectEntry::GetGreatPersonPoints(int i) const { CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piGreatPersonPoints ? m_piGreatPersonPoints[i] : 0; }
 bool CvCityStateUAEffectEntry::IsFaithPurchaseAllGreatPeople() const { return m_bFaithPurchaseAllGreatPeople; }
 
 bool CvCityStateUAEffectEntry::IsGPNoDeathAfterGreatWork() const { return m_bGPNoDeathAfterGreatWork; }
@@ -365,6 +369,7 @@ void CvPlayerCityStateUA::Reset()
 {
 	m_iFaithPurchaseGreatPeopleCostRiseModifier = 0;
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW = 0;
+	m_aiGreatPersonPoints.assign(GC.getNumSpecialistInfos(), 0);
 	m_iFaithPurchaseAllGreatPeopleCount = 0;
 	m_iGPNoDeathAfterGreatWorkCount = 0;
 	m_iGPConcertTourismRetentionPercent = 0;
@@ -411,6 +416,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 	m_iFaithPurchaseGreatPeopleCostRiseModifier			+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifier() * iChange;
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() * iChange;
+	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++){ m_aiGreatPersonPoints[iSpec] += pEffect->GetGreatPersonPoints(iSpec) * iChange; }
 	m_iFaithPurchaseAllGreatPeopleCount += (pEffect->IsFaithPurchaseAllGreatPeople() ? iChange : 0);
 
 	m_iGPNoDeathAfterGreatWorkCount += (pEffect->IsGPNoDeathAfterGreatWork() ? iChange : 0);
@@ -467,6 +473,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
 int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const { return m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW; }
+int CvPlayerCityStateUA::GetGreatPersonPoints(int i) const { CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return (i >= 0 && i < (int)m_aiGreatPersonPoints.size()) ? m_aiGreatPersonPoints[i] : 0; }
 bool CvPlayerCityStateUA::IsFaithPurchaseAllGreatPeople() const { return m_iFaithPurchaseAllGreatPeopleCount > 0; }
 bool CvPlayerCityStateUA::IsGPNoDeathAfterGreatWork() const { return m_iGPNoDeathAfterGreatWorkCount > 0; }
 int CvPlayerCityStateUA::GetGPConcertTourismRetentionPercent() const { return m_iGPConcertTourismRetentionPercent; }
