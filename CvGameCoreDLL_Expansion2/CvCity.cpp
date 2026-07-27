@@ -8435,8 +8435,11 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			changeDomainFriendsCombatModifierLocal(((DomainTypes)iI), pBuildingInfo->GetDomainFriendsCombatModifierLocal(iI) * iChange);
 		}
 
-		// Process for our player (skip team loop during building transfer)
-		if (!m_bUpdatingCorruption) for(int iI = 0; iI < MAX_PLAYERS; iI++)
+		// Process for our player. CvPlayer::processBuilding applies empire-wide effects
+		// (e.g. BuildingClassYieldChange: a wonder granting yield to all buildings of a class).
+		// Must run during acquireCity building transfer too, otherwise conquered wonders lose
+		// these effects (self-built worked, conquered did not).
+		for(int iI = 0; iI < MAX_PLAYERS; iI++)
 		{
 			if(GET_PLAYER((PlayerTypes)iI).getTeam() == getTeam())
 			{
