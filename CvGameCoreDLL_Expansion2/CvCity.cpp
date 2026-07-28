@@ -8581,7 +8581,12 @@ void CvCity::processSpecialist(SpecialistTypes eSpecialist, int iChange)
 
 	for(iI = 0; iI < NUM_YIELD_TYPES; iI++)
 	{
-		ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (pkSpecialist->getYieldChange(iI) * iChange));
+		int iSpecialistYield = pkSpecialist->getYieldChange(iI);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		iSpecialistYield += GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetSpecialistYieldFromBornGreatPerson(eSpecialist, (YieldTypes)iI);
+#endif
+	ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (iSpecialistYield * iChange));
 
 		//int globalModifier = GET_PLAYER(getOwner()).GetYieldModifierFromSpecialistGlobal(eSpecialist, ((YieldTypes)iI));
 		int LocalModifier = getYieldModifierFromSpecialist(eSpecialist, ((YieldTypes)iI));

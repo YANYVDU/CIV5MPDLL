@@ -1148,6 +1148,7 @@ void CvPlayer::uninit()
 	m_iWonderProductionModifier = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iTotalGoldDonated = 0;
+	m_paiBornGreatPersonCount.clear();
 #endif
 	m_iSettlerProductionModifier = 0;
 	m_iCapitalSettlerProductionModifier = 0;
@@ -17003,6 +17004,11 @@ void CvPlayer::DoSpawnGreatPerson(PlayerTypes eMinor, bool bIsFree)
 
 		if (pNewGreatPeople)
 		{
+			// Zurich CS UA: count great person births
+			GreatPersonTypes eGPType = GetGreatPersonFromUnitClass((UnitClassTypes)pNewGreatPeople->getUnitInfo().GetUnitClassType());
+			if (eGPType != NO_GREATPERSON)
+				ChangeBornGreatPersonCount(eGPType, 1);
+
 			// Bump up the count
 			if(pNewGreatPeople->IsGreatGeneral())
 			{
@@ -17606,6 +17612,14 @@ void CvPlayer::ChangeGoldDonatedToMinor(int iMinor, int iChange)
 {
 	if(iMinor>=(int)m_paiGoldDonatedToMinor.size())m_paiGoldDonatedToMinor.resize(iMinor+1,0);
 	m_paiGoldDonatedToMinor[iMinor]=(m_paiGoldDonatedToMinor[iMinor]+iChange);
+}
+int CvPlayer::GetBornGreatPersonCount(int iGP) const
+{
+	return (iGP>=0&&iGP<(int)m_paiBornGreatPersonCount.size())?m_paiBornGreatPersonCount[iGP]:0;
+}
+void CvPlayer::ChangeBornGreatPersonCount(int iGP, int iChange)
+{
+	m_paiBornGreatPersonCount[iGP]=(m_paiBornGreatPersonCount[iGP]+iChange);
 }
 #endif
 
@@ -29160,6 +29174,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_paiUnitCombatFreeExperiences;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_READ(162, kStream, m_paiGoldDonatedToMinor, std::vector<int>());
+	MOD_SERIALIZE_READ(162, kStream, m_paiBornGreatPersonCount, std::vector<int>());
 #endif
 	kStream >> m_paiUnitClassCount;
 	kStream >> m_paiUnitClassMaking;
@@ -29900,6 +29915,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_paiUnitCombatFreeExperiences;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_WRITE(kStream, m_paiGoldDonatedToMinor);
+	MOD_SERIALIZE_WRITE(kStream, m_paiBornGreatPersonCount);
 #endif
 	kStream << m_paiUnitClassCount;
 	kStream << m_paiUnitClassMaking;

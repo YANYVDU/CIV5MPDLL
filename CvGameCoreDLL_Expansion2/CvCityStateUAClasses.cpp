@@ -50,12 +50,14 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iGoldDonationInterval(0)
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iLuxuryHappinessModifier(0)
+	, m_ppiBornGreatPersonSpecialistYield(nullptr)
 {
 }
 
 CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 {
 	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiBornGreatPersonSpecialistYield);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -118,6 +120,23 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iWonderProductionPerDonationHappiness			= kResults.GetInt("WonderProductionPerDonationHappiness");
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
+	kUtility.Initialize2DArray(m_ppiBornGreatPersonSpecialistYield, "Specialists", "Yields");
+	{
+		std::string strKey("CityStateUAEffect_BornGreatPersonSpecialistYield");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Specialists.ID as SpecialistID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_BornGreatPersonSpecialistYield inner join Specialists on Specialists.Type = SpecialistType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			const int SpecialistID = pResults->GetInt(0);
+			const int YieldID = pResults->GetInt(1);
+			const int yield = pResults->GetInt(2);
+			m_ppiBornGreatPersonSpecialistYield[SpecialistID][YieldID] = yield;
+		}
+	}
 
 	return true;
 }
@@ -177,6 +196,7 @@ int CvCityStateUAEffectEntry::GetGoldDonationInterval() const { return m_iGoldDo
 int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvCityStateUAEffectEntry::GetBornGreatPersonSpecialistYield(int iSpecialist, int iYield) const { return m_ppiBornGreatPersonSpecialistYield ? m_ppiBornGreatPersonSpecialistYield[iSpecialist][iYield] : 0; }
 
 //======================================================================================================
 // CvCityStateUAEffectXMLEntries
@@ -405,6 +425,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iGoldDonationInterval = 0;
 	m_iWonderProductionPerDonationHappiness = 0;
 	m_iLuxuryHappinessModifier = 0;
+	m_aiBornGreatPersonSpecialistYield.clear();
+	m_aiBornGreatPersonSpecialistYield.resize(GC.getNumSpecialistInfos());
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -469,6 +491,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iWonderProductionPerDonationHappiness			+= pEffect->GetWonderProductionPerDonationHappiness() * iChange;
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
+	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++) for(int iY = 0; iY < NUM_YIELD_TYPES; iY++){ m_aiBornGreatPersonSpecialistYield[iSpec][iY] += pEffect->GetBornGreatPersonSpecialistYield(iSpec, iY) * iChange; }
 }
 
 int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
@@ -509,3 +532,16 @@ int CvPlayerCityStateUA::GetHappinessPerGoldDonated() const { return m_iHappines
 int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }
 int CvPlayerCityStateUA::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvPlayerCityStateUA::GetBornGreatPersonSpecialistYield(int iSpecialist, int iYield) const 
+{ 
+	return m_aiBornGreatPersonSpecialistYield[iSpecialist][iYield]; 
+}
+int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const
+{
+	if (!m_pPlayer) return 0;
+	GreatPersonTypes eGP = GetGreatPersonFromSpecialist(eSpecialist);
+	if (eGP == NO_GREATPERSON) return 0;
+	int iBornCount = m_pPlayer->GetBornGreatPersonCount(eGP);
+	if (iBornCount <= 0) return 0;
+	return iBornCount * GetBornGreatPersonSpecialistYield((int)eSpecialist, (int)eYield) / 100;
+}

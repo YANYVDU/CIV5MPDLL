@@ -978,6 +978,8 @@ public:
 	void ChangeTotalGoldDonated(int iChange);
 	int GetGoldDonatedToMinor(int iMinor) const;
 	void ChangeGoldDonatedToMinor(int iMinor, int iChange);
+	int GetBornGreatPersonCount(int iGP) const;
+	void ChangeBornGreatPersonCount(int iGP, int iChange);
 #endif
 
 	int getSettlerProductionModifier() const;
@@ -2613,6 +2615,7 @@ protected:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	FAutoVariable<int, CvPlayer> m_iTotalGoldDonated;
 	std::vector<int> m_paiGoldDonatedToMinor;
+	std::vector<int> m_paiBornGreatPersonCount;
 #endif
 	FAutoVariable<int, CvPlayer> m_iSettlerProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iCapitalSettlerProductionModifier;

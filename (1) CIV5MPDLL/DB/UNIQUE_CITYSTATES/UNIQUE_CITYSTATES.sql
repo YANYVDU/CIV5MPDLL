@@ -117,3 +117,10 @@ create table CityStateUAEffect_GreatPersonPoints (
     Points integer default 0
 );
 
+-- CityState UA: born great person grants extra specialist yield (per SpecialistType)
+create table CityStateUAEffect_BornGreatPersonSpecialistYield (
+    EffectType text references CityStateUAEffects(Type),
+    SpecialistType text references Specialists(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
