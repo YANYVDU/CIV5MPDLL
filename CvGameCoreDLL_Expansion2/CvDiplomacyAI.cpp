@@ -9,6 +9,7 @@
 #include "CvGameCoreDLLPCH.h"
 #include "ICvDLLUserInterface.h"
 #include "CvDiplomacyAI.h"
+#include "CvMinorCivAI.h"
 #include "CvGrandStrategyAI.h"
 #include "CvEconomicAI.h"
 #include "CvMilitaryAI.h"
@@ -13452,8 +13453,8 @@ void CvDiplomacyAI::DoContactMinorCivs()
 							continue;
 
 						// Only care if we'll actually be Allies or better
-						bMediumGiftAllies = iFriendshipWithMinor + iMediumGiftFriendship >= pMinorCivAI->GetAlliesThreshold();
-						bSmallGiftAllies = iFriendshipWithMinor + iSmallGiftFriendship >= pMinorCivAI->GetAlliesThreshold();
+						bMediumGiftAllies = iFriendshipWithMinor + iMediumGiftFriendship >= pMinorCivAI->GetAlliesThresholdForPlayer(GetPlayer()->GetID());
+						bSmallGiftAllies = iFriendshipWithMinor + iSmallGiftFriendship >= pMinorCivAI->GetAlliesThresholdForPlayer(GetPlayer()->GetID());
 
 						// If we can pass them with a small gift, great
 						if(bSmallGiftAllies && iOtherPlayerFriendshipWithMinor - iFriendshipWithMinor < iSmallGiftFriendship)
@@ -22711,6 +22712,28 @@ bool CvDiplomacyAI::IsPlayerMadeBorderPromise(PlayerTypes ePlayer, int iTestGame
 	{
 		return false;
 	}
+}
+
+/// Turns left until expansion promise expires (-1 if never made or expired)
+short CvDiplomacyAI::GetExpansionPromiseTurnsLeft(PlayerTypes ePlayer) const
+{
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS) return -1;
+	if (m_paiPlayerMadeExpansionPromiseTurn[ePlayer] < 0) return -1;
+	int iTurnDifference = GC.getGame().getGameTurn() - m_paiPlayerMadeExpansionPromiseTurn[ePlayer];
+	int iTimeOutTurns = (GC.getEXPANSION_PROMISE_TURNS_EFFECTIVE() * GC.getGame().getGameSpeedInfo().getOpinionDurationPercent()) / 100;
+	int iLeft = iTimeOutTurns - iTurnDifference;
+	return (iLeft > 0) ? (short)iLeft : (short)-1;
+}
+
+/// Turns left until border promise expires (-1 if never made or expired)
+short CvDiplomacyAI::GetBorderPromiseTurnsLeft(PlayerTypes ePlayer) const
+{
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS) return -1;
+	if (m_paiPlayerMadeBorderPromiseTurn[ePlayer] < 0) return -1;
+	int iTurnDifference = GC.getGame().getGameTurn() - m_paiPlayerMadeBorderPromiseTurn[ePlayer];
+	int iTimeOutTurns = (GC.getBORDER_PROMISE_TURNS_EFFECTIVE() * GC.getGame().getGameSpeedInfo().getOpinionDurationPercent()) / 100;
+	int iLeft = iTimeOutTurns - iTurnDifference;
+	return (iLeft > 0) ? (short)iLeft : (short)-1;
 }
 
 void CvDiplomacyAI::SetPlayerMadeBorderPromise(PlayerTypes ePlayer, bool bValue)

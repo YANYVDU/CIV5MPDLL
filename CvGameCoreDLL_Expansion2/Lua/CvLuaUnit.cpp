@@ -427,6 +427,12 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetHPHealedIfDefeatEnemyGlobal);
 	Method(GetNumOriginalCapitalDefenseMod);
 	Method(GetNumOriginalCapitalAttackMod);
+	Method(GetGoldAttackBonus);
+	Method(GetCultureAttackBonus);
+	Method(GetFaithAttackBonus);
+	Method(GetGoldDefenseBonus);
+	Method(GetCultureDefenseBonus);
+	Method(GetFaithDefenseBonus);
 	Method(GetOnCapitalLandAttackMod);
 	Method(GetOutsideCapitalLandAttackMod);
 	Method(GetOnCapitalLandDefenseMod);
@@ -463,6 +469,8 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 #endif
 	Method(GetDamageFixValueToUnit);
 	Method(GetDamageFixValueToCity);
+	Method(GetFixDamagePerPromotionTotalMod);
+	Method(GetFixReducePerPromotionTotalMod);
 
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_PROMOTIONS_IMPROVEMENT_BONUS)
 	Method(GetNearbyImprovementCombatBonus);
@@ -599,6 +607,8 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(SetExperience);
 
 	Method(ChangeExperience);
+	Method(GetTotalKills);
+	Method(ChangeTotalKills);
 
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_UNITS_XP_TIMES_100)
 	Method(GetExperienceTimes100);
@@ -683,6 +693,7 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetNumAttacks);
 	Method(ChangeMadeAttackNum);
 	Method(GetNumAttacksMadeThisTurn);
+	Method(GetNumPromotions);
 
 	Method(isOutOfInterceptions);
 	Method(SetMadeInterception);
@@ -860,6 +871,12 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetAllyCityStateCombatModifier);
 	Method(GetHappinessCombatModifier);
 	Method(GetResourceCombatModifier);
+	Method(GetDifferentReligionAttackModifier);
+	Method(GetDifferentReligionDefenseModifier);
+	Method(GetGoldenAgeTurnAttackModifier);
+	Method(GetGoldenAgeTurnDefenseModifier);
+	Method(GetFollowerCountCombatModifier);
+	Method(GetFollowingCityCountCombatModifier);
 	Method(GetNearbyUnitPromotionBonus);
 	Method(GetBarbarianCombatBonusTotal);
 	Method(IsBatchMark);
@@ -3726,7 +3743,6 @@ int CvLuaUnit::lGetDefenseModifier(lua_State* L)
 	lua_pushinteger(L, iResult);
 	return 1;
 }
-
 #if defined(MOD_ROG_CORE)
 int CvLuaUnit::lGetDoFallBackAttackMod(lua_State* L)
 {
@@ -3849,7 +3865,7 @@ int CvLuaUnit::lGetChangeDamageValue(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);
 
-	const int iResult = pkUnit->getChangeDamageValue();
+	const int iResult = pkUnit->getChangeDamageValue() - pkUnit->GetNumPromotions() * pkUnit->GetFixReducePerPromotionTotal() / 100 - pkUnit->GetPerKillDefenseDamageChangeValue();
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -3877,11 +3893,15 @@ int CvLuaUnit::lGetDamageFixValueToUnit(lua_State* L)
 		int iSpecialDamageFix = pkUnit->GetOriginalCapitalSpecialDamageFixTotal();
 		iSpecialDamageFix = pkOtherUnit->getDomainType() == DOMAIN_LAND ? iSpecialDamageFix : iSpecialDamageFix / 2;
 		iResult += iSpecialDamageFix;
+		iResult += pkUnit->GetFixDamagePerPromotionTotal() * pkUnit->GetNumPromotions() / 100;
+		iResult += pkUnit->GetPerKillInflictDamageChangeValue();
 	}
 	else
 	{
 		iResult += pkUnit->GetDefenseInflictDamageChange();
 		iResult += pkUnit->GetDefenseInflictDamageChangeMaxHPPercent() * pkOtherUnit->GetMaxHitPoints() / 100;
+		iResult += pkUnit->GetFixDamagePerPromotionTotal() * pkUnit->GetNumPromotions() / 100;
+		iResult += pkUnit->GetPerKillInflictDamageChangeValue();
 	}
 
 	auto* targetPlot = bIsAttack ? pkOtherUnit->plot() : pkUnit->plot();
@@ -3910,8 +3930,9 @@ int CvLuaUnit::lGetDamageFixValueToCity(lua_State* L)
 
 	int iResult = 0;
 	iResult += pkUnit->GetSiegeInflictDamageChange();
-		iResult += pkUnit->GetOriginalCapitalDamageFixTotal();
+	iResult += pkUnit->GetOriginalCapitalDamageFixTotal();
 	iResult += pkUnit->GetOriginalCapitalSpecialDamageFixTotal() / 2;
+	iResult += pkUnit->GetFixDamagePerPromotionTotal() * pkUnit->GetNumPromotions() / 100;
 	iResult += pkUnit->GetOutsideFriendlyLandsInflictDamageChange();
 
 	int iInflictDamagePerCapturedHolyCity = kAttacker.GetPlayerTraits()->GetInflictDamageChangePerCapturedHolyCity();
@@ -3932,6 +3953,22 @@ int CvLuaUnit::lGetDamageFixValueToCity(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+int CvLuaUnit::lGetFixDamagePerPromotionTotalMod(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	lua_pushinteger(L, pkUnit->GetFixDamagePerPromotionTotal());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaUnit::lGetFixReducePerPromotionTotalMod(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	lua_pushinteger(L, pkUnit->GetFixReducePerPromotionTotal());
+	return 1;
+}
+//------------------------------------------------------------------------------
+
 int CvLuaUnit::lGetDamageCombatModifier(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);
@@ -4007,6 +4044,60 @@ int CvLuaUnit::lGetNumOriginalCapitalAttackMod(lua_State* L)
 	return 1;
 }
 #endif
+
+int CvLuaUnit::lGetGoldAttackBonus(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	const int iResult = pkUnit->GetGoldAttackBonus();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaUnit::lGetCultureAttackBonus(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	const int iResult = pkUnit->GetCultureAttackBonus();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaUnit::lGetFaithAttackBonus(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	const int iResult = pkUnit->GetFaithAttackBonus();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaUnit::lGetGoldDefenseBonus(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	const int iResult = pkUnit->GetGoldDefenseBonus();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaUnit::lGetCultureDefenseBonus(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	const int iResult = pkUnit->GetCultureDefenseBonus();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaUnit::lGetFaithDefenseBonus(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	const int iResult = pkUnit->GetFaithDefenseBonus();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
 
 
 
@@ -5128,6 +5219,22 @@ int CvLuaUnit::lChangeExperience(lua_State* L)
 	return 0;
 }
 
+#if defined(MOD_API_LUA_EXTENSIONS)
+int CvLuaUnit::lGetTotalKills(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	lua_pushinteger(L, pkUnit->GetTotalKills());
+	return 1;
+}
+int CvLuaUnit::lChangeTotalKills(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	const int iChange = lua_tointeger(L, 2);
+	pkUnit->ChangeTotalKills(iChange);
+	return 0;
+}
+#endif
+
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_UNITS_XP_TIMES_100)
 //------------------------------------------------------------------------------
 //int getExperience();
@@ -5783,6 +5890,14 @@ int CvLuaUnit::lGetNumAttacksMadeThisTurn(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);
 	const int iResult = pkUnit->getNumAttacksMadeThisTurn();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+int CvLuaUnit::lGetNumPromotions(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	const int iResult = pkUnit->GetNumPromotions();
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -6803,6 +6918,12 @@ LUAAPIIMPL(Unit, SetIsBatchMark)
 
 LUAAPIIMPL(Unit, IsCheat)
 LUAAPIIMPL(Unit, SetIsCheat)
+LUAAPIIMPL(Unit, GetDifferentReligionAttackModifier)
+LUAAPIIMPL(Unit, GetDifferentReligionDefenseModifier)
+LUAAPIIMPL(Unit, GetGoldenAgeTurnAttackModifier)
+LUAAPIIMPL(Unit, GetGoldenAgeTurnDefenseModifier)
+LUAAPIIMPL(Unit, GetFollowerCountCombatModifier)
+LUAAPIIMPL(Unit, GetFollowingCityCountCombatModifier)
 int CvLuaUnit::lLoadUnit(lua_State* L)
 {
 	CvUnit* pkUnit = GetInstance(L);

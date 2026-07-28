@@ -391,7 +391,9 @@ public:
 	bool IsFriendshipAboveFriendsThreshold(int iFriendship) const;
 	int GetFriendsThreshold() const;
 	bool IsFriendshipAboveAlliesThreshold(int iFriendship) const;
+	bool IsFriendshipAboveAlliesThresholdForPlayer(PlayerTypes ePlayer, int iFriendship) const;
 	int GetAlliesThreshold() const;
+	int GetAlliesThresholdForPlayer(PlayerTypes ePlayer) const;
 	void DoSetBonus(PlayerTypes ePlayer, bool bAdd, bool bFriends, bool bAllies, bool bSuppressNotifications = false, bool bPassedBySomeone = false, PlayerTypes eNewAlly = NO_PLAYER);
 
 	void DoIntrusion();
@@ -672,6 +674,7 @@ public:
 	void setArtStyleSuffix(const char* szVal);
 
 	int GetMinorCivTrait() const;
+	const char* GetUAType() const;
 
 	// Deprecated Members
 	const char* getAdjectiveKeyWide() const;
@@ -688,6 +691,7 @@ protected:
 	int m_iArtStyleType;
 	int m_iNumLeaders;				 // the number of leaders the Civ has, this is needed so that random leaders can be generated easily
 	int m_iMinorCivTrait;
+	CvString m_strUAType;
 
 	bool m_bAIPlayable;
 	bool m_bPlayable;

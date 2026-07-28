@@ -113,6 +113,10 @@ class CvEmphasisEntry;
 class CvEmphasisXMLEntries;
 class CvTraitEntry;
 class CvTraitXMLEntries;
+class CvCityStateUAEffectEntry;
+class CvCityStateUAEffectXMLEntries;
+class CvCityStateUAEntry;
+class CvCityStateUAXMLEntries;
 class CvNotificationEntry;
 class CvNotificationXMLEntries;
 #if defined(MOD_API_ACHIEVEMENTS) || defined(ACHIEVEMENT_HACKS)
@@ -587,6 +591,9 @@ public:
 	std::vector<CvTraitEntry*>& getTraitInfo();
 	_Ret_maybenull_ CvTraitEntry* getTraitInfo(TraitTypes eTraitNum);
 	CvTraitXMLEntries* GetGameTraits() const;
+	CvCityStateUAEffectXMLEntries* GetGameCityStateUAEffects() const;
+	CvCityStateUAXMLEntries* GetGameCityStateUAs() const;
+	CvCityStateUAEffectEntry* getCityStateUAEffectEntry(int index) const;
 
 	int getNumReligionInfos();
 	std::vector<CvReligionEntry*>& getReligionInfo();
@@ -1763,6 +1770,18 @@ public:
 	inline int getFRIENDSHIP_THRESHOLD_ALLIES()
 	{
 		return m_iFRIENDSHIP_THRESHOLD_ALLIES;
+	}
+	inline int getDIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER()
+	{
+		return m_iDIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER;
+	}
+	inline int getDIPLOMATIC_OVEREXTENSION_RISE_MODIFIER()
+	{
+		return m_iDIPLOMATIC_OVEREXTENSION_RISE_MODIFIER;
+	}
+	inline int getDIPLOMATIC_OVEREXTENSION_UNHAPPINESS_MODIFIER()
+	{
+		return m_iDIPLOMATIC_OVEREXTENSION_UNHAPPINESS_MODIFIER;
 	}
 	inline int getFRIENDSHIP_THRESHOLD_MAX()
 	{
@@ -5619,6 +5638,44 @@ public:
 		return m_iIMMIGRATION_BASE_RATE;
 	}
 #endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	inline int getCS_CULTURED_POLICY_COST_MODIFIER()
+	{
+		return m_iCS_CULTURED_POLICY_COST_MODIFIER;
+	}
+	inline int getCS_CULTURED_IMMIGRATION_REGRESSAND_MODIFIER()
+	{
+		return m_iCS_CULTURED_IMMIGRATION_REGRESSAND_MODIFIER;
+	}
+	inline int getCS_MILITARISTIC_LAND_XP_PER_TURN()
+	{
+		return m_iCS_MILITARISTIC_LAND_XP_PER_TURN;
+	}
+	inline int getCS_MARITIME_SEA_TRADE_GOLD_PER_ERA()
+	{
+		return m_iCS_MARITIME_SEA_TRADE_GOLD_PER_ERA;
+	}
+	inline int getCS_RELIGIOUS_FAITH_COST_MODIFIER()
+	{
+		return m_iCS_RELIGIOUS_FAITH_COST_MODIFIER;
+	}
+	inline int getCS_RELIGIOUS_PRESSURE_MODIFIER()
+	{
+		return m_iCS_RELIGIOUS_PRESSURE_MODIFIER;
+	}
+	inline int getCS_MERCANTILE_LUXURY_HAPPINESS_MODIFIER()
+	{
+		return m_iCS_MERCANTILE_LUXURY_HAPPINESS_MODIFIER;
+	}
+	inline int getCS_MERCANTILE_TREASURY_INTEREST_RATE()
+	{
+		return m_iCS_MERCANTILE_TREASURY_INTEREST_RATE;
+	}
+	inline int getCS_TREASURY_INTEREST_CAP_MULTIPLIER()
+	{
+		return m_iCS_TREASURY_INTEREST_CAP_MULTIPLIER;
+	}
+#endif
 
 	inline int getMAX_POPULATION_INCREASE_NOTIOFACATION()
 	{
@@ -8007,6 +8064,10 @@ protected:
 	CvImprovementXMLEntries* m_pImprovements;
 	CvEmphasisXMLEntries* m_pEmphases;
 	CvTraitXMLEntries* m_pTraits;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvCityStateUAEffectXMLEntries* m_pCityStateUAEffects;
+	CvCityStateUAXMLEntries* m_pCityStateUAs;
+#endif
 	CvReligionXMLEntries* m_pReligions;
 	CvBeliefXMLEntries* m_pBeliefs;
 	CvLeagueSpecialSessionXMLEntries* m_pLeagueSpecialSessions;
@@ -8342,6 +8403,9 @@ protected:
 	int m_iFRIENDSHIP_THRESHOLD_FRIENDS;
 	int m_iFRIENDSHIP_ALLIES_ON_DEATH;
 	int m_iFRIENDSHIP_THRESHOLD_ALLIES;
+	int m_iDIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER;
+	int m_iDIPLOMATIC_OVEREXTENSION_RISE_MODIFIER;
+	int m_iDIPLOMATIC_OVEREXTENSION_UNHAPPINESS_MODIFIER;
 	int m_iFRIENDSHIP_THRESHOLD_MAX;
 	int m_iFRIENDSHIP_THRESHOLD_CAN_BULLY;
 	int m_iFRIENDSHIP_THRESHOLD_CAN_PLEDGE_TO_PROTECT;
@@ -9315,6 +9379,17 @@ protected:
 #endif
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	int m_iIMMIGRATION_BASE_RATE;
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iCS_CULTURED_POLICY_COST_MODIFIER;
+	int m_iCS_CULTURED_IMMIGRATION_REGRESSAND_MODIFIER;
+	int m_iCS_MILITARISTIC_LAND_XP_PER_TURN;
+	int m_iCS_MARITIME_SEA_TRADE_GOLD_PER_ERA;
+	int m_iCS_RELIGIOUS_FAITH_COST_MODIFIER;
+	int m_iCS_RELIGIOUS_PRESSURE_MODIFIER;
+	int m_iCS_MERCANTILE_LUXURY_HAPPINESS_MODIFIER;
+	int m_iCS_MERCANTILE_TREASURY_INTEREST_RATE;
+	int m_iCS_TREASURY_INTEREST_CAP_MULTIPLIER;
 #endif
 
 #if defined(MOD_ROG_CORE)

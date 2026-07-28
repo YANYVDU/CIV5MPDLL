@@ -5087,10 +5087,7 @@ void CvTeam::changeObsoleteBuildingCount(BuildingTypes eIndex, int iChange)
 					{
 						for(pLoopCity = GET_PLAYER((PlayerTypes)iI).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER((PlayerTypes)iI).nextCity(&iLoop))
 						{
-							if(pLoopCity->GetCityBuildings()->GetNumBuilding(eIndex) > 0)
-							{
-								pLoopCity->processBuilding(eIndex, ((isObsoleteBuilding(eIndex)) ? -pLoopCity->GetCityBuildings()->GetNumBuilding(eIndex) : pLoopCity->GetCityBuildings()->GetNumBuilding(eIndex)), /*bFirst*/ false, /*bObsolete*/ true);
-							}
+							pLoopCity->processBuildingObsolete(eIndex, isObsoleteBuilding(eIndex));
 						}
 					}
 				}
@@ -5922,7 +5919,7 @@ void CvTeam::setHasTech(TechTypes eIndex, bool bNewValue, PlayerTypes ePlayer, b
 				{
 					kPlayer.popResearch(eIndex);
 #ifdef MOD_GLOBAL_UNLIMITED_ONE_TURN_TECH
-					if (MOD_GLOBAL_UNLIMITED_ONE_TURN_TECH) {
+					if (MOD_GLOBAL_UNLIMITED_ONE_TURN_TECH || kPlayer.GetPlayerTraits()->IsGoldenAgeTechChainBoost() != 0 && kPlayer.isGoldenAge()) {
 						if (!kPlayer.isHuman()) {
 							kPlayer.AI_chooseResearch();
 						}

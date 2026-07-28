@@ -442,11 +442,13 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(GetUnhappinessFromCityForUI);
 
-	Method(GetUnhappinessFromCityCount);
+	Method(GetUnhappinessFromCorruption);
 	Method(GetUnhappinessFromCapturedCityCount);
 	Method(GetUnhappinessFromCityPopulation);
 	Method(GetUnhappinessFromCitySpecialists);
 	Method(GetUnhappinessFromOccupiedCities);
+	Method(GetUnhappinessFromCityCount);
+	Method(GetUnhappinessFromCorruption);
 	Method(GetUnhappinessFromPuppetCityPopulation);
 	Method(GetUnhappinessFromPublicOpinion);
 	Method(GetUnhappinessFromUnits);
@@ -805,6 +807,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetPersonalityType);
 	Method(SetPersonalityType);
 	Method(GetCurrentEra);
+	Method(GetMinorCivAlliesThreshold);
 
 	Method(GetTeam);
 
@@ -1128,6 +1131,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(AddTemporaryDominanceZone);
 
 	Method(GetNaturalWonderYieldModifier);
+	Method(GetNaturalWonderYieldModifierPerEra);
+	Method(GetImmigrationRegressandModifier);
 
 	Method(GetPolicyBuildingClassYieldModifier);
 	Method(GetPolicyBuildingClassYieldChange);
@@ -1334,6 +1339,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(IsCorruptionLevelReduceByOne);
 	Method(GetCorruptionScoreModifierFromPolicy);
+	Method(GetCorruptionScoreGlobalChangeFromBuilding);
+	
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	Method(GetDomainTroopsTotalTimes100);
@@ -1392,6 +1399,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(ChangeFreeBuildingCount);
 
 	Method(GetMilitaryPromiseTurnLeft);
+	Method(GetExpansionPromiseTurnLeft);
+	Method(GetBorderPromiseTurnLeft);
 }
 //------------------------------------------------------------------------------
 void CvLuaPlayer::HandleMissingInstance(lua_State* L)
@@ -3508,13 +3517,24 @@ int CvLuaPlayer::lGetUnhappinessFromCityForUI(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
-//int GetUnhappinessFromCityCount() const;
 int CvLuaPlayer::lGetUnhappinessFromCityCount(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	CvCity* pAnnexedCity = CvLuaCity::GetInstance(L, 2, false);
 	CvCity* pPuppetedCity = CvLuaCity::GetInstance(L, 3, false);
 	const int iResult = pkPlayer->GetUnhappinessFromCityCount(pAnnexedCity, pPuppetedCity);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetUnhappinessFromCorruption() const;
+int CvLuaPlayer::lGetUnhappinessFromCorruption(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvCity* pAnnexedCity = CvLuaCity::GetInstance(L, 2, false);
+	CvCity* pPuppetedCity = CvLuaCity::GetInstance(L, 3, false);
+	const int iResult = pkPlayer->GetUnhappinessFromCorruption(pAnnexedCity, pPuppetedCity);
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -7683,6 +7703,11 @@ int CvLuaPlayer::lGetCurrentEra(lua_State* L)
 	return BasicLuaMethod(L, &CvPlayerAI::GetCurrentEra);
 }
 //------------------------------------------------------------------------------
+int CvLuaPlayer::lGetMinorCivAlliesThreshold(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetMinorCivAlliesThreshold);
+}
+//------------------------------------------------------------------------------
 //int getTeam();
 int CvLuaPlayer::lGetTeam(lua_State* L)
 {
@@ -10728,6 +10753,34 @@ int  CvLuaPlayer::lGetNaturalWonderYieldModifier(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+int CvLuaPlayer::lGetNaturalWonderYieldModifierPerEra(lua_State* L)
+{
+	int iYieldModifierPerEra = 0;
+	CvPlayer* pkPlayer = GetInstance(L);
+	if(pkPlayer)
+	{
+		CvPlayerTraits* pkPlayerTraits = pkPlayer->GetPlayerTraits();
+		if(pkPlayerTraits)
+		{
+			iYieldModifierPerEra = pkPlayerTraits->GetNaturalWonderYieldModifierPerEra();
+		}
+	}
+
+	lua_pushinteger(L, iYieldModifierPerEra);
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetImmigrationRegressandModifier(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	if(pkPlayer)
+	{
+		lua_pushinteger(L, pkPlayer->GetImmigrationRegressandModifier());
+		return 1;
+	}
+	return 0;
+}
+//------------------------------------------------------------------------------
 int CvLuaPlayer::lGetPolicyBuildingClassYieldModifier(lua_State* L)
 {
 	const BuildingClassTypes eBuildingClass = (BuildingClassTypes)luaL_checkint(L, 2);
@@ -12794,6 +12847,8 @@ int CvLuaPlayer::lGetGlobalYieldModifierFromResource(lua_State* L)
 
 LUAAPIIMPL(Player, IsCorruptionLevelReduceByOne)
 LUAAPIIMPL(Player, GetCorruptionScoreModifierFromPolicy)
+LUAAPIIMPL(Player, GetCorruptionScoreGlobalChangeFromBuilding)
+
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 int CvLuaPlayer::lGetDomainTroopsTotalTimes100(lua_State* L)
@@ -13017,3 +13072,22 @@ int CvLuaPlayer::lGetMilitaryPromiseTurnLeft(lua_State* L)
 	}
 	return 1;
 }
+
+int CvLuaPlayer::lGetExpansionPromiseTurnLeft(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTargetPlayer = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDiplomacyAI()->GetExpansionPromiseTurnsLeft(eTargetPlayer));
+	return 1;
+}
+
+int CvLuaPlayer::lGetBorderPromiseTurnLeft(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTargetPlayer = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDiplomacyAI()->GetBorderPromiseTurnsLeft(eTargetPlayer));
+	return 1;
+}
+
+
+

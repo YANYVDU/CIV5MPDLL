@@ -17,6 +17,7 @@
 #include "FTimer.h"
 #include "CvPreGame.h"
 #include <CvLocalization.h>
+#include <map>
 
 #include "CvDealClasses.h"
 
@@ -504,6 +505,19 @@ public:
 	void changePlotExtraCost(int iX, int iY, int iCost);
 	void removePlotExtraCost(int iX, int iY);
 
+	// Plot naming
+	void SetPlotName(int iX, int iY, const char* szName);
+	const char* GetPlotName(int iX, int iY) const;
+	void RemovePlotName(int iX, int iY);
+	const std::map<int, std::string>& GetAllPlotNames() const;
+
+	// Project first completion tracking (like wonder builder display)
+	void SetProjectFirstCompletion(ProjectTypes eProject, PlayerTypes ePlayer, const char* szCityName);
+	int GetProjectFirstPlayer(ProjectTypes eProject) const;
+	const char* GetProjectFirstCityName(ProjectTypes eProject) const;
+	const std::map<int, int>& GetAllProjectFirstPlayers() const;
+	const std::map<int, std::string>& GetAllProjectFirstCityNames() const;
+
 	bool isCivEverActive(CivilizationTypes eCivilization) const;
 	bool isLeaderEverActive(LeaderHeadTypes eLeader) const;
 	bool isUnitEverActive(UnitTypes eUnit) const;
@@ -798,6 +812,11 @@ protected:
 
 	std::vector<PlotExtraYield> m_aPlotExtraYields;
 	std::vector<PlotExtraCost> m_aPlotExtraCosts;
+	std::map<int, std::string> m_mapPlotNames;
+
+	// Project first completion: ProjectType -> PlayerType, ProjectType -> CityName
+	std::map<int, int> m_mapProjectFirstPlayer;
+	std::map<int, std::string> m_mapProjectFirstCityName;
 
 	int m_iEarliestBarbarianReleaseTurn;
 

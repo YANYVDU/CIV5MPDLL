@@ -45,6 +45,10 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iSpecialistCount(0),
 	m_iSpecialistExtraCulture(0),
 	m_iGreatPeopleRateChange(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
+#endif
 	m_eGreatWorkSlotType(NO_GREAT_WORK_SLOT),
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	m_eGreatWorkYieldType(YIELD_CULTURE),
@@ -93,6 +97,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iHappinessPerCity(0),
 	m_iHappinessPerXPolicies(0),
 	m_iCityCountUnhappinessMod(0),
+	m_iCorruptionUnhappinessModifier(0),
 	m_bNoOccupiedUnhappiness(false),
 	m_bNotNeedOccupied(false),
 	m_bAllowSpaceshipLaunch(false),
@@ -135,6 +140,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 #endif
 	m_iInstantSpyRankChange(0),
 	m_iLandmarksTourismPercent(0),
+	m_iLandmarksTourismPerXForeignFollowers(0),
 	m_iInstantMilitaryIncrease(0),
 	m_iGreatWorksTourismModifier(0),
 	m_iXBuiltTriggersIdeologyChoice(0),
@@ -169,11 +175,14 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iExtraUnitPlayerInstances(0),
 	m_iResetDamageValue(0),
 	m_iReduceDamageValue(0),
+	m_iFollowerCountDamageModifier(0),
+	m_iFollowingCityCountDamageModifier(0),
 
 	m_iGlobalCityStrengthMod(0),
 	m_iGlobalRangedStrikeModifier(0),
 	m_iResearchTotalCostModifier(0),
 	m_iResearchTotalCostModifierGoldenAge(0),
+	m_iImmigrationRegressandModifier(0),
 	m_iWaterTileDamage(0),
 	m_iWaterTileMovementReduce(0),
 	m_iWaterTileTurnDamage(0),
@@ -283,6 +292,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_piDomainEnemyCombatModifier(NULL),
 	m_piDomainEnemyCombatModifierGlobal(NULL),
 	m_piDomainFriendsCombatModifierLocal(NULL),
+	m_piDomainFriendsCombatModifierGlobal(NULL),
 
 #if defined(MOD_ROG_CORE)
 	m_piYieldFromConstruction(NULL),
@@ -417,6 +427,7 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	SAFE_DELETE_ARRAY(m_piDomainEnemyCombatModifier);
 	SAFE_DELETE_ARRAY(m_piDomainEnemyCombatModifierGlobal);
 	SAFE_DELETE_ARRAY(m_piDomainFriendsCombatModifierLocal);
+	SAFE_DELETE_ARRAY(m_piDomainFriendsCombatModifierGlobal);
 #if defined(MOD_ROG_CORE)
 	SAFE_DELETE_ARRAY(m_piYieldFromConstruction);
 	SAFE_DELETE_ARRAY(m_piYieldFromUnitProduction);
@@ -539,11 +550,14 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iExtraUnitPlayerInstances = kResults.GetInt("ExtraUnitPlayerInstances");
 	m_iResetDamageValue = kResults.GetInt("ResetDamageValue");
 	m_iReduceDamageValue = kResults.GetInt("ReduceDamageValue");
+	m_iFollowerCountDamageModifier = kResults.GetInt("FollowerCountDamageModifier");
+	m_iFollowingCityCountDamageModifier = kResults.GetInt("FollowingCityCountDamageModifier");
 
 	m_iGlobalCityStrengthMod = kResults.GetInt("GlobalCityStrengthMod");
 	m_iGlobalRangedStrikeModifier = kResults.GetInt("GlobalRangedStrikeModifier");
 	m_iResearchTotalCostModifier = kResults.GetInt("ResearchTotalCostModifier");
 	m_iResearchTotalCostModifierGoldenAge = kResults.GetInt("ResearchTotalCostModifierGoldenAge");
+	m_iImmigrationRegressandModifier = kResults.GetInt("ImmigrationRegressandModifier");
 	m_iWaterTileDamage = kResults.GetInt("WaterTileDamage");
 	m_iWaterTileMovementReduce = kResults.GetInt("WaterTileMovementReduce");
 	m_iWaterTileTurnDamage = kResults.GetInt("WaterTileTurnDamage");
@@ -634,6 +648,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iHappinessPerCity = kResults.GetInt("HappinessPerCity");
 	m_iHappinessPerXPolicies = kResults.GetInt("HappinessPerXPolicies");
 	m_iCityCountUnhappinessMod = kResults.GetInt("CityCountUnhappinessMod");
+	m_iCorruptionUnhappinessModifier = kResults.GetInt("CorruptionUnhappinessModifier");
 	m_bNoOccupiedUnhappiness = kResults.GetBool("NoOccupiedUnhappiness");
 	m_bNotNeedOccupied = kResults.GetBool("NotNeedOccupied");
 	m_bAllowSpaceshipLaunch = kResults.GetBool("AllowSpaceshipLaunch");
@@ -698,6 +713,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 #endif
 	m_iInstantSpyRankChange = kResults.GetInt("InstantSpyRankChange");
 	m_iLandmarksTourismPercent = kResults.GetInt("LandmarksTourismPercent");
+	m_iLandmarksTourismPerXForeignFollowers = kResults.GetInt("LandmarksTourismPerXForeignFollowers");
 	m_iInstantMilitaryIncrease = kResults.GetInt("InstantMilitaryIncrease");
 	m_iGreatWorksTourismModifier = kResults.GetInt("GreatWorksTourismModifier");
 	m_iXBuiltTriggersIdeologyChoice = kResults.GetInt("XBuiltTriggersIdeologyChoice");
@@ -731,6 +747,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	m_iCorruptionScoreChange = kResults.GetInt("CorruptionScoreChange");
+	m_iCorruptionScoreGlobalChange = kResults.GetInt("CorruptionScoreGlobalChange");
 	m_iCorruptionLevelChange = kResults.GetInt("CorruptionLevelChange");
 	m_iCorruptionPolicyCostModifier = kResults.GetInt("CorruptionPolicyCostModifier");
 	m_iMinCorruptionLevelNeeded = kResults.GetInt("MinCorruptionLevelNeeded");
@@ -840,6 +857,10 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iSpecialistCount = kResults.GetInt("SpecialistCount");
 	m_iSpecialistExtraCulture = kResults.GetInt("SpecialistExtraCulture");
 	m_iGreatPeopleRateChange= kResults.GetInt("GreatPeopleRateChange");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier = kResults.GetInt("MinorCivAlliesThresholdModifier");
+#endif
 
 	szTextVal = kResults.GetText("GreatWorkSlotType");
 	m_eGreatWorkSlotType = (GreatWorkSlotType)GC.getInfoTypeForString(szTextVal, true);
@@ -910,6 +931,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	kUtility.PopulateArrayByValue(m_piDomainEnemyCombatModifier, "Domains", "Building_DomainEnemyCombatModifier", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainEnemyCombatModifierGlobal, "Domains", "Building_DomainEnemyCombatModifierGlobal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainFriendsCombatModifierLocal, "Domains", "Building_DomainFriendsCombatModifierLocal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
+	kUtility.PopulateArrayByValue(m_piDomainFriendsCombatModifierGlobal, "Domains", "Building_DomainFriendsCombatModifierGlobal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 
 
 #if defined(MOD_ROG_CORE)
@@ -1224,6 +1246,60 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 
 			m_ppaiImprovementYieldChange[ImprovementID][YieldID] = yield;
 		}
+	}
+	//AdjacentImprovementYieldChanges
+	{
+		std::string strKey("Building_AdjacentImprovementYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Building_AdjacentImprovementYieldChanges "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE BuildingType = ?");
+		}
+		pResults->Bind(1, szBuildingType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChanges.push_back(change);
+		}
+		pResults->Reset();
+	}
+	//AdjacentImprovementYieldChangesGlobal
+	{
+		std::string strKey("Building_AdjacentImprovementYieldChangesGlobal");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Building_AdjacentImprovementYieldChangesGlobal "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE BuildingType = ?");
+		}
+		pResults->Bind(1, szBuildingType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChangesGlobal.push_back(change);
+		}
+		pResults->Reset();
 	}
 	//ImprovementYieldChangesGlobal
 	{
@@ -2062,6 +2138,18 @@ int CvBuildingEntry::GetGreatPeopleRateChange() const
 {
 	return m_iGreatPeopleRateChange;
 }
+//	--------------------------------------------------------------------------
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvBuildingEntry::GetDiplomaticPrestige() const
+{
+	return m_iDiplomaticPrestige;
+}
+
+int CvBuildingEntry::GetMinorCivAlliesThresholdModifier() const
+{
+	return m_iMinorCivAlliesThresholdModifier;
+}
+#endif
 
 /// What GreatWorkType is allowed by this Building
 GreatWorkSlotType CvBuildingEntry::GetGreatWorkSlotType() const
@@ -2407,6 +2495,10 @@ int CvBuildingEntry::GetResearchTotalCostModifierGoldenAge() const
 {
 	return m_iResearchTotalCostModifierGoldenAge;
 }
+int CvBuildingEntry::GetImmigrationRegressandModifier() const
+{
+	return m_iImmigrationRegressandModifier;
+}
 
 /// Does this Building allow us to Range Strike?
 int CvBuildingEntry::CityRangedStrikeModifier() const
@@ -2463,6 +2555,16 @@ int CvBuildingEntry::GetResetDamageValue() const
 int CvBuildingEntry::GetReduceDamageValue() const
 {
 	return m_iReduceDamageValue;
+}
+
+int CvBuildingEntry::GetFollowerCountDamageModifier() const
+{
+	return m_iFollowerCountDamageModifier;
+}
+
+int CvBuildingEntry::GetFollowingCityCountDamageModifier() const
+{
+	return m_iFollowingCityCountDamageModifier;
 }
 
 
@@ -2549,6 +2651,10 @@ bool CvBuildingEntry::CanAllScaleImmigrantIn() const
 int CvBuildingEntry::GetCorruptionScoreChange() const
 {
 	return m_iCorruptionScoreChange;
+}
+int CvBuildingEntry::GetCorruptionScoreGlobalChange() const
+{
+	return m_iCorruptionScoreGlobalChange;
 }
 
 int CvBuildingEntry::GetCorruptionLevelChange() const
@@ -2654,6 +2760,11 @@ int CvBuildingEntry::GetHappinessPerXPolicies() const
 int CvBuildingEntry::GetCityCountUnhappinessMod() const
 {
 	return m_iCityCountUnhappinessMod;
+}
+
+int CvBuildingEntry::GetCorruptionUnhappinessModifier() const
+{
+	return m_iCorruptionUnhappinessModifier;
 }
 
 /// NoOccupiedUnhappiness
@@ -2864,6 +2975,10 @@ int CvBuildingEntry::GetLandmarksTourismPercent() const
 	return m_iLandmarksTourismPercent;
 }
 
+int CvBuildingEntry::GetLandmarksTourismPerXForeignFollowers() const
+{
+	return m_iLandmarksTourismPerXForeignFollowers;
+}
 /// For the terra cotta army. DOUBLE THE SIZE OF YOUR ARMY
 int CvBuildingEntry::GetInstantMilitaryIncrease() const
 {
@@ -3747,6 +3862,14 @@ int CvBuildingEntry::GetDomainFriendsCombatModifierLocal(int i) const
 	return m_piDomainFriendsCombatModifierLocal ? m_piDomainFriendsCombatModifierLocal[i] : -1;
 }
 
+/// Our units' combat bonus in this domain from this building (global, player-level)
+int CvBuildingEntry::GetDomainFriendsCombatModifierGlobal(int i) const
+{
+	CvAssertMsg(i < NUM_DOMAIN_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piDomainFriendsCombatModifierGlobal ? m_piDomainFriendsCombatModifierGlobal[i] : -1;
+}
+
 #if defined(MOD_ROG_CORE)
 /// Free experience gained for units in this domain for each Great Work in this building
 int CvBuildingEntry::GetDomainFreeExperiencePerGreatWorkGlobal(int i) const
@@ -4600,6 +4723,7 @@ bool CvBuildingEntry::IsOriginalCapitalOnly() const
 //=====================================
 /// Constructor
 CvBuildingXMLEntries::CvBuildingXMLEntries(void)
+	: m_bAdjacentYieldCacheBuilt(false)
 {
 
 }
@@ -4631,6 +4755,9 @@ void CvBuildingXMLEntries::DeleteArray()
 	}
 
 	m_paBuildingEntries.clear();
+	m_vAdjacentYieldBuildingTypes.clear();
+	m_vAdjacentYieldGlobalBuildingTypes.clear();
+	m_bAdjacentYieldCacheBuilt = false;
 }
 
 /// Get a specific entry
@@ -4638,6 +4765,36 @@ CvBuildingEntry* CvBuildingXMLEntries::GetEntry(int index)
 {
 	if (index < 0) return nullptr;
 	return m_paBuildingEntries[index];
+}
+
+/// Lazy-build cached list of building types with adjacent yield entries
+void CvBuildingXMLEntries::BuildAdjacentYieldCache() const
+{
+	if (m_bAdjacentYieldCacheBuilt) return;
+	for (size_t i = 0; i < m_paBuildingEntries.size(); i++)
+	{
+		CvBuildingEntry* pEntry = m_paBuildingEntries[i];
+		if (pEntry)
+		{
+			if (!pEntry->GetAdjacentImprovementYieldChanges().empty())
+				m_vAdjacentYieldBuildingTypes.push_back((BuildingTypes)i);
+			if (!pEntry->GetAdjacentImprovementYieldChangesGlobal().empty())
+				m_vAdjacentYieldGlobalBuildingTypes.push_back((BuildingTypes)i);
+		}
+	}
+	m_bAdjacentYieldCacheBuilt = true;
+}
+
+const std::vector<BuildingTypes>& CvBuildingXMLEntries::GetBuildingsWithAdjacentYield() const
+{
+	BuildAdjacentYieldCache();
+	return m_vAdjacentYieldBuildingTypes;
+}
+
+const std::vector<BuildingTypes>& CvBuildingXMLEntries::GetBuildingsWithAdjacentYieldGlobal() const
+{
+	BuildAdjacentYieldCache();
+	return m_vAdjacentYieldGlobalBuildingTypes;
 }
 
 //=====================================
@@ -4657,6 +4814,7 @@ CvCityBuildings::CvCityBuildings():
 	m_iBuildingDefenseMod(0),
 	m_iMissionaryExtraSpreads(0),
 	m_iLandmarksTourismPercent(0),
+	m_iLandmarksTourismPerXForeignFollowers(0),
 	m_iGreatWorksTourismModifier(0),
 	m_iNumBuildingsFromFaith(0),
 	m_bSoldBuildingThisTurn(false),
@@ -4730,6 +4888,7 @@ void CvCityBuildings::Reset()
 	m_iBuildingDefenseMod = 0;
 	m_iMissionaryExtraSpreads = 0;
 	m_iLandmarksTourismPercent = 0;
+	m_iLandmarksTourismPerXForeignFollowers = 0;
 	m_iGreatWorksTourismModifier = 0;
 	m_iNumBuildingsFromFaith = 0;
 
@@ -4762,6 +4921,7 @@ void CvCityBuildings::Read(FDataStream& kStream)
 	kStream >> m_iBuildingDefenseMod;
 	kStream >> m_iMissionaryExtraSpreads;
 	kStream >> m_iLandmarksTourismPercent;
+	MOD_SERIALIZE_READ(159, kStream, m_iLandmarksTourismPerXForeignFollowers, 0);
 	kStream >> m_iGreatWorksTourismModifier;
 	kStream >> m_iNumBuildingsFromFaith;
 
@@ -4784,7 +4944,7 @@ void CvCityBuildings::Write(FDataStream& kStream)
 	CvAssertMsg(m_pBuildings != NULL && m_pBuildings->GetNumBuildings() > 0, "Number of buildings to serialize is expected to greater than 0");
 
 	// Current version number
-	uint uiVersion = 1;
+	uint uiVersion = 2;
 	kStream << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(kStream);
 
@@ -4794,6 +4954,7 @@ void CvCityBuildings::Write(FDataStream& kStream)
 	kStream << m_iBuildingDefenseMod;
 	kStream << m_iMissionaryExtraSpreads;
 	kStream << m_iLandmarksTourismPercent;
+	MOD_SERIALIZE_WRITE(kStream, m_iLandmarksTourismPerXForeignFollowers);
 	kStream << m_iGreatWorksTourismModifier;
 	kStream << m_iNumBuildingsFromFaith;
 	kStream << m_bSoldBuildingThisTurn;
@@ -5885,6 +6046,21 @@ void CvCityBuildings::ChangeLandmarksTourismPercent(int iChange)
 	{
 		m_iLandmarksTourismPercent = (m_iLandmarksTourismPercent + iChange);
 		CvAssert(m_iLandmarksTourismPercent >= 0);
+	}
+}
+
+/// Accessor: Get tourism converted from culture from Improvements and Wonders per X foreign followers of the city's majority religion
+int CvCityBuildings::GetLandmarksTourismPerXForeignFollowers() const
+{
+	return m_iLandmarksTourismPerXForeignFollowers;
+}
+/// Accessor: Change tourism converted from culture from Improvements and Wonders per X foreign followers of the city's majority religion
+void CvCityBuildings::ChangeLandmarksTourismPerXForeignFollowers(int iChange)
+{
+	if(iChange != 0)
+	{
+		m_iLandmarksTourismPerXForeignFollowers = (m_iLandmarksTourismPerXForeignFollowers + iChange);
+		CvAssert(m_iLandmarksTourismPerXForeignFollowers >= 0);
 	}
 }
 
