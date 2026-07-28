@@ -1993,6 +1993,8 @@ CvGlobals::CvGlobals() :
 	m_pPolicies(NULL),
 	m_pTechs(NULL),
 	m_pBuildings(NULL),
+	m_pCityStateUAEffects(NULL),
+	m_pCityStateUAs(NULL),
 	m_pEmphases(NULL),
 	m_pTraits(NULL),
 	m_pReligions(NULL),
@@ -2282,6 +2284,8 @@ void CvGlobals::init()
 	m_pPolicies = FNEW(CvPolicyXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pTechs = FNEW(CvTechXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pBuildings = FNEW(CvBuildingXMLEntries, c_eCiv5GameplayDLL, 0);
+	m_pCityStateUAEffects = FNEW(CvCityStateUAEffectXMLEntries, c_eCiv5GameplayDLL, 0);
+	m_pCityStateUAs = FNEW(CvCityStateUAXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pUnits = FNEW(CvUnitXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pProjects = FNEW(CvProjectXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pPromotions = FNEW(CvPromotionXMLEntries, c_eCiv5GameplayDLL, 0);
@@ -2382,6 +2386,8 @@ void CvGlobals::uninit()
 	SAFE_DELETE(m_pAIGrandStrategies);
 	SAFE_DELETE(m_pPolicies);
 	SAFE_DELETE(m_pBuildings);
+	SAFE_DELETE(m_pCityStateUAEffects);
+	SAFE_DELETE(m_pCityStateUAs);
 	SAFE_DELETE(m_pUnits);
 	SAFE_DELETE(m_pProjects);
 	SAFE_DELETE(m_pPromotions);
