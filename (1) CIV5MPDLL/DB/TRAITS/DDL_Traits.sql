@@ -128,3 +128,8 @@ create table Trait_BuildCostChange (
     BuildType text references Builds(Type),
     Change int default 0
 );
+
+create table Trait_UniqueResolutions (
+    TraitType text references Traits(Type),
+    ResolutionType text references Resolutions(Type)
+);

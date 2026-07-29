@@ -2135,6 +2135,33 @@ bool CvPlayerEspionage::CanStageCoup(uint uiSpyIndex)
 	CvMinorCivAI* pMinorCivAI = GET_PLAYER(eCityOwner).GetMinorCivAI();
 	PlayerTypes eMinorCivAlly = pMinorCivAI->GetAlly();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Permanent ally: coup not allowed
+	if (eMinorCivAlly != NO_PLAYER)
+	{
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+		if (pLeagues)
+		{
+			CvLeague* pLeague = pLeagues->GetActiveLeague();
+			if (pLeague)
+			{
+				ActiveResolutionList vResolutions = pLeague->GetActiveResolutions();
+				for (size_t i = 0; i < vResolutions.size(); i++)
+				{
+					if (vResolutions[i].GetEffects()->bPermanentAlly)
+					{
+						if (vResolutions[i].GetProposerDecision()->GetDecision() == (int)eCityOwner &&
+							vResolutions[i].GetProposerDecision()->GetProposer() == eMinorCivAlly)
+						{
+							return false;
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
+
 	if(eMinorCivAlly != NO_PLAYER && eMinorCivAlly != m_pPlayer->GetID())
 	{
 		return true;

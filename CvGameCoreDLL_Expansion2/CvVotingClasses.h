@@ -129,6 +129,9 @@ struct CvResolutionEffects
 	int iGlobalWarCasualtiesChanges;
 	bool bEmbargoIdeology;
 #endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bool bPermanentAlly;
+#endif
 };
 
 FDataStream& operator>>(FDataStream&, CvResolutionEffects&);

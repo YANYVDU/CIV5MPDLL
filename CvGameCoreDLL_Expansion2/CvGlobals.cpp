@@ -6611,6 +6611,26 @@ void CvGlobals::cacheGlobals()
 	GD_INT_CACHE(CORRUPTION_SCORE_PER_DISTANCE);
 	GD_INT_CACHE(CORRUPTION_SCORE_COASTAL_BONUS);
 #endif
+
+	// Load Trait_UniqueResolutions whitelist for civ-unique proposals
+	m_UniqueResolutionTraits.clear();
+	Database::Connection* pDB = GetGameDatabase();
+	if (pDB)
+	{
+		Database::Results kResults;
+		if (pDB->Execute(kResults, "SELECT TraitType, ResolutionType FROM Trait_UniqueResolutions"))
+		{
+			while (kResults.Step())
+			{
+				const char* szTraitType = kResults.GetText(0);
+				const char* szResType = kResults.GetText(1);
+				int iTrait = getInfoTypeForString(szTraitType, true);
+				int iRes = getInfoTypeForString(szResType, true);
+				if (iTrait != -1 && iRes != -1)
+					m_UniqueResolutionTraits.insert(std::make_pair(iRes, iTrait));
+			}
+		}
+	}
 }
 
 

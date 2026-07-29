@@ -102,6 +102,16 @@ CvString LeagueHelpers::GetTextForChoice(ResolutionDecisionTypes eDecision, int 
 			}
 			break;
 		}
+	case RESOLUTION_DECISION_CITY_CSD:
+		{
+			if (iChoice >= MAX_MAJOR_CIVS && iChoice < MAX_CIV_PLAYERS)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_RESOLUTION_CHOICE_PLAYER");
+				sTemp << GET_PLAYER((PlayerTypes)iChoice).getCivilizationShortDescriptionKey();
+				s = sTemp.toUTF8();
+			}
+			break;
+		}
 	default:
 		{
 			break;
@@ -206,6 +216,9 @@ CvResolutionEffects::CvResolutionEffects(void)
 	iGlobalWarCasualtiesChanges = 0;
 	bEmbargoIdeology = false;
 #endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bPermanentAlly = false;
+#endif
 }
 
 CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
@@ -243,6 +256,9 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		iGlobalAttackModifier 				= pInfo->GetGlobalAttackModifier();
 		iGlobalWarCasualtiesChanges 		= pInfo->GetGlobalWarCasualtiesChanges();
 		bEmbargoIdeology					= pInfo->IsEmbargoIdeology();
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bPermanentAlly = false;
 #endif
 	}
 }
@@ -316,8 +332,12 @@ bool CvResolutionEffects::HasOngoingEffects() const
 	if (iGlobalWarCasualtiesChanges != 0)
 		return true;	
 	if (bEmbargoIdeology)
-		return true;	
-#endif	
+		return true;
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (bPermanentAlly)
+		return true;
+#endif
 
 	return false;
 }
@@ -461,7 +481,10 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	loadFrom >> writeTo.iGlobalAttackModifier;
 	loadFrom >> writeTo.iGlobalWarCasualtiesChanges;
 	loadFrom >> writeTo.bEmbargoIdeology;
-#endif	
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	loadFrom >> writeTo.bPermanentAlly;
+#endif
 
 	return loadFrom;
 }
@@ -503,7 +526,10 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	saveTo << readFrom.iGlobalAttackModifier;
 	saveTo << readFrom.iGlobalWarCasualtiesChanges;
 	saveTo << readFrom.bEmbargoIdeology;
-#endif	
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	saveTo << readFrom.bPermanentAlly;
+#endif
 
 	return saveTo;
 }
@@ -1312,6 +1338,11 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	{
 		eTargetIdeology = (PolicyBranchTypes) GetProposerDecision()->GetDecision();
 	}
+	PlayerTypes eTargetCityState = NO_PLAYER;
+	if (eProposerDecision == RESOLUTION_DECISION_CITY_CSD)
+	{
+		eTargetCityState = (PlayerTypes) GetProposerDecision()->GetDecision();
+	}
 
 	// == Voter Choices ==
 	ResolutionDecisionTypes eVoterDecision = GetVoterDecision()->GetType();
@@ -1507,6 +1538,32 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	}
 #endif
 	
+	// Civilization-unique proposal: lock target CS as permanent ally
+	// Only the proposer gets the effect, not every league member
+	if (eTargetCityState != NO_PLAYER && ePlayer == GetProposerDecision()->GetProposer())
+	{
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eTargetCityState).GetMinorCivAI();
+		if (pMinorAI)
+		{
+			// Set influence above current ally to become the new ally
+			int iHighest = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+			{
+				PlayerTypes e = (PlayerTypes)i;
+				if (GET_PLAYER(e).isAlive() && e != ePlayer)
+				{
+					int iTheir = pMinorAI->GetEffectiveFriendshipWithMajor(e);
+					if (iTheir > iHighest) iHighest = iTheir;
+				}
+			}
+			pMinorAI->SetFriendshipWithMajor(ePlayer, iHighest + 1);
+			// Mark as permanent ally to prevent decay and coups
+			GetEffects()->bPermanentAlly = true;
+			// Permanent ally: exempt from diplomatic prestige.
+			pPlayer->ChangePrestigeExemptAllyCount(1);
+		}
+	}
+
 	m_iTurnEnacted = GC.getGame().getGameTurn();
 }
 
@@ -2515,13 +2572,31 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 		// Must be a proposal that can be made by players
 		if (pInfo->IsNoProposalByPlayer())
 		{
-			if (sTooltipSink != NULL)
+			// Check civilization-unique proposal whitelist
+			bool bHasUniqueAccess = false;
+			CvPlayer& kProposer = GET_PLAYER(eProposer);
+			const std::multimap<int, int>& kMap = GC.GetUniqueResolutionTraits();
+			std::pair<std::multimap<int, int>::const_iterator, std::multimap<int, int>::const_iterator> range =
+				kMap.equal_range((int)eResolution);
+			for (std::multimap<int, int>::const_iterator it = range.first; it != range.second; ++it)
 			{
-				(*sTooltipSink) += "[NEWLINE][NEWLINE][COLOR_WARNING_TEXT]";
-				(*sTooltipSink) += Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_INVALID_RESOLUTION_NO_PLAYER_PROPOSAL").toUTF8();
-				(*sTooltipSink) += "[ENDCOLOR]";
+				if (kProposer.HasTrait((TraitTypes)it->second))
+				{
+					bHasUniqueAccess = true;
+					break;
+				}
 			}
-			bValid = false;
+
+			if (!bHasUniqueAccess)
+			{
+				if (sTooltipSink != NULL)
+				{
+					(*sTooltipSink) += "[NEWLINE][NEWLINE][COLOR_WARNING_TEXT]";
+					(*sTooltipSink) += Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_INVALID_RESOLUTION_NO_PLAYER_PROPOSAL").toUTF8();
+					(*sTooltipSink) += "[ENDCOLOR]";
+				}
+				bValid = false;
+			}
 		}
 
 		// Must be a member
@@ -3057,6 +3132,41 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 				if (pInfo->IsPurchaseByLevel())
 				{
 					vChoices.push_back(pInfo->GetID());
+				}
+			}
+		}
+		break;
+	case RESOLUTION_DECISION_CITY_CSD:
+		for (int i = MAX_MAJOR_CIVS; i < MAX_CIV_PLAYERS; i++)
+		{
+			PlayerTypes e = (PlayerTypes)i;
+			if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isMinorCiv())
+			{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Skip CSes already under permanent ally resolution
+				bool bSkip = false;
+				CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+				if (pLeagues)
+				{
+					CvLeague* pLeague = pLeagues->GetActiveLeague();
+					if (pLeague)
+					{
+						ActiveResolutionList vRes = pLeague->GetActiveResolutions();
+						for (size_t j = 0; j < vRes.size(); j++)
+						{
+							if (vRes[j].GetEffects()->bPermanentAlly &&
+								vRes[j].GetProposerDecision()->GetDecision() == i)
+							{
+								bSkip = true;
+								break;
+							}
+						}
+					}
+				}
+				if (!bSkip)
+#endif
+				{
+					vChoices.push_back(i);
 				}
 			}
 		}
@@ -9910,6 +10020,38 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 				break;
 			}
 		}
+	}
+
+	// Tiandao unique resolution: score based on whether voter is the target CS ally
+	{
+		int iTiandaoRes = GC.getInfoTypeForString("RESOLUTION_TIANDAO_PROPOSAL", true);
+		if ((int)pProposal->GetType() == iTiandaoRes)
+			{
+				PlayerTypes eTargetCS = NO_PLAYER;
+				if (pProposal->GetProposerDecision()->GetType() == RESOLUTION_DECISION_CITY_CSD)
+					eTargetCS = (PlayerTypes)pProposal->GetProposerDecision()->GetDecision();
+
+				if (eTargetCS != NO_PLAYER)
+				{
+					// Score based on our desire to control this CS (same logic as gold gifting)
+					MinorCivApproachTypes eApproach = GetPlayer()->GetDiplomacyAI()->GetMinorCivApproach(eTargetCS);
+					if (eApproach == MINOR_CIV_APPROACH_PROTECTIVE || eApproach == MINOR_CIV_APPROACH_FRIENDLY)
+					{
+						// We want this CS - don't give it to Tiandao
+						iScore += -25;
+					}
+					else if (eApproach == MINOR_CIV_APPROACH_CONQUEST)
+					{
+						// We want to conquer it - let Tiandao have it (permanent ally means we can't conquer)
+						iScore += -10;
+					}
+					else
+					{
+						// IGNORE or other - don't care, support the proposal
+						iScore += 8;
+					}
+				}
+			}
 	}
 
 	// == Post-Processing ==

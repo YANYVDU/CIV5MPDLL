@@ -1771,6 +1771,9 @@ public:
 	int GetCSTreasuryInterestRate() const;
 #endif
 
+	int GetPrestigeExemptAllyCount() const;
+	void SetPrestigeExemptAllyCount(int iValue);
+	void ChangePrestigeExemptAllyCount(int iChange);
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
 	void ChangeExtraUnitPlayerInstances(int iChange);
@@ -2700,6 +2703,7 @@ protected:
 	int m_iMinorCivAlliesThresholdModifier;
 	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
 #endif
+	int m_iPrestigeExemptAllyCount;
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;
 	int m_iWaterTileDamageGlobal;

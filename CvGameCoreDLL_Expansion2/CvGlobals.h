@@ -594,6 +594,7 @@ public:
 	CvCityStateUAEffectXMLEntries* GetGameCityStateUAEffects() const;
 	CvCityStateUAXMLEntries* GetGameCityStateUAs() const;
 	CvCityStateUAEffectEntry* getCityStateUAEffectEntry(int index) const;
+	const std::multimap<int, int>& GetUniqueResolutionTraits() const { return m_UniqueResolutionTraits; }
 
 	int getNumReligionInfos();
 	std::vector<CvReligionEntry*>& getReligionInfo();
@@ -8068,6 +8069,7 @@ protected:
 	CvCityStateUAEffectXMLEntries* m_pCityStateUAEffects;
 	CvCityStateUAXMLEntries* m_pCityStateUAs;
 #endif
+	std::multimap<int, int> m_UniqueResolutionTraits;
 	CvReligionXMLEntries* m_pReligions;
 	CvBeliefXMLEntries* m_pBeliefs;
 	CvLeagueSpecialSessionXMLEntries* m_pLeagueSpecialSessions;

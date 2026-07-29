@@ -405,6 +405,7 @@ CvPlayer::CvPlayer() :
 	, m_iCityStateAllyCount(0)
 	, m_iMinorCivAlliesThresholdModifier(0)
 #endif
+	, m_iPrestigeExemptAllyCount(0)
 	, m_iExtraUnitPlayerInstances(0)
 	, m_iConquestCasualtiesModifier(0)
 	, m_iWaterTileDamageGlobal(0)
@@ -1223,6 +1224,7 @@ void CvPlayer::uninit()
 	m_iMinorCivAlliesThresholdModifier = 0;
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
+	m_iPrestigeExemptAllyCount = 0;
 	m_iExtraUnitPlayerInstances = 0;
 	m_iConquestCasualtiesModifier = 0;
 	m_iWaterTileDamageGlobal = 0;
@@ -28874,6 +28876,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(162, kStream, m_iCityStateAllyCount, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
 #endif
+	MOD_SERIALIZE_READ(162, kStream, m_iPrestigeExemptAllyCount, 0);
 	kStream >> m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_READ(159, kStream, m_iConquestCasualtiesModifier, 0);
 	kStream >> m_iWaterTileDamageGlobal;
@@ -29665,6 +29668,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateAllyCount);
 	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
 #endif
+	MOD_SERIALIZE_WRITE(kStream, m_iPrestigeExemptAllyCount);
 	kStream << m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_WRITE(kStream, m_iConquestCasualtiesModifier);
 	kStream << m_iWaterTileDamageGlobal;
@@ -30831,7 +30835,7 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 
 	int CvPlayer::GetDiplomaticOverextensionCount() const
 	{
-		int iOver = GetNumCityStateAllies() - GetDiplomaticPrestige();
+		int iOver = (GetNumCityStateAllies() - GetPrestigeExemptAllyCount()) - GetDiplomaticPrestige();
 		return iOver > 0 ? iOver : 0;
 	}
 
@@ -30943,6 +30947,25 @@ int CvPlayer::GetCSTreasuryInterestRate() const
 }
 
 #endif
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetPrestigeExemptAllyCount() const
+{
+	return m_iPrestigeExemptAllyCount;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetPrestigeExemptAllyCount(int iValue)
+{
+	m_iPrestigeExemptAllyCount = iValue;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangePrestigeExemptAllyCount(int iChange)
+{
+	if (iChange != 0)
+		SetPrestigeExemptAllyCount(GetPrestigeExemptAllyCount() + iChange);
+}
 
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetExtraUnitPlayerInstances() const

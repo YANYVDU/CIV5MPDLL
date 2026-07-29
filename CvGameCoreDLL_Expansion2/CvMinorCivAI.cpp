@@ -6065,6 +6065,32 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 	CvPlayer& kPlayer = GET_PLAYER(ePlayer);
 	int iChangeThisTurn = 0;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Permanent ally: no influence change
+	{
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+		if (pLeagues)
+		{
+			CvLeague* pLeague = pLeagues->GetActiveLeague();
+			if (pLeague)
+			{
+				ActiveResolutionList vResolutions = pLeague->GetActiveResolutions();
+				for (size_t i = 0; i < vResolutions.size(); i++)
+				{
+					if (vResolutions[i].GetEffects()->bPermanentAlly)
+					{
+						if (vResolutions[i].GetProposerDecision()->GetDecision() == (int)GetPlayer()->GetID() &&
+							vResolutions[i].GetProposerDecision()->GetProposer() == ePlayer)
+						{
+							return 0;
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
+
 	// Modifier to rate based on traits and religion
 	int iTraitMod = kPlayer.GetPlayerTraits()->GetCityStateFriendshipModifier();
 	int iReligionMod = 0;
@@ -6231,6 +6257,31 @@ void CvMinorCivAI::ChangeFriendshipWithMajorTimes100(PlayerTypes ePlayer, int iC
 
 	if(iChange != 0)
 	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Permanent ally: block other players from increasing influence
+		if (iChange > 0)
+		{
+			CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+			if (pLeagues)
+			{
+				CvLeague* pLeague = pLeagues->GetActiveLeague();
+				if (pLeague)
+				{
+					ActiveResolutionList vResolutions = pLeague->GetActiveResolutions();
+					for (size_t i = 0; i < vResolutions.size(); i++)
+					{
+						if (vResolutions[i].GetEffects()->bPermanentAlly &&
+							vResolutions[i].GetProposerDecision()->GetDecision() == (int)GetPlayer()->GetID() &&
+							vResolutions[i].GetProposerDecision()->GetProposer() != ePlayer)
+						{
+							return;
+						}
+					}
+				}
+			}
+		}
+#endif
+
 		// If this friendship was earned from a Quest, then we might apply a modifier to it
 		if(bFromQuest && iChange > 0)
 		{
