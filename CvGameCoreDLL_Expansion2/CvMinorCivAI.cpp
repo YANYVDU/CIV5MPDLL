@@ -6066,29 +6066,8 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 	int iChangeThisTurn = 0;
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	// Permanent ally: no influence change
-	{
-		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
-		if (pLeagues)
-		{
-			CvLeague* pLeague = pLeagues->GetActiveLeague();
-			if (pLeague)
-			{
-				ActiveResolutionList vResolutions = pLeague->GetActiveResolutions();
-				for (size_t i = 0; i < vResolutions.size(); i++)
-				{
-					if (vResolutions[i].GetEffects()->bPermanentAlly)
-					{
-						if (vResolutions[i].GetProposerDecision()->GetDecision() == (int)GetPlayer()->GetID() &&
-							vResolutions[i].GetProposerDecision()->GetProposer() == ePlayer)
-						{
-							return 0;
-						}
-					}
-				}
-			}
-		}
-	}
+	if (kPlayer.IsPermanentAlly(GetPlayer()->GetID()))
+		return 0;
 #endif
 
 	// Modifier to rate based on traits and religion
@@ -6261,23 +6240,11 @@ void CvMinorCivAI::ChangeFriendshipWithMajorTimes100(PlayerTypes ePlayer, int iC
 		// Permanent ally: block other players from increasing influence
 		if (iChange > 0)
 		{
-			CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
-			if (pLeagues)
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
-				CvLeague* pLeague = pLeagues->GetActiveLeague();
-				if (pLeague)
-				{
-					ActiveResolutionList vResolutions = pLeague->GetActiveResolutions();
-					for (size_t i = 0; i < vResolutions.size(); i++)
-					{
-						if (vResolutions[i].GetEffects()->bPermanentAlly &&
-							vResolutions[i].GetProposerDecision()->GetDecision() == (int)GetPlayer()->GetID() &&
-							vResolutions[i].GetProposerDecision()->GetProposer() != ePlayer)
-						{
-							return;
-						}
-					}
-				}
+				PlayerTypes e = (PlayerTypes)i;
+				if (e != ePlayer && GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
+					return;
 			}
 		}
 #endif
@@ -9983,6 +9950,13 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 	int iInfluence = GetFriendshipFromUnitGift(eFromPlayer, pGiftUnit->IsGreatPerson(), bDistanceGift);
 	ChangeFriendshipWithMajor(eFromPlayer, iInfluence);
 
+	// GreatPersonGiftPermanentAlly: mark as permanent ally, prestige exempt
+	if (pGiftUnit->IsGreatPerson() && GET_PLAYER(eFromPlayer).GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
+	{
+		GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
+		GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
+	}
+
 	// We can't keep Great Person units
 	if(pGiftUnit->IsGreatPerson())
 	{
@@ -10012,6 +9986,20 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 		if (iGPInfluence > 0)
 		{
 			iInfluence += iGPInfluence;
+		}
+		if (kFromPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
+		{
+			int iHighest = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+			{
+				PlayerTypes e = (PlayerTypes)i;
+				if (GET_PLAYER(e).isAlive() && e != eFromPlayer)
+				{
+					int iTheir = GetEffectiveFriendshipWithMajor(e);
+					if (iTheir > iHighest) iHighest = iTheir;
+				}
+			}
+			iInfluence += (iHighest + 1 - GetEffectiveFriendshipWithMajor(eFromPlayer));
 		}
 	}
 	else

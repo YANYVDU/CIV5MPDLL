@@ -1559,6 +1559,7 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 			pMinorAI->SetFriendshipWithMajor(ePlayer, iHighest + 1);
 			// Mark as permanent ally to prevent decay and coups
 			GetEffects()->bPermanentAlly = true;
+			pPlayer->SetPermanentAlly(eTargetCityState, true);
 			// Permanent ally: exempt from diplomatic prestige.
 			pPlayer->ChangePrestigeExemptAllyCount(1);
 		}
@@ -2572,22 +2573,9 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 		// Must be a proposal that can be made by players
 		if (pInfo->IsNoProposalByPlayer())
 		{
-			// Check civilization-unique proposal whitelist
-			bool bHasUniqueAccess = false;
-			CvPlayer& kProposer = GET_PLAYER(eProposer);
-			const std::multimap<int, int>& kMap = GC.GetUniqueResolutionTraits();
-			std::pair<std::multimap<int, int>::const_iterator, std::multimap<int, int>::const_iterator> range =
-				kMap.equal_range((int)eResolution);
-			for (std::multimap<int, int>::const_iterator it = range.first; it != range.second; ++it)
-			{
-				if (kProposer.HasTrait((TraitTypes)it->second))
-				{
-					bHasUniqueAccess = true;
-					break;
-				}
-			}
-
-			if (!bHasUniqueAccess)
+			// Check civilization-specific resolution access
+			if (pInfo->GetCivilizationType() == NO_CIVILIZATION ||
+				pInfo->GetCivilizationType() != GET_PLAYER(eProposer).getCivilizationType())
 			{
 				if (sTooltipSink != NULL)
 				{
@@ -10938,6 +10926,7 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_iGlobalWarCasualtiesChanges		= 0;
 	m_bEmbargoIdeology					= false;
 #endif
+	m_eCivilizationType = NO_CIVILIZATION;
 }
 
 CvResolutionEntry::~CvResolutionEntry(void)
@@ -10957,6 +10946,8 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_bAutomaticProposal				= kResults.GetBool("AutomaticProposal");
 	m_bUniqueType						= kResults.GetBool("UniqueType");
 	m_bNoProposalByPlayer				= kResults.GetBool("NoProposalByPlayer");
+	const char* szCivType = kResults.GetText("CivilizationType");
+	m_eCivilizationType = (CivilizationTypes)GC.getInfoTypeForString(szCivType, true);
 	m_iQuorumPercent					= kResults.GetInt("QuorumPercent");
 	m_iLeadersVoteBonusOnFail			= kResults.GetInt("LeadersVoteBonusOnFail");
 	m_bDiplomaticVictory				= kResults.GetBool("DiplomaticVictory");
@@ -11020,6 +11011,11 @@ bool CvResolutionEntry::IsUniqueType() const
 bool CvResolutionEntry::IsNoProposalByPlayer() const
 {
 	return m_bNoProposalByPlayer;
+}
+
+CivilizationTypes CvResolutionEntry::GetCivilizationType() const
+{
+	return m_eCivilizationType;
 }
 
 int CvResolutionEntry::GetQuorumPercent() const

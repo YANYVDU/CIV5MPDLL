@@ -129,7 +129,5 @@ create table Trait_BuildCostChange (
     Change int default 0
 );
 
-create table Trait_UniqueResolutions (
-    TraitType text references Traits(Type),
-    ResolutionType text references Resolutions(Type)
-);
+
+alter table Traits add GreatPersonGiftPermanentAlly boolean default 0;
