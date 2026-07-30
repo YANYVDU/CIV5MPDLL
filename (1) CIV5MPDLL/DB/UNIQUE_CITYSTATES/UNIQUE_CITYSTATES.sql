@@ -121,6 +121,7 @@ create table CityStateUAEffect_GreatPersonPoints (
 create table CityStateUAEffect_BornGreatPersonSpecialistYield (
     EffectType text references CityStateUAEffects(Type),
     SpecialistType text references Specialists(Type),
+    UnitClassType text references UnitClasses(Type),
     YieldType text references Yields(Type),
     YieldMod integer default 0
 );

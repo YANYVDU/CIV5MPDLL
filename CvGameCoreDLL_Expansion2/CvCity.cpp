@@ -6682,9 +6682,11 @@ int CvCity::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSink
 
 		// Dubai CS UA: gold donation happiness -> wonder production modifier
 	int iGoldDonHappy = GET_PLAYER(getOwner()).GetGoldDonationHappiness();
-	if (iGoldDonHappy > 0) {
+	if (iGoldDonHappy > 0) 
+	{
 		int iDubaiMod = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetWonderProductionPerDonationHappiness();
-		if (iDubaiMod > 0) {
+		if (iDubaiMod > 0) 
+		{
 			iTempMod += iGoldDonHappy * iDubaiMod / 100;
 		}
 	}
@@ -8583,8 +8585,15 @@ void CvCity::processSpecialist(SpecialistTypes eSpecialist, int iChange)
 	{
 		int iSpecialistYield = pkSpecialist->getYieldChange(iI);
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (MOD_SP_UNIQUE_CITYSTATE)
-		iSpecialistYield += GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetSpecialistYieldFromBornGreatPerson(eSpecialist, (YieldTypes)iI);
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			int iBornYield = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetSpecialistYieldFromBornGreatPerson(eSpecialist, (YieldTypes)iI);
+			if (iBornYield > 0)
+			{
+				LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("processSpecialist: Specialst=%d Yield=%d BornYield=%d", (int)eSpecialist, iI, iBornYield);
+			}
+			iSpecialistYield += iBornYield;
+		}
 #endif
 	ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (iSpecialistYield * iChange));
 
@@ -11832,7 +11841,15 @@ int CvCity::GetGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 int CvCity::GetGreatPersonPointsFromUA(SpecialistTypes eIndex) const
 {
-	return GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetGreatPersonPoints(eIndex);
+	CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	const char* szType = GC.getSpecialistInfo((SpecialistTypes)eIndex)->GetType();
+	if (!pUA) return 0;
+	int iValue = pUA->GetGreatPersonPoints(eIndex);
+	if (iValue > 0)
+	{
+		return iValue;
+	}
+	return 0;
 }
 #endif
 //	--------------------------------------------------------------------------------

@@ -11,6 +11,13 @@
 
 //======================================================================================================
 // CvCityStateUAEffectEntry - mirrors CityStateUAEffects database table
+struct BornGreatPersonSpecialistYieldEntry {
+	int m_iSpecialistType;
+	int m_iUnitClassType;
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
 //======================================================================================================
 class CvCityStateUAEffectEntry : public CvBaseInfo
 {
@@ -76,7 +83,7 @@ public:
 	int GetWonderProductionPerDonationHappiness() const;
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
-	int GetBornGreatPersonSpecialistYield(int iSpecialist, int iYield) const;
+	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 
 private:
 	// Florence
@@ -135,7 +142,7 @@ private:
 	int m_iWonderProductionPerDonationHappiness;
 	// Malacca
 	int m_iLuxuryHappinessModifier;
-	int** m_ppiBornGreatPersonSpecialistYield;
+	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 };
 
 //======================================================================================================
@@ -268,7 +275,6 @@ public:
 	int GetWonderProductionPerDonationHappiness() const;
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
-	int GetBornGreatPersonSpecialistYield(int iSpecialist, int iYield) const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 
 	void Reset();
@@ -315,7 +321,7 @@ protected:
 	int m_iGoldDonationInterval;
 	int m_iWonderProductionPerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
-	std::vector<Firaxis::Array<int, NUM_YIELD_TYPES>> m_aiBornGreatPersonSpecialistYield;
+	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

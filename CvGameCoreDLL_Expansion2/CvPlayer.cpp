@@ -1819,6 +1819,8 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 		m_paiImprovementHappinessFromPolicies.resize(GC.getNumImprovementInfos());
 		m_aiGreatPersonPointsFromPolicies.clear();
 		m_aiGreatPersonPointsFromPolicies.resize(GC.getNumSpecialistInfos(), 0);
+		m_paiBornGreatPersonCount.clear();
+		m_paiBornGreatPersonCount.resize(GC.getNumGreatPersonInfos(), 0);
 		for(unsigned int i = 0; i < m_ppaaiImprovementYieldChange.size(); ++i)
 		{
 			m_ppaaiImprovementYieldChange.setAt(i, yield);
@@ -4340,6 +4342,52 @@ CvUnit* CvPlayer::initUnit(UnitTypes eUnit, int iX, int iY, UnitAITypes eUnitAI,
 	if(NULL != pUnit)
 	{
 		pUnit->init(pUnit->GetID(), eUnit, ((eUnitAI == NO_UNITAI) ? ((UnitAITypes)(pkUnitDef->GetDefaultUnitAIType())) : eUnitAI), GetID(), iX, iY, eFacingDirection, bNoMove, bSetupGraphical, iMapLayer, iNumGoodyHutsPopped);
+
+	// Zurich CS UA: count great person births (all sources)
+	SpecialUnitTypes eSpecialUnitGP = (SpecialUnitTypes)GC.getInfoTypeForString("SPECIALUNIT_PEOPLE", true);
+	if (eSpecialUnitGP != -1 && pkUnitDef->GetSpecialUnitType() == eSpecialUnitGP)
+	{
+		UnitClassTypes eUC = (UnitClassTypes)pkUnitDef->GetUnitClassType();
+		GreatPersonTypes eGP = GetGreatPersonFromUnitClass(eUC);
+		if (eGP != NO_GREATPERSON)
+		{
+			int iBeforeCount = GetBornGreatPersonCount(eGP);
+			int iVecSize = (int)m_paiBornGreatPersonCount.size();
+
+			// Snapshot old born yields before count changes
+			SpecialistTypes eSpec = (SpecialistTypes)GC.getGreatPersonInfo(eGP)->GetSpecialistType();
+			CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
+			int aiOldYields[NUM_YIELD_TYPES] = {0};
+			if (eSpec != NO_SPECIALIST && pUA)
+				for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
+					aiOldYields[iY] = pUA->GetSpecialistYieldFromBornGreatPerson(eSpec, (YieldTypes)iY);
+
+			ChangeBornGreatPersonCount(eGP, 1);
+			int iAfterCount = GetBornGreatPersonCount(eGP);
+			LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("GreatPersonBorn: Player=%d Unit=%d GP=%d VecSize=%d Before=%d After=%d", GetID(), eUnit, (int)eGP, iVecSize, iBeforeCount, iAfterCount);
+
+			// Apply yield delta to all cities with existing specialists
+			if (eSpec != NO_SPECIALIST && pUA)
+			{
+				int iLoop;
+				for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+				{
+					int iSpecCount = pLoopCity->GetCityCitizens()->GetSpecialistCount(eSpec);
+					if (iSpecCount <= 0) continue;
+					for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
+					{
+						int iNewYield = pUA->GetSpecialistYieldFromBornGreatPerson(eSpec, (YieldTypes)iY);
+						int iDelta = iNewYield - aiOldYields[iY];
+						if (iDelta != 0)
+						{
+							pLoopCity->ChangeBaseYieldRateFromSpecialists((YieldTypes)iY, iDelta * iSpecCount);
+							LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("CityYieldUpdate: Spec=%d Yield=%d Old=%d New=%d Delta=%d Count=%d", (int)eSpec, iY, aiOldYields[iY], iNewYield, iDelta, iSpecCount);
+						}
+					}
+				}
+			}
+		}
+	}
 
 #if !defined(NO_TUTORIALS)
 		// slewis - added for the tutorial
@@ -14867,6 +14915,8 @@ CvPlayerTraits* CvPlayer::GetPlayerTraits() const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 CvPlayerCityStateUA* CvPlayer::GetPlayerCityStateUA() const
 {
+	if (isBarbarian() || isMinorCiv())
+		return NULL;
 	return m_pCityStateUA;
 }
 #endif
@@ -17004,11 +17054,6 @@ void CvPlayer::DoSpawnGreatPerson(PlayerTypes eMinor, bool bIsFree)
 
 		if (pNewGreatPeople)
 		{
-			// Zurich CS UA: count great person births
-			GreatPersonTypes eGPType = GetGreatPersonFromUnitClass((UnitClassTypes)pNewGreatPeople->getUnitInfo().GetUnitClassType());
-			if (eGPType != NO_GREATPERSON)
-				ChangeBornGreatPersonCount(eGPType, 1);
-
 			// Bump up the count
 			if(pNewGreatPeople->IsGreatGeneral())
 			{
@@ -17615,11 +17660,16 @@ void CvPlayer::ChangeGoldDonatedToMinor(int iMinor, int iChange)
 }
 int CvPlayer::GetBornGreatPersonCount(int iGP) const
 {
-	return (iGP>=0&&iGP<(int)m_paiBornGreatPersonCount.size())?m_paiBornGreatPersonCount[iGP]:0;
+	if (iGP < 0 || iGP >= (int)m_paiBornGreatPersonCount.size())
+		return 0;
+	return m_paiBornGreatPersonCount[iGP];
 }
 void CvPlayer::ChangeBornGreatPersonCount(int iGP, int iChange)
 {
-	m_paiBornGreatPersonCount[iGP]=(m_paiBornGreatPersonCount[iGP]+iChange);
+	if (m_paiBornGreatPersonCount.empty())
+		m_paiBornGreatPersonCount.resize(GC.getNumGreatPersonInfos(), 0);
+	if (iGP >= 0 && iGP < (int)m_paiBornGreatPersonCount.size())
+		m_paiBornGreatPersonCount[iGP] = (m_paiBornGreatPersonCount[iGP] + iChange);
 }
 #endif
 
