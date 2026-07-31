@@ -11851,6 +11851,12 @@ int CvCity::GetGreatPersonPointsFromUA(SpecialistTypes eIndex) const
 	}
 	return 0;
 }
+int CvCity::GetGreatPersonPointsFromUA_Building(SpecialistTypes eIndex) const
+{
+	CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (!pUA) return 0;
+	return pUA->GetBuildingGreatPersonPointsForCity(this, eIndex);
+}
 #endif
 //	--------------------------------------------------------------------------------
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
@@ -15550,6 +15556,12 @@ int CvCity::getSpecialistYield(YieldTypes eIndex, SpecialistTypes eSpecialist) c
 	}
 	int iRtnValue = pkSpecialistInfo->getYieldChange(eIndex);
 	iRtnValue += getExtraYieldPerSpecialist(eIndex, eSpecialist);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		iRtnValue += GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetSpecialistYieldFromBornGreatPerson(eSpecialist, eIndex);
+	}
+#endif
 	return iRtnValue;
 }
 //	--------------------------------------------------------------------------------

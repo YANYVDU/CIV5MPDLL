@@ -119,6 +119,24 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
 	{
+		m_vBuildingGPP.clear();
+		std::string strKey2("CityStateUAEffect_BuildingGreatPersonPoints");
+		Database::Results* pResults2 = kUtility.GetResults(strKey2);
+		if(pResults2 == NULL)
+		{
+			pResults2 = kUtility.PrepareResults(strKey2, "select BuildingClasses.ID as BuildingClassID, Specialists.ID as SpecialistID, Points from CityStateUAEffect_BuildingGreatPersonPoints inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner join Specialists on Specialists.Type = SpecialistType where EffectType = ?");
+		}
+		pResults2->Bind(1, GetType());
+		while(pResults2->Step())
+		{
+			BuildingGreatPersonPointsEntry entry;
+			entry.m_iBuildingClass = pResults2->GetInt(0);
+			entry.m_iSpecialist = pResults2->GetInt(1);
+			entry.m_iPoints = pResults2->GetInt(2);
+			m_vBuildingGPP.push_back(entry);
+		}
+	}
+	{
 		m_vBornGreatPersonSpecialistYield.clear();
 		std::string strKey("CityStateUAEffect_BornGreatPersonSpecialistYield");
 		Database::Results* pResults = kUtility.GetResults(strKey);
@@ -424,6 +442,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iWonderProductionPerDonationHappiness = 0;
 	m_iLuxuryHappinessModifier = 0;
 	m_vBornGreatPersonSpecialistYield.clear();
+	m_vBuildingGPP.clear();
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -522,6 +541,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			}
 		}
 	}
+	{
+		const std::vector<BuildingGreatPersonPointsEntry>& vEntries = pEffect->GetBuildingGreatPersonPointsEntries();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			BuildingGreatPersonPointsEntry entry = vEntries[i];
+			entry.m_iPoints *= iChange;
+			m_vBuildingGPP.push_back(entry);
+		}
+	}
 }
 
 int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
@@ -578,4 +606,25 @@ int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes e
 		if (iAdd > 0) iResult += iAdd;
 	}
 	return iResult;
+}
+
+int CvPlayerCityStateUA::GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const
+{
+	if (!pCity) return 0;
+	int iTotal = 0;
+	CUSTOMLOG("GetBuildingGreatPersonPointsForCity: city=%s, specialist=%d, entries=%d",
+		pCity->getName().GetCString(), (int)eSpecialist, (int)m_vBuildingGPP.size());
+	for (size_t i = 0; i < m_vBuildingGPP.size(); i++)
+	{
+		const BuildingGreatPersonPointsEntry& entry = m_vBuildingGPP[i];
+		if (entry.m_iSpecialist == (int)eSpecialist && entry.m_iPoints > 0)
+		{
+			int iCount = pCity->GetNumBuildingClass((BuildingClassTypes)entry.m_iBuildingClass);
+			int iAdd = entry.m_iPoints * iCount;
+			CUSTOMLOG("  bldClass=%d count=%d points=%d add=%d", entry.m_iBuildingClass, iCount, entry.m_iPoints, iAdd);
+			iTotal += iAdd;
+		}
+	}
+	CUSTOMLOG("GetBuildingGreatPersonPointsForCity: total=%d", iTotal);
+	return iTotal;
 }

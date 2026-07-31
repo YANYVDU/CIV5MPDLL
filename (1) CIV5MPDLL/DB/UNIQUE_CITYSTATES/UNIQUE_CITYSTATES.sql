@@ -40,6 +40,7 @@ alter table Traits    add column MinorCivAlliesThresholdModifier int default 0;
 CREATE TABLE CityStateUAEffects (
     ID                                              INTEGER PRIMARY KEY AUTOINCREMENT,
     Type                                            TEXT NOT NULL UNIQUE,
+    Help                                            TEXT DEFAULT NULL REFERENCES Language_en_US(Tag),
     -- 佛罗伦萨：信仰购买伟人成本「上涨幅度（增量）」降速折扣（仅作用于增量，非整体成本）
     FaithPurchaseGreatPeopleCostRiseModifier       integer DEFAULT 0,
     FaithPurchaseGreatPeopleCostRiseModifierPerGW  integer DEFAULT 0,
@@ -124,4 +125,11 @@ create table CityStateUAEffect_BornGreatPersonSpecialistYield (
     UnitClassType text references UnitClasses(Type),
     YieldType text references Yields(Type),
     YieldMod integer default 0
+);
+
+create table CityStateUAEffect_BuildingGreatPersonPoints (
+    EffectType text references CityStateUAEffects(Type),
+    BuildingClassType text references BuildingClasses(Type),
+    SpecialistType text references Specialists(Type),
+    Points integer default 0
 );

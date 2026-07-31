@@ -18,6 +18,12 @@ struct BornGreatPersonSpecialistYieldEntry {
 	int m_iYieldMod;
 };
 
+struct BuildingGreatPersonPointsEntry {
+	int m_iBuildingClass;
+	int m_iSpecialist;
+	int m_iPoints;
+};
+
 //======================================================================================================
 class CvCityStateUAEffectEntry : public CvBaseInfo
 {
@@ -84,6 +90,7 @@ public:
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
+	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 
 private:
 	// Florence
@@ -143,6 +150,7 @@ private:
 	// Malacca
 	int m_iLuxuryHappinessModifier;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
+	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 };
 
 //======================================================================================================
@@ -206,6 +214,7 @@ private:
 // CvPlayerCityStateUA - per-player cache of active city-state UA effects
 //======================================================================================================
 class CvPlayer;
+class CvCity;
 class CvPlayerCityStateUA
 {
 public:
@@ -276,6 +285,7 @@ public:
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
+	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 
 	void Reset();
 
@@ -322,6 +332,7 @@ protected:
 	int m_iWonderProductionPerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
+	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

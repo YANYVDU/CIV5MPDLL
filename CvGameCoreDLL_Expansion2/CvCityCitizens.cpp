@@ -2313,7 +2313,8 @@ void CvCityCitizens::DoSpecialists()
 				if (MOD_SP_UNIQUE_CITYSTATE)
 				{
 					iGPPChange += GetCity()->GetGreatPersonPointsFromUA(eSpecialist) * 100;
-				}
+						iGPPChange += GetCity()->GetGreatPersonPointsFromUA_Building(eSpecialist) * 100;
+					}
 #endif
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 				// GPP from Religion
