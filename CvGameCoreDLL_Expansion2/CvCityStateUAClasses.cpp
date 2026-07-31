@@ -494,14 +494,12 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	{
 		const std::vector<BornGreatPersonSpecialistYieldEntry>& vEntries = pEffect->GetBornGreatPersonSpecialistYieldEntries();
 		int iEntryCount = (int)vEntries.size();
-		LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("ApplyEffect: iEffectID=%d iChange=%d iEntryCount=%d", iEffectID, iChange, iEntryCount);
 		for (int iEntryIdx = 0; iEntryIdx < iEntryCount; iEntryIdx++)
 		{
 			const BornGreatPersonSpecialistYieldEntry& e = vEntries[iEntryIdx];
 			BornGreatPersonSpecialistYieldEntry entry = e;
 			entry.m_iYieldMod *= iChange;
 			m_vBornGreatPersonSpecialistYield.push_back(entry);
-			LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("  entry[%d] Specialist=%d UnitClass=%d Yield=%d Mod=%d", iEntryIdx, entry.m_iSpecialistType, entry.m_iUnitClassType, entry.m_iYieldType, entry.m_iYieldMod);
 
 			// Apply born yield to all cities with existing specialists
 			GreatPersonTypes eGP = GetGreatPersonFromUnitClass((UnitClassTypes)e.m_iUnitClassType);
@@ -518,7 +516,6 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 						if (iSpecCount > 0)
 						{
 							pCity->ChangeBaseYieldRateFromSpecialists((YieldTypes)e.m_iYieldType, iYieldPerSpec * iSpecCount);
-							LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("ApplyEffectYield: Spec=%d Yield=%d BornCount=%d Mod=%d PerSpec=%d SpecCount=%d", e.m_iSpecialistType, e.m_iYieldType, iBornCount, e.m_iYieldMod, iYieldPerSpec, iSpecCount);
 						}
 					}
 				}
@@ -570,7 +567,6 @@ int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes e
 	if (!m_pPlayer) return 0;
 	int iResult = 0;
 	int iVecSize = (int)m_vBornGreatPersonSpecialistYield.size();
-	LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("GetSpecialistYield: Specialist=%d Yield=%d VecSize=%d", (int)eSpecialist, (int)eYield, iVecSize);
 	for (int iIdx = 0; iIdx < iVecSize; iIdx++)
 	{
 		const BornGreatPersonSpecialistYieldEntry& entry = m_vBornGreatPersonSpecialistYield[iIdx];
@@ -579,7 +575,6 @@ int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes e
 		if (eGP == NO_GREATPERSON) continue;
 		int iBornCount = m_pPlayer->GetBornGreatPersonCount(eGP);
 		int iAdd = iBornCount * entry.m_iYieldMod / 100;
-		LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("  match[%d] UnitClass=%d GP=%d BornCount=%d Mod=%d Add=%d", iIdx, entry.m_iUnitClassType, (int)eGP, iBornCount, entry.m_iYieldMod, iAdd);
 		if (iAdd > 0) iResult += iAdd;
 	}
 	return iResult;
