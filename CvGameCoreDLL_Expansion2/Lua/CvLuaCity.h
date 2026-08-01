@@ -488,6 +488,12 @@ protected:
 	static int lGetGreatPersonPointFromReligion(lua_State* L);
 #endif
 
+	static int lGetGreatPersonPointsFromPolicies(lua_State* L);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	static int lGetGreatPersonPointsFromUA(lua_State* L);
+	static int lGetGreatPersonPointsFromUA_Building(lua_State* L);
+#endif
+
 	static int lGetFocusType(lua_State* L);
 	static int lSetFocusType(lua_State* L);
 
