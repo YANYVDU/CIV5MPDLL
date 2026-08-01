@@ -1237,6 +1237,30 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	}
 
 	{
+		m_vYieldPercentPerCityFollowingReligion.clear();
+		std::string sqlKey = "m_vYieldPercentPerCityFollowingReligion";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if(pResults == NULL)
+		{
+			const char* szSQL = "select t2.ID, t1.Percent from Policy_YieldPercentPerCityFollowingReligion t1 left join Yields t2 on t1.YieldType = t2.Type where t1.PolicyType = ?";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while(pResults->Step())
+		{
+			PolicyYieldInfo p;
+			p.eYield = (YieldTypes)pResults->GetInt(0);
+			p.iYield = pResults->GetInt(1);
+			p.ePolicy = (PolicyTypes)GetID();
+			m_vYieldPercentPerCityFollowingReligion.push_back(p);
+		}
+
+		pResults->Reset();
+	}
+
+	{
 		m_vHappinessYieldModifier.clear();
 		std::string sqlKey = "Policy - m_vHappinessYieldModifier";
 		Database::Results* pResults = kUtility.GetResults(sqlKey);
@@ -3197,6 +3221,11 @@ std::vector<PolicyYieldInfo>& CvPolicyEntry::GetCityNumberCityYieldModifier()
 std::vector<PolicyYieldInfo>& CvPolicyEntry::GetHappinessYieldModifier()
 {
 	return m_vHappinessYieldModifier;
+}
+
+std::vector<PolicyYieldInfo>& CvPolicyEntry::GetYieldPercentPerCityFollowingReligion()
+{
+	return m_vYieldPercentPerCityFollowingReligion;
 }
 
 

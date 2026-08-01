@@ -413,6 +413,11 @@
 				[NEWLINE][ICON_BULLET]城市數量修正(政策): {1_Num}%
 			</Text>
 		</Row>
+		<Row Tag="TXT_KEY_PRODMOD_YIELD_POLICY_RELIGION_CITY_NUM">
+			<Text>
+				[NEWLINE][ICON_BULLET]每座信奉你的宗教的城市產出修正(政策): {1_Num}%
+			</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_ATTACKING_CITY_LOST_MOVEMENT">
 			<Text>你的{@1_name}攻擊城市后失去所有[ICON_MOVES]移動力！</Text>
 		</Row>

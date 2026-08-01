@@ -13418,6 +13418,24 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD_POLICY_CITY_NUMBER", iTempMod);
 	}
 
+	ReligionTypes eFounderReligion = owner.GetReligions()->GetReligionCreatedByPlayer();
+	if (!owner.GetYieldPercentPerCityFollowingReligion().empty() && eFounderReligion != NO_RELIGION)
+	{
+		int iFollowingCityCount = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eFounderReligion);
+		if (iFollowingCityCount > 0)
+		{
+			iTempMod = 0;
+			for (const auto& info : owner.GetYieldPercentPerCityFollowingReligion())
+			{
+				if (info.eYield != eIndex) continue;
+				iTempMod += info.iYield * iFollowingCityCount;
+			}
+			iModifier += iTempMod;
+			if (iTempMod != 0 && toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD_POLICY_RELIGION_CITY_NUM", iTempMod);
+		}
+	}
+
 	// Religion Yield Rate Modifier
 	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
 	const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());

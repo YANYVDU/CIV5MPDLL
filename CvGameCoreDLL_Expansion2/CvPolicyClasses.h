@@ -371,6 +371,7 @@ public:
 	std::vector<PolicyYieldInfo>& GetTradeRouteCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetCityNumberCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetHappinessYieldModifier();
+	std::vector<PolicyYieldInfo>& GetYieldPercentPerCityFollowingReligion();
 
 	std::vector<PolicyResourceInfo>& GetCityResources();
 
@@ -703,6 +704,7 @@ private:
 	std::vector<PolicyYieldInfo> m_vTradeRouteCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vCityNumberCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vHappinessYieldModifier;
+	std::vector<PolicyYieldInfo> m_vYieldPercentPerCityFollowingReligion;
 	int m_iGlobalHappinessFromFaithPercent = 0;
 	int m_iHappinessInWLTKDCities = 0;
 

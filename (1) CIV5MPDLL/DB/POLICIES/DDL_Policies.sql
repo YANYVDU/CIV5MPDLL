@@ -147,6 +147,15 @@ create table Policy_YieldPerGlobalPop (
     YieldModifier integer default 0
 );
 
+--******************** Yield Percent per City Following Founder Religion ********************--
+-- Percent is added to all cities' YieldType output per city (worldwide) following the player's founder religion
+-- e.g. Percent 2 on YIELD_CULTURE -> each city following the player's religion grants +2% national culture
+create table Policy_YieldPercentPerCityFollowingReligion (
+    PolicyType text references Policies(Type),
+    YieldType text references Yields(Type),
+    Percent integer default 0
+);
+
 --******************** Improvement Happiness When Worked ********************--
 create table Policy_ImprovementHappinessWhenWorked (
     PolicyType text references Policies(Type),

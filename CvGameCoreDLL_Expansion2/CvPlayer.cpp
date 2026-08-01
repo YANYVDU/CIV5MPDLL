@@ -28220,6 +28220,17 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 				it++;
 			}
 		}
+		for (auto it = m_vYieldPercentPerCityFollowingReligion.begin(); it != m_vYieldPercentPerCityFollowingReligion.end();)
+		{
+			if (it->ePolicy == (PolicyTypes)pPolicy->GetID())
+			{
+				it = m_vYieldPercentPerCityFollowingReligion.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
 		for (auto it = m_vCityResourcesFromPolicy.begin(); it != m_vCityResourcesFromPolicy.end();)
 		{
 			if (it->ePolicy == (PolicyTypes)pPolicy->GetID())
@@ -28249,6 +28260,10 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 		for (const auto& info : pPolicy->GetHappinessYieldModifier())
 		{
 			m_vHappinessYieldModifier.push_back(info);
+		}
+		for (const auto& info : pPolicy->GetYieldPercentPerCityFollowingReligion())
+		{
+			m_vYieldPercentPerCityFollowingReligion.push_back(info);
 		}
 		for (const auto& info : pPolicy->GetCityResources())
 		{
@@ -29481,6 +29496,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_vTradeRouteCityYieldModifier;
 	kStream >> m_vCityNumberCityYieldModifier;
 	kStream >> m_vHappinessYieldModifier;
+	MOD_SERIALIZE_READ(162, kStream, m_vYieldPercentPerCityFollowingReligion, std::vector<PolicyYieldInfo>());
 
 	kStream >> m_vCityResourcesFromPolicy;
 
@@ -30209,6 +30225,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_vTradeRouteCityYieldModifier;
 	kStream << m_vCityNumberCityYieldModifier;
 	kStream << m_vHappinessYieldModifier;
+	MOD_SERIALIZE_WRITE(kStream, m_vYieldPercentPerCityFollowingReligion);
 
 	kStream << m_vCityResourcesFromPolicy;
 
@@ -33910,6 +33927,11 @@ std::vector<PolicyYieldInfo>& CvPlayer::GetCityNumberCityYieldModifier()
 std::vector<PolicyYieldInfo>& CvPlayer::GetHappinessYieldModifier()
 {
 	return m_vHappinessYieldModifier;
+}
+
+std::vector<PolicyYieldInfo>& CvPlayer::GetYieldPercentPerCityFollowingReligion()
+{
+	return m_vYieldPercentPerCityFollowingReligion;
 }
 
 std::vector<PolicyResourceInfo>& CvPlayer::GetCityResourcesFromPolicy()
