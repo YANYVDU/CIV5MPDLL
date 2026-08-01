@@ -638,20 +638,15 @@ int CvPlayerCityStateUA::GetBuildingGreatPersonPointsForCity(const CvCity* pCity
 {
 	if (!pCity) return 0;
 	int iTotal = 0;
-	CUSTOMLOG("GetBuildingGreatPersonPointsForCity: city=%s, specialist=%d, entries=%d",
-		pCity->getName().GetCString(), (int)eSpecialist, (int)m_vBuildingGPP.size());
 	for (size_t i = 0; i < m_vBuildingGPP.size(); i++)
 	{
 		const BuildingGreatPersonPointsEntry& entry = m_vBuildingGPP[i];
 		if (entry.m_iSpecialist == (int)eSpecialist && entry.m_iPoints > 0)
 		{
 			int iCount = pCity->GetNumBuildingClass((BuildingClassTypes)entry.m_iBuildingClass);
-			int iAdd = entry.m_iPoints * iCount;
-			CUSTOMLOG("  bldClass=%d count=%d points=%d add=%d", entry.m_iBuildingClass, iCount, entry.m_iPoints, iAdd);
-			iTotal += iAdd;
+			iTotal += entry.m_iPoints * iCount;
 		}
 	}
-	CUSTOMLOG("GetBuildingGreatPersonPointsForCity: total=%d", iTotal);
 	return iTotal;
 }
 
