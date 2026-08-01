@@ -289,6 +289,7 @@ public:
 	int GetHurryModifier(int i) const;
 	bool IsSpecialistValid(int i) const;
 	int GetImprovementYieldChanges(int i, int j) const;
+	int GetYieldPerGlobalPop(int i) const;
 	int GetCityLoveKingDayYieldMod(int i) const;
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
 	int GetPlotYieldChanges(int i, int j) const;
@@ -627,6 +628,7 @@ private:
 	int* m_piCapitalYieldChange;
 	int* m_piCapitalYieldPerPopChange;
 	int* m_piYieldPerPopChange;
+	int* m_piYieldPerGlobalPop;
 	int* m_piCapitalYieldModifier;
 	int* m_piGreatWorkYieldChange;
 	int* m_piSpecialistExtraYield;

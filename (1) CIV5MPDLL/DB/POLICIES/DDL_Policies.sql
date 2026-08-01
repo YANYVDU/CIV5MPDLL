@@ -138,6 +138,14 @@ create table Policy_GreatPersonPoints (
     SpecialistType text references Specialists(Type),
     Points integer default 0
 );
+--******************** Yield per Global Population ********************--
+-- YieldModifier is a percentage conversion: total population x YieldModifier / 100 -> player-level yield (not per city)
+-- e.g. YieldModifier 33 on YIELD_SCIENCE is roughly a 3:1 population-to-science conversion
+create table Policy_YieldPerGlobalPop (
+    PolicyType text references Policies(Type),
+    YieldType text references Yields(Type),
+    YieldModifier integer default 0
+);
 
 --******************** Improvement Happiness When Worked ********************--
 create table Policy_ImprovementHappinessWhenWorked (

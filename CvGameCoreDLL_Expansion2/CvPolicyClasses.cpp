@@ -244,6 +244,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_piCapitalYieldChange(NULL),
 	m_piCapitalYieldPerPopChange(NULL),
 	m_piYieldPerPopChange(NULL),
+	m_piYieldPerGlobalPop(NULL),
 	m_piCapitalYieldModifier(NULL),
 	m_piGreatWorkYieldChange(NULL),
 	m_piSpecialistExtraYield(NULL),
@@ -306,6 +307,7 @@ CvPolicyEntry::~CvPolicyEntry(void)
 	SAFE_DELETE_ARRAY(m_piCapitalYieldChange);
 	SAFE_DELETE_ARRAY(m_piCapitalYieldPerPopChange);
 	SAFE_DELETE_ARRAY(m_piYieldPerPopChange);
+	SAFE_DELETE_ARRAY(m_piYieldPerGlobalPop);
 	SAFE_DELETE_ARRAY(m_piCapitalYieldModifier);
 	SAFE_DELETE_ARRAY(m_piGreatWorkYieldChange);
 	SAFE_DELETE_ARRAY(m_piSpecialistExtraYield);
@@ -625,6 +627,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	kUtility.SetYields(m_piCapitalYieldChange, "Policy_CapitalYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCapitalYieldPerPopChange, "Policy_CapitalYieldPerPopChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piYieldPerPopChange, "Policy_YieldPerPopChanges", "PolicyType", szPolicyType);
+	kUtility.PopulateArrayByValue(m_piYieldPerGlobalPop, "Yields", "Policy_YieldPerGlobalPop", "YieldType", "PolicyType", szPolicyType, "YieldModifier");
 	kUtility.SetYields(m_piCapitalYieldModifier, "Policy_CapitalYieldModifiers", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piGreatWorkYieldChange, "Policy_GreatWorkYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piSpecialistExtraYield, "Policy_SpecialistExtraYields", "PolicyType", szPolicyType);
@@ -2716,6 +2719,13 @@ int CvPolicyEntry::GetYieldPerPopChange(int i) const
 	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piYieldPerPopChange ? m_piYieldPerPopChange[i] : -1;
+}
+
+int CvPolicyEntry::GetYieldPerGlobalPop(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piYieldPerGlobalPop ? m_piYieldPerGlobalPop[i] : 0;
 }
 
 /// Array of yield changes in Capital (per pop)

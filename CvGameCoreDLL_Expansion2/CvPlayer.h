@@ -584,6 +584,9 @@ public:
 	void SetHappinessPerXPopulation(int iValue);
 	void ChangeHappinessPerXPopulation(int iChange);
 
+	int GetPolicyYieldPerGlobalPop(YieldTypes eYield) const;
+	void ChangePolicyYieldPerGlobalPop(YieldTypes eYield, int iChange);
+
 	int GetHappinessFromMinorCivs() const;
 	int GetHappinessFromMinor(PlayerTypes eMinor) const;
 
@@ -2877,6 +2880,7 @@ protected:
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiProjectMaking;
 	std::vector<int> m_paiImprovementHappinessFromPolicies;
 	std::vector<int> m_aiGreatPersonPointsFromPolicies;
+	std::vector<int> m_aiYieldPerGlobalPop;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryCount;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryModifier;
 

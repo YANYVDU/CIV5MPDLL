@@ -950,6 +950,7 @@ void CvPlayer::uninit()
 	m_ppaaiImprovementYieldChange.clear();
 	m_paiImprovementHappinessFromPolicies.clear();
 	m_aiGreatPersonPointsFromPolicies.clear();
+	m_aiYieldPerGlobalPop.clear();
 	m_ppaaiBuildingClassYieldMod.clear();
 
 	m_UnitCycle.Clear();
@@ -1819,6 +1820,8 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 		m_paiImprovementHappinessFromPolicies.resize(GC.getNumImprovementInfos());
 		m_aiGreatPersonPointsFromPolicies.clear();
 		m_aiGreatPersonPointsFromPolicies.resize(GC.getNumSpecialistInfos(), 0);
+		m_aiYieldPerGlobalPop.clear();
+		m_aiYieldPerGlobalPop.resize(NUM_YIELD_TYPES, 0);
 		m_paiBornGreatPersonCount.clear();
 		m_paiBornGreatPersonCount.resize(GC.getNumGreatPersonInfos(), 0);
 		for(unsigned int i = 0; i < m_ppaaiImprovementYieldChange.size(); ++i)
@@ -22200,6 +22203,9 @@ int CvPlayer::GetScienceTimes100(bool bIgnoreFriendships) const
 	// Happiness converted to Science? (Policies, etc.)
 	iValue += GetScienceFromHappinessTimes100(iScienceFromCitiesTimes100);
 
+	// Yield per global population from Policies (total population x modifier / 100, player-level, in x100 space)
+	iValue += GetPolicyYieldPerGlobalPop(YIELD_SCIENCE) * getTotalPopulation();
+
 	// Research Agreement bonuses
 	iValue += GetScienceFromResearchAgreementsTimes100(iScienceFromCitiesTimes100);
 
@@ -25147,6 +25153,20 @@ void CvPlayer::changeGreatPersonPointsFromPolicies(SpecialistTypes eIndex, int i
 	if(iChange != 0)
 	{
 		m_aiGreatPersonPointsFromPolicies[eIndex] = (m_aiGreatPersonPointsFromPolicies[eIndex] + iChange);
+	}
+}
+int CvPlayer::GetPolicyYieldPerGlobalPop(YieldTypes eYield) const
+{
+	if (eYield < 0 || eYield >= (int)m_aiYieldPerGlobalPop.size())
+		return 0;
+
+	return m_aiYieldPerGlobalPop[eYield];
+}
+void CvPlayer::ChangePolicyYieldPerGlobalPop(YieldTypes eYield, int iChange)
+{
+	if (iChange != 0 && eYield >= 0 && eYield < (int)m_aiYieldPerGlobalPop.size())
+	{
+		m_aiYieldPerGlobalPop[eYield] += iChange;
 	}
 }
 
@@ -28143,8 +28163,12 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 			pLoopCity->setFoodKept(iInstantFoodKeptPercent * pLoopCity->growthThreshold() / 100);
 		}
 		for(int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
-		{ 
-			changeGreatPersonPointsFromPolicies((SpecialistTypes)iSpec, pPolicy->GetGreatPersonPoints(iSpec) * iChange); 
+		{
+			changeGreatPersonPointsFromPolicies((SpecialistTypes)iSpec, pPolicy->GetGreatPersonPoints(iSpec) * iChange);
+		}
+		for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+		{
+			ChangePolicyYieldPerGlobalPop((YieldTypes)iYield, pPolicy->GetYieldPerGlobalPop(iYield) * iChange);
 		}
 	}
 
@@ -29228,6 +29252,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(162, kStream, m_iTotalGoldDonated, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_paiImprovementHappinessFromPolicies, std::vector<int>());
 	MOD_SERIALIZE_READ(162, kStream, m_aiGreatPersonPointsFromPolicies, std::vector<int>());
+	MOD_SERIALIZE_READ(162, kStream, m_aiYieldPerGlobalPop, std::vector<int>());
 #endif
 	kStream >> m_paiUnitClassCount;
 	kStream >> m_paiUnitClassMaking;
@@ -29972,6 +29997,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iTotalGoldDonated);
 	MOD_SERIALIZE_WRITE(kStream, m_paiImprovementHappinessFromPolicies);
 	MOD_SERIALIZE_WRITE(kStream, m_aiGreatPersonPointsFromPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_aiYieldPerGlobalPop);
 #endif
 	kStream << m_paiUnitClassCount;
 	kStream << m_paiUnitClassMaking;
