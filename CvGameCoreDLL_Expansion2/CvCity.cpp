@@ -8587,12 +8587,16 @@ void CvCity::processSpecialist(SpecialistTypes eSpecialist, int iChange)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 		if (MOD_SP_UNIQUE_CITYSTATE)
 		{
-			int iBornYield = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetSpecialistYieldFromBornGreatPerson(eSpecialist, (YieldTypes)iI);
-			if (iBornYield > 0)
+			CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+			if (pUA)
 			{
-				LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("processSpecialist: Specialst=%d Yield=%d BornYield=%d", (int)eSpecialist, iI, iBornYield);
+				int iBornYield = pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, (YieldTypes)iI);
+				if (iBornYield > 0)
+				{
+					LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("processSpecialist: Specialst=%d Yield=%d BornYield=%d", (int)eSpecialist, iI, iBornYield);
+				}
+				iSpecialistYield += iBornYield;
 			}
-			iSpecialistYield += iBornYield;
 		}
 #endif
 	ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (iSpecialistYield * iChange));
@@ -15559,7 +15563,9 @@ int CvCity::getSpecialistYield(YieldTypes eIndex, SpecialistTypes eSpecialist) c
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (MOD_SP_UNIQUE_CITYSTATE)
 	{
-		iRtnValue += GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetSpecialistYieldFromBornGreatPerson(eSpecialist, eIndex);
+		CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		if (pUA)
+			iRtnValue += pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, eIndex);
 	}
 #endif
 	return iRtnValue;
