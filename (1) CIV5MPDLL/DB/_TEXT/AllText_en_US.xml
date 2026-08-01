@@ -872,6 +872,55 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
 			<Text>[COLOR_YELLOW]Due to your belief, {1_CityName} has gained +1[ICON_CITIZEN] Population![ENDCOLOR]</Text>
 		</Row>
+		<Replace Tag="TXT_KEY_FRIENDS_CSTATE_TT">
+			<Text>{1_CityStateName:textkey} is your [COLOR_POSITIVE_TEXT]Friend[ENDCOLOR]. To become an Ally, your Influence must exceed the ally threshold of {2_Num}, and be the highest among all civilizations that meet this requirement.</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MERCANTILE_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Mercantile[ENDCOLOR] City-State will provide extra [ICON_HAPPINESS_1] Happiness in your empire, and manufactures special luxury resources which cannot be acquired any other way.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Total [ICON_HAPPINESS_1] Happiness from luxury resources increased by 5%
+				[NEWLINE][ICON_BULLET]Earn 1% treasury interest per turn (max interest = Era x 100 x Game Speed modifier)
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_RELIGIOUS_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Religious[ENDCOLOR] City-State will increase your [ICON_PEACE] Faith, allowing you to empower your religion with new beliefs and units.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET][ICON_PEACE] Faith purchase costs reduced by 5%
+				[NEWLINE][ICON_BULLET]Religion founded by ally gains +10% base pressure
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_NO_UU_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Militaristic[ENDCOLOR] City-State will provide you occasional gifts of advanced military units.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Allied land units gain +1 Experience per turn
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_CULTURED_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Cultured[ENDCOLOR] City-State will provide you gifts of [ICON_CULTURE] Culture, allowing you to obtain Social Policies more quickly.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET][ICON_CULTURE] Culture required for Social Policies reduced by 2%
+				[NEWLINE][ICON_BULLET]Threshold for receiving international immigrants reduced by 2%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Militaristic[ENDCOLOR] City-State will provide you occasional gifts of advanced military units.[NEWLINE][NEWLINE]They know the secrets of the [COLOR_POSITIVE_TEXT]{@1_UniqueUnitName}[ENDCOLOR].  If you are their Ally and have researched {@2_PrereqTech}, they will provide that unit as their gift.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Allied land units gain +1 Experience per turn
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MARITIME_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Maritime[ENDCOLOR] City-State will provide extra [ICON_FOOD] Food to your [ICON_CAPITAL] Capital.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Provides [ICON_FOOD] Food to all cities
+				[NEWLINE][ICON_BULLET]Allied sea trade routes gain +1 [ICON_GOLD] Gold (increases with Era)
+			</Text>
+		</Replace>
 	</Language_en_US>
 
 </GameData>

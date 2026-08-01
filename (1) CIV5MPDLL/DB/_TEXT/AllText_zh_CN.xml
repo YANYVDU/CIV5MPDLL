@@ -872,6 +872,62 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
 			<Text>[COLOR_YELLOW]由于你采取的信条，{1_CityName}获得了+1[ICON_CITIZEN]人口！[ENDCOLOR]</Text>
 		</Row>
+		<Replace Tag="TXT_KEY_FRIENDS_CSTATE_TT">
+			<Text>{1_CityStateName:textkey}是你的[COLOR_POSITIVE_TEXT]友邦[ENDCOLOR]。要升级为盟邦，你对城邦的影响力必须高于盟邦门槛{2_Num}，并且在所有达标文明中排名第一。</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MERCANTILE_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]商业型[ENDCOLOR]城邦会向你的帝国提供额外的[ICON_HAPPINESS_1]快乐，并提供其他办法无法获得的奢侈资源。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]奢侈品提供的[ICON_HAPPINESS_1]快乐总额增加5%
+				[NEWLINE][ICON_BULLET]每回合获得1%国库结息（单次利息上限=时代数×100×游戏速度修正）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_RELIGIOUS_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]宗教型[ENDCOLOR]城邦会增加您的[ICON_PEACE]信仰，加速你选择新的信条来强化你的宗教或购买解锁的特殊建筑与单位
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET][ICON_PEACE]信仰购买价格下降5%
+				[NEWLINE][ICON_BULLET]盟友创立的宗教基础压力+10%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_NO_UU_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]军事型[ENDCOLOR]城邦将向你提供高级军事单位。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陆军单位每回合获得1经验
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_CULTURED_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]文化型[ENDCOLOR]城邦将向你提供[ICON_CULTURE]文化，允许你更快地推行社会政策。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]推行社会政策所需[ICON_CULTURE]文化降低2%
+				[NEWLINE][ICON_BULLET]接收国际移民所需阈值降低2%
+			 </Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]军事型[ENDCOLOR]城邦将向你提供高级军事单位。
+				[NEWLINE]
+				[NEWLINE]他们掌握[COLOR_POSITIVE_TEXT]{@1_UniqueUnitName}[ENDCOLOR]的秘密。如果你是他们的盟友，并已发现{@2_PrereqTech}，他们会赠送你此单位。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陆军单位每回合获得1经验
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MARITIME_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]航海型[ENDCOLOR]城邦将向你的首都提供[ICON_FOOD]食物，以加速首都[ICON_CITIZEN]人口增长。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]将为全国城市提供[ICON_FOOD]食物
+				[NEWLINE][ICON_BULLET]盟友的海上商路+1[ICON_GOLD]金钱（随时代增加）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_DIPLO_STATUS_TT">
+			<Text>
+				{1_cityName}目前为{2_statusType}：{3_curNumber}/{4_maxNumber} [ICON_INFLUENCE]
+			</Text>
+		</Replace>
 	</Language_zh_CN>
 
 </GameData>

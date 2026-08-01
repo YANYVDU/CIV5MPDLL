@@ -868,5 +868,59 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
 			<Text>[COLOR_YELLOW]由於你採納的信條，{1_CityName}獲得了+1[ICON_CITIZEN]人口！[ENDCOLOR]</Text>
 		</Row>
+		<Replace Tag="TXT_KEY_FRIENDS_CSTATE_TT">
+			<Text>您與{1_CityStateName:textkey}是[COLOR_POSITIVE_TEXT]朋友[ENDCOLOR]。要升級為盟邦，您對城邦的影響力必須高於盟邦門檻{2_Num}，並且在所有達標文明中排名第一。</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MERCANTILE_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]商業[ENDCOLOR]城邦可為帝國帶來額外的[ICON_HAPPINESS_1]幸福度，並可產出無法用其他方式獲取的特殊奢侈品資源。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]奢侈品提供的[ICON_HAPPINESS_1]幸福度總額增加5%
+				[NEWLINE][ICON_BULLET]每回合獲得1%國庫結息（單次利息上限=時代數×100×遊戲速度修正）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_RELIGIOUS_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]宗教[ENDCOLOR]城邦可增加您的[ICON_PEACE]信仰值，透過新的信條與單位來壯大您的宗教。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET][ICON_PEACE]信仰購買價格下降5%
+				[NEWLINE][ICON_BULLET]盟友創立的宗教基礎壓力+10%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_NO_UU_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]尚武[ENDCOLOR]城邦可不時為您提供軍事單位。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陸軍單位每回合獲得1經驗
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_CULTURED_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]文化[ENDCOLOR]城邦可提供[ICON_CULTURE]文化方面的禮物，使您能更迅速地解鎖社會政策。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]推行社會政策所需[ICON_CULTURE]文化降低2%
+				[NEWLINE][ICON_BULLET]接收國際移民所需閾值降低2%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]尚武[ENDCOLOR]城邦可不時為您提供軍事單位。[NEWLINE][NEWLINE]此外他們還知曉[COLOR_POSITIVE_TEXT]{@1_UniqueUnitName}的秘密[ENDCOLOR]。如果您成為其盟友並完成{@2_PrereqTech}的研究，他們便會提供此單位作為獻禮。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陸軍單位每回合獲得1經驗
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MARITIME_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]沿海[ENDCOLOR]城邦會增加您[ICON_CAPITAL]首都的[ICON_FOOD]食物產量。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]將為全國城市提供[ICON_FOOD]食物
+				[NEWLINE][ICON_BULLET]盟友的海上商路+1[ICON_GOLD]金錢（隨時代增加）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_DIPLO_STATUS_TT">
+			<Text>
+				{1_cityName}當前為{2_statusType}：{3_curNumber}/{4_maxNumber} [ICON_INFLUENCE]
+			</Text>
+		</Replace>
 	</Language_zh_Hant_HK>
 </GameData>
