@@ -28162,14 +28162,16 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 		{
 			pLoopCity->setFoodKept(iInstantFoodKeptPercent * pLoopCity->growthThreshold() / 100);
 		}
-		for(int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
-		{
-			changeGreatPersonPointsFromPolicies((SpecialistTypes)iSpec, pPolicy->GetGreatPersonPoints(iSpec) * iChange);
-		}
-		for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
-		{
-			ChangePolicyYieldPerGlobalPop((YieldTypes)iYield, pPolicy->GetYieldPerGlobalPop(iYield) * iChange);
-		}
+	}
+
+	for(int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+	{
+		changeGreatPersonPointsFromPolicies((SpecialistTypes)iSpec, pPolicy->GetGreatPersonPoints(iSpec) * iChange);
+	}
+
+	for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+	{
+		ChangePolicyYieldPerGlobalPop((YieldTypes)iYield, pPolicy->GetYieldPerGlobalPop(iYield) * iChange);
 	}
 
 	if (iChange < 0)
