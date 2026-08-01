@@ -2782,6 +2782,9 @@ CvTraitEntry* CvTraitXMLEntries::GetEntry(int index)
 /// Constructor
 CvPlayerTraits::CvPlayerTraits()
 {
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdModifier = 0;
+#endif
 }
 
 /// Destructor
@@ -3374,6 +3377,11 @@ void CvPlayerTraits::InitPlayerTraits()
 			}
 		}
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
+		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(m_iMinorCivAlliesThresholdModifier);
+#endif
 }
 
 /// Deallocate memory created in initialize
@@ -3428,6 +3436,8 @@ void CvPlayerTraits::Reset()
 	m_iCityStateCombatModifier = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige = 0;
+	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
+		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
 	m_iMinorCivAlliesThresholdModifier = 0;
 #endif
 	m_iLandBarbarianConversionPercent = 0;

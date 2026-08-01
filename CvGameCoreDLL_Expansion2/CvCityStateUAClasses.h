@@ -24,6 +24,11 @@ struct BuildingGreatPersonPointsEntry {
 	int m_iPoints;
 };
 
+struct BornGreatPersonAllyInfluenceModEntry {
+	int m_iUnitClassType;
+	int m_iModPerBorn;
+};
+
 //======================================================================================================
 class CvCityStateUAEffectEntry : public CvBaseInfo
 {
@@ -91,6 +96,7 @@ public:
 	int GetLuxuryHappinessModifier() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
+	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
 
 private:
 	// Florence
@@ -151,6 +157,7 @@ private:
 	int m_iLuxuryHappinessModifier;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
+	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
 };
 
 //======================================================================================================
@@ -286,6 +293,7 @@ public:
 	int GetLuxuryHappinessModifier() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
+	int GetAllyInfluenceModFromBornGreatPerson() const;
 
 	void Reset();
 
@@ -333,6 +341,7 @@ protected:
 	int m_iLuxuryHappinessModifier;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
+	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

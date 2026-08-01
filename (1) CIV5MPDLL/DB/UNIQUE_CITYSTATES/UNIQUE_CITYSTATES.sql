@@ -133,3 +133,9 @@ create table CityStateUAEffect_BuildingGreatPersonPoints (
     SpecialistType text references Specialists(Type),
     Points integer default 0
 );
+
+create table CityStateUAEffect_BornGreatPersonAllyInfluenceMod (
+    EffectType text references CityStateUAEffects(Type),
+    UnitClassType text references UnitClasses(Type),
+    ModPerBorn integer default 0
+);

@@ -137,6 +137,23 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 		}
 	}
 	{
+		m_vBornAllyInfluenceMod.clear();
+		std::string strKey3("CityStateUAEffect_BornGreatPersonAllyInfluenceMod");
+		Database::Results* pResults3 = kUtility.GetResults(strKey3);
+		if(pResults3 == NULL)
+		{
+			pResults3 = kUtility.PrepareResults(strKey3, "select UnitClasses.ID as UnitClassID, ModPerBorn from CityStateUAEffect_BornGreatPersonAllyInfluenceMod inner join UnitClasses on UnitClasses.Type = UnitClassType where EffectType = ?");
+		}
+		pResults3->Bind(1, GetType());
+		while(pResults3->Step())
+		{
+			BornGreatPersonAllyInfluenceModEntry entry;
+			entry.m_iUnitClassType = pResults3->GetInt(0);
+			entry.m_iModPerBorn = pResults3->GetInt(1);
+			m_vBornAllyInfluenceMod.push_back(entry);
+		}
+	}
+	{
 		m_vBornGreatPersonSpecialistYield.clear();
 		std::string strKey("CityStateUAEffect_BornGreatPersonSpecialistYield");
 		Database::Results* pResults = kUtility.GetResults(strKey);
@@ -443,6 +460,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iLuxuryHappinessModifier = 0;
 	m_vBornGreatPersonSpecialistYield.clear();
 	m_vBuildingGPP.clear();
+	m_vBornAllyInfluenceMod.clear();
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -550,6 +568,14 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_vBuildingGPP.push_back(entry);
 		}
 	}
+	{
+		const std::vector<BornGreatPersonAllyInfluenceModEntry>& vInfEntries = pEffect->GetBornAllyInfluenceModEntries();
+		for (size_t i = 0; i < vInfEntries.size(); i++)
+		{
+			const BornGreatPersonAllyInfluenceModEntry& e = vInfEntries[i];
+			m_vBornAllyInfluenceMod.push_back(e);
+		}
+	}
 }
 
 int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
@@ -626,5 +652,20 @@ int CvPlayerCityStateUA::GetBuildingGreatPersonPointsForCity(const CvCity* pCity
 		}
 	}
 	CUSTOMLOG("GetBuildingGreatPersonPointsForCity: total=%d", iTotal);
+	return iTotal;
+}
+
+int CvPlayerCityStateUA::GetAllyInfluenceModFromBornGreatPerson() const
+{
+	if (!m_pPlayer) return 0;
+	int iTotal = 0;
+	for (size_t i = 0; i < m_vBornAllyInfluenceMod.size(); i++)
+	{
+		const BornGreatPersonAllyInfluenceModEntry& entry = m_vBornAllyInfluenceMod[i];
+		GreatPersonTypes eGP = GetGreatPersonFromUnitClass((UnitClassTypes)entry.m_iUnitClassType);
+		if (eGP == NO_GREATPERSON) continue;
+		int iBornCount = m_pPlayer->GetBornGreatPersonCount(eGP);
+		iTotal += iBornCount * entry.m_iModPerBorn;
+	}
 	return iTotal;
 }

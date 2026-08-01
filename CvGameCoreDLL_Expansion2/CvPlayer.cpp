@@ -31020,7 +31020,12 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 
 	int CvPlayer::GetMinorCivAlliesThresholdModifier() const
 	{
-		return m_iMinorCivAlliesThresholdModifier;
+		int iMod = m_iMinorCivAlliesThresholdModifier;
+		CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
+		if (pUA)
+			iMod += pUA->GetAllyInfluenceModFromBornGreatPerson();
+		// Cap reduction at 50% so the allies threshold never falls below the friends threshold (FRIENDSHIP_THRESHOLD_FRIENDS)
+		return max(iMod, -50);
 	}
 
 	void CvPlayer::SetMinorCivAlliesThresholdModifier(int iValue)
@@ -31032,7 +31037,7 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 	{
 		if (iChange != 0)
 		{
-			SetMinorCivAlliesThresholdModifier(GetMinorCivAlliesThresholdModifier() + iChange);
+			SetMinorCivAlliesThresholdModifier(m_iMinorCivAlliesThresholdModifier + iChange);
 		}
 	}
 
