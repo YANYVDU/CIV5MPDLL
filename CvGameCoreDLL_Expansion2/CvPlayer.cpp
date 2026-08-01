@@ -29225,6 +29225,9 @@ void CvPlayer::Read(FDataStream& kStream)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_READ(162, kStream, m_paiGoldDonatedToMinor, std::vector<int>());
 	MOD_SERIALIZE_READ(162, kStream, m_paiBornGreatPersonCount, std::vector<int>());
+	MOD_SERIALIZE_READ(162, kStream, m_iTotalGoldDonated, 0);
+	MOD_SERIALIZE_READ(162, kStream, m_paiImprovementHappinessFromPolicies, std::vector<int>());
+	MOD_SERIALIZE_READ(162, kStream, m_aiGreatPersonPointsFromPolicies, std::vector<int>());
 #endif
 	kStream >> m_paiUnitClassCount;
 	kStream >> m_paiUnitClassMaking;
@@ -29966,6 +29969,9 @@ void CvPlayer::Write(FDataStream& kStream) const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	MOD_SERIALIZE_WRITE(kStream, m_paiGoldDonatedToMinor);
 	MOD_SERIALIZE_WRITE(kStream, m_paiBornGreatPersonCount);
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalGoldDonated);
+	MOD_SERIALIZE_WRITE(kStream, m_paiImprovementHappinessFromPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_aiGreatPersonPointsFromPolicies);
 #endif
 	kStream << m_paiUnitClassCount;
 	kStream << m_paiUnitClassMaking;
