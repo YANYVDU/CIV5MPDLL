@@ -1242,6 +1242,7 @@ protected:
 	LUAAPIEXTN(GetYieldModifierFromHappinessPolicy, int, eYieldType);
 
 	LUAAPIEXTN(GetGlobalYieldModifierFromResource, int, eYieldType);
+	LUAAPIEXTN(GetPolicyYieldPerGlobalPop, int, eYieldType);
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	LUAAPIEXTN(IsCorruptionLevelReduceByOne, bool);
