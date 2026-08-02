@@ -620,7 +620,7 @@ CvPlayer::CvPlayer() :
 	m_pDiplomacyRequests = NULL;
 	m_iNextOperationID = 0;
 	m_aiPlots.clear();
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
 	m_bfEverConqueredBy.ClearAll();
@@ -1232,6 +1232,8 @@ void CvPlayer::uninit()
 	m_iExtraDiplomaticPrestige = 0;
 	m_iCityStateAllyCount = 0;
 	m_iMinorCivAlliesThresholdModifier = 0;
+#endif
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
 	m_iExtraUnitPlayerInstances = 0;
@@ -5362,9 +5364,9 @@ void CvPlayer::doTurn()
 		doTurnPostDiplomacy();
 	}
 
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	// Mercantile CS basic effect: treasury interest
-	if (MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_CITYSTATE_BASIC)
 	{
 		int iInterestRate = GetCSTreasuryInterestRate();
 		if (iInterestRate > 0)
@@ -13623,11 +13625,9 @@ void CvPlayer::ChangeExtraHappinessPerXPolicies(int iChange)
 
 //	--------------------------------------------------------------------------------
 /// Total amount of Happiness gained from Resources
-int CvPlayer::GetHappinessFromResources() const
+int CvPlayer::GetLuxuryHappinessBaseTotal() const
 {
 	int iTotalHappiness = 0;
-
-	int iBaseHappiness;
 
 	// Check all connected Resources
 	ResourceTypes eResource;
@@ -13635,7 +13635,7 @@ int CvPlayer::GetHappinessFromResources() const
 	{
 		eResource = (ResourceTypes) iResourceLoop;
 
-		iBaseHappiness = GetHappinessFromLuxury(eResource);
+		int iBaseHappiness = GetHappinessFromLuxury(eResource);
 		if(iBaseHappiness)
 		{
 			// Resource bonus from Minors, and this is a Luxury we're getting from one (Policies, etc.)
@@ -13649,13 +13649,21 @@ int CvPlayer::GetHappinessFromResources() const
 			iTotalHappiness += GetExtraHappinessPerLuxury();
 		}
 	}
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-			// Mercantile CS basic effect: +5% luxury happiness per ally
-			{
-				int iCSLuxuryMod = GetCSLuxuryHappinessModifier();
-				if (iCSLuxuryMod > 0)
-					iTotalHappiness = (iTotalHappiness * (100 + iCSLuxuryMod)) / 100;
-			}
+
+	return iTotalHappiness;
+}
+
+int CvPlayer::GetHappinessFromResources() const
+{
+	int iTotalHappiness = GetLuxuryHappinessBaseTotal();
+
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	// Mercantile CS basic effect: +5% luxury happiness per ally
+	{
+		int iCSLuxuryMod = GetCSLuxuryHappinessModifier();
+		if (iCSLuxuryMod > 0)
+			iTotalHappiness = (iTotalHappiness * (100 + iCSLuxuryMod)) / 100;
+	}
 #endif
 
 	// Happiness bonus for multiple Resource types
@@ -16044,7 +16052,7 @@ void CvPlayer::recomputePolicyCostModifier()
 	iCost += GetPolicyCostBuildingModifier();
 	iCost += GetPolicyCostMinorCivModifier();
 	iCost += GetPlayerTraits()->GetPolicyCostModifier();
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	iCost += GetCSPolicyCostModifier();
 #endif
 
@@ -18216,7 +18224,7 @@ int CvPlayer::GetDomainFreeExperiencesPerTurnGlobal(DomainTypes eIndex) const
 	CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
 	CvAssertMsg(eIndex < NUM_DOMAIN_TYPES, "eIndex expected to be < NUM_DOMAIN_TYPES");
 	int iRtnValue = m_aiDomainFreeExperiencesPerTurnGlobal[eIndex];
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	if (eIndex == DOMAIN_LAND)
 		iRtnValue += GetCSLandXPPerTurn();
 #endif
@@ -18903,7 +18911,7 @@ void CvPlayer::RefreshCSAlliesFriends()
 {
 	int iFriends = 0;
 	int iAllies = 0;
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	// Reset per-trait ally counts each turn
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
@@ -18917,7 +18925,7 @@ void CvPlayer::RefreshCSAlliesFriends()
 			if (GET_PLAYER(eMinor).GetMinorCivAI()->IsAllies(GetID()))
 			{
 				iAllies++;
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 				MinorCivTraitTypes eTrait = GET_PLAYER(eMinor).GetMinorCivAI()->GetTrait();
 				if (eTrait >= 0 && eTrait < 5)
 					m_aiCSAllyCountByTrait[eTrait]++;
@@ -18931,6 +18939,8 @@ void CvPlayer::RefreshCSAlliesFriends()
 	}
 	SetNumCSAllies(iAllies);
 	SetNumCSFriends(iFriends);
+	// Recompute policy cost so ally-based modifiers (e.g. cultured CS policy cost) apply immediately
+	recomputePolicyCostModifier();
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	RefreshCSAllUAEffects();
 #endif
@@ -30951,7 +30961,7 @@ void CvPlayer::ChangeResearchTotalCostModifierGoldenAge(int iChange)
 int CvPlayer::GetImmigrationRegressandModifier() const
 {
 	int iRtn = m_iImmigrationRegressandModifier;
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	iRtn += GetCSImmigrationRegressandModifier();
 #endif
 	return iRtn;
@@ -31096,6 +31106,10 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 		return (iRaw * (100 + iMod)) / 100;
 	}
 
+#endif // MOD_SP_UNIQUE_CITYSTATE
+
+#if defined(MOD_SP_CITYSTATE_BASIC)
+
 //	------------------------------------------------------------------------
 int CvPlayer::GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const
 {
@@ -31146,6 +31160,14 @@ int CvPlayer::GetCSReligiousPressureModifier() const
 int CvPlayer::GetCSLuxuryHappinessModifier() const
 {
 	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MERCANTILE) * GC.getCS_MERCANTILE_LUXURY_HAPPINESS_MODIFIER();
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetCSLuxuryHappinessValue() const
+{
+	int iMod = GetCSLuxuryHappinessModifier();
+	if (iMod <= 0) return 0;
+	return (GetLuxuryHappinessBaseTotal() * iMod) / 100;
 }
 
 //	------------------------------------------------------------------------

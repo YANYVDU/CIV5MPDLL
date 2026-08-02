@@ -525,6 +525,7 @@ public:
 	int GetExtraHappinessPerXPolicies() const;
 	void ChangeExtraHappinessPerXPolicies(int iChange);
 
+	int GetLuxuryHappinessBaseTotal() const;
 	int GetHappinessFromResources() const;
 	int GetHappinessFromResourceVariety() const;
 	int GetHappinessFromReligion();
@@ -1775,8 +1776,10 @@ public:
 	void SetMinorCivAlliesThresholdModifier(int iValue);
 	void ChangeMinorCivAlliesThresholdModifier(int iChange);
 	int GetMinorCivAlliesThreshold() const;
-	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
 	void RefreshCSAllUAEffects();
+#endif
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
 	int GetCSPolicyCostModifier() const;
 	int GetCSImmigrationRegressandModifier() const;
 	int GetCSLandXPPerTurn() const;
@@ -1784,6 +1787,7 @@ public:
 	int GetCSFaithCostModifier() const;
 	int GetCSReligiousPressureModifier() const;
 	int GetCSLuxuryHappinessModifier() const;
+	int GetCSLuxuryHappinessValue() const;
 	int GetCSTreasuryInterestRate() const;
 #endif
 
@@ -2720,6 +2724,8 @@ protected:
 	int m_iExtraDiplomaticPrestige;
 	int m_iCityStateAllyCount;
 	int m_iMinorCivAlliesThresholdModifier;
+#endif
+#if defined(MOD_SP_CITYSTATE_BASIC)
 	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
 #endif
 	int m_iExtraUnitPlayerInstances;

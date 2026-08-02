@@ -432,6 +432,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(GetHappinessFromResources);
 	Method(GetHappinessFromResourceVariety);
+	Method(GetCSLuxuryHappinessModifier);
+	Method(GetCSLuxuryHappinessValue);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
 	Method(GetHappinessFromNaturalWonders);
@@ -1203,6 +1205,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetInternationalTradeRouteYourBuildingBonus);
 	Method(GetInternationalTradeRouteTheirBuildingBonus);
 	Method(GetInternationalTradeRoutePolicyBonus);
+	Method(GetInternationalTradeRouteCityStateBonus);
 	Method(GetInternationalTradeRouteOtherTraitBonus);
 	Method(GetInternationalTradeRouteTraitBonus);
 	Method(GetInternationalTradeRouteRiverModifier);
@@ -3466,6 +3469,20 @@ int CvLuaPlayer::lGetHappinessFromResourceVariety(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+//int GetCSLuxuryHappinessModifier() const;
+int CvLuaPlayer::lGetCSLuxuryHappinessModifier(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetCSLuxuryHappinessModifier);
+}
+
+//------------------------------------------------------------------------------
+//int GetCSLuxuryHappinessValue() const;
+int CvLuaPlayer::lGetCSLuxuryHappinessValue(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetCSLuxuryHappinessValue);
+}
+
+//------------------------------------------------------------------------------
 //int GetExtraHappinessPerLuxury() const;
 int CvLuaPlayer::lGetExtraHappinessPerLuxury(lua_State* L)
 {
@@ -4088,6 +4105,30 @@ int CvLuaPlayer::lGetInternationalTradeRoutePolicyBonus(lua_State* L)
 	kTradeConnection.m_eConnectionType = TRADE_CONNECTION_INTERNATIONAL;
 
 	int iResult = pPlayerTrade->GetTradeConnectionPolicyValueTimes100(kTradeConnection, YIELD_GOLD);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetInternationalTradeRouteCityStateBonus(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvPlayerTrade* pPlayerTrade = pkPlayer->GetTrade();
+	CvCity* pOriginCity = CvLuaCity::GetInstance(L, 2, true);
+	CvCity* pDestCity = CvLuaCity::GetInstance(L, 3, true);
+	DomainTypes eDomain = (DomainTypes)lua_tointeger(L, 4);
+
+	TradeConnection kTradeConnection;
+	kTradeConnection.m_iOriginX = pOriginCity->getX();
+	kTradeConnection.m_iOriginY = pOriginCity->getY();
+	kTradeConnection.m_iDestX = pDestCity->getX();
+	kTradeConnection.m_iDestY = pDestCity->getY();
+	kTradeConnection.m_eOriginOwner = pOriginCity->getOwner();
+	kTradeConnection.m_eDestOwner = pDestCity->getOwner();
+	kTradeConnection.m_eDomain = eDomain;
+	kTradeConnection.m_eConnectionType = TRADE_CONNECTION_INTERNATIONAL;
+
+	int iResult = pPlayerTrade->GetTradeConnectionCityStateValueTimes100(kTradeConnection, YIELD_GOLD);
 	lua_pushinteger(L, iResult);
 	return 1;
 }

@@ -322,6 +322,8 @@ protected:
 
 	static int lGetHappinessFromResources(lua_State* L);
 	static int lGetHappinessFromResourceVariety(lua_State* L);
+	static int lGetCSLuxuryHappinessModifier(lua_State* L);
+	static int lGetCSLuxuryHappinessValue(lua_State* L);
 	static int lGetExtraHappinessPerLuxury(lua_State* L);
 	static int lGetHappinessFromReligion(lua_State* L);
 	static int lGetHappinessFromNaturalWonders(lua_State* L);
@@ -1110,6 +1112,7 @@ protected:
 	static int lGetInternationalTradeRouteYourBuildingBonus(lua_State* L);
 	static int lGetInternationalTradeRouteTheirBuildingBonus(lua_State* L);
 	static int lGetInternationalTradeRoutePolicyBonus(lua_State* L);
+	static int lGetInternationalTradeRouteCityStateBonus(lua_State* L);
 	static int lGetInternationalTradeRouteOtherTraitBonus(lua_State* L);
 	static int lGetInternationalTradeRouteTraitBonus(lua_State* L);
 	static int lGetInternationalTradeRouteRiverModifier(lua_State* L);

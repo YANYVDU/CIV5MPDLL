@@ -2402,7 +2402,7 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 	{
 		bool bIncrementTRInfluencing = false;
 		iPressure = GC.getGame().getGameSpeedInfo().getReligiousPressureAdjacentCity();
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 		// Religious CS basic effect: boost pressure of religions founded by allies
 		{
 			PlayerTypes eFounder = pReligion->m_eFounder;

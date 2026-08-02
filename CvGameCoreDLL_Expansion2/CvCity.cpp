@@ -6183,7 +6183,7 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 		if (pkUnitInfo->IsSpreadReligion() || pkUnitInfo->IsRemoveHeresy())
 		{
 			int iModifier = 100 + kOwner.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER);
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 			iModifier += kOwner.GetCSFaithCostModifier();
 #endif
 			iCost = iCost * iModifier / 100;
@@ -6301,7 +6301,7 @@ int CvCity::GetFaithPurchaseCost(BuildingTypes eBuilding)
 	int iMultiplier = GC.getEraInfo(eEra)->getFaithCostMultiplier();
 	iCost = iCost * iMultiplier / 100;
 	int iModifier = 100 + GET_PLAYER(getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FAITH_COST_MODIFIER);
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
+#if defined(MOD_SP_CITYSTATE_BASIC)
 		iModifier += GET_PLAYER(getOwner()).GetCSFaithCostModifier();
 #endif
 	iCost = iCost * iModifier / 100;
