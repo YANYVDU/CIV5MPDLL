@@ -7822,7 +7822,7 @@ int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, boo
 		CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
 		if (kPlayer.isGoldenAge())
 		{
-			int iGoldenAgeTurns = kPlayer.GetGoldenAgeProgressMeter() / 100;
+			int iGoldenAgeTurns = kPlayer.getGoldenAgeTurns();
 			if (bAttacking)
 				iModifier += iGoldenAgeTurns * m_iGoldenAgeTurnAttackModifier / 100;
 			else
