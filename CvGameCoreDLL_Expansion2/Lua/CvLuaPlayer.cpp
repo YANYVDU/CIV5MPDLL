@@ -809,6 +809,13 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(SetPersonalityType);
 	Method(GetCurrentEra);
 	Method(GetMinorCivAlliesThreshold);
+	Method(GetDiplomaticPrestige);
+	Method(GetExtraDiplomaticPrestige);
+	Method(GetNumCityStateAllies);
+	Method(GetDiplomaticOverextensionCount);
+	Method(GetDiplomaticOverextensionDecayPenalty);
+	Method(GetDiplomaticOverextensionRisePenalty);
+	Method(GetDiplomaticOverextensionUnhappinessPercent);
 
 	Method(GetTeam);
 
@@ -7714,6 +7721,41 @@ int CvLuaPlayer::lGetCurrentEra(lua_State* L)
 int CvLuaPlayer::lGetMinorCivAlliesThreshold(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayer::GetMinorCivAlliesThreshold);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticPrestige(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticPrestige);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetExtraDiplomaticPrestige(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetExtraDiplomaticPrestige);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetNumCityStateAllies(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetNumCityStateAllies);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionCount(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionCount);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionDecayPenalty(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionDecayPenalty);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionRisePenalty(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionRisePenalty);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionUnhappinessPercent(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionUnhappinessPercent);
 }
 //------------------------------------------------------------------------------
 //int getTeam();

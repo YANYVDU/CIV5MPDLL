@@ -696,6 +696,13 @@ protected:
 	static int lSetPersonalityType(lua_State* L);
 	static int lGetCurrentEra(lua_State* L);
 	static int lGetMinorCivAlliesThreshold(lua_State* L);
+	LUAAPIEXTN(GetDiplomaticPrestige, int);
+	LUAAPIEXTN(GetExtraDiplomaticPrestige, int);
+	LUAAPIEXTN(GetNumCityStateAllies, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionCount, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionDecayPenalty, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionRisePenalty, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionUnhappinessPercent, int);
 
 	static int lGetTeam(lua_State* L);
 
