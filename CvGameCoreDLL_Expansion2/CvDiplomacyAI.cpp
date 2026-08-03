@@ -7,6 +7,7 @@
 	------------------------------------------------------------------------------------------------------- */
 
 #include "CvGameCoreDLLPCH.h"
+#include "cvStopWatch.h"
 #include "ICvDLLUserInterface.h"
 #include "CvDiplomacyAI.h"
 #include "CvGrandStrategyAI.h"
