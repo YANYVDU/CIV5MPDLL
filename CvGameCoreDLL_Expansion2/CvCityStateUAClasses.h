@@ -29,6 +29,13 @@ struct BornGreatPersonAllyInfluenceModEntry {
 	int m_iModPerBorn;
 };
 
+struct GreatWorkGreatPersonPointsEntry {
+	int m_iGreatWorkClassType;
+	int m_iSpecialistType;
+	int m_iRate;
+	bool m_bCapitalOnly;
+};
+
 //======================================================================================================
 class CvCityStateUAEffectEntry : public CvBaseInfo
 {
@@ -99,6 +106,8 @@ public:
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
+	// Brussels: each great work of a class grants great person points to a specialist (Rate=100 => 1 great work = 1 point)
+	const std::vector<GreatWorkGreatPersonPointsEntry>& GetGreatWorkGreatPersonPointsEntries() const { return m_vGreatWorkGreatPersonPoints; }
 
 private:
 	// Florence
@@ -159,6 +168,7 @@ private:
 	int m_iLuxuryHappinessModifier;
 	// Panama
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
@@ -300,6 +310,8 @@ public:
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	int GetAllyInfluenceModFromBornGreatPerson() const;
+	int GetGreatWorkGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
+	bool HasGreatWorkGreatPersonPoints() const;
 
 	void Reset();
 
@@ -346,6 +358,7 @@ protected:
 	int m_iWonderProductionPerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;

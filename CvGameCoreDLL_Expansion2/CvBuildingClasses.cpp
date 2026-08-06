@@ -6033,6 +6033,20 @@ int CvCityBuildings::GetNumGreatWorks(GreatWorkSlotType eGreatWorkSlot) const
 	return iRtnValue;
 }
 
+/// Accessor: How many Great Works of a specific class (literature/art/music) present in this city?
+int CvCityBuildings::GetNumGreatWorks(GreatWorkClass eGreatWorkClass) const
+{
+	int iRtnValue = 0;
+	for(std::vector<BuildingGreatWork>::const_iterator it = m_aBuildingGreatWork.begin(); it != m_aBuildingGreatWork.end(); ++it)
+	{
+		if (GC.getGame().GetGameCulture()->GetGreatWorkClass((*it).iGreatWorkIndex) == eGreatWorkClass)
+		{
+			iRtnValue++;
+		}
+	}
+	return iRtnValue;
+}
+
 /// Accessor: Get tourism converted from culture from Improvements and Wonders
 int CvCityBuildings::GetLandmarksTourismPercent() const
 {

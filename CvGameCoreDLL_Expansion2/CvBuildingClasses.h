@@ -1224,6 +1224,7 @@ public:
 	int GetNumGreatWorks(bool bIgnoreYield = true, bool bIncludeArtifact = true, bool bIncludeGreatWork = true) const;
 
 	int GetNumGreatWorks(GreatWorkSlotType eGreatWorkSlot) const;
+	int GetNumGreatWorks(GreatWorkClass eGreatWorkClass) const;
 
 	int GetLandmarksTourismPercent() const;
 	void ChangeLandmarksTourismPercent(int iChange);

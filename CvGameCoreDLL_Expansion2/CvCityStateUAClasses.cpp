@@ -121,6 +121,27 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
+	//Brussels: each great work of a class grants great person points to a specialist
+	{
+		m_vGreatWorkGreatPersonPoints.clear();
+		std::string strKey("CityStateUAEffect_GreatWorkGreatPersonPoints");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select GreatWorkClasses.ID as GreatWorkClassID, Specialists.ID as SpecialistID, Rate, CapitalOnly from CityStateUAEffect_GreatWorkGreatPersonPoints inner join GreatWorkClasses on GreatWorkClasses.Type = GreatWorkClassType inner join Specialists on Specialists.Type = SpecialistType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			GreatWorkGreatPersonPointsEntry entry;
+			entry.m_iGreatWorkClassType = pResults->GetInt(0);
+			entry.m_iSpecialistType = pResults->GetInt(1);
+			entry.m_iRate = pResults->GetInt(2);
+			entry.m_bCapitalOnly = (pResults->GetInt(3) != 0);
+			m_vGreatWorkGreatPersonPoints.push_back(entry);
+		}
+	}
 	{
 		m_vBuildingGPP.clear();
 		std::string strKey2("CityStateUAEffect_BuildingGreatPersonPoints");
@@ -464,6 +485,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iWonderProductionPerDonationHappiness = 0;
 	m_iLuxuryHappinessModifier = 0;
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
+	m_vGreatWorkGreatPersonPoints.clear();
 	m_vBornGreatPersonSpecialistYield.clear();
 	m_vBuildingGPP.clear();
 	m_vBornAllyInfluenceMod.clear();
@@ -535,6 +557,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
+	{
+		const std::vector<GreatWorkGreatPersonPointsEntry>& vEntries = pEffect->GetGreatWorkGreatPersonPointsEntries();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			GreatWorkGreatPersonPointsEntry entry = vEntries[i];
+			entry.m_iRate *= iChange;
+			m_vGreatWorkGreatPersonPoints.push_back(entry);
+		}
+	}
 	{
 		const std::vector<BornGreatPersonSpecialistYieldEntry>& vEntries = pEffect->GetBornGreatPersonSpecialistYieldEntries();
 		int iEntryCount = (int)vEntries.size();
@@ -671,4 +702,23 @@ int CvPlayerCityStateUA::GetAllyInfluenceModFromBornGreatPerson() const
 		iTotal += iBornCount * entry.m_iModPerBorn;
 	}
 	return iTotal;
+}
+int CvPlayerCityStateUA::GetGreatWorkGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const
+{
+	if (!pCity) return 0;
+	int iTotal = 0;
+	for (size_t i = 0; i < m_vGreatWorkGreatPersonPoints.size(); i++)
+	{
+		const GreatWorkGreatPersonPointsEntry& entry = m_vGreatWorkGreatPersonPoints[i];
+		if (entry.m_iSpecialistType != (int)eSpecialist || entry.m_iRate <= 0) continue;
+		if (entry.m_bCapitalOnly && !pCity->isCapital()) continue;
+		int iNumGW = pCity->GetCityBuildings()->GetNumGreatWorks((GreatWorkClass)entry.m_iGreatWorkClassType);
+		iTotal += iNumGW * entry.m_iRate;
+	}
+	return iTotal;
+}
+
+bool CvPlayerCityStateUA::HasGreatWorkGreatPersonPoints() const
+{
+	return !m_vGreatWorkGreatPersonPoints.empty();
 }

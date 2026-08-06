@@ -6,6 +6,7 @@
 	All rights reserved. 
 	------------------------------------------------------------------------------------------------------- */
 #include "CvGameCoreDLLPCH.h"
+#include "CvCityStateUAClasses.h"
 #include "ICvDLLUserInterface.h"
 #include "CvGameCoreUtils.h"
 #include "CvCitySpecializationAI.h"
@@ -2314,6 +2315,8 @@ void CvCityCitizens::DoSpecialists()
 				{
 					iGPPChange += GetCity()->GetGreatPersonPointsFromUA(eSpecialist) * 100;
 						iGPPChange += GetCity()->GetGreatPersonPointsFromUA_Building(eSpecialist) * 100;
+						// Brussels UA: great works of a class grant great person points (Times100 units, Rate=100 => 1 great work = 1 point)
+						iGPPChange += GetCity()->GetGreatPersonPointsFromUA_GreatWork(eSpecialist);
 					}
 #endif
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)

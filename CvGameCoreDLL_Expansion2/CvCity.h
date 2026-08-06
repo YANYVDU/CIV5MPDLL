@@ -682,6 +682,7 @@ public:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetGreatPersonPointsFromUA(SpecialistTypes eIndex) const;
 	int GetGreatPersonPointsFromUA_Building(SpecialistTypes eIndex) const;
+	int GetGreatPersonPointsFromUA_GreatWork(SpecialistTypes eIndex) const;
 #endif
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)

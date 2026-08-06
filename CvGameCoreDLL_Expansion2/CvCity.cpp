@@ -11861,6 +11861,12 @@ int CvCity::GetGreatPersonPointsFromUA_Building(SpecialistTypes eIndex) const
 	if (!pUA) return 0;
 	return pUA->GetBuildingGreatPersonPointsForCity(this, eIndex);
 }
+int CvCity::GetGreatPersonPointsFromUA_GreatWork(SpecialistTypes eIndex) const
+{
+	CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (!pUA) return 0;
+	return pUA->GetGreatWorkGreatPersonPointsForCity(this, eIndex);
+}
 #endif
 //	--------------------------------------------------------------------------------
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
