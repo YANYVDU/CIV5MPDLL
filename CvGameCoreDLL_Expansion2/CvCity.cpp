@@ -833,6 +833,28 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 		}
 	}
 
+	// Free Buildings for Minor Civilizations
+	// Also applied when isFinalInitialized() is false so the capital founded
+	// during setInitialItems() receives them at game start.
+	if(owningPlayer.isMinorCiv() && owningPlayer.getNumCities() == 1)
+	{
+		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(owningPlayer.GetMinorCivAI()->GetMinorCivType());
+		if(pkMinorCivInfo)
+		{
+			for(iI = 0; iI < GC.getNumBuildingClassInfos(); iI++)
+			{
+				if(pkMinorCivInfo->isFreeBuildingClass(iI))
+				{
+					eLoopBuilding = owningPlayer.GetCivBuilding((BuildingClassTypes)iI);
+					if(eLoopBuilding != NO_BUILDING)
+					{
+						m_pCityBuildings->SetNumRealBuilding(eLoopBuilding, true);
+					}
+				}
+			}
+		}
+	}
+
 	// How long before this City picks a Resource to demand?
 	DoSeedResourceDemandedCountdown();
 

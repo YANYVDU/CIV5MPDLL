@@ -148,3 +148,10 @@ create table CityStateUAEffect_GreatWorkGreatPersonPoints (
     Rate integer default 0,
     CapitalOnly boolean default 0
 );
+
+-- MinorCivilizations free building classes (analogous to Civilization_FreeBuildingClasses):
+-- grants the building class to the city-state's first city, also at game start
+create table MinorCivilization_FreeBuildingClasses (
+    MinorCivType text references MinorCivilizations(Type),
+    BuildingClassType text references BuildingClasses(Type)
+);

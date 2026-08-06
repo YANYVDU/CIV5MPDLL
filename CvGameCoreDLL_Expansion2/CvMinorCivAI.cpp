@@ -11151,13 +11151,15 @@ CvMinorCivInfo::CvMinorCivInfo() :
 	m_iDefaultPlayerColor(NO_PLAYERCOLOR),
 	m_iArtStyleType(NO_ARTSTYLE),
 	m_iMinorCivTrait(NO_MINOR_CIV_TRAIT_TYPE),
-	m_piFlavorValue(NULL)
+	m_piFlavorValue(NULL),
+	m_pbFreeBuildingClass(NULL)
 {
 }
 //------------------------------------------------------------------------------
 CvMinorCivInfo::~CvMinorCivInfo()
 {
 	SAFE_DELETE_ARRAY(m_piFlavorValue);
+	SAFE_DELETE_ARRAY(m_pbFreeBuildingClass);
 }
 //------------------------------------------------------------------------------
 int CvMinorCivInfo::getDefaultPlayerColor() const
@@ -11255,6 +11257,13 @@ const char* CvMinorCivInfo::GetUAType() const
 }
 #endif
 //------------------------------------------------------------------------------
+bool CvMinorCivInfo::isFreeBuildingClass(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_pbFreeBuildingClass ? m_pbFreeBuildingClass[i] : false;
+}
+//------------------------------------------------------------------------------
 int CvMinorCivInfo::getFlavorValue(int i) const
 {
 	CvAssertMsg(i < GC.getNumFlavorTypes(), "Index out of bounds");
@@ -11338,6 +11347,10 @@ bool CvMinorCivInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 
 		pResults->Reset();
 	}
+
+	kUtility.PopulateArrayByExistence(m_pbFreeBuildingClass,
+	                                  "BuildingClasses", "MinorCivilization_FreeBuildingClasses",
+	                                  "BuildingClassType", "MinorCivType", szType);
 
 	return true;
 }

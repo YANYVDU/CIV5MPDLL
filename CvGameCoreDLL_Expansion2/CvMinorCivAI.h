@@ -675,6 +675,7 @@ public:
 
 	int GetMinorCivTrait() const;
 	const char* GetUAType() const;
+	bool isFreeBuildingClass(int i) const;
 
 	// Deprecated Members
 	const char* getAdjectiveKeyWide() const;
@@ -712,6 +713,7 @@ protected:
 
 	// Arrays
 	int* m_piFlavorValue;
+	bool* m_pbFreeBuildingClass;
 	std::vector<CvString> m_vCityNames;
 };
 
