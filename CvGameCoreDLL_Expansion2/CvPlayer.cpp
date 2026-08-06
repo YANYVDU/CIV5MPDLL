@@ -14271,9 +14271,63 @@ int CvPlayer::GetUnhappinessFromCityPopulation(CvCity* pAssumeCityAnnexed, CvCit
 			iUnhappiness /= 100;
 		}
 	}
+
+	// Panama UA: population unhappiness reduction per cross-continental international trade route (cap 90%)
+	int iCrossContinentReduction = GetCrossContinentRouteUnhappinessReduction();
+	if (iCrossContinentReduction != 0)
+	{
+		iUnhappiness *= (100 + iCrossContinentReduction);
+		iUnhappiness /= 100;
+	}
 #endif
 
 	return iUnhappiness;
+}
+
+//	--------------------------------------------------------------------------------
+/// Actual population unhappiness reduction from cross-continental international trade routes (Panama UA). Negative when active.
+int CvPlayer::GetCrossContinentRouteUnhappinessReduction() const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
+		int iPerRoute = pUA ? pUA->GetUnhappinessReductionPerCrossContinentRoute() : 0;
+		if (iPerRoute != 0)
+		{
+			CvGameTrade* pGameTrade = GC.getGame().GetGameTrade();
+			if (pGameTrade)
+			{
+				int iRouteCount = 0;
+				const TradeConnectionList& kRoutes = pGameTrade->m_aTradeConnections;
+				for (size_t i = 0; i < kRoutes.size(); i++)
+				{
+					const TradeConnection& kConnection = kRoutes[i];
+					if (kConnection.m_eOriginOwner != GetID())
+						continue;
+					if (!pGameTrade->IsConnectionInternational(kConnection))
+						continue;
+
+					CvPlot* pOriginPlot = GC.getMap().plot(kConnection.m_iOriginX, kConnection.m_iOriginY);
+					CvPlot* pDestPlot = GC.getMap().plot(kConnection.m_iDestX, kConnection.m_iDestY);
+					// Different landmasses means the route crosses a continent border (overseas)
+					if (pOriginPlot && pDestPlot && pOriginPlot->getLandmass() != pDestPlot->getLandmass())
+					{
+						iRouteCount++;
+					}
+				}
+
+				int iReductionPercent = iRouteCount * iPerRoute / 100;
+				if (iReductionPercent > 90)
+					iReductionPercent = 90;
+				if (iReductionPercent > 0)
+					return -iReductionPercent;
+			}
+		}
+	}
+#endif
+
+	return 0;
 }
 
 //	--------------------------------------------------------------------------------

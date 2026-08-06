@@ -1993,6 +1993,7 @@ public:
 	CvPlayerPolicies* GetPlayerPolicies() const;
 	CvPlayerTraits* GetPlayerTraits() const;
 	CvPlayerCityStateUA* GetPlayerCityStateUA() const;
+	int GetCrossContinentRouteUnhappinessReduction() const;
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
 	CvCitySpecializationAI* GetCitySpecializationAI() const;

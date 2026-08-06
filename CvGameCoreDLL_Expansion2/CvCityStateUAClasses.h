@@ -94,6 +94,8 @@ public:
 	int GetWonderProductionPerDonationHappiness() const;
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
+	// Panama (BaNaMa)
+	int GetUnhappinessReductionPerCrossContinentRoute() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
@@ -155,6 +157,8 @@ private:
 	int m_iWonderProductionPerDonationHappiness;
 	// Malacca
 	int m_iLuxuryHappinessModifier;
+	// Panama
+	int m_iUnhappinessReductionPerCrossContinentRoute;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
@@ -291,6 +295,8 @@ public:
 	int GetWonderProductionPerDonationHappiness() const;
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
+	// Panama
+	int GetUnhappinessReductionPerCrossContinentRoute() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	int GetAllyInfluenceModFromBornGreatPerson() const;
@@ -339,6 +345,7 @@ protected:
 	int m_iGoldDonationInterval;
 	int m_iWonderProductionPerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
+	int m_iUnhappinessReductionPerCrossContinentRoute;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;

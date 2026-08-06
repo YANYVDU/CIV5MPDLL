@@ -95,7 +95,8 @@ CREATE TABLE CityStateUAEffects (
     GoldDonationInterval                            integer DEFAULT 0,
     WonderProductionPerDonationHappiness            integer DEFAULT 0,
     -- Malacca: luxury happiness
-    LuxuryHappinessModifier                         integer DEFAULT 0
+    -- Panama: population unhappiness reduction per cross-continental trade route (value = per-route % * 100; 每1=100, cap 90)
+    UnhappinessReductionPerCrossContinentRoute      integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

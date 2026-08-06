@@ -5,6 +5,7 @@
 #include "CvGameCoreDLLUtil.h"
 #include "CvCityStateUAClasses.h"
 #include "CvPlayer.h"
+#include "CvDatabaseUtility.h"
 
 #include "LintFree.h"
 
@@ -50,6 +51,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iGoldDonationInterval(0)
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iLuxuryHappinessModifier(0)
+	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 {
 }
 
@@ -118,6 +120,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iWonderProductionPerDonationHappiness			= kResults.GetInt("WonderProductionPerDonationHappiness");
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
+	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
 	{
 		m_vBuildingGPP.clear();
 		std::string strKey2("CityStateUAEffect_BuildingGreatPersonPoints");
@@ -231,6 +234,7 @@ int CvCityStateUAEffectEntry::GetGoldDonationInterval() const { return m_iGoldDo
 int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
 //======================================================================================================
 // CvCityStateUAEffectXMLEntries
 //======================================================================================================
@@ -398,6 +402,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iGoldDonationInterval(0)
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iLuxuryHappinessModifier(0)
+	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 {
 }
 
@@ -458,6 +463,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iGoldDonationInterval = 0;
 	m_iWonderProductionPerDonationHappiness = 0;
 	m_iLuxuryHappinessModifier = 0;
+	m_iUnhappinessReductionPerCrossContinentRoute = 0;
 	m_vBornGreatPersonSpecialistYield.clear();
 	m_vBuildingGPP.clear();
 	m_vBornAllyInfluenceMod.clear();
@@ -528,6 +534,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iWonderProductionPerDonationHappiness			+= pEffect->GetWonderProductionPerDonationHappiness() * iChange;
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
+	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
 	{
 		const std::vector<BornGreatPersonSpecialistYieldEntry>& vEntries = pEffect->GetBornGreatPersonSpecialistYieldEntries();
 		int iEntryCount = (int)vEntries.size();
@@ -616,6 +623,7 @@ int CvPlayerCityStateUA::GetHappinessPerGoldDonated() const { return m_iHappines
 int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }
 int CvPlayerCityStateUA::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvPlayerCityStateUA::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
 int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const
 {
 	if (!m_pPlayer) return 0;

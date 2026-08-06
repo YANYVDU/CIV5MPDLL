@@ -324,6 +324,7 @@ protected:
 	static int lGetHappinessFromResourceVariety(lua_State* L);
 	static int lGetCSLuxuryHappinessModifier(lua_State* L);
 	static int lGetCSLuxuryHappinessValue(lua_State* L);
+	static int lGetCrossContinentRouteUnhappinessReduction(lua_State* L);
 	static int lGetExtraHappinessPerLuxury(lua_State* L);
 	static int lGetHappinessFromReligion(lua_State* L);
 	static int lGetHappinessFromNaturalWonders(lua_State* L);

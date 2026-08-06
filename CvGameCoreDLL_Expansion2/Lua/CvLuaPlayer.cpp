@@ -434,6 +434,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetHappinessFromResourceVariety);
 	Method(GetCSLuxuryHappinessModifier);
 	Method(GetCSLuxuryHappinessValue);
+	Method(GetCrossContinentRouteUnhappinessReduction);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
 	Method(GetHappinessFromNaturalWonders);
@@ -3481,6 +3482,13 @@ int CvLuaPlayer::lGetCSLuxuryHappinessValue(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::GetCSLuxuryHappinessValue);
 }
+//int GetCrossContinentRouteUnhappinessReduction() const;
+int CvLuaPlayer::lGetCrossContinentRouteUnhappinessReduction(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetCrossContinentRouteUnhappinessReduction);
+}
+
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 //int GetExtraHappinessPerLuxury() const;
