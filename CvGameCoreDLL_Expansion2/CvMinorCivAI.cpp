@@ -10045,9 +10045,11 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 					int iMinorIdx = GetPlayer()->GetID() - MAX_MAJOR_CIVS;
 					GET_PLAYER(ePlayer).ChangeGoldDonatedToMinor(iMinorIdx, iGold);
 					bool bHasDonation = (pAllyEff && pAllyEff->GetGoldDonationInterval() > 0) || (pFriendEff && pFriendEff->GetGoldDonationInterval() > 0);
-					if (bHasDonation) 
+					if (bHasDonation)
 					{
 						GET_PLAYER(ePlayer).ChangeTotalGoldDonated(iGold);
+						// Recompute happiness so the gold-donation happiness updates immediately
+						GET_PLAYER(ePlayer).DoUpdateHappiness();
 					}
 				}
 			}
