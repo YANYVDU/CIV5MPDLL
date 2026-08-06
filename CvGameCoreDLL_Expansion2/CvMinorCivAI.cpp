@@ -6784,7 +6784,6 @@ void CvMinorCivAI::DoFriendshipChangeEffects(PlayerTypes ePlayer, int iOldFriend
 	}
 
 	// Resolve Allies status
-	bool bWasAboveAlliesThreshold = IsFriendshipAboveAlliesThresholdForPlayer(ePlayer, iOldFriendship);
 	bool bNowAboveAlliesThreshold = IsFriendshipAboveAlliesThresholdForPlayer(ePlayer, iNewFriendship);
 	PlayerTypes eOldAlly = GetAlly();
 
@@ -6818,7 +6817,11 @@ void CvMinorCivAI::DoFriendshipChangeEffects(PlayerTypes ePlayer, int iOldFriend
 #endif
 	}
 	// Remove Allies bonus
-	else if(eOldAlly == ePlayer && bWasAboveAlliesThreshold && !bNowAboveAlliesThreshold)
+	// Strip the alliance whenever the current ally no longer meets the threshold. The former
+	// bWasAboveAlliesThreshold guard was evaluated against the current (possibly raised) threshold,
+	// so once an era change pushed the allies threshold above this player's influence it became
+	// permanently false and the alliance could never be removed, even with influence far below it.
+	else if(eOldAlly == ePlayer && !bNowAboveAlliesThreshold)
 	{
 		bAdd = false;
 		bAllies = true;
