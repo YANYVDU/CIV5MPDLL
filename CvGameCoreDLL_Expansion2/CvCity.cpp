@@ -6118,8 +6118,8 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 #endif
 
 					// Florence UA: reduce the cost RISE (delta) of faith-purchased Great People, not the base cost
-					// Discounted = previous GP original cost + (current - previous) * (100 - iMod) / 100
-					// iMod = RiseModifier + RiseModifierPerGW * numGreatWorks, capped at 90%
+					// Discounted = previous GP original cost + (current - previous) * (100 + iMod) / 100
+					// iMod = RiseModifier + RiseModifierPerGW * numGreatWorks, negative = discount, capped at -90%
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 						if (MOD_SP_UNIQUE_CITYSTATE && iNum > 0 && iCost > 0)
 						{
@@ -6133,13 +6133,13 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 									int iNumGWs = kPlayer.GetCulture()->GetNumGreatWorks(false);
 									int iMod = iRiseMod + (iRiseModPerGW * iNumGWs);
 									const int iRiseModCap = 90;  // Florence design: cost-rise discount cap -90%
-									if (iMod > iRiseModCap) iMod = iRiseModCap;
-									if (iMod < 0) iMod = 0;
-									if (iMod > 0)
+									if (iMod < -iRiseModCap) iMod = -iRiseModCap;
+									if (iMod > 0) iMod = 0;
+									if (iMod < 0)
 									{
 										int iCostPrev = GC.getGame().GetGameReligions()->GetFaithGreatPersonNumber(iNum);
 										int iDelta = iCost - iCostPrev;
-										iCost = iCostPrev + iDelta * (100 - iMod) / 100;
+										iCost = iCostPrev + iDelta * (100 + iMod) / 100;
 									}
 								}
 							}
