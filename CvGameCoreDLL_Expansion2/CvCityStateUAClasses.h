@@ -36,6 +36,12 @@ struct GreatWorkGreatPersonPointsEntry {
 	bool m_bCapitalOnly;
 };
 
+struct YieldToYieldViaTRToUCSEntry {
+	int m_iInYieldType;
+	int m_iOutYieldType;
+	int m_iPercent;
+};
+
 //======================================================================================================
 class CvCityStateUAEffectEntry : public CvBaseInfo
 {
@@ -108,6 +114,7 @@ public:
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
 	// Brussels: each great work of a class grants great person points to a specialist (Rate=100 => 1 great work = 1 point)
 	const std::vector<GreatWorkGreatPersonPointsEntry>& GetGreatWorkGreatPersonPointsEntries() const { return m_vGreatWorkGreatPersonPoints; }
+	int GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const;
 
 private:
 	// Florence
@@ -172,6 +179,7 @@ private:
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
+	std::vector<YieldToYieldViaTRToUCSEntry> m_vYieldToYieldViaTRToUCS;
 };
 
 //======================================================================================================

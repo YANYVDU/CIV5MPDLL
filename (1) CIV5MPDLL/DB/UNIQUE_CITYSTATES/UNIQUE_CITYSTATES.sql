@@ -149,6 +149,15 @@ create table CityStateUAEffect_GreatWorkGreatPersonPoints (
     CapitalOnly boolean default 0
 );
 
+-- City State UA (Colombo): for cities running a trade route to this city-state (UCS), a percentage of
+-- the input yield (InYieldType) is granted as extra output yield (OutYieldType); the original input yield is unchanged
+create table CityStateUAEffect_YieldToYieldViaTRToUCS (
+    EffectType text references CityStateUAEffects(Type),
+    InYieldType text references Yields(Type),
+    OutYieldType text references Yields(Type),
+    Percent integer default 0
+);
+
 -- MinorCivilizations free building classes (analogous to Civilization_FreeBuildingClasses):
 -- grants the building class to the city-state's first city, also at game start
 create table MinorCivilization_FreeBuildingClasses (

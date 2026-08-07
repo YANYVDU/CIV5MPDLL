@@ -13867,6 +13867,13 @@ int CvCity::getBaseYieldRate(YieldTypes eIndex, const bool bIgnoreFromOtherYield
 	}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE && !bIgnoreFromOtherYield)
+	{
+		iValue += GetYieldRateFromFaithConversion(eIndex);
+	}
+#endif
+
 	CvCity* pThisCity = const_cast<CvCity*>(this);
 	for (int iI = 0; iI < NUM_YIELD_TYPES; iI++)
 	{
@@ -14201,6 +14208,17 @@ CvString CvCity::getYieldRateInfoTool(YieldTypes eIndex, bool bIgnoreTrade) cons
 		if(iBaseValue != 0)
 		{
 			szRtnValue += GetLocalizedText("TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_OTHER_YIELD", iBaseValue, YieldIcon);
+		}
+	}
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		iBaseValue = GetYieldRateFromFaithConversion(eIndex);
+		if(iBaseValue != 0)
+		{
+			szRtnValue += GetLocalizedText("TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_ALLY_CS_UA", iBaseValue, YieldIcon);
 		}
 	}
 #endif
@@ -14779,6 +14797,61 @@ int CvCity::GetBaseYieldRateFromOtherYield(YieldTypes eYield) const
 }
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvCity::GetYieldRateFromFaithConversion(YieldTypes eYield) const
+{
+	VALIDATE_OBJECT
+	CvAssertMsg(eYield >= 0, "eYield expected to be >= 0");
+	CvAssertMsg(eYield < NUM_YIELD_TYPES, "eYield expected to be < NUM_YIELD_TYPES");
+
+	int iResult = 0;
+	PlayerTypes ePlayer = getOwner();
+
+	// iterate all minor civs, looking for an allied/friendly city-state whose UA grants a faith conversion
+	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
+		if (!GET_PLAYER(eMinor).isAlive() || !GET_PLAYER(eMinor).isMinorCiv())
+			continue;
+
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+		CvMinorCivInfo* pkMinorCivInfo = pMinorAI ? GC.getMinorCivInfo(pMinorAI->GetMinorCivType()) : NULL;
+		const char* szUAType = pkMinorCivInfo ? pkMinorCivInfo->GetUAType() : NULL;
+		if (!szUAType || szUAType[0] == '\0')
+			continue;
+
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		if (!pUAEntry)
+			continue;
+
+		int iEffectID = -1;
+		if (pMinorAI->IsAllies(ePlayer))
+			iEffectID = pUAEntry->GetAllyEffectID();
+		else if (pMinorAI->IsFriends(ePlayer))
+			iEffectID = pUAEntry->GetFriendEffectID();
+		if (iEffectID < 0)
+			continue;
+
+		CvCityStateUAEffectEntry* pEffectEntry = GC.getCityStateUAEffectEntry(iEffectID);
+		if (!pEffectEntry)
+			continue;
+
+		int iPercent = pEffectEntry->GetYieldToYieldViaTRToUCS(YIELD_FAITH, eYield);
+		if (iPercent <= 0)
+			continue;
+
+		// the conversion only applies to cities that actually run a trade route to this city-state
+		if (!GET_PLAYER(ePlayer).GetTrade()->HasTradeRouteToPlayer(this, eMinor))
+			continue;
+
+		// faith base yield (ignore other-yield conversions to avoid recursion)
+		int iFaithBase = getBasicYieldRateTimes100(YIELD_FAITH, false, true) / 100;
+		iResult += (iFaithBase * iPercent) / 100;
+	}
+
+	return iResult;
+}
+#endif
 //	--------------------------------------------------------------------------------
 /// Base yield rate from Religion
 void CvCity::ChangeBaseYieldRateFromReligion(YieldTypes eIndex, int iChange)

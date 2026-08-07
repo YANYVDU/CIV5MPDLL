@@ -817,6 +817,11 @@ public:
 	int GetBaseYieldRateFromOtherYield(YieldTypes eYield) const;
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Colombo: extra yield granted from a percentage of faith base yield for cities with a trade route to an allied city-state
+	int GetYieldRateFromFaithConversion(YieldTypes eYield) const;
+#endif
+
 	int getBaseYieldRateModifier(YieldTypes eIndex, int iExtra = 0, CvString* toolTipSink = NULL) const;
 	int getYieldRate(YieldTypes eIndex, bool bIgnoreTrade, bool bStatic = true) const;
 	int getYieldRateTimes100(YieldTypes eIndex, bool bIgnoreTrade, bool bStatic = true) const;

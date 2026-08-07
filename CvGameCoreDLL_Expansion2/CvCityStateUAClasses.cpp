@@ -196,7 +196,25 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vBornGreatPersonSpecialistYield.push_back(entry);
 		}
 	}
-
+	//Colombo: in cities with a trade route to this city-state (UCS), a percentage of the input yield is granted as extra output yield
+	{
+		m_vYieldToYieldViaTRToUCS.clear();
+		std::string strKey("CityStateUAEffect_YieldToYieldViaTRToUCS");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select YieldsIn.ID as InYieldID, YieldsOut.ID as OutYieldID, Percent from CityStateUAEffect_YieldToYieldViaTRToUCS inner join Yields as YieldsIn on YieldsIn.Type = InYieldType inner join Yields as YieldsOut on YieldsOut.Type = OutYieldType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			YieldToYieldViaTRToUCSEntry entry;
+			entry.m_iInYieldType = pResults->GetInt(0);
+			entry.m_iOutYieldType = pResults->GetInt(1);
+			entry.m_iPercent = pResults->GetInt(2);
+			m_vYieldToYieldViaTRToUCS.push_back(entry);
+		}
+	}
 	return true;
 }
 
@@ -256,6 +274,18 @@ int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { 
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
+
+int CvCityStateUAEffectEntry::GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const
+{
+	int iTotal = 0;
+	for (size_t i = 0; i < m_vYieldToYieldViaTRToUCS.size(); i++)
+	{
+		if (m_vYieldToYieldViaTRToUCS[i].m_iInYieldType == eInYield && m_vYieldToYieldViaTRToUCS[i].m_iOutYieldType == eOutYield)
+			iTotal += m_vYieldToYieldViaTRToUCS[i].m_iPercent;
+	}
+	return iTotal;
+}
+
 //======================================================================================================
 // CvCityStateUAEffectXMLEntries
 //======================================================================================================
