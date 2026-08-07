@@ -110,6 +110,7 @@ public:
 	int GetHappinessPerGoldDonated() const;
 	int GetGoldDonationInterval() const;
 	int GetWonderProductionPerDonationHappiness() const;
+	int GetIdeologyPressurePerDonationHappiness() const;
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
 	// Panama (BaNaMa)
@@ -179,6 +180,7 @@ private:
 	int m_iHappinessPerGoldDonated;
 	int m_iGoldDonationInterval;
 	int m_iWonderProductionPerDonationHappiness;
+	int m_iIdeologyPressurePerDonationHappiness;
 	// Malacca
 	int m_iLuxuryHappinessModifier;
 	// Panama
@@ -320,6 +322,7 @@ public:
 	int GetHappinessPerGoldDonated() const;
 	int GetGoldDonationInterval() const;
 	int GetWonderProductionPerDonationHappiness() const;
+	int GetIdeologyPressurePerDonationHappiness() const;
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
 	// Panama
@@ -373,6 +376,7 @@ protected:
 	int m_iHappinessPerGoldDonated;
 	int m_iGoldDonationInterval;
 	int m_iWonderProductionPerDonationHappiness;
+	int m_iIdeologyPressurePerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;

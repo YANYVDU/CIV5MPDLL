@@ -50,6 +50,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iHappinessPerGoldDonated(0)
 	, m_iGoldDonationInterval(0)
 	, m_iWonderProductionPerDonationHappiness(0)
+	, m_iIdeologyPressurePerDonationHappiness(0)
 	, m_iLuxuryHappinessModifier(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 {
@@ -118,6 +119,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iHappinessPerGoldDonated						= kResults.GetInt("HappinessPerGoldDonated");
 	m_iGoldDonationInterval							= kResults.GetInt("GoldDonationInterval");
 	m_iWonderProductionPerDonationHappiness			= kResults.GetInt("WonderProductionPerDonationHappiness");
+	m_iIdeologyPressurePerDonationHappiness			= kResults.GetInt("IdeologyPressurePerDonationHappiness");
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
@@ -289,6 +291,7 @@ int CvCityStateUAEffectEntry::GetLandTradeRouteDistancePerTradeSlot() const { re
 int CvCityStateUAEffectEntry::GetHappinessPerGoldDonated() const { return m_iHappinessPerGoldDonated; }
 int CvCityStateUAEffectEntry::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }
 int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
+int CvCityStateUAEffectEntry::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
@@ -481,6 +484,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iHappinessPerGoldDonated(0)
 	, m_iGoldDonationInterval(0)
 	, m_iWonderProductionPerDonationHappiness(0)
+	, m_iIdeologyPressurePerDonationHappiness(0)
 	, m_iLuxuryHappinessModifier(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 {
@@ -542,6 +546,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iHappinessPerGoldDonated = 0;
 	m_iGoldDonationInterval = 0;
 	m_iWonderProductionPerDonationHappiness = 0;
+	m_iIdeologyPressurePerDonationHappiness = 0;
 	m_iLuxuryHappinessModifier = 0;
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
 	m_vGreatWorkGreatPersonPoints.clear();
@@ -613,6 +618,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iHappinessPerGoldDonated						+= pEffect->GetHappinessPerGoldDonated() * iChange;
 	m_iGoldDonationInterval							+= pEffect->GetGoldDonationInterval() * iChange;
 	m_iWonderProductionPerDonationHappiness			+= pEffect->GetWonderProductionPerDonationHappiness() * iChange;
+	m_iIdeologyPressurePerDonationHappiness			+= pEffect->GetIdeologyPressurePerDonationHappiness() * iChange;
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
@@ -712,6 +718,7 @@ int CvPlayerCityStateUA::GetLandTradeRouteDistancePerTradeSlot() const { return 
 int CvPlayerCityStateUA::GetHappinessPerGoldDonated() const { return m_iHappinessPerGoldDonated; }
 int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }
 int CvPlayerCityStateUA::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
+int CvPlayerCityStateUA::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvPlayerCityStateUA::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
 int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const

@@ -94,6 +94,7 @@ CREATE TABLE CityStateUAEffects (
     HappinessPerGoldDonated                         integer DEFAULT 0,
     GoldDonationInterval                            integer DEFAULT 0,
     WonderProductionPerDonationHappiness            integer DEFAULT 0,
+    IdeologyPressurePerDonationHappiness            integer DEFAULT 0,
     -- Malacca: luxury happiness
     -- Panama: population unhappiness reduction per cross-continental trade route (value = per-route % * 100; 每1=100, cap 90)
     UnhappinessReductionPerCrossContinentRoute      integer DEFAULT 0

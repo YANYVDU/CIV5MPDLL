@@ -15,6 +15,7 @@
 #include "CvDiplomacyAI.h"
 #include "CvGrandStrategyAI.h"
 #include "CvTypes.h"
+#include "CvCityStateUAClasses.h"
 
 #include "LintFree.h"
 
@@ -3587,6 +3588,21 @@ void CvPlayerCulture::DoPublicOpinion()
 		if (MOD_POLICIY_PUBLIC_OPTION)
 		{
 			iCulturalDominanceOverUs = (100 + kPlayer.GetIdeologyPressureModifier()) * iCulturalDominanceOverUs / 100;
+		}
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			CvPlayerCityStateUA* pDubaiUA = kPlayer.GetPlayerCityStateUA();
+			if (pDubaiUA != NULL)
+			{
+				int iDubaiPressureMod = pDubaiUA->GetIdeologyPressurePerDonationHappiness() * kPlayer.GetGoldDonationHappiness();
+				if (iDubaiPressureMod != 0)
+				{
+					iCulturalDominanceOverUs = (100 + iDubaiPressureMod) * iCulturalDominanceOverUs / 100;
+				}
+			}
 		}
 #endif
 
