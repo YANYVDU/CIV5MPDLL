@@ -3039,6 +3039,38 @@ int CvPlayerTrade::GetTradeValuesAtCityTimes100 (const CvCity *const pCity, Yiel
 }
 
 //	--------------------------------------------------------------------------------
+bool CvPlayerTrade::HasTradeRouteToPlayer (const CvCity* pOriginCity, PlayerTypes eDestPlayer)
+{
+	if (!pOriginCity)
+	{
+		return false;
+	}
+
+	int iCityX = pOriginCity->getX();
+	int iCityY = pOriginCity->getY();
+
+	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+	for (uint ui = 0; ui < pTrade->m_aTradeConnections.size(); ui++)
+	{
+		TradeConnection* pConnection = &(pTrade->m_aTradeConnections[ui]);
+
+		if (pTrade->IsTradeRouteIndexEmpty(ui))
+		{
+			continue;
+		}
+
+		if (pConnection->m_eOriginOwner == m_pPlayer->GetID()
+			&& pConnection->m_iOriginX == iCityX && pConnection->m_iOriginY == iCityY
+			&& pConnection->m_eDestOwner == eDestPlayer)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
 int CvPlayerTrade::GetAllTradeValueTimes100 (YieldTypes eYield)
 {
 	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
