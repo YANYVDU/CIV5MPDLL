@@ -11,6 +11,7 @@
 #include "CvGameCoreUtils.h" 
 #include "CvInfosSerializationHelper.h" 
 #include "CvCitySpecializationAI.h"
+#include "CvCityStateUAClasses.h"
 
 #include "CvBarbarians.h"
 
@@ -2701,6 +2702,46 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 			iValue *= iModifier;
 			iValue /= 100;
 			iValue = max(iMinValue, iValue);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Colombo UA: international trade routes ending at this city-state grant a flat
+			// per-era yield (Era+1 times YieldValue) to the allied/friendly origin player
+			if (MOD_SP_UNIQUE_CITYSTATE)
+			{
+				CvCity* pColomboDestCity = CvGameTrade::GetDestCity(kTradeConnection);
+				if (pColomboDestCity)
+				{
+					PlayerTypes eColomboDestPlayer = (PlayerTypes)pColomboDestCity->getOwner();
+					if (eColomboDestPlayer >= MAX_MAJOR_CIVS && GET_PLAYER(eColomboDestPlayer).isMinorCiv())
+					{
+						CvMinorCivAI* pColomboDestMinorAI = GET_PLAYER(eColomboDestPlayer).GetMinorCivAI();
+						CvMinorCivInfo* pColomboDestMinorInfo = pColomboDestMinorAI ? GC.getMinorCivInfo(pColomboDestMinorAI->GetMinorCivType()) : NULL;
+						const char* szColomboDestUAType = pColomboDestMinorInfo ? pColomboDestMinorInfo->GetUAType() : NULL;
+						if (szColomboDestUAType && szColomboDestUAType[0] != '\0')
+						{
+							CvCityStateUAEntry* pColomboDestUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szColomboDestUAType);
+							if (pColomboDestUAEntry)
+							{
+								int iColomboEffectID = -1;
+								if (pColomboDestMinorAI->IsAllies(kOriginPlayer.GetID()))
+									iColomboEffectID = pColomboDestUAEntry->GetAllyEffectID();
+								else if (pColomboDestMinorAI->IsFriends(kOriginPlayer.GetID()))
+									iColomboEffectID = pColomboDestUAEntry->GetFriendEffectID();
+								if (iColomboEffectID >= 0)
+								{
+									CvCityStateUAEffectEntry* pColomboEffect = GC.getCityStateUAEffectEntry(iColomboEffectID);
+									if (pColomboEffect)
+									{
+										int iColomboEraYield = pColomboEffect->GetInternalTRToUCSPerEraYield(eYield);
+										if (iColomboEraYield != 0)
+											iValue += iColomboEraYield * 100 * (kOriginPlayer.GetCurrentEra() + 1);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+#endif
 		}
 
 		iValue += pOriginCity->GetTradeRouteFromTheCityYields(eYield) * 100;

@@ -196,6 +196,24 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vBornGreatPersonSpecialistYield.push_back(entry);
 		}
 	}
+	//Colombo: flat per-era yield on the international trade route (InternalTR) to this city-state (UCS)
+	{
+		m_vInternalTRToUCSPerEraYield.clear();
+		std::string strKey("CityStateUAEffect_InternalTRToUCSPerEraYield");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldValue from CityStateUAEffect_InternalTRToUCSPerEraYield inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			InternalTRToUCSPerEraYieldEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldValue = pResults->GetInt(1);
+			m_vInternalTRToUCSPerEraYield.push_back(entry);
+		}
+	}
 	//Colombo: in cities with a trade route to this city-state (UCS), a percentage of the input yield is granted as extra output yield
 	{
 		m_vYieldToYieldViaTRToUCS.clear();
@@ -274,6 +292,17 @@ int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { 
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
+
+int CvCityStateUAEffectEntry::GetInternalTRToUCSPerEraYield(int eYield) const
+{
+	int iTotal = 0;
+	for (size_t i = 0; i < m_vInternalTRToUCSPerEraYield.size(); i++)
+	{
+		if (m_vInternalTRToUCSPerEraYield[i].m_iYieldType == eYield)
+			iTotal += m_vInternalTRToUCSPerEraYield[i].m_iYieldValue;
+	}
+	return iTotal;
+}
 
 int CvCityStateUAEffectEntry::GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const
 {

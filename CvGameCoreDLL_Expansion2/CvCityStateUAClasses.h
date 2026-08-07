@@ -36,6 +36,11 @@ struct GreatWorkGreatPersonPointsEntry {
 	bool m_bCapitalOnly;
 };
 
+struct InternalTRToUCSPerEraYieldEntry {
+	int m_iYieldType;
+	int m_iYieldValue;
+};
+
 struct YieldToYieldViaTRToUCSEntry {
 	int m_iInYieldType;
 	int m_iOutYieldType;
@@ -114,6 +119,9 @@ public:
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
 	// Brussels: each great work of a class grants great person points to a specialist (Rate=100 => 1 great work = 1 point)
 	const std::vector<GreatWorkGreatPersonPointsEntry>& GetGreatWorkGreatPersonPointsEntries() const { return m_vGreatWorkGreatPersonPoints; }
+	// Colombo: flat per-era yield on the international trade route (InternalTR) to this city-state (UCS)
+	const std::vector<InternalTRToUCSPerEraYieldEntry>& GetInternalTRToUCSPerEraYieldEntries() const { return m_vInternalTRToUCSPerEraYield; }
+	int GetInternalTRToUCSPerEraYield(int eYield) const;
 	int GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const;
 
 private:
@@ -179,6 +187,7 @@ private:
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
+	std::vector<InternalTRToUCSPerEraYieldEntry> m_vInternalTRToUCSPerEraYield;
 	std::vector<YieldToYieldViaTRToUCSEntry> m_vYieldToYieldViaTRToUCS;
 };
 

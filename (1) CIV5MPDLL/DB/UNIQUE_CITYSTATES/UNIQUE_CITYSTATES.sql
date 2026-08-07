@@ -149,6 +149,14 @@ create table CityStateUAEffect_GreatWorkGreatPersonPoints (
     CapitalOnly boolean default 0
 );
 
+-- City State UA (Colombo): the international trade route (InternalTR) ending at this city-state (UCS)
+-- grants the origin player a flat per-era yield (Era+1 times YieldValue)
+create table CityStateUAEffect_InternalTRToUCSPerEraYield (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldValue integer default 0
+);
+
 -- City State UA (Colombo): for cities running a trade route to this city-state (UCS), a percentage of
 -- the input yield (InYieldType) is granted as extra output yield (OutYieldType); the original input yield is unchanged
 create table CityStateUAEffect_YieldToYieldViaTRToUCS (
