@@ -19442,6 +19442,32 @@ void CvCity::PurchaseCurrentOrder()
 #endif
 
 //	--------------------------------------------------------------------------------
+// Valletta UA: buying a specified building class grants all units of a domain XP
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+void CvCity::GrantPurchasedBuildingXP(BuildingTypes eBuildingType)
+{
+	CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (!pUA)
+		return;
+
+	BuildingClassTypes eBC = (BuildingClassTypes)GC.getBuildingInfo(eBuildingType)->GetBuildingClassType();
+	const std::vector<PurchasedBuildingXPEntry>& vEntries = pUA->GetPurchasedBuildingXPEntries();
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		if (vEntries[i].m_iXP > 0 && vEntries[i].m_iBuildingClass == eBC)
+		{
+			int iLoop;
+			for (CvUnit* pLoopUnit = GET_PLAYER(getOwner()).firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = GET_PLAYER(getOwner()).nextUnit(&iLoop))
+			{
+				if (pLoopUnit->getDomainType() == vEntries[i].m_iDomain)
+					pLoopUnit->changeExperienceTimes100(vEntries[i].m_iXP * 100);
+			}
+		}
+	}
+}
+#endif
+
+//	--------------------------------------------------------------------------------
 // purchase something at the city
 void CvCity::Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectTypes eProjectType, YieldTypes ePurchaseYield)
 {
@@ -19529,6 +19555,13 @@ void CvCity::Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectT
 		else if(eBuildingType >= 0)
 		{
 			bResult = CreateBuilding(eBuildingType);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			if (MOD_SP_UNIQUE_CITYSTATE && bResult)
+			{
+				GrantPurchasedBuildingXP(eBuildingType);
+			}
+#endif
 
 #if defined(MOD_EVENTS_CITY)
 			if (MOD_EVENTS_CITY) {
@@ -19719,6 +19752,12 @@ void CvCity::Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectT
 		{
 			bool bResult = false;
 			bResult = CreateBuilding(eBuildingType);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			if (MOD_SP_UNIQUE_CITYSTATE && bResult)
+			{
+				GrantPurchasedBuildingXP(eBuildingType);
+			}
+#endif
 			CleanUpQueue(); // cleans out items from the queue that may be invalidated by the recent construction
 			CvAssertMsg(bResult, "Unable to create building");
 

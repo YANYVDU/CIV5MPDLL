@@ -47,6 +47,12 @@ struct YieldToYieldViaTRToUCSEntry {
 	int m_iPercent;
 };
 
+struct PurchasedBuildingXPEntry {
+	int m_iBuildingClass;
+	int m_iDomain;
+	int m_iXP;
+};
+
 struct UnitBornYieldEntry {
 	int m_iMinorCivType;
 	int m_iUnitClass;
@@ -139,6 +145,8 @@ public:
 	int GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const;
 	// Valletta: enemy city besieged by >= this many of our combat units cannot heal
 	int GetEnemyCityNoHealBesiegeCount() const;
+	// Valletta: buying the specified building class grants all units of the specified domain XP
+	const std::vector<PurchasedBuildingXPEntry>& GetPurchasedBuildingXPEntries() const { return m_vPurchasedBuildingXP; }
 	// Valletta: born unit of the specified unit class grants a configurable yield = YieldMod% of influence with MinorCivType
 	const std::vector<UnitBornYieldEntry>& GetUnitBornYieldEntries() const { return m_vUnitBornYield; }
 
@@ -215,6 +223,7 @@ private:
 	std::vector<YieldToYieldViaTRToUCSEntry> m_vYieldToYieldViaTRToUCS;
 	// Valletta
 	int m_iEnemyCityNoHealBesiegeCount;
+	std::vector<PurchasedBuildingXPEntry> m_vPurchasedBuildingXP;
 	std::vector<UnitBornYieldEntry> m_vUnitBornYield;
 };
 
@@ -364,6 +373,7 @@ public:
 	bool HasGreatWorkGreatPersonPoints() const;
 	// Valletta
 	int GetEnemyCityNoHealBesiegeCount() const;
+	const std::vector<PurchasedBuildingXPEntry>& GetPurchasedBuildingXPEntries() const;
 	const std::vector<UnitBornYieldEntry>& GetUnitBornYieldEntries() const;
 
 	void Reset();
@@ -423,6 +433,7 @@ protected:
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
 	// Valletta
 	int m_iEnemyCityNoHealBesiegeCount;
+	std::vector<PurchasedBuildingXPEntry> m_vPurchasedBuildingXP;
 	std::vector<UnitBornYieldEntry> m_vUnitBornYield;
 };
 

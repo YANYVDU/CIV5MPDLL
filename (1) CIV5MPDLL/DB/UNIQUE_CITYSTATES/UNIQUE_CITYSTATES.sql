@@ -182,6 +182,15 @@ create table CityStateUAEffect_YieldToYieldViaTRToUCS (
     OutYieldType text references Yields(Type),
     Percent integer default 0
 );
+
+-- CityState UA (Valletta): buying the specified building class grants all units of the specified domain XP
+create table CityStateUAEffect_PurchasedBuildingXP (
+    EffectType text references CityStateUAEffects(Type),
+    BuildingClassType text references BuildingClasses(Type),
+    DomainType text references Domains(Type),
+    XP integer default 0
+);
+
 -- CityState UA (Valletta): born unit of the specified unit class grants a configurable yield equal to
 -- YieldMod% of the player's influence with the specified city-state (MinorCivType)
 create table CityStateUAEffect_UnitBornYield (

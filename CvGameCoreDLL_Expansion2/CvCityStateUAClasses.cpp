@@ -250,6 +250,25 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vYieldToYieldViaTRToUCS.push_back(entry);
 		}
 	}
+//Valletta: buying the specified building class grants all units of the specified domain XP
+	{
+		m_vPurchasedBuildingXP.clear();
+		std::string strKey("CityStateUAEffect_PurchasedBuildingXP");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select BuildingClasses.ID as BuildingClassID, Domains.ID as DomainID, XP from CityStateUAEffect_PurchasedBuildingXP inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner join Domains on Domains.Type = DomainType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			PurchasedBuildingXPEntry entry;
+			entry.m_iBuildingClass = pResults->GetInt(0);
+			entry.m_iDomain = pResults->GetInt(1);
+			entry.m_iXP = pResults->GetInt(2);
+			m_vPurchasedBuildingXP.push_back(entry);
+		}
+	}
 	//Valletta: born unit of the specified unit class grants a configurable yield equal to YieldMod% of influence with the specified city-state (MinorCivType)
 	{
 		m_vUnitBornYield.clear();
@@ -609,6 +628,7 @@ void CvPlayerCityStateUA::Reset()
 	m_vBuildingGPP.clear();
 	m_vBornAllyInfluenceMod.clear();
 	m_iEnemyCityNoHealBesiegeCount = 0;
+	m_vPurchasedBuildingXP.clear();
 	m_vUnitBornYield.clear();
 }
 
@@ -746,6 +766,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		}
 	}
 	{
+		const std::vector<PurchasedBuildingXPEntry>& vEntries = pEffect->GetPurchasedBuildingXPEntries();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			PurchasedBuildingXPEntry entry = vEntries[i];
+			entry.m_iXP *= iChange;
+			m_vPurchasedBuildingXP.push_back(entry);
+		}
+	}
+	{
 		const std::vector<UnitBornYieldEntry>& vEntries = pEffect->GetUnitBornYieldEntries();
 		for (size_t i = 0; i < vEntries.size(); i++)
 		{
@@ -873,4 +902,5 @@ bool CvPlayerCityStateUA::HasGreatWorkGreatPersonPoints() const
 	return !m_vGreatWorkGreatPersonPoints.empty();
 }
 int CvPlayerCityStateUA::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }
+const std::vector<PurchasedBuildingXPEntry>& CvPlayerCityStateUA::GetPurchasedBuildingXPEntries() const { return m_vPurchasedBuildingXP; }
 const std::vector<UnitBornYieldEntry>& CvPlayerCityStateUA::GetUnitBornYieldEntries() const { return m_vUnitBornYield; }

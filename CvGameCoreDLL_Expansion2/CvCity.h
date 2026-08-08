@@ -1225,6 +1225,9 @@ public:
 	void PurchaseCurrentOrder();
 #endif	
 	void Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectTypes eProjectType, YieldTypes ePurchaseYield);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	void GrantPurchasedBuildingXP(BuildingTypes eBuildingType);
+#endif
 
 	PlayerTypes getLiberationPlayer() const;
 	void liberate();
