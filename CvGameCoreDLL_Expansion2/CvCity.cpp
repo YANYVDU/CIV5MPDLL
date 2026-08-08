@@ -11683,7 +11683,24 @@ int CvCity::getMaxFoodKeptPercent() const
 	if (MOD_GLOBAL_CITY_SCALES && !CanGrowNormally())
 		return 0;
 #endif
-	return m_iMaxFoodKeptPercent + std::min(0, GetFoodKeptFromPollution());
+	int iPercent = m_iMaxFoodKeptPercent + std::min(0, GetFoodKeptFromPollution());
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Malacca UA: food kept (surplus) percentage bonus per happy luxury type
+	{
+		CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		int iFoodModPerLux = pUA ? pUA->GetFoodKeptModifierPerLuxury() : 0;
+		if (iFoodModPerLux != 0)
+		{
+			int iLuxCount = GET_PLAYER(getOwner()).GetHappyLuxuryTypeCount();
+			if (iLuxCount > 0)
+			{
+				iPercent += iLuxCount * iFoodModPerLux / 100;
+			}
+		}
+	}
+#endif
+	return iPercent;
 }
 
 

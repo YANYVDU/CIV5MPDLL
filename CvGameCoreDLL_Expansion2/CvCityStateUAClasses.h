@@ -113,6 +113,7 @@ public:
 	int GetIdeologyPressurePerDonationHappiness() const;
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
+	int GetFoodKeptModifierPerLuxury() const;
 	// Panama (BaNaMa)
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
@@ -183,6 +184,7 @@ private:
 	int m_iIdeologyPressurePerDonationHappiness;
 	// Malacca
 	int m_iLuxuryHappinessModifier;
+	int m_iFoodKeptModifierPerLuxury;
 	// Panama
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
@@ -325,6 +327,7 @@ public:
 	int GetIdeologyPressurePerDonationHappiness() const;
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
+	int GetFoodKeptModifierPerLuxury() const;
 	// Panama
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
@@ -378,6 +381,7 @@ protected:
 	int m_iWonderProductionPerDonationHappiness;
 	int m_iIdeologyPressurePerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
+	int m_iFoodKeptModifierPerLuxury;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;

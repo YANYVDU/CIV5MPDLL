@@ -52,6 +52,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iIdeologyPressurePerDonationHappiness(0)
 	, m_iLuxuryHappinessModifier(0)
+	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 {
 }
@@ -122,6 +123,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iIdeologyPressurePerDonationHappiness			= kResults.GetInt("IdeologyPressurePerDonationHappiness");
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
+	m_iFoodKeptModifierPerLuxury						= kResults.GetInt("FoodKeptModifierPerLuxury");
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
 	//Brussels: each great work of a class grants great person points to a specialist
 	{
@@ -294,6 +296,7 @@ int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { 
 int CvCityStateUAEffectEntry::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvCityStateUAEffectEntry::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
 
 int CvCityStateUAEffectEntry::GetInternalTRToUCSPerEraYield(int eYield) const
@@ -486,6 +489,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iIdeologyPressurePerDonationHappiness(0)
 	, m_iLuxuryHappinessModifier(0)
+	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 {
 }
@@ -548,6 +552,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iWonderProductionPerDonationHappiness = 0;
 	m_iIdeologyPressurePerDonationHappiness = 0;
 	m_iLuxuryHappinessModifier = 0;
+	m_iFoodKeptModifierPerLuxury = 0;
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_vBornGreatPersonSpecialistYield.clear();
@@ -621,6 +626,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iIdeologyPressurePerDonationHappiness			+= pEffect->GetIdeologyPressurePerDonationHappiness() * iChange;
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
+	m_iFoodKeptModifierPerLuxury						+= pEffect->GetFoodKeptModifierPerLuxury() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
 	{
 		const std::vector<GreatWorkGreatPersonPointsEntry>& vEntries = pEffect->GetGreatWorkGreatPersonPointsEntries();
@@ -720,6 +726,7 @@ int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonatio
 int CvPlayerCityStateUA::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 int CvPlayerCityStateUA::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvPlayerCityStateUA::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvPlayerCityStateUA::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
 int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const
 {

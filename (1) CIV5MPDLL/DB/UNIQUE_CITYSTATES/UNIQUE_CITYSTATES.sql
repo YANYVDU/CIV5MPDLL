@@ -97,6 +97,8 @@ CREATE TABLE CityStateUAEffects (
     IdeologyPressurePerDonationHappiness            integer DEFAULT 0,
     -- Malacca: luxury happiness
     LuxuryHappinessModifier                         integer DEFAULT 0,
+    -- Malacca: food surplus per happy luxury type (value = per-type food% * 100; 每1=100, 每2=50)
+    FoodKeptModifierPerLuxury                           integer DEFAULT 0,
     -- Panama: population unhappiness reduction per cross-continental trade route (value = per-route % * 100; 每1=100, cap 90)
     UnhappinessReductionPerCrossContinentRoute      integer DEFAULT 0
 );
