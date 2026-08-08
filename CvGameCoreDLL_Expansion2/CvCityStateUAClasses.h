@@ -122,6 +122,7 @@ public:
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
 	// Panama (BaNaMa)
+	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
@@ -197,6 +198,7 @@ private:
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
 	// Panama
+	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
@@ -343,6 +345,7 @@ public:
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
 	// Panama
+	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
@@ -399,6 +402,7 @@ protected:
 	int m_iIdeologyPressurePerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
+	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;

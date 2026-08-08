@@ -2660,6 +2660,29 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					iModifier += iDomainModifier;
 					iModifier += iOriginRiverModifier;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					if (MOD_SP_UNIQUE_CITYSTATE)
+					{
+						CvPlayerCityStateUA* pUA = kOriginPlayer.GetPlayerCityStateUA();
+						if (pUA)
+						{
+
+							// Panama UA: trade route gold percentage per distance tile
+							int iDistanceModifier = pUA->GetTradeRouteGoldModifierPerDistance();
+							if (iDistanceModifier != 0)
+							{
+								CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
+								CvPlot* pDestPlot = GC.getMap().plot(kTradeConnection.m_iDestX, kTradeConnection.m_iDestY);
+								if (pOriginPlot && pDestPlot)
+								{
+									int iDistance = plotDistance(pOriginPlot->getX(), pOriginPlot->getY(), pDestPlot->getX(), pDestPlot->getY());
+									iModifier += iDistance * iDistanceModifier / 100;
+								}
+							}
+						}
+					}
+#endif
+
 					iMinValue = 100;
 				}
 				break;
