@@ -2652,6 +2652,16 @@ void CvGlobals::setAILogging(bool bEnable)
 
 bool CvGlobals::getAIPerfLogging()
 {
+	// Lazy-init from CustomModOptions on first call (after DB is loaded)
+	static bool bCustomModChecked = false;
+	if (!bCustomModChecked)
+	{
+		bCustomModChecked = true;
+		if (gCustomMods.isGLOBAL_AI_PERF_LOGGING())
+		{
+			m_bAIPerfLogging = true;
+		}
+	}
 	return m_bAIPerfLogging;
 }
 

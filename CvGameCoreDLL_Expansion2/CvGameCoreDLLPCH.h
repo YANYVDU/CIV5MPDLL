@@ -78,16 +78,12 @@ typedef wchar_t          wchar;
 #define MAX(a, b) std::max(a, b)
 #define MIN(a, b) std::min(a, b)
 
-#if !defined(FINAL_RELEASE) || defined(ENABLE_AI_PERF)
+// AI_PERF macros are always available; runtime control via GC.getAIPerfLogging()
+// (default off, enable via CustomModOption GLOBAL_AI_PERF_LOGGING=1 or Lua SetAIPerfLogging(true))
 #define AI_PERF_LOGGING
 #define AI_PERF(perfFileName, baseStringName) cvStopWatch kPerfTimer(baseStringName, perfFileName, FILogFile::kDontTimeStamp, !GC.getAIPerfLogging(), true)
 #define AI_PERF_FORMAT(perfFileName, FormatValue) CvString szPerfString; szPerfString.Format##FormatValue; cvStopWatch kPerfTimer(szPerfString, perfFileName, FILogFile::kDontTimeStamp, !GC.getAIPerfLogging(), true)
 #define AI_PERF_FORMAT_NESTED(perfFileName, FormatValue) CvString szPerfString2; szPerfString2.Format##FormatValue; cvStopWatch kPerfTimer2(szPerfString2, perfFileName, FILogFile::kDontTimeStamp, !GC.getAIPerfLogging(), true)
-#else
-#define AI_PERF(perfFileName, baseStringName) ((void)0)
-#define AI_PERF_FORMAT(perfFileName, FormatValue) ((void)0)
-#define AI_PERF_FORMAT_NESTED(perfFileName, FormatValue) ((void)0)
-#endif
 
 #include <FireWorks/FDefNew.h>
 #include <FireWorks/FFireTypes.h>
