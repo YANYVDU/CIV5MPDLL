@@ -6124,6 +6124,18 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 						}
 					}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					// Florence UA: allow faith purchase of all great people from the Industrial era onward
+					if (MOD_SP_UNIQUE_CITYSTATE)
+					{
+						CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+						if (pCSUA && pCSUA->IsFaithPurchaseAllGreatPeople() && kPlayer.GetCurrentEra() >= GC.getInfoTypeForString("ERA_INDUSTRIAL", true /*bHideAssert*/))
+						{
+							bAllUnlockedByBelief = true;
+						}
+					}
+#endif
+
 #if defined(MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 					if (MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 					{
