@@ -99,6 +99,8 @@ CREATE TABLE CityStateUAEffects (
     LuxuryHappinessModifier                         integer DEFAULT 0,
     -- Malacca: food surplus per happy luxury type (value = per-type food% * 100; 每1=100, 每2=50)
     FoodKeptModifierPerLuxury                           integer DEFAULT 0,
+    -- Malacca: trade route gold per luxury type (value = per-type gold% * 100; 每1=100)
+    TradeRouteGoldModifierPerLuxuryType             integer DEFAULT 0,
     -- Panama: international trade route gold per distance tile (value = per-tile gold% * 100; 每1=100, 每2=50)
     TradeRouteGoldModifierPerDistance               integer DEFAULT 0,
     -- Panama: population unhappiness reduction per cross-continental trade route (value = per-route % * 100; 每1=100, cap 90)

@@ -2666,6 +2666,8 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 						CvPlayerCityStateUA* pUA = kOriginPlayer.GetPlayerCityStateUA();
 						if (pUA)
 						{
+							// Malacca UA: trade route gold percentage per happy luxury type
+							iModifier += kOriginPlayer.GetHappyLuxuryTypeCount() * pUA->GetTradeRouteGoldModifierPerLuxuryType() / 100;
 
 							// Panama UA: trade route gold percentage per distance tile
 							int iDistanceModifier = pUA->GetTradeRouteGoldModifierPerDistance();

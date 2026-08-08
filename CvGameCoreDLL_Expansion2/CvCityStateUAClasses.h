@@ -121,6 +121,7 @@ public:
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
+	int GetTradeRouteGoldModifierPerLuxuryType() const;
 	// Panama (BaNaMa)
 	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
@@ -134,6 +135,7 @@ public:
 	// Colombo: flat per-era yield on the international trade route (InternalTR) to this city-state (UCS)
 	const std::vector<InternalTRToUCSPerEraYieldEntry>& GetInternalTRToUCSPerEraYieldEntries() const { return m_vInternalTRToUCSPerEraYield; }
 	int GetInternalTRToUCSPerEraYield(int eYield) const;
+	// Colombo: in cities with a trade route to this city-state (UCS), a percentage of the input yield is granted as extra output yield
 	int GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const;
 	// Valletta: enemy city besieged by >= this many of our combat units cannot heal
 	int GetEnemyCityNoHealBesiegeCount() const;
@@ -199,6 +201,7 @@ private:
 	// Malacca
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
+	int m_iTradeRouteGoldModifierPerLuxuryType;
 	// Panama
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
@@ -348,6 +351,7 @@ public:
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
+	int GetTradeRouteGoldModifierPerLuxuryType() const;
 	// Panama
 	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
@@ -408,6 +412,7 @@ protected:
 	int m_iIdeologyPressurePerDonationHappiness;
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
+	int m_iTradeRouteGoldModifierPerLuxuryType;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	// Brussels
