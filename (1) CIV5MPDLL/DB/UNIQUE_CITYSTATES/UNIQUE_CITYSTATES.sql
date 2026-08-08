@@ -100,7 +100,9 @@ CREATE TABLE CityStateUAEffects (
     -- Malacca: food surplus per happy luxury type (value = per-type food% * 100; 每1=100, 每2=50)
     FoodKeptModifierPerLuxury                           integer DEFAULT 0,
     -- Panama: population unhappiness reduction per cross-continental trade route (value = per-route % * 100; 每1=100, cap 90)
-    UnhappinessReductionPerCrossContinentRoute      integer DEFAULT 0
+    UnhappinessReductionPerCrossContinentRoute      integer DEFAULT 0,
+    -- Valletta: enemy city besieged by >= this many of our combat units cannot heal
+    EnemyCityNoHealBesiegeCount                      integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

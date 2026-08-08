@@ -54,6 +54,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iLuxuryHappinessModifier(0)
 	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
+	, m_iEnemyCityNoHealBesiegeCount(0)
 {
 }
 
@@ -125,6 +126,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
 	m_iFoodKeptModifierPerLuxury						= kResults.GetInt("FoodKeptModifierPerLuxury");
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
+
+	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
 	//Brussels: each great work of a class grants great person points to a specialist
 	{
 		m_vGreatWorkGreatPersonPoints.clear();
@@ -321,6 +324,7 @@ int CvCityStateUAEffectEntry::GetYieldToYieldViaTRToUCS(int eInYield, int eOutYi
 	return iTotal;
 }
 
+int CvCityStateUAEffectEntry::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }
 //======================================================================================================
 // CvCityStateUAEffectXMLEntries
 //======================================================================================================
@@ -491,6 +495,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iLuxuryHappinessModifier(0)
 	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
+	, m_iEnemyCityNoHealBesiegeCount(0)
 {
 }
 
@@ -558,6 +563,7 @@ void CvPlayerCityStateUA::Reset()
 	m_vBornGreatPersonSpecialistYield.clear();
 	m_vBuildingGPP.clear();
 	m_vBornAllyInfluenceMod.clear();
+	m_iEnemyCityNoHealBesiegeCount = 0;
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -628,6 +634,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
 	m_iFoodKeptModifierPerLuxury						+= pEffect->GetFoodKeptModifierPerLuxury() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
+	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
 	{
 		const std::vector<GreatWorkGreatPersonPointsEntry>& vEntries = pEffect->GetGreatWorkGreatPersonPointsEntries();
 		for (size_t i = 0; i < vEntries.size(); i++)
@@ -795,3 +802,4 @@ bool CvPlayerCityStateUA::HasGreatWorkGreatPersonPoints() const
 {
 	return !m_vGreatWorkGreatPersonPoints.empty();
 }
+int CvPlayerCityStateUA::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }

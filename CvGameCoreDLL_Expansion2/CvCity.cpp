@@ -2266,6 +2266,36 @@ void CvCity::doTurn()
 #endif
 		iHitsHealed += getExtraDamageHealPercent() * GetMaxHitPoints() / 100;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			// Valletta: if an enemy combatant's owner is allied/friendly with a city-state that has this UA,
+			// and that enemy has >= threshold combat units in this city's inner ring, the city cannot heal
+			int iSiegeCount[MAX_PLAYERS] = { 0 };
+			for (int iI = 1; iI <= 6; iI++)   // inner ring = plotCity indices 1..6
+			{
+				CvPlot* pPlot = plotCity(getX(), getY(), iI);
+				if (pPlot == NULL) continue;
+				for (int iU = 0; iU < pPlot->getNumUnits(); iU++)
+				{
+					CvUnit* pUnit = pPlot->getUnitByIndex(iU);
+					if (pUnit && pUnit->IsCombatUnit() && GET_TEAM(getTeam()).isAtWar(pUnit->getTeam()))
+						iSiegeCount[pUnit->getOwner()]++;
+				}
+			}
+			for (int iP = 0; iP < MAX_PLAYERS; iP++)
+			{
+				if (iSiegeCount[iP] <= 0) continue;
+				CvPlayerCityStateUA* pUA = GET_PLAYER((PlayerTypes)iP).GetPlayerCityStateUA();
+				int iThreshold = pUA ? pUA->GetEnemyCityNoHealBesiegeCount() : 0;
+				if (iThreshold > 0 && iSiegeCount[iP] >= iThreshold)
+				{
+					iHitsHealed = 0;
+					break;
+				}
+			}
+		}
+#endif
 
 		changeDamage(-iHitsHealed);
 	}

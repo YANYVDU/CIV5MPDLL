@@ -125,6 +125,8 @@ public:
 	const std::vector<InternalTRToUCSPerEraYieldEntry>& GetInternalTRToUCSPerEraYieldEntries() const { return m_vInternalTRToUCSPerEraYield; }
 	int GetInternalTRToUCSPerEraYield(int eYield) const;
 	int GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const;
+	// Valletta: enemy city besieged by >= this many of our combat units cannot heal
+	int GetEnemyCityNoHealBesiegeCount() const;
 
 private:
 	// Florence
@@ -193,6 +195,8 @@ private:
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
 	std::vector<InternalTRToUCSPerEraYieldEntry> m_vInternalTRToUCSPerEraYield;
 	std::vector<YieldToYieldViaTRToUCSEntry> m_vYieldToYieldViaTRToUCS;
+	// Valletta
+	int m_iEnemyCityNoHealBesiegeCount;
 };
 
 //======================================================================================================
@@ -335,6 +339,8 @@ public:
 	int GetAllyInfluenceModFromBornGreatPerson() const;
 	int GetGreatWorkGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	bool HasGreatWorkGreatPersonPoints() const;
+	// Valletta
+	int GetEnemyCityNoHealBesiegeCount() const;
 
 	void Reset();
 
@@ -387,6 +393,8 @@ protected:
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
+	// Valletta
+	int m_iEnemyCityNoHealBesiegeCount;
 };
 
 #endif // CVCITYSTATEUACLASSES_H
