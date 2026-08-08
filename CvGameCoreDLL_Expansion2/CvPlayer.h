@@ -538,6 +538,8 @@ public:
 
 	int GetHappinessFromLuxury(ResourceTypes eResource) const;
 	int GetAdequateLuxuryKindCount(int threshold) const;
+	// City-state UA: count of luxury types currently producing happiness (used by Malacca)
+	int GetHappyLuxuryTypeCount() const;
 	int GetStrengthModifierFromAlly() const;
 
 	int GetUnhappiness() const;
@@ -1993,6 +1995,8 @@ public:
 	CvPlayerPolicies* GetPlayerPolicies() const;
 	CvPlayerTraits* GetPlayerTraits() const;
 	CvPlayerCityStateUA* GetPlayerCityStateUA() const;
+	int GetTotalLuxuryHappinessModifier() const;
+	int GetTotalLuxuryHappinessValue() const;
 	int GetCrossContinentRouteUnhappinessReduction() const;
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;

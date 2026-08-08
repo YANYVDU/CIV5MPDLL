@@ -13673,19 +13673,39 @@ int CvPlayer::GetHappinessFromResources() const
 {
 	int iTotalHappiness = GetLuxuryHappinessBaseTotal();
 
-#if defined(MOD_SP_CITYSTATE_BASIC)
-	// Mercantile CS basic effect: +5% luxury happiness per ally
-	{
-		int iCSLuxuryMod = GetCSLuxuryHappinessModifier();
-		if (iCSLuxuryMod > 0)
-			iTotalHappiness = (iTotalHappiness * (100 + iCSLuxuryMod)) / 100;
-	}
-#endif
+	// Luxury happiness percentage modifier (Mercantile CS allies + City-State UA effects)
+	int iLuxMod = GetTotalLuxuryHappinessModifier();
+	if (iLuxMod > 0)
+		iTotalHappiness = (iTotalHappiness * (100 + iLuxMod)) / 100;
 
 	// Happiness bonus for multiple Resource types
 	iTotalHappiness += GetHappinessFromResourceVariety();
 
 	return iTotalHappiness;
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetTotalLuxuryHappinessModifier() const
+{
+	int iMod = 0;
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	iMod += GetCSLuxuryHappinessModifier();
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
+		iMod += pUA ? pUA->GetLuxuryHappinessModifier() : 0;
+	}
+#endif
+	return iMod;
+}
+
+//	------------------------------------------------------------------------
+int CvPlayer::GetTotalLuxuryHappinessValue() const
+{
+	int iMod = GetTotalLuxuryHappinessModifier();
+	if (iMod <= 0) return 0;
+	return (GetLuxuryHappinessBaseTotal() * iMod) / 100;
 }
 
 //	--------------------------------------------------------------------------------
@@ -13897,6 +13917,21 @@ int CvPlayer::GetAdequateLuxuryKindCount(int threshold) const
 	}
 
 	return iReturn;
+}
+
+int CvPlayer::GetHappyLuxuryTypeCount() const
+{
+	int iCount = 0;
+	for (int iResourceLoop = 0; iResourceLoop < GC.getNumResourceInfos(); iResourceLoop++)
+	{
+		ResourceTypes eResource = (ResourceTypes) iResourceLoop;
+		if (GetHappinessFromLuxury(eResource) > 0)
+		{
+			iCount++;
+		}
+	}
+
+	return iCount;
 }
 
 int CvPlayer::GetStrengthModifierFromAlly() const
