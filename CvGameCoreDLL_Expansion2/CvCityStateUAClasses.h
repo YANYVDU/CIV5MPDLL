@@ -138,6 +138,8 @@ public:
 	int GetSpecialistPointRate(int i) const;
 	// Brussels: each great work of a class grants great person points to a specialist (Rate=100 => 1 great work = 1 point)
 	const std::vector<GreatWorkGreatPersonPointsEntry>& GetGreatWorkGreatPersonPointsEntries() const { return m_vGreatWorkGreatPersonPoints; }
+	// Brussels: specified unit class's one-shot great person output modifier (%)
+	int GetGreatPersonOneShotModifier(int i) const;
 	// Colombo: flat per-era yield on the international trade route (InternalTR) to this city-state (UCS)
 	const std::vector<InternalTRToUCSPerEraYieldEntry>& GetInternalTRToUCSPerEraYieldEntries() const { return m_vInternalTRToUCSPerEraYield; }
 	int GetInternalTRToUCSPerEraYield(int eYield) const;
@@ -216,6 +218,7 @@ private:
 	// Brussels
 	int* m_piSpecialistPointRate;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
+	int* m_piGreatPersonOneShotModifier;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
@@ -371,6 +374,7 @@ public:
 	int GetSpecialistPointRate(SpecialistTypes eSpecialist) const;
 	int GetGreatWorkGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	bool HasGreatWorkGreatPersonPoints() const;
+	int GetGreatPersonOneShotModifier(UnitClassTypes eUnitClass) const;
 	// Valletta
 	int GetEnemyCityNoHealBesiegeCount() const;
 	const std::vector<PurchasedBuildingXPEntry>& GetPurchasedBuildingXPEntries() const;
@@ -428,6 +432,7 @@ protected:
 	// Brussels
 	std::vector<int> m_aiSpecialistPointRate;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
+	std::vector<int> m_aiGreatPersonOneShotModifier;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;

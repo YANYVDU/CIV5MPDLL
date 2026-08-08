@@ -440,6 +440,9 @@ public:
 	bool canBlastTourism(const CvPlot* pPlot, bool bTestVisible = false) const;
 	int getBlastTourism();
 	bool blastTourism();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetGreatPersonOneShotModifierFromCityStateUA() const;
+#endif
 
 	bool canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestVisible = false, bool bTestGold = true) const;
 	bool build(BuildTypes eBuild);

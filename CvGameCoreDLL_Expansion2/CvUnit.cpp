@@ -11816,6 +11816,15 @@ int CvUnit::getDiscoverAmount()
 			}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Brussels UA: specified great person class one-shot output modifier
+			int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+			if (iOneShotMod != 0)
+			{
+				iValue += (iValue * iOneShotMod) / 100;
+			}
+#endif
+
 			// Modify based on game speed
 			iValue *= GC.getGame().getGameSpeedInfo().getResearchPercent();
 			iValue /= 100;
@@ -12156,6 +12165,15 @@ int CvUnit::getTradeGold(const CvPlot* /*pPlot*/) const
 	iGold *= (100 + GetTradeMissionGoldModifier());
 	iGold /= 100;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Brussels UA: specified great person class one-shot output modifier
+	int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+	if (iOneShotMod != 0)
+	{
+		iGold += (iGold * iOneShotMod) / 100;
+	}
+#endif
+
 	return std::max(0, iGold);
 }
 
@@ -12173,6 +12191,14 @@ int CvUnit::getTradeInfluence(const CvPlot* pPlot) const
 			iInf = /*30*/ GC.getMINOR_FRIENDSHIP_FROM_TRADE_MISSION();
 			int iInfTimes100 = iInf * (100 + GetTradeMissionInfluenceModifier());
 			iInf = iInfTimes100 / 100;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Brussels UA: specified great person class one-shot output modifier
+			int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+			if (iOneShotMod != 0)
+			{
+				iInf += (iInf * iOneShotMod) / 100;
+			}
+#endif
 		}
 	}
 	return iInf;
@@ -12939,6 +12965,15 @@ int CvUnit::getGivePoliciesCulture()
 		}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Brussels UA: specified great person class one-shot output modifier
+		int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+		if (iOneShotMod != 0)
+		{
+			iValue += (iValue * iOneShotMod) / 100;
+		}
+#endif
+
 		// Modify based on game speed
 		iValue *= GC.getGame().getGameSpeedInfo().getCulturePercent();
 		iValue /= 100;
@@ -13033,6 +13068,18 @@ bool CvUnit::canBlastTourism(const CvPlot* pPlot, bool bTestVisible) const
 }
 
 //	--------------------------------------------------------------------------------
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvUnit::GetGreatPersonOneShotModifierFromCityStateUA() const
+{
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		return (pCSUA != NULL) ? pCSUA->GetGreatPersonOneShotModifier((UnitClassTypes)m_pUnitInfo->GetUnitClassType()) : 0;
+	}
+	return 0;
+}
+#endif
+
 int CvUnit::getBlastTourism()
 {
 	if (!canBlastTourism(plot()))
@@ -13048,6 +13095,18 @@ int CvUnit::getBlastTourism()
 	}
 #endif
 	iTourismBlast = iTourismBlast * GC.getGame().getGameSpeedInfo().getCulturePercent() / 100;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		// Brussels UA: specified great person class one-shot output modifier
+		int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+		if (iOneShotMod != 0)
+		{
+			iTourismBlast = iTourismBlast * (100 + iOneShotMod) / 100;
+		}
+	}
+#endif
 
 	return iTourismBlast;
 }

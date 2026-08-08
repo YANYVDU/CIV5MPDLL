@@ -58,6 +58,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
 	, m_piSpecialistPointRate(nullptr)
+	, m_piGreatPersonOneShotModifier(nullptr)
 {
 }
 
@@ -65,6 +66,8 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 {
 	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
 	SAFE_DELETE_ARRAY(m_piSpecialistPointRate);
+	
+SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -361,6 +364,13 @@ int CvCityStateUAEffectEntry::GetSpecialistPointRate(int i) const
 	return m_piSpecialistPointRate ? m_piSpecialistPointRate[i] : 0;
 }
 
+int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
+{
+	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piGreatPersonOneShotModifier ? m_piGreatPersonOneShotModifier[i] : 0;
+}
+
 int CvCityStateUAEffectEntry::GetInternalTRToUCSPerEraYield(int eYield) const
 {
 	int iTotal = 0;
@@ -624,6 +634,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
+	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
 	m_vBornGreatPersonSpecialistYield.clear();
 	m_vBuildingGPP.clear();
 	m_vBornAllyInfluenceMod.clear();
@@ -716,6 +727,11 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			entry.m_iRate *= iChange;
 			m_vGreatWorkGreatPersonPoints.push_back(entry);
 		}
+	}
+	//Brussels: specified unit class's one-shot great person output modifier
+	for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+	{
+		m_aiGreatPersonOneShotModifier[iUC] += pEffect->GetGreatPersonOneShotModifier(iUC) * iChange;
 	}
 	{
 		const std::vector<BornGreatPersonSpecialistYieldEntry>& vEntries = pEffect->GetBornGreatPersonSpecialistYieldEntries();
@@ -901,6 +917,12 @@ bool CvPlayerCityStateUA::HasGreatWorkGreatPersonPoints() const
 {
 	return !m_vGreatWorkGreatPersonPoints.empty();
 }
+
+int CvPlayerCityStateUA::GetGreatPersonOneShotModifier(UnitClassTypes eUnitClass) const
+{
+	return (eUnitClass >= 0 && (int)eUnitClass < (int)m_aiGreatPersonOneShotModifier.size()) ? m_aiGreatPersonOneShotModifier[(int)eUnitClass] : 0;
+}
+
 int CvPlayerCityStateUA::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }
 const std::vector<PurchasedBuildingXPEntry>& CvPlayerCityStateUA::GetPurchasedBuildingXPEntries() const { return m_vPurchasedBuildingXP; }
 const std::vector<UnitBornYieldEntry>& CvPlayerCityStateUA::GetUnitBornYieldEntries() const { return m_vUnitBornYield; }

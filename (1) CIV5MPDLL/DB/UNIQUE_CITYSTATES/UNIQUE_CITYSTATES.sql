@@ -166,7 +166,14 @@ create table CityStateUAEffect_GreatWorkGreatPersonPoints (
     CapitalOnly boolean default 0
 );
 
--- City State UA (Colombo): the international trade route (InternalTR) ending at this city-state (UCS)
+-- CityState UA (Brussels): specified unit class's one-shot great person output modifier (%)
+create table CityStateUAEffect_GreatPersonOneShotModifier (
+    EffectType text references CityStateUAEffects(Type),
+    UnitClassType text references UnitClasses(Type),
+    Modifier integer default 0
+);
+
+-- CityState UA (Colombo): the international trade route (InternalTR) ending at this city-state (UCS)
 -- grants the origin player a flat per-era yield (Era+1 times YieldValue)
 create table CityStateUAEffect_InternalTRToUCSPerEraYield (
     EffectType text references CityStateUAEffects(Type),
