@@ -37,6 +37,7 @@
 #include "CvAchievementUnlocker.h"
 #include "CvMilitaryAI.h"
 #include "CvTypes.h"
+#include "CvCityStateUAClasses.h"
 
 #include "CvDllPlot.h"
 #include "CvDllUnit.h"
@@ -13130,10 +13131,38 @@ bool CvUnit::blastTourism()
 	PlayerTypes eOwner = pPlot->getOwner();
 	CvPlayer &kUnitOwner = GET_PLAYER(getOwner());
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		// Brussels UA: concert tourism grants gold equal to a percentage of the blast
+		CvPlayerCityStateUA* pCSUA = kUnitOwner.GetPlayerCityStateUA();
+		int iGoldPercent = (pCSUA != NULL) ? pCSUA->GetGreatMusicianConcertGoldPercent() : 0;
+		if (iGoldPercent > 0)
+		{
+			iGoldFromTourismModifier = iGoldFromTourismModifier + iGoldPercent;
+		}
+	}
+#endif
 	// Apply to target
 	kUnitOwner.GetCulture()->ChangeInfluenceOn(eOwner, iTourismBlast);
 	// Get Gold from tourism
-	kUnitOwner.GetTreasury()->ChangeGold( iTourismBlast * iGoldFromTourismModifier / 100);
+	int iGoldFromTour = iTourismBlast * iGoldFromTourismModifier / 100;
+	kUnitOwner.GetTreasury()->ChangeGold(iGoldFromTour);
+	// Show a city message when the concert tour yields gold
+	if (iGoldFromTour > 0)
+	{
+		CvCity* pTargetCity = pPlot->getPlotCity();
+		// Concert tour can be performed on any enemy tile, not necessarily the city tile itself
+		if (pTargetCity == NULL)
+		{
+			pTargetCity = pPlot->GetAdjacentCity();
+		}
+		if (pTargetCity != NULL)
+		{
+			CvString strBuffer = GetLocalizedText("TXT_KEY_SP_CONCERT_TOUR_GOLD", pTargetCity->getNameKey(), iGoldFromTour);
+			SHOW_CITY_MESSAGE(pTargetCity, getOwner(), strBuffer);
+		}
+	}
 	// Apply lesser amount to other civs
 	int iTourismBlastOthers = iTourismBlast * iTourismBlastPercentOthers / 100;
 	PlayerTypes eLoopPlayer;
