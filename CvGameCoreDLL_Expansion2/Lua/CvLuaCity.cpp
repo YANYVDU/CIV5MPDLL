@@ -616,6 +616,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	Method(GetGreatPersonPointsFromUA);
 	Method(GetGreatPersonPointsFromUA_Building);
+	Method(GetGreatPersonPointsFromUA_GreatWork);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	Method(HasEnableCrops);
@@ -4482,6 +4483,20 @@ int CvLuaCity::lGetGreatPersonPointsFromUA(lua_State* L)
 	if(eSpecialist != NO_SPECIALIST)
 	{
 		lua_pushinteger(L, pkCity->GetGreatPersonPointsFromUA(eSpecialist));
+		return 1;
+	}
+
+	lua_pushinteger(L, 0);
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaCity::lGetGreatPersonPointsFromUA_GreatWork(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	if(eSpecialist != NO_SPECIALIST)
+	{
+		lua_pushinteger(L, pkCity->GetGreatPersonPointsFromUA_GreatWork(eSpecialist));
 		return 1;
 	}
 
