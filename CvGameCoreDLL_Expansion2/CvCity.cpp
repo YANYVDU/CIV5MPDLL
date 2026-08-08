@@ -8033,10 +8033,12 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 #ifdef MOD_GLOBAL_CORRUPTION
 		ChangeCorruptionScoreChangeFromBuilding(pBuildingInfo->GetCorruptionScoreChange() * iChange);
 		ChangeCorruptionLevelChangeFromBuilding(pBuildingInfo->GetCorruptionLevelChange() * iChange);
+		ChangeCorruptionUnhappinessChangeFromBuildings(pBuildingInfo->GetCorruptionUnhappinessChange() * iChange);
 
 		if (pBuildingInfo->GetCorruptionScoreChange() * iChange != 0 ||
 			pBuildingInfo->GetCorruptionLevelChange() * iChange != 0 ||
-			pBuildingInfo->GetCorruptionScoreGlobalChange() * iChange != 0)
+			pBuildingInfo->GetCorruptionScoreGlobalChange() * iChange != 0 ||
+			pBuildingInfo->GetCorruptionUnhappinessChange() * iChange != 0)
 		{
 			UpdateCorruption();
 		}
@@ -20700,6 +20702,7 @@ void CvCity::read(FDataStream& kStream)
 	kStream >> (int&) m_eCachedCorruptionLevel;
 	kStream >> m_iCorruptionScoreChangeFromBuilding;
 	kStream >> m_iCorruptionLevelChangeFromBuilding;
+	MOD_SERIALIZE_READ(162, kStream, m_iCorruptionUnhappinessChangeFromBuildings, 0);
 #endif
 
 	kStream >> m_bIsSecondCapital;
@@ -21110,6 +21113,7 @@ void CvCity::write(FDataStream& kStream) const
 	kStream << (int) m_eCachedCorruptionLevel;
 	kStream << m_iCorruptionScoreChangeFromBuilding;
 	kStream << m_iCorruptionLevelChangeFromBuilding;
+	MOD_SERIALIZE_WRITE(kStream, m_iCorruptionUnhappinessChangeFromBuildings);
 #endif
 
 	kStream << m_bIsSecondCapital;
@@ -24251,6 +24255,17 @@ int CvCity::GetCorruptionScoreGlobalChangeFromBuilding() const
 {
 	CvPlayerAI &owner = GET_PLAYER(getOwner());
 	return owner.GetCorruptionScoreGlobalChangeFromBuilding();
+}
+
+// Flat change to corruption unhappiness from buildings (e.g. Persia UB Satrap's Court: -2)
+int CvCity::GetCorruptionUnhappinessChangeFromBuildings() const
+{
+	return m_iCorruptionUnhappinessChangeFromBuildings;
+}
+
+void CvCity::ChangeCorruptionUnhappinessChangeFromBuildings(int value)
+{
+	m_iCorruptionUnhappinessChangeFromBuildings += value;
 }
 
 int CvCity::GetCorruptionScoreFromLocalHappiness() const

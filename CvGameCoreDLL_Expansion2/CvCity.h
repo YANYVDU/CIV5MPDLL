@@ -1412,9 +1412,11 @@ public:
 
 	int GetCorruptionLevelChangeFromBuilding() const;
 	void ChangeCorruptionLevelChangeFromBuilding(int value);
+	void ChangeCorruptionUnhappinessChangeFromBuildings(int value);
 
 	int GetCorruptionScoreModifierFromPolicy() const;
 	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	int GetCorruptionUnhappinessChangeFromBuildings() const;
 	int GetCorruptionScoreFromLocalHappiness() const;
 	int GetMaxCorruptionLevel() const;
 	bool IsCorruptionLevelReduceByOne() const;
@@ -1769,6 +1771,7 @@ protected:
 
 	int m_iCorruptionScoreChangeFromBuilding = 0;
 	int m_iCorruptionLevelChangeFromBuilding = 0;
+	int m_iCorruptionUnhappinessChangeFromBuildings = 0;
 
 	bool m_bUpdatingReligion = false;
 #endif

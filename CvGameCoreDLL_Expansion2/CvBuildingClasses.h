@@ -323,6 +323,7 @@ public:
 	int GetHappinessPerXPolicies() const;
 	int GetCityCountUnhappinessMod() const;
 	int GetCorruptionUnhappinessModifier() const;
+	int GetCorruptionUnhappinessChange() const;
 	bool IsNoOccupiedUnhappiness() const;
 	bool IsNotNeedOccupied() const;
 	bool IsAllowSpaceshipLaunch() const;
@@ -810,6 +811,7 @@ private:
 	int m_iHappinessPerXPolicies;
 	int m_iCityCountUnhappinessMod;
 	int m_iCorruptionUnhappinessModifier;
+	int m_iCorruptionUnhappinessChange;
 	bool m_bNoOccupiedUnhappiness;
 	bool m_bNotNeedOccupied;
 	bool m_bAllowSpaceshipLaunch;

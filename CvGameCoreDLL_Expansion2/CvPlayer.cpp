@@ -14103,16 +14103,28 @@ int CvPlayer::GetUnhappinessFromCorruption(CvCity* pAssumeCityAnnexed, CvCity* p
 
 		if(bCityValid)
 		{
+			int iCityUnhappiness = 0;
 #ifdef MOD_GLOBAL_CORRUPTION
 			CorruptionLevelTypes eLevel = pLoopCity->GetCorruptionLevel();
 			CvCorruptionLevel* pLevel = GC.getCorruptionLevelInfo(eLevel);
 			if (pLevel)
-				iUnhappiness += pLevel->GetCorruptionUnhappiness();
+				iCityUnhappiness = pLevel->GetCorruptionUnhappiness();
 			else
-				iUnhappiness += iUnhappinessPerCity;
+				iCityUnhappiness = iUnhappinessPerCity;
 #else
-			iUnhappiness += iUnhappinessPerCity;
+			iCityUnhappiness = iUnhappinessPerCity;
 #endif
+			// Building flat change to corruption unhappiness, per-city, min 0 (change can be negative)
+			{
+				int iBuildingChange = pLoopCity->GetCorruptionUnhappinessChangeFromBuildings();
+				if (iBuildingChange != 0)
+				{
+					iCityUnhappiness += iBuildingChange * 100;
+					if (iCityUnhappiness < 0)
+						iCityUnhappiness = 0;
+				}
+			}
+			iUnhappiness += iCityUnhappiness;
 		}
 	}
 
