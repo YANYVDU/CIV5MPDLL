@@ -1998,6 +1998,7 @@ public:
 	int GetTotalLuxuryHappinessModifier() const;
 	int GetTotalLuxuryHappinessValue() const;
 	int GetCrossContinentRouteUnhappinessReduction() const;
+	void DoUnitBornYield(UnitClassTypes eUnitClass);
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
 	CvCitySpecializationAI* GetCitySpecializationAI() const;

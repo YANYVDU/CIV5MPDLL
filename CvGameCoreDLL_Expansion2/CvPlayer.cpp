@@ -4407,6 +4407,14 @@ CvUnit* CvPlayer::initUnit(UnitTypes eUnit, int iX, int iY, UnitAITypes eUnitAI,
 					}
 				}
 			}
+
+	#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Valletta UA: grant yield based on influence when a unit of configured class is born
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			DoUnitBornYield(eUC);
+		}
+	#endif
 		}
 	}
 
@@ -14375,6 +14383,37 @@ int CvPlayer::GetCrossContinentRouteUnhappinessReduction() const
 #endif
 
 	return 0;
+}
+//	--------------------------------------------------------------------------------
+/// Valletta UA: when a unit of a configured UnitClass is born, grant a yield = YieldMod% of influence with the specified city-state
+void CvPlayer::DoUnitBornYield(UnitClassTypes eUnitClass)
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (!MOD_SP_UNIQUE_CITYSTATE)
+		return;
+
+	CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
+	if (!pUA)
+		return;
+
+	const std::vector<UnitBornYieldEntry>& vEntries = pUA->GetUnitBornYieldEntries();
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		if (vEntries[i].m_iYieldMod > 0 && vEntries[i].m_iUnitClass == (int)eUnitClass)
+		{
+			for (int iMinor = 0; iMinor < MAX_PLAYERS; iMinor++)
+			{
+				CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
+				if (kMinor.isMinorCiv() && kMinor.GetMinorCivAI()->GetMinorCivType() == (MinorCivTypes)vEntries[i].m_iMinorCivType)
+				{
+					int iInfluence = kMinor.GetMinorCivAI()->GetEffectiveFriendshipWithMajor(GetID());
+					doInstantYield((YieldTypes)vEntries[i].m_iYieldType, iInfluence * vEntries[i].m_iYieldMod / 100);
+					break;
+				}
+			}
+		}
+	}
+#endif
 }
 
 //	--------------------------------------------------------------------------------

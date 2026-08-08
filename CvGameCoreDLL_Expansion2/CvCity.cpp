@@ -18607,6 +18607,15 @@ int CvCity::CreateUnit(UnitTypes eUnitType, bool bIsGold, bool bIsFaith, UnitAIT
 		return FFreeList::INVALID_INDEX;
 	}
 	CvUnitEntry & pkUnitInfo = pUnit->getUnitInfo();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Valletta UA: granting a configurable yield when a unit of the configured class is born
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		thisPlayer.DoUnitBornYield(pUnit->getUnitClassType());
+	}
+#endif
+
 	addProductionExperience(pUnit);
 
 	CvPlot* pRallyPlot = getRallyPlot();

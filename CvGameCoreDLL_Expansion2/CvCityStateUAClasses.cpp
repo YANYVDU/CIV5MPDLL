@@ -240,6 +240,27 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vYieldToYieldViaTRToUCS.push_back(entry);
 		}
 	}
+	//Valletta: born unit of the specified unit class grants a configurable yield equal to YieldMod% of influence with the specified city-state (MinorCivType)
+	{
+		m_vUnitBornYield.clear();
+		std::string strKey("CityStateUAEffect_UnitBornYield");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select MinorCivilizations.ID as MinorCivID, UnitClasses.ID as UnitClassID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_UnitBornYield inner join MinorCivilizations on MinorCivilizations.Type = MinorCivType inner join UnitClasses on UnitClasses.Type = UnitClassType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			UnitBornYieldEntry entry;
+			entry.m_iMinorCivType = pResults->GetInt(0);
+			entry.m_iUnitClass = pResults->GetInt(1);
+			entry.m_iYieldType = pResults->GetInt(2);
+			entry.m_iYieldMod = pResults->GetInt(3);
+			m_vUnitBornYield.push_back(entry);
+		}
+	}
+
 	return true;
 }
 
@@ -564,6 +585,7 @@ void CvPlayerCityStateUA::Reset()
 	m_vBuildingGPP.clear();
 	m_vBornAllyInfluenceMod.clear();
 	m_iEnemyCityNoHealBesiegeCount = 0;
+	m_vUnitBornYield.clear();
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -692,6 +714,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_vBornAllyInfluenceMod.push_back(e);
 		}
 	}
+	{
+		const std::vector<UnitBornYieldEntry>& vEntries = pEffect->GetUnitBornYieldEntries();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			UnitBornYieldEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vUnitBornYield.push_back(entry);
+		}
+	}
 }
 
 int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
@@ -803,3 +834,4 @@ bool CvPlayerCityStateUA::HasGreatWorkGreatPersonPoints() const
 	return !m_vGreatWorkGreatPersonPoints.empty();
 }
 int CvPlayerCityStateUA::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }
+const std::vector<UnitBornYieldEntry>& CvPlayerCityStateUA::GetUnitBornYieldEntries() const { return m_vUnitBornYield; }

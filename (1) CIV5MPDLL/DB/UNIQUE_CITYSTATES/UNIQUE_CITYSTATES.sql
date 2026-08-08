@@ -171,6 +171,15 @@ create table CityStateUAEffect_YieldToYieldViaTRToUCS (
     OutYieldType text references Yields(Type),
     Percent integer default 0
 );
+-- CityState UA (Valletta): born unit of the specified unit class grants a configurable yield equal to
+-- YieldMod% of the player's influence with the specified city-state (MinorCivType)
+create table CityStateUAEffect_UnitBornYield (
+    EffectType text references CityStateUAEffects(Type),
+    MinorCivType text references MinorCivilizations(Type),
+    UnitClassType text references UnitClasses(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
 
 -- MinorCivilizations free building classes (analogous to Civilization_FreeBuildingClasses):
 -- grants the building class to the city-state's first city, also at game start
