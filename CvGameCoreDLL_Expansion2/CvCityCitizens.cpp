@@ -2336,6 +2336,17 @@ void CvCityCitizens::DoSpecialists()
 
 					// Player mod
 					iMod += GetPlayer()->getGreatPeopleRateModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					if (MOD_SP_UNIQUE_CITYSTATE)
+					{
+						// Brussels UA: specialist great person point accumulation rate
+						CvPlayerCityStateUA* pCSUA = GetPlayer()->GetPlayerCityStateUA();
+						if (pCSUA != NULL)
+						{
+							iMod += pCSUA->GetSpecialistPointRate(eSpecialist);
+						}
+					}
+#endif
 #if defined(MOD_ROG_CORE)
 					iMod += GetCity()->GetSpecialistRateModifier(eSpecialist);
 #endif

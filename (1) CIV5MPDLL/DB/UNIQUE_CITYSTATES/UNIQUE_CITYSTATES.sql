@@ -148,6 +148,13 @@ create table CityStateUAEffect_BornGreatPersonAllyInfluenceMod (
     UnitClassType text references UnitClasses(Type),
     ModPerBorn integer default 0
 );
+-- CityState UA (Brussels): specified specialist's great person point accumulation rate (%)
+create table CityStateUAEffect_SpecialistPointRate (
+    EffectType text references CityStateUAEffects(Type),
+    SpecialistType text references Specialists(Type),
+    Rate integer default 0
+);
+
 -- CityState UA (Brussels): each great work of a class (literature/art/music) grants great person points (Rate=100 => 1 great work = 1 point)
 create table CityStateUAEffect_GreatWorkGreatPersonPoints (
     EffectType text references CityStateUAEffects(Type),

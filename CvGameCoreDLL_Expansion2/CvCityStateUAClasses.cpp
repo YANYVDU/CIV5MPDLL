@@ -56,12 +56,14 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iTradeRouteGoldModifierPerDistance(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
+	, m_piSpecialistPointRate(nullptr)
 {
 }
 
 CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 {
 	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
+	SAFE_DELETE_ARRAY(m_piSpecialistPointRate);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -130,6 +132,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
 
 	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
+	//Brussels: specialist great person point accumulation rate (%)
+	kUtility.PopulateArrayByValue(m_piSpecialistPointRate, "Specialists", "CityStateUAEffect_SpecialistPointRate", "SpecialistType", "EffectType", GetType(), "Rate");
 	//Brussels: each great work of a class grants great person points to a specialist
 	{
 		m_vGreatWorkGreatPersonPoints.clear();
@@ -151,6 +155,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vGreatWorkGreatPersonPoints.push_back(entry);
 		}
 	}
+	//Brussels: specified unit class's one-shot great person output modifier (%)
+	kUtility.PopulateArrayByValue(m_piGreatPersonOneShotModifier, "UnitClasses", "CityStateUAEffect_GreatPersonOneShotModifier", "UnitClassType", "EffectType", GetType(), "Modifier");
 	{
 		m_vBuildingGPP.clear();
 		std::string strKey2("CityStateUAEffect_BuildingGreatPersonPoints");
@@ -325,6 +331,13 @@ int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLux
 int CvCityStateUAEffectEntry::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
 int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
+
+int CvCityStateUAEffectEntry::GetSpecialistPointRate(int i) const
+{
+	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piSpecialistPointRate ? m_piSpecialistPointRate[i] : 0;
+}
 
 int CvCityStateUAEffectEntry::GetInternalTRToUCSPerEraYield(int eYield) const
 {
@@ -585,6 +598,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iFoodKeptModifierPerLuxury = 0;
 	m_iTradeRouteGoldModifierPerDistance = 0;
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
+	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_vBornGreatPersonSpecialistYield.clear();
 	m_vBuildingGPP.clear();
@@ -663,6 +677,11 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iTradeRouteGoldModifierPerDistance			+= pEffect->GetTradeRouteGoldModifierPerDistance() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
 	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
+	//Brussels: specialist great person point accumulation rate
+	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+	{
+		m_aiSpecialistPointRate[iSpec] += pEffect->GetSpecialistPointRate(iSpec) * iChange;
+	}
 	{
 		const std::vector<GreatWorkGreatPersonPointsEntry>& vEntries = pEffect->GetGreatWorkGreatPersonPointsEntries();
 		for (size_t i = 0; i < vEntries.size(); i++)
@@ -821,6 +840,12 @@ int CvPlayerCityStateUA::GetAllyInfluenceModFromBornGreatPerson() const
 	}
 	return iTotal;
 }
+
+int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const
+{
+	return (eSpecialist >= 0 && (int)eSpecialist < (int)m_aiSpecialistPointRate.size()) ? m_aiSpecialistPointRate[(int)eSpecialist] : 0;
+}
+
 int CvPlayerCityStateUA::GetGreatWorkGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const
 {
 	if (!pCity) return 0;

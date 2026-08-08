@@ -14384,6 +14384,23 @@ int CvPlayer::GetCrossContinentRouteUnhappinessReduction() const
 
 	return 0;
 }
+
+//	--------------------------------------------------------------------------------
+/// Brussels UA: specialist great person point accumulation rate percentage
+int CvPlayer::GetCityStateSpecialistPointRate(SpecialistTypes eSpecialist) const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
+		if (pUA)
+			return pUA->GetSpecialistPointRate(eSpecialist);
+	}
+#endif
+
+	return 0;
+}
+
 //	--------------------------------------------------------------------------------
 /// Valletta UA: when a unit of a configured UnitClass is born, grant a yield = YieldMod% of influence with the specified city-state
 void CvPlayer::DoUnitBornYield(UnitClassTypes eUnitClass)

@@ -437,6 +437,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetTotalLuxuryHappinessModifier);
 	Method(GetTotalLuxuryHappinessValue);
 	Method(GetCrossContinentRouteUnhappinessReduction);
+	Method(GetCityStateSpecialistPointRate);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
 	Method(GetHappinessFromNaturalWonders);
@@ -3507,6 +3508,14 @@ int CvLuaPlayer::lGetCrossContinentRouteUnhappinessReduction(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+//int GetCityStateSpecialistPointRate(SpecialistTypes eSpecialist) const;
+int CvLuaPlayer::lGetCityStateSpecialistPointRate(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCityStateSpecialistPointRate(eSpecialist));
+	return 1;
+}
 
 //------------------------------------------------------------------------------
 //int GetExtraHappinessPerLuxury() const;

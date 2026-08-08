@@ -127,6 +127,8 @@ public:
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
+	// Brussels (BuLuSaiEr): specialist great person point accumulation rate (%)
+	int GetSpecialistPointRate(int i) const;
 	// Brussels: each great work of a class grants great person points to a specialist (Rate=100 => 1 great work = 1 point)
 	const std::vector<GreatWorkGreatPersonPointsEntry>& GetGreatWorkGreatPersonPointsEntries() const { return m_vGreatWorkGreatPersonPoints; }
 	// Colombo: flat per-era yield on the international trade route (InternalTR) to this city-state (UCS)
@@ -200,6 +202,8 @@ private:
 	// Panama
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	// Brussels
+	int* m_piSpecialistPointRate;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
@@ -350,6 +354,8 @@ public:
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	int GetAllyInfluenceModFromBornGreatPerson() const;
+	// Brussels
+	int GetSpecialistPointRate(SpecialistTypes eSpecialist) const;
 	int GetGreatWorkGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	bool HasGreatWorkGreatPersonPoints() const;
 	// Valletta
@@ -404,6 +410,8 @@ protected:
 	int m_iFoodKeptModifierPerLuxury;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	// Brussels
+	std::vector<int> m_aiSpecialistPointRate;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
