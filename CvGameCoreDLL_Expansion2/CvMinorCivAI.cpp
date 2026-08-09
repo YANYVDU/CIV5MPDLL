@@ -3429,6 +3429,11 @@ bool CvMinorCivAI::IsProxyWarActiveForMajor(PlayerTypes eMajor)
 /// Update turn for Quests
 void CvMinorCivAI::DoTurnQuests()
 {
+	// Permanent ally: no quests for anyone
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
+
 	// ********************
 	// Check Current Quests
 	// ********************
@@ -9396,6 +9401,16 @@ int CvMinorCivAI::GetBullyInfluenceLoss(PlayerTypes eBullyPlayer, int iOriginalL
 	}
 
 	return iOriginalLoss * modifier / 100;
+	// Clean up permanent ally status when CS is conquered
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
+		{
+			GET_PLAYER(e).SetPermanentAlly(GetPlayer()->GetID(), false);
+			GET_PLAYER(e).ChangePrestigeExemptAllyCount(-1);
+		}
+	}
 }
 
 bool CvMinorCivAI::CanMajorBullyGold(PlayerTypes ePlayer)
@@ -9950,11 +9965,14 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 	int iInfluence = GetFriendshipFromUnitGift(eFromPlayer, pGiftUnit->IsGreatPerson(), bDistanceGift);
 	ChangeFriendshipWithMajor(eFromPlayer, iInfluence);
 
-	// GreatPersonGiftPermanentAlly: mark as permanent ally, prestige exempt
+	// GreatPersonGiftPermanentAlly: one-time permanent ally establishment
 	if (pGiftUnit->IsGreatPerson() && GET_PLAYER(eFromPlayer).GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 	{
-		GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
-		GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
+		if (!GET_PLAYER(eFromPlayer).IsPermanentAlly(GetPlayer()->GetID()))
+		{
+			GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
+			GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
+		}
 	}
 
 	// We can't keep Great Person units
@@ -9999,7 +10017,7 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 					if (iTheir > iHighest) iHighest = iTheir;
 				}
 			}
-			iInfluence += (iHighest + 1 - GetEffectiveFriendshipWithMajor(eFromPlayer));
+			iInfluence += std::max(0, iHighest + 1 - GetEffectiveFriendshipWithMajor(eFromPlayer));
 		}
 	}
 	else
@@ -10052,6 +10070,11 @@ void CvMinorCivAI::ChangeNumGoldGifted(PlayerTypes ePlayer, int iChange)
 /// Major Civ gifted some Gold to this Minor
 void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 {
+	// Permanent ally: no gold gifts from anyone
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
+
 	if(GET_PLAYER(ePlayer).GetTreasury()->GetGold() >= iGold)
 	{
 		int iFriendshipChange = GetFriendshipFromGoldGift(ePlayer, iGold);

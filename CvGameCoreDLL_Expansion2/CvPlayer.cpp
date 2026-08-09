@@ -20877,6 +20877,10 @@ void CvPlayer::verifyAlive()
 
 		if(bKill)
 		{
+			// Clear permanent allies when owner dies (resolution-based allies persist)
+			m_vecPermanentAllies.clear();
+			m_iPrestigeExemptAllyCount = 0;
+
 			setAlive(false, false);
 		}
 	}

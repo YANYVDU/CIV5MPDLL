@@ -54,4 +54,3 @@ create table UnitClass_PurchaseCollections(
 	YieldType text not null references Yields(Type),
 	CostModifier integer not null default -1
 );
-alter table Resolutions add CivilizationType text default null references Civilizations(Type);

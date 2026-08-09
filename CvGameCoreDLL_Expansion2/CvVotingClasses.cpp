@@ -483,7 +483,10 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	loadFrom >> writeTo.bEmbargoIdeology;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	loadFrom >> writeTo.bPermanentAlly;
+	if (uiVersion >= 10)
+		loadFrom >> writeTo.bPermanentAlly;
+	else
+		writeTo.bPermanentAlly = false;
 #endif
 
 	return loadFrom;
@@ -492,7 +495,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 // Serialization Write
 FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom)
 {
-	uint uiVersion = 9;
+	uint uiVersion = 10;
 
 	saveTo << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(saveTo);
@@ -1559,9 +1562,11 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 			pMinorAI->SetFriendshipWithMajor(ePlayer, iHighest + 1);
 			// Mark as permanent ally to prevent decay and coups
 			GetEffects()->bPermanentAlly = true;
-			pPlayer->SetPermanentAlly(eTargetCityState, true);
-			// Permanent ally: exempt from diplomatic prestige.
-			pPlayer->ChangePrestigeExemptAllyCount(1);
+			if (!pPlayer->IsPermanentAlly(eTargetCityState))
+			{
+				pPlayer->SetPermanentAlly(eTargetCityState, true);
+				pPlayer->ChangePrestigeExemptAllyCount(1);
+			}
 		}
 	}
 
@@ -2573,9 +2578,11 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 		// Must be a proposal that can be made by players
 		if (pInfo->IsNoProposalByPlayer())
 		{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
 			// Check civilization-specific resolution access
 			if (pInfo->GetCivilizationType() == NO_CIVILIZATION ||
 				pInfo->GetCivilizationType() != GET_PLAYER(eProposer).getCivilizationType())
+#endif
 			{
 				if (sTooltipSink != NULL)
 				{
@@ -10011,6 +10018,7 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 	}
 
 	// Tiandao unique resolution: score based on whether voter is the target CS ally
+	if (MOD_SP_UNIQUE_CITYSTATE)
 	{
 		int iTiandaoRes = GC.getInfoTypeForString("RESOLUTION_TIANDAO_PROPOSAL", true);
 		if ((int)pProposal->GetType() == iTiandaoRes)
