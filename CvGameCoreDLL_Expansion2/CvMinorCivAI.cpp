@@ -8911,6 +8911,17 @@ void CvMinorCivAI::DoAcquire(PlayerTypes eMajor, int &iNumUnits, int& iCapitalX,
 void CvMinorCivAI::DoAcquire(PlayerTypes eMajor, int &iNumUnits, int& iCapitalX, int& iCapitalY)
 #endif
 {
+	// Clean up permanent ally status when CS is acquired/conquered
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
+		{
+			GET_PLAYER(e).SetPermanentAlly(GetPlayer()->GetID(), false);
+			GET_PLAYER(e).ChangePrestigeExemptAllyCount(-1);
+		}
+	}
+
 	// Take their units
 	CvUnit* pLoopUnit = NULL;
 	int iLoopUnit;
@@ -9401,18 +9412,6 @@ int CvMinorCivAI::GetBullyInfluenceLoss(PlayerTypes eBullyPlayer, int iOriginalL
 	}
 
 	return iOriginalLoss * modifier / 100;
-}
-
-	// Clean up permanent ally status when CS is conquered/acquired
-	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
-	{
-		PlayerTypes e = (PlayerTypes)i;
-		if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
-		{
-			GET_PLAYER(e).SetPermanentAlly(GetPlayer()->GetID(), false);
-			GET_PLAYER(e).ChangePrestigeExemptAllyCount(-1);
-		}
-	}
 }
 
 bool CvMinorCivAI::CanMajorBullyGold(PlayerTypes ePlayer)
