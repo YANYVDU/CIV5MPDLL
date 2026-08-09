@@ -6117,7 +6117,7 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 					bool bAllUnlockedByBelief = false;
 					const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion, getOwner());
 					if(pReligion)
-					{	
+					{
 						if (pReligion->m_Beliefs.IsFaithPurchaseAllGreatPeople())
 						{
 							bAllUnlockedByBelief = true;
@@ -6745,16 +6745,21 @@ int CvCity::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSink
 		}
 
 		// Dubai CS UA: gold donation happiness -> wonder production modifier
-	int iGoldDonHappy = GET_PLAYER(getOwner()).GetGoldDonationHappiness();
-	if (iGoldDonHappy > 0) 
-	{
-		int iDubaiMod = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetWonderProductionPerDonationHappiness();
-		if (iDubaiMod > 0) 
+		int iGoldDonHappy = GET_PLAYER(getOwner()).GetGoldDonationHappiness();
+		if (iGoldDonHappy > 0)
 		{
-			iTempMod += iGoldDonHappy * iDubaiMod / 100;
+			int iDubaiMod = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetWonderProductionPerDonationHappiness();
+			if (iDubaiMod > 0)
+			{
+				iTempMod = iGoldDonHappy * iDubaiMod / 100;
+				iMultiplier += iTempMod;
+				if(toolTipSink && iTempMod)
+				{
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_WONDER_PLAYER", iTempMod);
+				}
+			}
 		}
-	}
-	iTempMod = GetLocalResourceWonderProductionMod(eBuilding, toolTipSink);
+		iTempMod = GetLocalResourceWonderProductionMod(eBuilding, toolTipSink);
 		iMultiplier += iTempMod;
 
 		ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
@@ -19646,7 +19651,7 @@ void CvCity::Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectT
 			} else {
 #endif
 			ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
-			if (pkScriptSystem) 
+			if (pkScriptSystem)
 			{
 				CvLuaArgsHandle args;
 				args->Push(getOwner());
