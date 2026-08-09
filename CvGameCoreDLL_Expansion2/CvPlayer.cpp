@@ -409,6 +409,7 @@ CvPlayer::CvPlayer() :
 	, m_iCityStateAllyCount(0)
 	, m_iMinorCivAlliesThresholdModifier(0)
 #endif
+	, m_iPrestigeExemptAllyCount(0)
 	, m_iExtraUnitPlayerInstances(0)
 	, m_iConquestCasualtiesModifier(0)
 	, m_iWaterTileDamageGlobal(0)
@@ -1236,6 +1237,8 @@ void CvPlayer::uninit()
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
+	m_iPrestigeExemptAllyCount = 0;
+	m_vecPermanentAllies.clear();
 	m_iExtraUnitPlayerInstances = 0;
 	m_iConquestCasualtiesModifier = 0;
 	m_iWaterTileDamageGlobal = 0;
@@ -21166,6 +21169,10 @@ void CvPlayer::verifyAlive()
 
 		if(bKill)
 		{
+			// Clear permanent allies when owner dies (resolution-based allies persist)
+			m_vecPermanentAllies.clear();
+			m_iPrestigeExemptAllyCount = 0;
+
 			setAlive(false, false);
 		}
 	}
@@ -29246,6 +29253,18 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(162, kStream, m_iCityStateAllyCount, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
 #endif
+	MOD_SERIALIZE_READ(162, kStream, m_iPrestigeExemptAllyCount, 0);
+	{
+		int iCount = 0;
+		MOD_SERIALIZE_READ(162, kStream, iCount, 0);
+		m_vecPermanentAllies.clear();
+		for (int j = 0; j < iCount; j++)
+		{
+			int iVal = 0;
+			MOD_SERIALIZE_READ(162, kStream, iVal, -1);
+			m_vecPermanentAllies.push_back(iVal);
+		}
+	}
 	kStream >> m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_READ(159, kStream, m_iConquestCasualtiesModifier, 0);
 	kStream >> m_iWaterTileDamageGlobal;
@@ -30046,6 +30065,13 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateAllyCount);
 	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
 #endif
+	MOD_SERIALIZE_WRITE(kStream, m_iPrestigeExemptAllyCount);
+	{
+		int iCount = (int)m_vecPermanentAllies.size();
+		MOD_SERIALIZE_WRITE(kStream, iCount);
+		for (int i = 0; i < iCount; i++)
+			kStream << m_vecPermanentAllies[i];
+	}
 	kStream << m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_WRITE(kStream, m_iConquestCasualtiesModifier);
 	kStream << m_iWaterTileDamageGlobal;
@@ -31221,7 +31247,7 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 
 	int CvPlayer::GetDiplomaticOverextensionCount() const
 	{
-		int iOver = GetNumCityStateAllies() - GetDiplomaticPrestige();
+		int iOver = (GetNumCityStateAllies() - GetPrestigeExemptAllyCount()) - GetDiplomaticPrestige();
 		return iOver > 0 ? iOver : 0;
 	}
 
@@ -31350,6 +31376,54 @@ int CvPlayer::GetCSTreasuryInterestRate() const
 }
 
 #endif
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetPrestigeExemptAllyCount() const
+{
+	return m_iPrestigeExemptAllyCount;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetPrestigeExemptAllyCount(int iValue)
+{
+	m_iPrestigeExemptAllyCount = iValue;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangePrestigeExemptAllyCount(int iChange)
+{
+	if (iChange != 0)
+		SetPrestigeExemptAllyCount(GetPrestigeExemptAllyCount() + iChange);
+}
+
+//	--------------------------------------------------------------------------------
+bool CvPlayer::IsPermanentAlly(PlayerTypes eMinor) const
+{
+	for (size_t i = 0; i < m_vecPermanentAllies.size(); i++)
+		if (m_vecPermanentAllies[i] == (int)eMinor) return true;
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetPermanentAlly(PlayerTypes eMinor, bool bValue)
+{
+	if (bValue)
+	{
+		if (!IsPermanentAlly(eMinor))
+			m_vecPermanentAllies.push_back((int)eMinor);
+	}
+	else
+	{
+		for (size_t i = 0; i < m_vecPermanentAllies.size(); i++)
+		{
+			if (m_vecPermanentAllies[i] == (int)eMinor)
+			{
+				m_vecPermanentAllies.erase(m_vecPermanentAllies.begin() + i);
+				break;
+			}
+		}
+	}
+}
 
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetExtraUnitPlayerInstances() const

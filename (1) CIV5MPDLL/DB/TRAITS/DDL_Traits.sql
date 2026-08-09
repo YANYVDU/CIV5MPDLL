@@ -128,3 +128,7 @@ create table Trait_BuildCostChange (
     BuildType text references Builds(Type),
     Change int default 0
 );
+
+
+alter table Traits add GreatPersonGiftPermanentAlly boolean default 0;
+alter table Resolutions add CivilizationType text default null references Civilizations(Type);

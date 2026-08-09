@@ -932,6 +932,9 @@
 				[NEWLINE][ICON_BULLET]Allied sea trade routes gain +1 [ICON_GOLD] Gold (increases with Era)
 			</Text>
 		</Replace>
-	</Language_en_US>
+		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
+		<Text>{1_Civ} has formed a permanent alliance with {2_Civ}. This City-State will no longer issue quests and all existing quests have been cleared. Gold gifts and other influence-boosting methods will have no effect on this City-State.</Text>
+	</Row>
+</Language_en_US>
 
 </GameData>
