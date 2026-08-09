@@ -13303,6 +13303,27 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	iModifier += iTempMod;
 	if(iTempMod != 0 && toolTipSink)
 		GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD", iTempMod);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// CityState UA: building-class yield modifiers (Prague, Yerevan)
+	CvPlayerCityStateUA* pCityStateUA = owner.GetPlayerCityStateUA();
+	if (pCityStateUA && pCityStateUA->HasBuildingClassYieldModifiers())
+	{
+		iTempMod = 0;
+		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+		{
+			int iCount = GetNumBuildingClass((BuildingClassTypes)iBC);
+			if (iCount > 0)
+				iTempMod += pCityStateUA->GetBuildingClassYieldModifier((BuildingClassTypes)iBC, eIndex) * iCount;
+		}
+		if (iTempMod != 0)
+		{
+			iModifier += iTempMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_CITY", iTempMod);
+		}
+	}
+#endif
 	
 	//Yield Modifier from PerEra
 	iTempMod = GetYieldModifierPerEra(eIndex)*(GET_PLAYER(getOwner()).GetCurrentEra()+1);

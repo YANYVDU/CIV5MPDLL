@@ -150,6 +150,14 @@ create table CityStateUAEffect_BornGreatPersonAllyInfluenceMod (
     UnitClassType text references UnitClasses(Type),
     ModPerBorn integer default 0
 );
+
+create table CityStateUAEffect_BuildingClassYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    BuildingClassType text references BuildingClasses(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
+
 -- CityState UA (Brussels): specified specialist's great person point accumulation rate (%)
 create table CityStateUAEffect_SpecialistPointRate (
     EffectType text references CityStateUAEffects(Type),

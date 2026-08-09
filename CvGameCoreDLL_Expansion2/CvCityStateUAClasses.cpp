@@ -57,6 +57,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iTradeRouteGoldModifierPerDistance(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
+	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_piSpecialistPointRate(nullptr)
 	, m_piGreatPersonOneShotModifier(nullptr)
 {
@@ -65,6 +66,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 {
 	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingClassYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piSpecialistPointRate);
 	
 SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
@@ -137,6 +139,28 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
 
 	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
+
+	//BuildingClassYieldModifiers (Prague / Yerevan)
+	{
+		kUtility.Initialize2DArray(m_ppiBuildingClassYieldModifiers, "BuildingClasses", "Yields");
+
+		std::string strKey("CityStateUAEffect_BuildingClassYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select BuildingClasses.ID as BuildingClassID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_BuildingClassYieldModifiers inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			const int BuildingClassID = pResults->GetInt(0);
+			const int iYieldID = pResults->GetInt(1);
+			const int iYieldMod = pResults->GetInt(2);
+
+			m_ppiBuildingClassYieldModifiers[BuildingClassID][iYieldID] = iYieldMod;
+		}
+	}
 	//Brussels: specialist great person point accumulation rate (%)
 	kUtility.PopulateArrayByValue(m_piSpecialistPointRate, "Specialists", "CityStateUAEffect_SpecialistPointRate", "SpecialistType", "EffectType", GetType(), "Rate");
 	//Brussels: each great work of a class grants great person points to a specialist
@@ -357,6 +381,15 @@ int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerLuxuryType() const { r
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
 int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
 
+int CvCityStateUAEffectEntry::GetBuildingClassYieldModifiers(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppiBuildingClassYieldModifiers ? m_ppiBuildingClassYieldModifiers[i][j] : 0;
+}
+
 int CvCityStateUAEffectEntry::GetSpecialistPointRate(int i) const
 {
 	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
@@ -524,6 +557,7 @@ void CvCityStateUAXMLEntries::DeleteArray()
 //======================================================================================================
 CvPlayerCityStateUA::CvPlayerCityStateUA()
 	: m_pPlayer(NULL)
+	, m_iBuildingClassYieldModifierCount(0)
 	, m_iFaithPurchaseGreatPeopleCostRiseModifier(0)
 	, m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW(0)
 	, m_iFaithPurchaseAllGreatPeopleCount(0)
@@ -567,6 +601,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iTradeRouteGoldModifierPerDistance(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
+	, m_ppiBuildingClassYieldModifiers(NULL)
 {
 }
 
@@ -632,9 +667,28 @@ void CvPlayerCityStateUA::Reset()
 	m_iTradeRouteGoldModifierPerLuxuryType = 0;
 	m_iTradeRouteGoldModifierPerDistance = 0;
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
+	m_iBuildingClassYieldModifierCount = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
+	// Mirrors CvDatabaseUtility::Initialize2DArray (non-static, so allocate manually here)
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingClassYieldModifiers);
+	{
+		const int iNumBC = GC.getNumBuildingClassInfos();
+		if (iNumBC > 0)
+		{
+			const unsigned int iNumBytes = iNumBC * sizeof(int*) + iNumBC * NUM_YIELD_TYPES * sizeof(int);
+			unsigned char* pData = FNEW(unsigned char[iNumBytes], c_eCiv5GameplayDLL, 0);
+			m_ppiBuildingClassYieldModifiers = (int**)pData;
+			m_ppiBuildingClassYieldModifiers[0] = (int*)(pData + iNumBC * sizeof(int*));
+			for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiBuildingClassYieldModifiers[0][j] = 0;
+			for (int i = 1; i < iNumBC; i++)
+			{
+				m_ppiBuildingClassYieldModifiers[i] = m_ppiBuildingClassYieldModifiers[i-1] + NUM_YIELD_TYPES;
+				for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiBuildingClassYieldModifiers[i][j] = 0;
+			}
+		}
+	}
 	m_vBornGreatPersonSpecialistYield.clear();
 	m_vBuildingGPP.clear();
 	m_vBornAllyInfluenceMod.clear();
@@ -714,6 +768,23 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iTradeRouteGoldModifierPerDistance			+= pEffect->GetTradeRouteGoldModifierPerDistance() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
 	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
+	{
+		if (m_ppiBuildingClassYieldModifiers)
+		{
+			for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+			{
+				for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+				{
+					int iMod = pEffect->GetBuildingClassYieldModifiers(iBC, iYield);
+					if (iMod != 0)
+					{
+						m_ppiBuildingClassYieldModifiers[iBC][iYield] += iMod * iChange;
+						m_iBuildingClassYieldModifierCount += iChange;
+					}
+				}
+			}
+		}
+	}
 	//Brussels: specialist great person point accumulation rate
 	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
 	{
@@ -891,6 +962,17 @@ int CvPlayerCityStateUA::GetAllyInfluenceModFromBornGreatPerson() const
 		iTotal += iBornCount * entry.m_iModPerBorn;
 	}
 	return iTotal;
+}
+
+int CvPlayerCityStateUA::GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType) const
+{
+	if (!m_ppiBuildingClassYieldModifiers) return 0;
+	return m_ppiBuildingClassYieldModifiers[(int)eBuildingClass][(int)eYieldType];
+}
+
+bool CvPlayerCityStateUA::HasBuildingClassYieldModifiers() const
+{
+	return m_iBuildingClassYieldModifierCount > 0;
 }
 
 int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const
