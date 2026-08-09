@@ -868,5 +868,8 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
 			<Text>[COLOR_YELLOW]由於你採納的信條，{1_CityName}獲得了+1[ICON_CITIZEN]人口！[ENDCOLOR]</Text>
 		</Row>
-	</Language_zh_Hant_HK>
+		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
+		<Text>{1_Civ}與城邦{2_Civ}建立了永久盟友關係。該城邦不再發佈新任務，已有任務已清空。贈送金幣等提升影響力的方法將不再生效。</Text>
+	</Row>
+</Language_zh_Hant_HK>
 </GameData>

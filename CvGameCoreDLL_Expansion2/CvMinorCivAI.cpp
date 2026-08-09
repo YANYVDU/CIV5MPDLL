@@ -9401,7 +9401,9 @@ int CvMinorCivAI::GetBullyInfluenceLoss(PlayerTypes eBullyPlayer, int iOriginalL
 	}
 
 	return iOriginalLoss * modifier / 100;
-	// Clean up permanent ally status when CS is conquered
+}
+
+	// Clean up permanent ally status when CS is conquered/acquired
 	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 	{
 		PlayerTypes e = (PlayerTypes)i;
@@ -9972,6 +9974,20 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 		{
 			GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
 			GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
+
+			// Clear all quests and notify players
+			DoQuestsCleanup();
+
+			Localization::String sTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED");
+			sTemp << GET_PLAYER(eFromPlayer).getCivilizationShortDescriptionKey();
+			sTemp << GetPlayer()->getCivilizationShortDescriptionKey();
+			CvString sMsg = sTemp.toUTF8();
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+			{
+				PlayerTypes e = (PlayerTypes)i;
+				if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isHuman())
+					AddNotification(sMsg, sMsg, e, -1, -1);
+			}
 		}
 	}
 

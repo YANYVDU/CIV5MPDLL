@@ -1566,6 +1566,20 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 			{
 				pPlayer->SetPermanentAlly(eTargetCityState, true);
 				pPlayer->ChangePrestigeExemptAllyCount(1);
+
+				// Clear all quests and notify players
+				pMinorAI->DoQuestsCleanup();
+
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED");
+				sTemp << pPlayer->getCivilizationShortDescriptionKey();
+				sTemp << GET_PLAYER(eTargetCityState).getCivilizationShortDescriptionKey();
+				CvString sMsg = sTemp.toUTF8();
+				for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+				{
+					PlayerTypes e = (PlayerTypes)i;
+					if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isHuman())
+						pMinorAI->AddNotification(sMsg, sMsg, e, -1, -1);
+				}
 			}
 		}
 	}

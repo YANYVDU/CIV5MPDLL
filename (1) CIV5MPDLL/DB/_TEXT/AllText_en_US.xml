@@ -872,6 +872,9 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
 			<Text>[COLOR_YELLOW]Due to your belief, {1_CityName} has gained +1[ICON_CITIZEN] Population![ENDCOLOR]</Text>
 		</Row>
-	</Language_en_US>
+		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
+		<Text>{1_Civ} has formed a permanent alliance with {2_Civ}. This City-State will no longer issue quests and all existing quests have been cleared. Gold gifts and other influence-boosting methods will have no effect on this City-State.</Text>
+	</Row>
+</Language_en_US>
 
 </GameData>
