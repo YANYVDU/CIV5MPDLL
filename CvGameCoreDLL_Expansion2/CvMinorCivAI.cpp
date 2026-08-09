@@ -9975,7 +9975,7 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 			GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
 
 			// Clear all quests and notify players
-			DoQuestsCleanup();
+			ResetQuestList();
 
 			Localization::String sTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED");
 			sTemp << GET_PLAYER(eFromPlayer).getCivilizationShortDescriptionKey();

@@ -1568,7 +1568,7 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 				pPlayer->ChangePrestigeExemptAllyCount(1);
 
 				// Clear all quests and notify players
-				pMinorAI->DoQuestsCleanup();
+				pMinorAI->ResetQuestList();
 
 				Localization::String sTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED");
 				sTemp << pPlayer->getCivilizationShortDescriptionKey();

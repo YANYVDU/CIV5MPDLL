@@ -576,6 +576,7 @@
     <Folder Include="DB\RESOURCES" />
     <Folder Include="DB\TECHS" />
     <Folder Include="DB\SPECIALISTS" />
+    <Folder Include="DB\UNIQUE_CITYSTATES\" />
     <Folder Include="DB\YIELDS" />
     <Folder Include="DB\POLICIES" />
     <Folder Include="DB\UNITS" />
@@ -587,6 +588,7 @@
     <Folder Include="DB\_TEXT" />
     <Folder Include="DLL" />
     <Folder Include="LUA" />
+    <Folder Include="MAPS\" />
     <Folder Include="UI" />
     <Folder Include="UI\InGame" />
     <Folder Include="UI\InGame\Popups" />
