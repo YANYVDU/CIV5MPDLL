@@ -3688,13 +3688,6 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 #endif
 	}
 
-#if defined(MOD_API_EXTENSIONS)
-		return pNewCity;
-#endif
-#ifdef _MSC_VER
-#pragma warning ( pop ) // restore warning level suppressed for pNewCity null check
-#endif// _MSC_VER
-
 	if (bConquest)
 	{
 		DWORD dwElapsed = GetTickCount() - dwStartTotal;
@@ -3702,6 +3695,13 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 		DWORD dwStage2 = dwElapsed - dwStage1;
 		NET_MESSAGE_DEBUG_OSTR_ALWAYS("[PERF] acquireCity total=" << dwElapsed << "ms pre=" << dwStage1 << "ms post=" << dwStage2 << "ms city=" << strPerfCityName.c_str() << " old=" << (int)eOldOwner << "->new=" << (int)GetID());
 	}
+
+#if defined(MOD_API_EXTENSIONS)
+		return pNewCity;
+#endif
+#ifdef _MSC_VER
+#pragma warning ( pop ) // restore warning level suppressed for pNewCity null check
+#endif// _MSC_VER
 }
 
 
