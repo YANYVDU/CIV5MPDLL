@@ -98,6 +98,7 @@ public:
 	bool IsCanPillageNeutralTradeRoute() const;
 	// Belgrade (BeiErGeLaiDe)
 	int GetGarrisonCityDefenseModifier() const;
+	int GetMilitaryUnitProductionXP() const;
 	// Budapest (BuDaPeiSi)
 	bool IsLandUnitsImmuneRiverCrossing() const;
 	// Ha Noi (HeNei)
@@ -184,6 +185,7 @@ private:
 	bool m_bCanPillageNeutralTradeRoute;
 	// Belgrade
 	int m_iGarrisonCityDefenseModifier;
+	int m_iMilitaryUnitProductionXP;
 	// Budapest
 	bool m_bLandUnitsImmuneRiverCrossing;
 	// Ha Noi
@@ -338,6 +340,7 @@ public:
 	bool IsCanPillageNeutralTradeRoute() const;
 	// Belgrade
 	int GetGarrisonCityDefenseModifier() const;
+	int GetMilitaryUnitProductionXP() const;
 	// Budapest
 	bool IsLandUnitsImmuneRiverCrossing() const;
 	// Ha Noi
@@ -413,6 +416,7 @@ protected:
 	int m_iPuppetTechCostPartial;
 	int m_iCanPillageNeutralTradeRouteCount;
 	int m_iGarrisonCityDefenseModifier;
+	int m_iMilitaryUnitProductionXP;
 	int m_iLandUnitsImmuneRiverCrossingCount;
 	int m_iEnemyFixedDamageModifierInBorders;
 	int m_iCulturePerWarPeace;

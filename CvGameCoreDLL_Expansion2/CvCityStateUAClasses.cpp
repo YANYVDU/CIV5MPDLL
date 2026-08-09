@@ -33,6 +33,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iPuppetTechCostPartial(0)
 	, m_bCanPillageNeutralTradeRoute(false)
 	, m_iGarrisonCityDefenseModifier(0)
+	, m_iMilitaryUnitProductionXP(0)
 	, m_bLandUnitsImmuneRiverCrossing(false)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
@@ -69,7 +70,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingClassYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piSpecialistPointRate);
 	
-SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
+	SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -105,6 +106,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_bCanPillageNeutralTradeRoute					= kResults.GetBool("CanPillageNeutralTradeRoute");
 
 	m_iGarrisonCityDefenseModifier					= kResults.GetInt("GarrisonCityDefenseModifier");
+	m_iMilitaryUnitProductionXP						= kResults.GetInt("MilitaryUnitProductionXP");
 
 	m_bLandUnitsImmuneRiverCrossing				= kResults.GetBool("LandUnitsImmuneRiverCrossing");
 
@@ -277,7 +279,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vYieldToYieldViaTRToUCS.push_back(entry);
 		}
 	}
-//Valletta: buying the specified building class grants all units of the specified domain XP
+	//Valletta: buying the specified building class grants all units of the specified domain XP
 	{
 		m_vPurchasedBuildingXP.clear();
 		std::string strKey("CityStateUAEffect_PurchasedBuildingXP");
@@ -348,6 +350,8 @@ int CvCityStateUAEffectEntry::GetPuppetTechCostPartial() const { return m_iPuppe
 bool CvCityStateUAEffectEntry::IsCanPillageNeutralTradeRoute() const { return m_bCanPillageNeutralTradeRoute; }
 
 int CvCityStateUAEffectEntry::GetGarrisonCityDefenseModifier() const { return m_iGarrisonCityDefenseModifier; }
+
+int CvCityStateUAEffectEntry::GetMilitaryUnitProductionXP() const { return m_iMilitaryUnitProductionXP; }
 
 bool CvCityStateUAEffectEntry::IsLandUnitsImmuneRiverCrossing() const { return m_bLandUnitsImmuneRiverCrossing; }
 
@@ -577,6 +581,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iPuppetTechCostPartial(0)
 	, m_iCanPillageNeutralTradeRouteCount(0)
 	, m_iGarrisonCityDefenseModifier(0)
+	, m_iMilitaryUnitProductionXP(0)
 	, m_iLandUnitsImmuneRiverCrossingCount(0)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
@@ -644,6 +649,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iPuppetTechCostPartial = 0;
 	m_iCanPillageNeutralTradeRouteCount = 0;
 	m_iGarrisonCityDefenseModifier = 0;
+	m_iMilitaryUnitProductionXP = 0;
 	m_iLandUnitsImmuneRiverCrossingCount = 0;
 	m_iEnemyFixedDamageModifierInBorders = 0;
 	m_iCulturePerWarPeace = 0;
@@ -735,6 +741,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iCanPillageNeutralTradeRouteCount += (pEffect->IsCanPillageNeutralTradeRoute() ? iChange : 0);
 
 	m_iGarrisonCityDefenseModifier					+= pEffect->GetGarrisonCityDefenseModifier() * iChange;
+	m_iMilitaryUnitProductionXP						+= pEffect->GetMilitaryUnitProductionXP() * iChange;
 
 	m_iLandUnitsImmuneRiverCrossingCount += (pEffect->IsLandUnitsImmuneRiverCrossing() ? iChange : 0);
 
@@ -892,6 +899,8 @@ bool CvPlayerCityStateUA::IsPuppetNoTechCostPenalty() const { return m_iPuppetNo
 int CvPlayerCityStateUA::GetPuppetTechCostPartial() const { return m_iPuppetTechCostPartial; }
 bool CvPlayerCityStateUA::IsCanPillageNeutralTradeRoute() const { return m_iCanPillageNeutralTradeRouteCount > 0; }
 int CvPlayerCityStateUA::GetGarrisonCityDefenseModifier() const { return m_iGarrisonCityDefenseModifier; }
+
+int CvPlayerCityStateUA::GetMilitaryUnitProductionXP() const { return m_iMilitaryUnitProductionXP; }
 bool CvPlayerCityStateUA::IsLandUnitsImmuneRiverCrossing() const { return m_iLandUnitsImmuneRiverCrossingCount > 0; }
 int CvPlayerCityStateUA::GetEnemyFixedDamageModifierInBorders() const { return m_iEnemyFixedDamageModifierInBorders; }
 int CvPlayerCityStateUA::GetCulturePerWarPeace() const { return m_iCulturePerWarPeace; }

@@ -69,6 +69,8 @@ CREATE TABLE CityStateUAEffects (
     CanPillageNeutralTradeRoute                     boolean DEFAULT 0,
     -- Belgrade: garrison city defense
     GarrisonCityDefenseModifier                     integer DEFAULT 0,
+    -- Belgrade: ally-built military units gain XP (purchases do not apply)
+    MilitaryUnitProductionXP                        integer DEFAULT 0,
     -- Budapest: immune to river crossing penalties
     LandUnitsImmuneRiverCrossing                    boolean DEFAULT 0,
     -- Hanoi: fixed damage in borders + peace treaty + being declared war on

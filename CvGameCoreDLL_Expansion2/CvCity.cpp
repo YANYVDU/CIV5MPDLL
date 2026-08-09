@@ -18642,6 +18642,21 @@ int CvCity::CreateUnit(UnitTypes eUnitType, bool bIsGold, bool bIsFaith, UnitAIT
 	CvUnitEntry & pkUnitInfo = pUnit->getUnitInfo();
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Belgrade UA: ally-built military units gain XP; purchases (gold/faith) do not apply
+	if (MOD_SP_UNIQUE_CITYSTATE && !bIsGold && !bIsFaith)
+	{
+		CvPlayerCityStateUA* pCSUA = thisPlayer.GetPlayerCityStateUA();
+		int iCSUAXP = (pCSUA != NULL) ? pCSUA->GetMilitaryUnitProductionXP() : 0;
+		if (iCSUAXP > 0 && (pkUnitInfo.GetCombat() > 0 || pkUnitInfo.GetRangedCombat() > 0))
+		{
+#if defined(MOD_UNITS_XP_TIMES_100)
+				pUnit->changeExperienceTimes100(iCSUAXP * 100);
+#else
+				pUnit->changeExperience(iCSUAXP);
+#endif
+		}
+	}
+
 	// Valletta UA: granting a configurable yield when a unit of the configured class is born
 	if (MOD_SP_UNIQUE_CITYSTATE)
 	{
