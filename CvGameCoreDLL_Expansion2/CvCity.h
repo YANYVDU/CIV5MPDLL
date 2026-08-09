@@ -516,6 +516,10 @@ public:
 	int getGreatPeopleRateModifier() const;
 	void changeGreatPeopleRateModifier(int iChange);
 
+	// Golden Age great person rate modifier, summed across all sources (player instance + traits + city religion beliefs)
+	int GetGoldenAgeGreatPersonRateModifier(GreatPersonTypes eGreatPerson) const;
+	int GetGoldenAgeGreatPersonRateModifierFromSpecialist(SpecialistTypes eSpecialist) const;
+
 	// Culture stuff
 
 	int GetJONSCultureStored() const;

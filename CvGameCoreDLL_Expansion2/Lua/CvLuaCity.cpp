@@ -369,6 +369,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(GetTotalGreatPeopleRateModifier);
 	Method(ChangeBaseGreatPeopleRate);
 	Method(GetGreatPeopleRateModifier);
+	Method(GetGoldenAgeGreatPersonRateModifierFromSpecialist);
 
 	Method(GetJONSCultureStored);
 	Method(SetJONSCultureStored);
@@ -2771,6 +2772,15 @@ int CvLuaCity::lChangeBaseGreatPeopleRate(lua_State* L)
 int CvLuaCity::lGetGreatPeopleRateModifier(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvCity::getGreatPeopleRateModifier);
+}
+//------------------------------------------------------------------------------
+//int GetGoldenAgeGreatPersonRateModifierFromSpecialist(SpecialistTypes eSpecialist);
+int CvLuaCity::lGetGoldenAgeGreatPersonRateModifierFromSpecialist(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkCity->GetGoldenAgeGreatPersonRateModifierFromSpecialist(eSpecialist));
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetJONSCultureStored() const;

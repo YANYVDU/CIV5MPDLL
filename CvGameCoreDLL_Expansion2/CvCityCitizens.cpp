@@ -2392,24 +2392,7 @@ void CvCityCitizens::DoSpecialists()
 					if (GetPlayer()->isGoldenAge())
 					{
 						GreatPersonTypes eGreatPerson = GetGreatPersonFromSpecialist(eSpecialist);
-
-						iMod += GetPlayer()->getGoldenAgeGreatPersonRateModifier(eGreatPerson);
-						iMod += GetPlayer()->GetPlayerTraits()->GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
-
-						ReligionTypes eMajority = GetCity()->GetCityReligions()->GetReligiousMajority();
-						if(eMajority != NO_RELIGION)
-						{
-							const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, GetCity()->getOwner());
-							if(pReligion)
-							{
-								iMod += pReligion->m_Beliefs.GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
-								BeliefTypes eSecondaryPantheon = GetCity()->GetCityReligions()->GetSecondaryReligionPantheonBelief();
-								if (eSecondaryPantheon != NO_BELIEF)
-								{
-									iMod += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
-								}
-							}
-						}
+						iMod += GetCity()->GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
 					}
 #endif
 

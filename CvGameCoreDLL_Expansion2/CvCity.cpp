@@ -10253,6 +10253,47 @@ int CvCity::getTotalGreatPeopleRateModifier() const
 	return std::max(0, (iModifier + 100));
 }
 
+//	--------------------------------------------------------------------------------
+/// Total golden age great person rate modifier for a great person type,
+/// summed across all sources: player instance, traits, and this city's religion beliefs
+int CvCity::GetGoldenAgeGreatPersonRateModifier(GreatPersonTypes eGreatPerson) const
+{
+	VALIDATE_OBJECT
+	CvAssertMsg(eGreatPerson >= 0 && eGreatPerson < GC.getNumGreatPersonInfos(), "Invalid great person index");
+
+	int iMod = 0;
+	CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
+	iMod += kPlayer.getGoldenAgeGreatPersonRateModifier(eGreatPerson);
+	iMod += kPlayer.GetPlayerTraits()->GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+
+	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+	if (eMajority != NO_RELIGION)
+	{
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if (pReligion)
+		{
+			iMod += pReligion->m_Beliefs.GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+			BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
+			if (eSecondaryPantheon != NO_BELIEF)
+			{
+				iMod += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+			}
+		}
+	}
+
+	return iMod;
+}
+
+//	--------------------------------------------------------------------------------
+/// Specialist convenience wrapper for the above (for Lua/UI use)
+int CvCity::GetGoldenAgeGreatPersonRateModifierFromSpecialist(SpecialistTypes eSpecialist) const
+{
+	VALIDATE_OBJECT
+	GreatPersonTypes eGreatPerson = ::GetGreatPersonFromSpecialist(eSpecialist);
+	if (eGreatPerson == NO_GREATPERSON)
+		return 0;
+	return GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+}
 
 //	--------------------------------------------------------------------------------
 void CvCity::changeBaseGreatPeopleRate(int iChange)
