@@ -12,7 +12,8 @@ create table CorruptionLevels (
     IsPuppet boolean not null default 0,
 
     CityHallBuildingClass text null,
-    PublicSecurityBuildingClass text null
+    PublicSecurityBuildingClass text null,
+    CorruptionUnhappiness integer not null default 0
 );
 
 alter table Buildings add SecondCapitalsExtraScore integer default 0;
@@ -40,4 +41,12 @@ create table Policy_CorruptionLevelPolicyCostModifier (
 INSERT INTO Defines(Name, Value) VALUES('CORRUPTION_SCORE_PER_DISTANCE', 100);
 INSERT INTO Defines(Name, Value) VALUES('CORRUPTION_SCORE_COASTAL_BONUS', -200);
 
+alter table Policies add column GoldenAgeCorruptionScoreReduction integer not null default 0;
+--Each point of local happiness reduces corruption score by this amount (divided by 100, e.g. -1000 = -10 corruption per happiness)
+alter table Policies add column LocalHappinessCorruptionScoreMod integer not null default 0;
+
 alter table Buildings add column CorruptionPolicyCostModifier integer not null default 0;
+alter table Buildings add column CorruptionScoreGlobalChange integer not null default 0;
+alter table Buildings add column CorruptionUnhappinessModifier integer not null default 0;
+alter table Buildings add column CorruptionUnhappinessChange integer not null default 0;
+alter table Policies add column CorruptionUnhappinessModifier integer not null default 0;

@@ -21,6 +21,7 @@ bool CvCorruptionLevel::CacheResults(Database::Results& kResults, CvDatabaseUtil
 
 	m_eCityHallBuildingClass = static_cast<BuildingClassTypes>(GC.getInfoTypeForString(kResults.GetText("CityHallBuildingClass")));
 	m_ePublicSecurityBuildingClass = static_cast<BuildingClassTypes>(GC.getInfoTypeForString(kResults.GetText("PublicSecurityBuildingClass")));
+	m_iCorruptionUnhappiness = kResults.GetInt("CorruptionUnhappiness");
 }
 
 int CvCorruptionLevel::GetScoreLowerBound(int iMapWidth, int iMapHeight) const
@@ -56,6 +57,11 @@ BuildingClassTypes CvCorruptionLevel::GetCityHallBuildingClass() const
 BuildingClassTypes CvCorruptionLevel::GetPublicSecurityBuildingClass() const
 {
 	return m_ePublicSecurityBuildingClass;
+}
+
+int CvCorruptionLevel::GetCorruptionUnhappiness() const
+{
+	return m_iCorruptionUnhappiness;
 }
 
 std::vector<CvCorruptionLevel*>& CvCorruptionLevelXMLEntries::GetEntries()

@@ -7,6 +7,7 @@
 	------------------------------------------------------------------------------------------------------- */
 
 #include "CvGameCoreDLLPCH.h"
+#include "cvStopWatch.h"
 #include "CvGlobals.h"
 #include "CvPlayerAI.h"
 #include "CvTeam.h"
@@ -843,6 +844,7 @@ void CvAIOperation::Kill(AIOperationAbortReason eReason)
 /// Update operation for the next turn
 void CvAIOperation::DoTurn()
 {
+	AI_PERF_FORMAT("AI-perf.csv", ("AIOperation DoTurn, Turn %03d", GC.getGame().getElapsedGameTurns()) );
 	LogOperationStatus();
 }
 

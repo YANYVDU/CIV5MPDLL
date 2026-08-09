@@ -251,7 +251,7 @@ void CvCityConnections::UpdateRouteInfo(void)
 			for(pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
 			{
 				vpCities.push_back(pLoopCity);
-				pLoopCity->SetRouteToCapitalConnected(false);
+				pLoopCity->SetRouteToCapitalConnected(false, true);
 
 #if defined(MOD_EVENTS_CITY_CONNECTIONS)
 				if(!bAllowIndirectRoutes)
@@ -345,10 +345,15 @@ void CvCityConnections::UpdateRouteInfo(void)
 		CvAStar* pkLandRouteFinder;
 		pkLandRouteFinder = &GC.getRouteFinder();
 
+		// Precompute city->plotIndex mapping to avoid O(n) GetIndexFromCity in inner loop
+		std::vector<int> aiCityPlotIdx(vpCities.size());
+		for(uint _i = 0; _i < vpCities.size(); _i++)
+			aiCityPlotIdx[_i] = (int)GetIndexFromCity(vpCities[_i]);
+
 		for(uint uiFirstCityIndex = 0; uiFirstCityIndex < vpCities.size(); uiFirstCityIndex++)
 		{
 			pFirstCity = vpCities[uiFirstCityIndex];
-			int iFirstCityArrayIndex = GetIndexFromCity(pFirstCity);
+			int iFirstCityArrayIndex = aiCityPlotIdx[uiFirstCityIndex];
 
 			for(uint uiSecondCityIndex = 0; uiSecondCityIndex < vpCities.size(); uiSecondCityIndex++)
 			{
@@ -358,7 +363,7 @@ void CvCityConnections::UpdateRouteInfo(void)
 					continue;
 				}
 				pSecondCity = vpCities[uiSecondCityIndex];
-				int iSecondCityArrayIndex = GetIndexFromCity(pSecondCity);
+				int iSecondCityArrayIndex = aiCityPlotIdx[uiSecondCityIndex];
 
 				RouteInfo* pRouteInfo = GetRouteInfo(iFirstCityArrayIndex, iSecondCityArrayIndex);
 				RouteInfo* pInverseRouteInfo = GetRouteInfo(iSecondCityArrayIndex, iFirstCityArrayIndex);
@@ -494,12 +499,12 @@ void CvCityConnections::UpdateRouteInfo(void)
 							while(pNode)
 							{
 								pPlot = GC.getMap().plot(pNode->m_iX, pNode->m_iY);
-								ConnectPlotRoute(pPlot);
+							ConnectPlotRoute(pPlot);
 								pNode = pNode->m_pParent;
 							}
 
-							pFirstCity->SetRouteToCapitalConnected(true);
-							pSecondCity->SetRouteToCapitalConnected(true);
+							pFirstCity->SetRouteToCapitalConnected(true, true);
+							pSecondCity->SetRouteToCapitalConnected(true, true);
 						}
 					}
 				}

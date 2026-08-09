@@ -3852,6 +3852,7 @@ CvBuildInfo::CvBuildInfo() :
 	m_bRemoveRoute(false),
 	m_bWater(false),
 	m_bCanBeEmbarked(false),
+	m_iTerrainChange(NO_TERRAIN),
 	m_paiFeatureTech(NULL),
 	m_paiFeatureTime(NULL),
 	m_paiFeatureProduction(NULL),
@@ -3862,7 +3863,9 @@ CvBuildInfo::CvBuildInfo() :
 	m_pabFeatureRemoveOnly(NULL),
 #endif
 	m_pabFeatureRemove(NULL),
-	m_pabResourceRemove(NULL)
+	m_pabResourceRemove(NULL),
+	m_pabTerrainMakesValid(NULL),
+	m_pabAdjacentTerrainRequired(NULL)
 {
 }
 //------------------------------------------------------------------------------
@@ -3879,6 +3882,8 @@ CvBuildInfo::~CvBuildInfo()
 	SAFE_DELETE_ARRAY(m_pabFeatureRemoveOnly);
 #endif
 	SAFE_DELETE_ARRAY(m_pabResourceRemove);
+	SAFE_DELETE_ARRAY(m_pabTerrainMakesValid);
+	SAFE_DELETE_ARRAY(m_pabAdjacentTerrainRequired);
 }
 //------------------------------------------------------------------------------
 int CvBuildInfo::getTime() const
@@ -4105,10 +4110,50 @@ bool CvBuildInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	
 	kUtility.InitializeArray(m_pabResourceRemove, "Resources");
 	kUtility.PopulateArrayByExistence(m_pabResourceRemove, "Resources", "Build_ResourceRemove", "ResourceType", "BuildType", szBuildType);
+
+	// TerrainChange
+	{
+		m_iTerrainChange = NO_TERRAIN;
+
+		Database::Results kResults;
+		if (DB.SelectAt(kResults, "Build_TerrainChange", "BuildType", szBuildType))
+		{
+			if (kResults.Step())
+			{
+				const char* szTerrainType = kResults.GetText("TerrainType");
+				if (szTerrainType && szTerrainType[0] != '\0')
+				{
+					m_iTerrainChange = GC.getInfoTypeForString(szTerrainType, true);
+				}
+			}
+		}
+	}
+
+	// Build_ValidTerrains
+	kUtility.InitializeArray(m_pabTerrainMakesValid, "Terrains");
+	kUtility.PopulateArrayByExistence(m_pabTerrainMakesValid, "Terrains", "Build_ValidTerrains", "TerrainType", "BuildType", szBuildType);
+	kUtility.PopulateArrayByExistence(m_pabAdjacentTerrainRequired, "Terrains", "Build_AdjacentTerrainRequired", "TerrainType", "BuildType", szBuildType);
+
 	return true;
 }
 
-/// Helper function to read in an integer array of data sized according to number of build types
+//------------------------------------------------------------------------------
+bool CvBuildInfo::isTerrainMakesValid(int i) const
+{
+	CvAssertMsg(i < GC.getNumTerrainInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_pabTerrainMakesValid ? m_pabTerrainMakesValid[i] : false;
+}
+
+//------------------------------------------------------------------------------
+bool CvBuildInfo::isAdjacentTerrainRequired(int i) const
+{
+	CvAssertMsg(i < GC.getNumTerrainInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_pabAdjacentTerrainRequired ? m_pabAdjacentTerrainRequired[i] : false;
+}
+
+// Helper function to read in an integer array of data sized according to number of build types
 void BuildArrayHelpers::Read(FDataStream& kStream, short* paiBuildArray)
 {
 	int iNumEntries;
@@ -6978,6 +7023,9 @@ CvEraInfo::CvEraInfo() :
 	m_iDiplpEmphasisLatePolicies(0),
 	m_iTradeRouteFoodBonusTimes100(0),
 	m_iTradeRouteProductionBonusTimes100(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdExtra(0),
+#endif
 	m_iLeaguePercent(0),
 	m_iWarmongerPercent(0),
 	m_bNoGoodies(false),
@@ -7138,6 +7186,14 @@ int CvEraInfo::getTradeRouteProductionBonusTimes100() const
 	return m_iTradeRouteProductionBonusTimes100;
 }
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//------------------------------------------------------------------------------
+	int CvEraInfo::getMinorCivAlliesThresholdExtra() const
+	{
+		return m_iMinorCivAlliesThresholdExtra;
+	}
+#endif
+
 //------------------------------------------------------------------------------
 int CvEraInfo::getLeaguePercent() const
 {
@@ -7271,6 +7327,9 @@ bool CvEraInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUt
 	m_iTradeRouteProductionBonusTimes100 = kResults.GetInt("TradeRouteProductionBonusTimes100");
 	m_iLeaguePercent			= kResults.GetInt("LeaguePercent");
 	m_iWarmongerPercent			= kResults.GetInt("WarmongerPercent");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdExtra = kResults.GetInt("MinorCivAlliesThresholdExtra");
+#endif
 
 	m_strCityBombardEffectTag	= kResults.GetText("CityBombardEffectTag");
 	m_uiCityBombardEffectTagHash = FString::Hash(m_strCityBombardEffectTag);

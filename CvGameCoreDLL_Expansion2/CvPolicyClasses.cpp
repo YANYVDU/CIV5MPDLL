@@ -25,6 +25,10 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iGridX(0),
 	m_iGridY(0),
 	m_iLevel(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
+#endif
 	m_iPolicyCostModifier(0),
 	m_iCulturePerCity(0),
 	m_iCulturePerWonder(0),
@@ -60,6 +64,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iExtraHappinessPerCity(0),
 	m_iUnhappinessMod(0),
 	m_iCityCountUnhappinessMod(0),
+	m_iCorruptionUnhappinessModifier(0),
 	m_iOccupiedPopulationUnhappinessMod(0),
 	m_iCapitalUnhappinessMod(0),
 	m_iFreeExperience(0),
@@ -208,6 +213,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 #endif
 	m_bAlwaysWeLoveKindDayInGoldenAge(false),
 	m_bNoResistance(false),
+	m_bTechBoostFromCityWonderBuildings(false),
 	m_bUpgradeAllTerritory(false),
 	m_bNoTechForWonder(false),
 	m_bNoTechForProject(false),
@@ -217,9 +223,15 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iOriginalCapitalCapturePolicy(0),
 	m_iOriginalCapitalCaptureGreatPerson(0),
 	m_iFreePopulation(0),
+	m_piGreatPersonPoints(nullptr),
 	m_iFreePopulationCapital(0),
 	m_iExtraSpies(0),
 	m_iGreatScientistBeakerPolicyModifier(0),
+	m_iInstantTourismBombWhenFirstConquerMajorCapital(0),
+	m_iNaturalWonderFirstFinderPolicies(0),
+	m_iNaturalWonderFirstFinderTech(0),
+	m_iNaturalWonderSubsequentFinderPolicies(0),
+	m_iNaturalWonderSubsequentFinderTech(0),
 	m_iProductionBeakerMod(0),
 	m_bOneShot(false),
 	m_bIncludesOneShotFreeUnits(false),
@@ -232,6 +244,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_piCapitalYieldChange(NULL),
 	m_piCapitalYieldPerPopChange(NULL),
 	m_piYieldPerPopChange(NULL),
+	m_piYieldPerGlobalPop(NULL),
 	m_piCapitalYieldModifier(NULL),
 	m_piGreatWorkYieldChange(NULL),
 	m_piSpecialistExtraYield(NULL),
@@ -271,6 +284,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_piYieldModifierFromActiveSpies(NULL),
 	m_piYieldModifierPerArtifacts(NULL),
 	m_piGreatPersonOutputModifierPerGWs(NULL),
+	m_piImprovementHappinessWhenWorked(nullptr),
 	m_ppiBuildingClassYieldModifiers(NULL),
 	m_ppiBuildingClassYieldChanges(NULL),
 	m_piCityLoveKingDayYieldMod(NULL),
@@ -293,10 +307,13 @@ CvPolicyEntry::~CvPolicyEntry(void)
 	SAFE_DELETE_ARRAY(m_piCapitalYieldChange);
 	SAFE_DELETE_ARRAY(m_piCapitalYieldPerPopChange);
 	SAFE_DELETE_ARRAY(m_piYieldPerPopChange);
+	SAFE_DELETE_ARRAY(m_piYieldPerGlobalPop);
 	SAFE_DELETE_ARRAY(m_piCapitalYieldModifier);
 	SAFE_DELETE_ARRAY(m_piGreatWorkYieldChange);
 	SAFE_DELETE_ARRAY(m_piSpecialistExtraYield);
 	SAFE_DELETE_ARRAY(m_piImprovementCultureChange);
+	SAFE_DELETE_ARRAY(m_piImprovementHappinessWhenWorked);
+	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
 	SAFE_DELETE_ARRAY(m_pabFreePromotion);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatProductionModifiers);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatFreeExperiences);
@@ -355,6 +372,10 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iCultureCost = kResults.GetInt("CultureCost");
 	m_iGridX = kResults.GetInt("GridX");
 	m_iGridY = kResults.GetInt("GridY");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier = kResults.GetInt("MinorCivAlliesThresholdModifier");
+#endif
 	m_iLevel = kResults.GetInt("Level");
 	m_iPolicyCostModifier = kResults.GetInt("PolicyCostModifier");
 	m_iCulturePerCity = kResults.GetInt("CulturePerCity");
@@ -391,6 +412,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iExtraHappinessPerCity = kResults.GetInt("ExtraHappinessPerCity");
 	m_iUnhappinessMod = kResults.GetInt("UnhappinessMod");
 	m_iCityCountUnhappinessMod = kResults.GetInt("CityCountUnhappinessMod");
+	m_iCorruptionUnhappinessModifier = kResults.GetInt("CorruptionUnhappinessModifier");
 	m_iOccupiedPopulationUnhappinessMod = kResults.GetInt("OccupiedPopulationUnhappinessMod");
 	m_iCapitalUnhappinessMod = kResults.GetInt("CapitalUnhappinessMod");
 	m_iFreeExperience = kResults.GetInt("FreeExperience");
@@ -541,6 +563,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 #endif
 	m_bAlwaysWeLoveKindDayInGoldenAge = kResults.GetInt("AlwaysWeLoveKindDayInGoldenAge");
 	m_bNoResistance = kResults.GetInt("NoResistance");
+	m_bTechBoostFromCityWonderBuildings = kResults.GetInt("TechBoostFromCityWonderBuildings");
 	m_bUpgradeAllTerritory = kResults.GetInt("UpgradeAllTerritory");
 	m_bNoTechForWonder = kResults.GetBool("NoTechForWonder");
 	m_bNoTechForProject = kResults.GetBool("NoTechForProject");
@@ -553,6 +576,11 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iFreePopulationCapital = kResults.GetInt("FreePopulationCapital");
 	m_iExtraSpies = kResults.GetInt("ExtraSpies");
 	m_iGreatScientistBeakerPolicyModifier = kResults.GetInt("GreatScientistBeakerPolicyModifier");
+	m_iInstantTourismBombWhenFirstConquerMajorCapital = kResults.GetInt("InstantTourismBombWhenFirstConquerMajorCapital");
+	m_iNaturalWonderFirstFinderPolicies = kResults.GetInt("NaturalWonderFirstFinderPolicies");
+	m_iNaturalWonderFirstFinderTech = kResults.GetInt("NaturalWonderFirstFinderTech");
+	m_iNaturalWonderSubsequentFinderPolicies = kResults.GetInt("NaturalWonderSubsequentFinderPolicies");
+	m_iNaturalWonderSubsequentFinderTech = kResults.GetInt("NaturalWonderSubsequentFinderTech");
 	m_iProductionBeakerMod = kResults.GetInt("ProductionBeakerMod");
 	m_bOneShot = kResults.GetBool("OneShot");
 	m_bIncludesOneShotFreeUnits = kResults.GetBool("IncludesOneShotFreeUnits");
@@ -591,12 +619,15 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 	//Arrays
 	const char* szPolicyType = GetType();
+	//Policy_GreatPersonPoints
+	kUtility.PopulateArrayByValue(m_piGreatPersonPoints, "Specialists", "Policy_GreatPersonPoints", "SpecialistType", "PolicyType", szPolicyType, "Points");
 	kUtility.SetYields(m_piYieldModifier, "Policy_YieldModifiers", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCityYieldChange, "Policy_CityYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCoastalCityYieldChange, "Policy_CoastalCityYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCapitalYieldChange, "Policy_CapitalYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCapitalYieldPerPopChange, "Policy_CapitalYieldPerPopChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piYieldPerPopChange, "Policy_YieldPerPopChanges", "PolicyType", szPolicyType);
+	kUtility.PopulateArrayByValue(m_piYieldPerGlobalPop, "Yields", "Policy_YieldPerGlobalPop", "YieldType", "PolicyType", szPolicyType, "YieldModifier");
 	kUtility.SetYields(m_piCapitalYieldModifier, "Policy_CapitalYieldModifiers", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piGreatWorkYieldChange, "Policy_GreatWorkYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piSpecialistExtraYield, "Policy_SpecialistExtraYields", "PolicyType", szPolicyType);
@@ -740,6 +771,34 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 			m_ppiImprovementYieldChanges[ImprovementID][YieldID] = yield;
 		}
+	}
+
+	//AdjacentImprovementYieldChanges
+	{
+		std::string strKey("Policy_AdjacentImprovementYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Policy_AdjacentImprovementYieldChanges "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE PolicyType = ?");
+		}
+		pResults->Bind(1, szPolicyType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChanges.push_back(change);
+		}
+		pResults->Reset();
 	}
 
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
@@ -978,6 +1037,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	kUtility.PopulateArrayByValue(m_piGreatPersonOutputModifierPerGWs, "GreatPersons", "Policy_GreatPersonOutputModifierPerGWs", "GreatPersonType", "PolicyType", szPolicyType, "Modifier");
 	//ImprovementCultureChanges
 	kUtility.PopulateArrayByValue(m_piImprovementCultureChange, "Improvements", "Policy_ImprovementCultureChanges", "ImprovementType", "PolicyType", szPolicyType, "CultureChange");
+	//ImprovementHappinessWhenWorked
+	kUtility.PopulateArrayByValue(m_piImprovementHappinessWhenWorked, "Improvements", "Policy_ImprovementHappinessWhenWorked", "ImprovementType", "PolicyType", szPolicyType, "Happiness");
 
 	//OrPreReqs
 	{
@@ -1176,6 +1237,30 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	}
 
 	{
+		m_vYieldPercentPerCityFollowingReligion.clear();
+		std::string sqlKey = "m_vYieldPercentPerCityFollowingReligion";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if(pResults == NULL)
+		{
+			const char* szSQL = "select t2.ID, t1.Percent from Policy_YieldPercentPerCityFollowingReligion t1 left join Yields t2 on t1.YieldType = t2.Type where t1.PolicyType = ?";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while(pResults->Step())
+		{
+			PolicyYieldInfo p;
+			p.eYield = (YieldTypes)pResults->GetInt(0);
+			p.iYield = pResults->GetInt(1);
+			p.ePolicy = (PolicyTypes)GetID();
+			m_vYieldPercentPerCityFollowingReligion.push_back(p);
+		}
+
+		pResults->Reset();
+	}
+
+	{
 		m_vHappinessYieldModifier.clear();
 		std::string sqlKey = "Policy - m_vHappinessYieldModifier";
 		Database::Results* pResults = kUtility.GetResults(sqlKey);
@@ -1237,6 +1322,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	m_iCorruptionScoreModifier = kResults.GetInt("CorruptionScoreModifier");
+	m_iGoldenAgeCorruptionScoreReduction = kResults.GetInt("GoldenAgeCorruptionScoreReduction");
+	m_iLocalHappinessCorruptionScoreMod = kResults.GetInt("LocalHappinessCorruptionScoreMod");
 	m_bCorruptionLevelReduceByOne = kResults.GetBool("CorruptionLevelReduceByOne");
 #endif
 
@@ -1406,6 +1493,19 @@ int CvPolicyEntry::GetLevel() const
 {
 	return m_iLevel;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	/// Diplomatic prestige from this policy
+	int CvPolicyEntry::GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+
+	int CvPolicyEntry::GetMinorCivAlliesThresholdModifier() const
+	{
+		return m_iMinorCivAlliesThresholdModifier;
+	}
+#endif
 
 /// Percentage change in cost of subsequent policy purchases
 int CvPolicyEntry::GetPolicyCostModifier() const
@@ -1615,6 +1715,11 @@ int CvPolicyEntry::GetUnhappinessMod() const
 int CvPolicyEntry::GetCityCountUnhappinessMod() const
 {
 	return m_iCityCountUnhappinessMod;
+}
+
+int CvPolicyEntry::GetCorruptionUnhappinessModifier() const
+{
+	return m_iCorruptionUnhappinessModifier;
 }
 
 ///  Occupied Population Unhappiness mod (-50 = 50% of normal Unhappiness)
@@ -2415,6 +2520,10 @@ bool CvPolicyEntry::IsNoResistance() const
 {
 	return m_bNoResistance;
 }
+bool CvPolicyEntry::IsTechBoostFromCityWonderBuildings() const
+{
+	return m_bTechBoostFromCityWonderBuildings;
+}
 
 bool CvPolicyEntry::IsUpgradeAllTerritory() const
 {
@@ -2473,11 +2582,39 @@ int CvPolicyEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
 }
+int CvPolicyEntry::GetGreatPersonPoints(int i) const
+{
+	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piGreatPersonPoints ? m_piGreatPersonPoints[i] : 0;
+}
 
 int CvPolicyEntry::GetGreatScientistBeakerPolicyModifier() const
 {
 	return m_iGreatScientistBeakerPolicyModifier;
 
+}
+int CvPolicyEntry::GetInstantTourismBombWhenFirstConquerMajorCapital() const
+{
+	return m_iInstantTourismBombWhenFirstConquerMajorCapital;
+}
+
+int CvPolicyEntry::GetNaturalWonderFirstFinderTech() const
+{
+	return m_iNaturalWonderFirstFinderTech;
+}
+int CvPolicyEntry::GetNaturalWonderFirstFinderPolicies() const
+{
+	return m_iNaturalWonderFirstFinderPolicies;
+}
+int CvPolicyEntry::GetNaturalWonderSubsequentFinderPolicies() const
+{
+	return m_iNaturalWonderSubsequentFinderPolicies;
+}
+
+int CvPolicyEntry::GetNaturalWonderSubsequentFinderTech() const
+{
+	return m_iNaturalWonderSubsequentFinderTech;
 }
 
 int CvPolicyEntry::GetProductionBeakerMod() const
@@ -2606,6 +2743,13 @@ int CvPolicyEntry::GetYieldPerPopChange(int i) const
 	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piYieldPerPopChange ? m_piYieldPerPopChange[i] : -1;
+}
+
+int CvPolicyEntry::GetYieldPerGlobalPop(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piYieldPerGlobalPop ? m_piYieldPerGlobalPop[i] : 0;
 }
 
 /// Array of yield changes in Capital (per pop)
@@ -2998,6 +3142,12 @@ int CvPolicyEntry::GetImprovementCultureChanges(int i) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piImprovementCultureChange[i];
 }
+int CvPolicyEntry::GetImprovementHappinessWhenWorked(int i) const
+{
+	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piImprovementHappinessWhenWorked ? m_piImprovementHappinessWhenWorked[i] : 0;
+}
 
 /// Free building in each city conquered
 BuildingTypes CvPolicyEntry::GetFreeBuildingOnConquest() const
@@ -3073,6 +3223,11 @@ std::vector<PolicyYieldInfo>& CvPolicyEntry::GetHappinessYieldModifier()
 	return m_vHappinessYieldModifier;
 }
 
+std::vector<PolicyYieldInfo>& CvPolicyEntry::GetYieldPercentPerCityFollowingReligion()
+{
+	return m_vYieldPercentPerCityFollowingReligion;
+}
+
 
 std::vector<PolicyResourceInfo>& CvPolicyEntry::GetCityResources()
 {
@@ -3113,7 +3268,17 @@ bool CvPolicyEntry::GetCorruptionLevelReduceByOne() const
 
 bool CvPolicyEntry::IsInvolveCorruption() const
 {
-	return m_iCorruptionScoreModifier != 0 || m_bCorruptionLevelReduceByOne;
+	return m_iCorruptionScoreModifier != 0 || m_bCorruptionLevelReduceByOne || m_iGoldenAgeCorruptionScoreReduction != 0 || m_iLocalHappinessCorruptionScoreMod != 0;
+}
+
+int CvPolicyEntry::GetGoldenAgeCorruptionScoreReduction() const
+{
+	return m_iGoldenAgeCorruptionScoreReduction;
+}
+
+int CvPolicyEntry::GetLocalHappinessCorruptionScoreMod() const
+{
+	return m_iLocalHappinessCorruptionScoreMod;
 }
 
 int CvPolicyEntry::GetCorruptionLevelPolicyCostModifier(CorruptionLevelTypes level) const
@@ -3928,6 +4093,31 @@ int CvPlayerPolicies::GetImprovementCultureChange(ImprovementTypes eImprovement)
 		if(m_pabHasPolicy[i] && !IsPolicyBlocked((PolicyTypes)i))
 		{
 			rtnValue += m_pPolicies->GetPolicyEntry(i)->GetImprovementCultureChanges(eImprovement);
+		}
+	}
+
+	return rtnValue;
+}
+
+/// Get adjacent improvement yield change from policies
+int CvPlayerPolicies::GetAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield)
+{
+	int rtnValue = 0;
+
+	for (int i = 0; i < m_pPolicies->GetNumPolicies(); i++)
+	{
+		if (m_pabHasPolicy[i] && !IsPolicyBlocked((PolicyTypes)i))
+		{
+			const auto& vChanges = m_pPolicies->GetPolicyEntry(i)->GetAdjacentImprovementYieldChanges();
+			for (const auto& change : vChanges)
+			{
+				if ((int)change.m_iImprovementType == (int)eImprovement &&
+					(int)change.m_iOtherImprovementType == (int)eOtherImprovement &&
+					(int)change.m_iYieldType == (int)eYield)
+				{
+					rtnValue += change.m_iYield;
+				}
+			}
 		}
 	}
 

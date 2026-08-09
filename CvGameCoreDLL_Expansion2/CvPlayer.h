@@ -50,6 +50,7 @@ class CvEventLog;
 #endif
 class CvTreasury;
 class CvPlayerTraits;
+class CvPlayerCityStateUA;
 class CvGameInitialItemsOverrides;
 class CvDiplomacyRequests;
 class CvPlayerEspionage;
@@ -524,6 +525,7 @@ public:
 	int GetExtraHappinessPerXPolicies() const;
 	void ChangeExtraHappinessPerXPolicies(int iChange);
 
+	int GetLuxuryHappinessBaseTotal() const;
 	int GetHappinessFromResources() const;
 	int GetHappinessFromResourceVariety() const;
 	int GetHappinessFromReligion();
@@ -536,6 +538,8 @@ public:
 
 	int GetHappinessFromLuxury(ResourceTypes eResource) const;
 	int GetAdequateLuxuryKindCount(int threshold) const;
+	// City-state UA: count of luxury types currently producing happiness (used by Malacca)
+	int GetHappyLuxuryTypeCount() const;
 	int GetStrengthModifierFromAlly() const;
 
 	int GetUnhappiness() const;
@@ -544,6 +548,7 @@ public:
 	int GetUnhappinessFromCityForUI(CvCity* pCity) const;
 
 	int GetUnhappinessFromCityCount(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
+	int GetUnhappinessFromCorruption(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
 	int GetUnhappinessFromCapturedCityCount(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
 	int GetUnhappinessFromCityPopulation(CvCity* pAssumeCityAnnexed = NULL, CvCity* pAssumeCityPuppeted = NULL) const;
 	int GetUnhappinessFromCitySpecialists(CvCity* pAssumeCityAnnexed, CvCity* pAssumeCityPuppeted) const;
@@ -561,6 +566,8 @@ public:
 
 	int GetCityCountUnhappinessMod() const;
 	void ChangeCityCountUnhappinessMod(int iChange);
+	int GetCorruptionUnhappinessModifier() const;
+	void ChangeCorruptionUnhappinessModifier(int iChange);
 
 	int GetOccupiedPopulationUnhappinessMod() const;
 	void ChangeOccupiedPopulationUnhappinessMod(int iChange);
@@ -579,6 +586,9 @@ public:
 	int GetHappinessPerXPopulation() const;
 	void SetHappinessPerXPopulation(int iValue);
 	void ChangeHappinessPerXPopulation(int iChange);
+
+	int GetPolicyYieldPerGlobalPop(YieldTypes eYield) const;
+	void ChangePolicyYieldPerGlobalPop(YieldTypes eYield, int iChange);
 
 	int GetHappinessFromMinorCivs() const;
 	int GetHappinessFromMinor(PlayerTypes eMinor) const;
@@ -781,6 +791,24 @@ public:
 	void SetGreatScientistBeakerPolicyMod(int iValue);
 	void ChangeGreatScientistBeakerPolicyMod(int iChange);
 
+	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
+	void SetInstantTourismBombWhenFirstConquerMajorCapital(int iValue);
+	void ChangeInstantTourismBombWhenFirstConquerMajorCapital(int iChange);
+
+	int GetNaturalWonderFirstFinderPolicies() const;
+	void SetNaturalWonderFirstFinderPolicies(int iValue);
+	void ChangeNaturalWonderFirstFinderPolicies(int iChange);
+	int GetNaturalWonderFirstFinderTech() const;
+	void SetNaturalWonderFirstFinderTech(int iValue);
+	void ChangeNaturalWonderFirstFinderTech(int iChange);
+	int GetNaturalWonderSubsequentFinderPolicies() const;
+	void SetNaturalWonderSubsequentFinderPolicies(int iValue);
+	void ChangeNaturalWonderSubsequentFinderPolicies(int iChange);
+	int GetNaturalWonderSubsequentFinderTech() const;
+	void SetNaturalWonderSubsequentFinderTech(int iValue);
+	void ChangeNaturalWonderSubsequentFinderTech(int iChange);
+
+
 	int GetGreatScientistBeakerMod() const;
 	void SetGreatScientistBeakerMod(int iValue);
 	void ChangeGreatScientistBeakerMod(int iChange);
@@ -796,6 +824,10 @@ public:
 	bool CanNoResistance() const;
 	int GetNoResistance() const;
 	void ChangeNoResistance(int iValue);
+	
+	bool CanTechBoostFromCityWonderBuildings() const;
+	int GetTechBoostFromCityWonderBuildings() const;
+	void ChangeTechBoostFromCityWonderBuildings(int iValue);
 
 	bool CanUpgradeAllTerritory() const;
 	int GetUpgradeAllTerritory() const;
@@ -946,6 +978,15 @@ public:
 
 	int getWonderProductionModifier() const;
 	void changeWonderProductionModifier(int iChange);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetGoldDonationHappiness() const;
+	int GetTotalGoldDonated() const;
+	void ChangeTotalGoldDonated(int iChange);
+	int GetGoldDonatedToMinor(int iMinor) const;
+	void ChangeGoldDonatedToMinor(int iMinor, int iChange);
+	int GetBornGreatPersonCount(int iGP) const;
+	void ChangeBornGreatPersonCount(int iGP, int iChange);
+#endif
 
 	int getSettlerProductionModifier() const;
 	void changeSettlerProductionModifier(int iChange);
@@ -1032,6 +1073,8 @@ public:
 	int GetDomainFreeExperiencesPerTurnGlobal(DomainTypes eDomain) const;
 	void ChangeDomainEnemyCombatModifierGlobal(DomainTypes eDomain, int iChange);
 	int GetDomainEnemyCombatModifierGlobal(DomainTypes eDomain) const;
+	void ChangeDomainFriendsCombatModifierGlobal(DomainTypes eDomain, int iChange);
+	int GetDomainFriendsCombatModifierGlobal(DomainTypes eDomain) const;
 	void ChangeDomainFreeExperience(DomainTypes eDomain, int iChange);
 	int GetDomainFreeExperience(DomainTypes) const;
 
@@ -1360,6 +1403,7 @@ public:
 
 	int GetImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes eYield) const;
 	void ChangeImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes eYield, int iChange);
+	int GetAdjacentImprovementYieldChangeFromBuildingsGlobal(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield) const;
 
 	int GetYieldModifierFromSpecialistGlobal(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	void ChangeYieldModifierFromSpecialistGlobal(SpecialistTypes eSpecialist, YieldTypes eYield, int iChange);
@@ -1588,6 +1632,10 @@ public:
 
 	int getImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2) const;
 	void changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2, int iChange);
+	int getImprovementHappinessFromPolicies(ImprovementTypes eIndex) const;
+	void changeImprovementHappinessFromPolicies(ImprovementTypes eIndex, int iChange);
+	int getGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const;
+	void changeGreatPersonPointsFromPolicies(SpecialistTypes eIndex, int iChange);
 
 	CvUnitCycler& GetUnitCycler() { return m_UnitCycle; };
 
@@ -1707,9 +1755,43 @@ public:
 	int GetResearchTotalCostModifierGoldenAge() const;
 	void ChangeResearchTotalCostModifierGoldenAge(int iChange);
 
+	int GetImmigrationRegressandModifier() const;
+	void ChangeImmigrationRegressandModifier(int iChange);
+
 	int GetLiberatedInfluence() const;
 	void SetLiberatedInfluence(int iValue);
 	void ChangeLiberatedInfluence(int iChange);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetExtraDiplomaticPrestige() const;
+	void SetExtraDiplomaticPrestige(int iValue);
+	void ChangeExtraDiplomaticPrestige(int iChange);
+	int GetDiplomaticPrestige() const;
+	int GetNumCityStateAllies() const;
+	void SetNumCityStateAllies(int iValue);
+	void ChangeNumCityStateAllies(int iChange);
+	int GetDiplomaticOverextensionCount() const;
+	int GetDiplomaticOverextensionDecayPenalty() const;
+	int GetDiplomaticOverextensionRisePenalty() const;
+	int GetDiplomaticOverextensionUnhappinessPercent() const;
+	int GetMinorCivAlliesThresholdModifier() const;
+	void SetMinorCivAlliesThresholdModifier(int iValue);
+	void ChangeMinorCivAlliesThresholdModifier(int iChange);
+	int GetMinorCivAlliesThreshold() const;
+	void RefreshCSAllUAEffects();
+#endif
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
+	int GetCSPolicyCostModifier() const;
+	int GetCSImmigrationRegressandModifier() const;
+	int GetCSLandXPPerTurn() const;
+	int GetCSSeaTradeGoldBonus() const;
+	int GetCSFaithCostModifier() const;
+	int GetCSReligiousPressureModifier() const;
+	int GetCSLuxuryHappinessModifier() const;
+	int GetCSLuxuryHappinessValue() const;
+	int GetCSTreasuryInterestRate() const;
+#endif
 
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
@@ -1891,6 +1973,10 @@ public:
 	int GetLastSliceMoved() const;
 	void SetLastSliceMoved(int iValue);
 
+	int GetNoProgressCount() const;
+	void SetNoProgressCount(int iValue);
+	void ChangeNoProgressCount(int iChange);
+
 	void SetEverConqueredBy(PlayerTypes ePlayer, bool bValue);
 	bool IsEverConqueredBy(PlayerTypes ePlayer);
 
@@ -1908,6 +1994,12 @@ public:
 
 	CvPlayerPolicies* GetPlayerPolicies() const;
 	CvPlayerTraits* GetPlayerTraits() const;
+	CvPlayerCityStateUA* GetPlayerCityStateUA() const;
+	int GetTotalLuxuryHappinessModifier() const;
+	int GetTotalLuxuryHappinessValue() const;
+	int GetCrossContinentRouteUnhappinessReduction() const;
+	int GetCityStateSpecialistPointRate(SpecialistTypes eSpecialist) const;
+	void DoUnitBornYield(UnitClassTypes eUnitClass);
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
 	CvCitySpecializationAI* GetCitySpecializationAI() const;
@@ -2129,6 +2221,7 @@ public:
 	std::vector<PolicyYieldInfo>& GetTradeRouteCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetCityNumberCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetHappinessYieldModifier();
+	std::vector<PolicyYieldInfo>& GetYieldPercentPerCityFollowingReligion();
 
 	std::vector<PolicyResourceInfo>& GetCityResourcesFromPolicy();
 	const std::vector<PolicyResourceInfo>& GetCityResourcesFromPolicy() const;
@@ -2185,9 +2278,16 @@ public:
 
 	int GetCorruptionScoreModifierFromPolicy() const;
 	void ChangeCorruptionScoreModifierFromPolicy(int change);
+	int GetGoldenAgeCorruptionScoreReduction() const;
+	void ChangeGoldenAgeCorruptionScoreReduction(int change);
+	int GetLocalHappinessCorruptionScoreMod() const;
+	void ChangeLocalHappinessCorruptionScoreMod(int change);
 	int GetCorruptionLevelReduceByOneRC() const;
 	bool IsCorruptionLevelReduceByOne() const;
 	void ChangeCorruptionLevelReduceByOneRC(int change);
+
+	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	void ChangeCorruptionScoreGlobalChangeFromBuilding(int change);
 
 	int GetCorruptionPolicyCostModifier() const;
 	void ChangeCorruptionPolicyCostModifier(int change);
@@ -2390,6 +2490,7 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iUnhappinessFromUnitsMod;
 	FAutoVariable<int, CvPlayer> m_iUnhappinessMod;
 	FAutoVariable<int, CvPlayer> m_iCityCountUnhappinessMod;
+	FAutoVariable<int, CvPlayer> m_iCorruptionUnhappinessModifier;
 	FAutoVariable<int, CvPlayer> m_iOccupiedPopulationUnhappinessMod;
 	FAutoVariable<int, CvPlayer> m_iCapitalUnhappinessMod;
 	FAutoVariable<int, CvPlayer> m_iCityRevoltCounter;
@@ -2455,6 +2556,7 @@ protected:
 	int m_iGreatAdmiralsThresholdModifier;
 	int m_iAlwaysWeLoveKindDayInGoldenAge;
 	int m_iNoResistance;
+	int m_iTechBoostFromCityWonderBuildings;
 	int m_iUpgradeAllTerritory;
 	int m_iNoTechForWonder;
 	int m_iNoTechForProject;
@@ -2479,6 +2581,11 @@ protected:
 	int m_iGreatScientistRateModifier;
 	int m_iGreatScientistBeakerModifier;
 	int m_iGreatScientistBeakerPolicyModifier;
+	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
+	int m_iNaturalWonderFirstFinderPolicies;
+	int m_iNaturalWonderFirstFinderTech;
+	int m_iNaturalWonderSubsequentFinderPolicies;
+	int m_iNaturalWonderSubsequentFinderTech;
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;
@@ -2520,6 +2627,11 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iUnitFortificationModifier;
 	FAutoVariable<int, CvPlayer> m_iUnitBaseHealModifier;
 	FAutoVariable<int, CvPlayer> m_iWonderProductionModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	FAutoVariable<int, CvPlayer> m_iTotalGoldDonated;
+	std::vector<int> m_paiGoldDonatedToMinor;
+	std::vector<int> m_paiBornGreatPersonCount;
+#endif
 	FAutoVariable<int, CvPlayer> m_iSettlerProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iCapitalSettlerProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iUnitProductionMaintenanceMod;
@@ -2613,7 +2725,16 @@ protected:
 	int m_iGlobalRangedStrikeModifier;
 	int m_iResearchTotalCostModifier;
 	int m_iResearchTotalCostModifierGoldenAge;
+	int m_iImmigrationRegressandModifier;
 	int m_iLiberatedInfluence;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iExtraDiplomaticPrestige;
+	int m_iCityStateAllyCount;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
+#endif
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;
 	int m_iWaterTileDamageGlobal;
@@ -2664,6 +2785,7 @@ protected:
     int m_iMaxEffectiveCities;
 
 	int m_iLastSliceMoved;
+	int m_iNoProgressCount;  // Tracks consecutive AI slices where no unit moved (for stuck-unit detection)
 
 	FAutoVariable<uint, CvPlayer> m_uiStartTime;  // XXX save these?
 
@@ -2720,6 +2842,7 @@ protected:
 	std::vector<int> m_aiDomainFreeExperiencePerGreatWorkGlobal;
 	std::vector<int> m_aiDomainFreeExperiencesPerTurnGlobal;
 	std::vector<int> m_aiDomainEnemyCombatModifierGlobal;
+	std::vector<int> m_aiDomainFriendsCombatModifierGlobal;
 
 	std::map<int, int> m_piDomainFreeExperience;
 	std::tr1::unordered_map<int, int> m_piUnitTypePrmoteHealGlobal;
@@ -2769,6 +2892,9 @@ protected:
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiBuildingClassCount;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiBuildingClassMaking;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiProjectMaking;
+	std::vector<int> m_paiImprovementHappinessFromPolicies;
+	std::vector<int> m_aiGreatPersonPointsFromPolicies;
+	std::vector<int> m_aiYieldPerGlobalPop;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryCount;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryModifier;
 
@@ -2826,6 +2952,7 @@ protected:
 	std::vector<PolicyYieldInfo> m_vTradeRouteCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vCityNumberCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vHappinessYieldModifier;
+	std::vector<PolicyYieldInfo> m_vYieldPercentPerCityFollowingReligion;
 
 	std::vector<PolicyResourceInfo> m_vCityResourcesFromPolicy;
 	int m_iGlobalHappinessFromFaithPercent = 0;
@@ -2938,6 +3065,9 @@ protected:
 	CvTreasury* m_pTreasury;
 
 	CvPlayerTraits* m_pTraits;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* m_pCityStateUA;
+#endif
 
 	// human player wanted to end turn processing but hasn't received
 	// the net turn complete message
@@ -2988,8 +3118,12 @@ protected:
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	int m_iCorruptionScoreModifierFromPolicy = 0;
+	int m_iGoldenAgeCorruptionScoreReduction = 0;
+	int m_iLocalHappinessCorruptionScoreMod = 0;
 	int m_iCorruptionLevelReduceByOneRC = 0;
 	int m_iCorruptionPolicyCostModifier = 0;
+	int m_iCorruptionScoreGlobalChangeFromBuilding = 0;
+	bool m_bUpdatingReligion = false; // recursion guard for UpdateReligion()
 
 	std::vector<int> m_paiCorruptionLevelPolicyCostModifier;
 #endif

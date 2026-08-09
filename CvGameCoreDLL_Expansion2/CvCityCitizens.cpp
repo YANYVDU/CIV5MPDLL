@@ -6,6 +6,7 @@
 	All rights reserved. 
 	------------------------------------------------------------------------------------------------------- */
 #include "CvGameCoreDLLPCH.h"
+#include "CvCityStateUAClasses.h"
 #include "ICvDLLUserInterface.h"
 #include "CvGameCoreUtils.h"
 #include "CvCitySpecializationAI.h"
@@ -2307,6 +2308,17 @@ void CvCityCitizens::DoSpecialists()
 
 				// GPP from Buildings
 				iGPPChange += GetBuildingGreatPeopleRateChanges(eSpecialist) * 100;
+				iGPPChange += GetCity()->GetGreatPersonPointsFromPolicies(eSpecialist) * 100;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// GPP from Policies and City-State UA (per SpecialistType)
+				if (MOD_SP_UNIQUE_CITYSTATE)
+				{
+					iGPPChange += GetCity()->GetGreatPersonPointsFromUA(eSpecialist) * 100;
+						iGPPChange += GetCity()->GetGreatPersonPointsFromUA_Building(eSpecialist) * 100;
+						// Brussels UA: great works of a class grant great person points (Times100 units, Rate=100 => 1 great work = 1 point)
+						iGPPChange += GetCity()->GetGreatPersonPointsFromUA_GreatWork(eSpecialist);
+					}
+#endif
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 				// GPP from Religion
 				if(MOD_BELIEF_NEW_EFFECT_FOR_SP)
@@ -2324,6 +2336,17 @@ void CvCityCitizens::DoSpecialists()
 
 					// Player mod
 					iMod += GetPlayer()->getGreatPeopleRateModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					if (MOD_SP_UNIQUE_CITYSTATE)
+					{
+						// Brussels UA: specialist great person point accumulation rate
+						CvPlayerCityStateUA* pCSUA = GetPlayer()->GetPlayerCityStateUA();
+						if (pCSUA != NULL)
+						{
+							iMod += pCSUA->GetSpecialistPointRate(eSpecialist);
+						}
+					}
+#endif
 #if defined(MOD_ROG_CORE)
 					iMod += GetCity()->GetSpecialistRateModifier(eSpecialist);
 #endif

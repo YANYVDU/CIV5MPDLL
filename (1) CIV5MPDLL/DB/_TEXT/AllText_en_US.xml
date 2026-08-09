@@ -411,6 +411,11 @@
 				[NEWLINE][ICON_BULLET]City Modifier for the Number of Cities(Policy): {1_Num}%
 			</Text>
 		</Row>
+		<Row Tag="TXT_KEY_PRODMOD_YIELD_POLICY_RELIGION_CITY_NUM">
+			<Text>
+				[NEWLINE][ICON_BULLET]City Modifier per City Following your Religion(Policy): {1_Num}%
+			</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_ATTACKING_CITY_LOST_MOVEMENT">
 			<Text>Your {@1_name} consumed all its [ICON_MOVES] Movements after attacking the enemy city!</Text>
 		</Row>
@@ -468,11 +473,44 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING">
 			<Text>From Building: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING">
+			<Text>Global change from Building: {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING_GLOBAL">
+			<Text>From Building (Global): {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_TECH">
+			<Text>Because of your {1_Source}, {2_Order} discovered {3_Feature} and received {4_Num} free technologies.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_POLICY">
+			<Text>Because of your {1_Source}, {2_Order} discovered {3_Feature} and received {4_Num} free policies.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER">
+			<Text>Natural Wonder Discovery Reward</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT">
+			<Text>Leader Trait</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY">
+			<Text>Policy</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FIRST">
+			<Text>First</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SUBSEQUENT">
+			<Text></Text>
+		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RESOURCE">
 			<Text>From resource: {1_score}</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_TRAIT">
 			<Text>From Leader Trait: {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RELIGION">
+			<Text>From Religion: {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_LOCAL_HAPPINESS">
+			<Text>From Local Happiness: {1_score}</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_MOD_FROM_SPY">
 			<Text>From Spy: {1_score}%</Text>
@@ -575,6 +613,9 @@
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_OTHER_YIELD">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} from other Yield</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_ALLY_CS_UA">
+			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} from Allied CS UA</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_TRADE_ROUTE">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} from City Connection</Text>
@@ -827,9 +868,70 @@
 		<Row Tag="TXT_KEY_BELIEF_CUTTING_NONUS">
 			<Text>Religion Beliefs bring {1_CityName} extra bonus: {2_BonusStr}.</Text>
 		</Row>
+		<Row Tag="TXT_KEY_SP_CONCERT_TOUR_GOLD">
+			<Text>Your Great Musician concert tour in {1_CityName} earns you +{2_Num}[ICON_GOLD]!</Text>
+		</Row>
 		<Row Tag="TXT_KEY_MPDLL_ERROR_VERSION">
 			<Text>[COLOR_NEGATIVE_TEXT]An error occurred with the MPDLL. If you are using the latest versions, please contact the administrator.[COLOR_NEGATIVE_TEXT]</Text>
 		</Row>
+		<Row Tag="TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE">
+			<Text>[COLOR_NEGATIVE_TEXT]No new post-combat promotion available; all candidates have already been acquired.[ENDCOLOR]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_GOLDEN_AGE">
+			<Text>[COLOR_YELLOW]Due to your belief, a [ICON_GOLDEN_AGE] Golden Age has begun![ENDCOLOR]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
+			<Text>[COLOR_YELLOW]Due to your belief, {1_CityName} has gained +1[ICON_CITIZEN] Population![ENDCOLOR]</Text>
+		</Row>
+		<Replace Tag="TXT_KEY_FRIENDS_CSTATE_TT">
+			<Text>{1_CityStateName:textkey} is your [COLOR_POSITIVE_TEXT]Friend[ENDCOLOR]. To become an Ally, your Influence must exceed the ally threshold of {2_Num}, and be the highest among all civilizations that meet this requirement.</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MERCANTILE_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Mercantile[ENDCOLOR] City-State will provide extra [ICON_HAPPINESS_1] Happiness in your empire, and manufactures special luxury resources which cannot be acquired any other way.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Total [ICON_HAPPINESS_1] Happiness from luxury resources increased by 5%
+				[NEWLINE][ICON_BULLET]Earn 1% treasury interest per turn (max interest = Era x 100 x Game Speed modifier)
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_RELIGIOUS_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Religious[ENDCOLOR] City-State will increase your [ICON_PEACE] Faith, allowing you to empower your religion with new beliefs and units.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET][ICON_PEACE] Faith purchase costs reduced by 5%
+				[NEWLINE][ICON_BULLET]Religion founded by ally gains +10% base pressure
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_NO_UU_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Militaristic[ENDCOLOR] City-State will provide you occasional gifts of advanced military units.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Allied land units gain +1 Experience per turn
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_CULTURED_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Cultured[ENDCOLOR] City-State will provide you gifts of [ICON_CULTURE] Culture, allowing you to obtain Social Policies more quickly.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET][ICON_CULTURE] Culture required for Social Policies reduced by 2%
+				[NEWLINE][ICON_BULLET]Threshold for receiving international immigrants reduced by 2%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Militaristic[ENDCOLOR] City-State will provide you occasional gifts of advanced military units.[NEWLINE][NEWLINE]They know the secrets of the [COLOR_POSITIVE_TEXT]{@1_UniqueUnitName}[ENDCOLOR].  If you are their Ally and have researched {@2_PrereqTech}, they will provide that unit as their gift.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Allied land units gain +1 Experience per turn
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MARITIME_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Maritime[ENDCOLOR] City-State will provide extra [ICON_FOOD] Food to your [ICON_CAPITAL] Capital.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Provides [ICON_FOOD] Food to all cities
+				[NEWLINE][ICON_BULLET]Allied sea trade routes gain +1 [ICON_GOLD] Gold (increases with Era)
+			</Text>
+		</Replace>
 	</Language_en_US>
 
 </GameData>

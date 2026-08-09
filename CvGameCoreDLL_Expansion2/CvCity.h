@@ -124,7 +124,7 @@ public:
 	void SetIndustrialRouteToCapital(bool bValue);
 	void DoUpdateIndustrialRouteToCapital();
 
-	void SetRouteToCapitalConnected(bool bValue);
+	void SetRouteToCapitalConnected(bool bValue, bool bSkipReligion = false);
 #if defined(MOD_API_EXTENSIONS)
 	bool IsRouteToCapitalConnected(void) const;
 #else
@@ -190,6 +190,7 @@ public:
 
 	int GetImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes eYield) const;
 	void ChangeImprovementExtraYield(ImprovementTypes eImprovement, YieldTypes eYield, int iChange);
+	int GetAdjacentImprovementYieldChangeFromBuildings(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield) const;
 
 #if defined(MOD_ROG_CORE)
 	int GetYieldPerXFeature(FeatureTypes eFeature, YieldTypes eYield) const;
@@ -374,6 +375,7 @@ public:
 	void processImprovement(ImprovementTypes eImprovement, int iChange);
 	void processResource(ResourceTypes eResource, int iChange);
 	void processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, bool bObsolete = false, bool bApplyingAllCitiesBonus = false);
+	void processBuildingObsolete(BuildingTypes eBuilding, bool bObsolete);
 	void processProcess(ProcessTypes eProcess, int iChange);
 	void processSpecialist(SpecialistTypes eSpecialist, int iChange);
 
@@ -676,6 +678,12 @@ public:
 	int GetCuttingBonusModifier() const;
 	void DoCuttingExtraInstantYield(int iBaseYield);
 #endif	
+	int GetGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetGreatPersonPointsFromUA(SpecialistTypes eIndex) const;
+	int GetGreatPersonPointsFromUA_Building(SpecialistTypes eIndex) const;
+	int GetGreatPersonPointsFromUA_GreatWork(SpecialistTypes eIndex) const;
+#endif
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 	void doRelogionInstantYield(ReligionTypes eReligion);
@@ -807,6 +815,11 @@ public:
 
 #ifdef MOD_BUILDINGS_YIELD_FROM_OTHER_YIELD
 	int GetBaseYieldRateFromOtherYield(YieldTypes eYield) const;
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Colombo: extra yield granted from a percentage of faith base yield for cities with a trade route to an allied city-state
+	int GetYieldRateFromFaithConversion(YieldTypes eYield) const;
 #endif
 
 	int getBaseYieldRateModifier(YieldTypes eIndex, int iExtra = 0, CvString* toolTipSink = NULL) const;
@@ -1109,7 +1122,14 @@ public:
 	int getReduceDamageValue()const;
 	void changeReduceDamageValue(int iChange);
 
-
+	int getFollowerCountDamageModifier() const;
+	void changeFollowerCountDamageModifier(int iChange);
+	int getFollowingCityCountDamageModifier() const;
+	void changeFollowingCityCountDamageModifier(int iChange);
+	int GetReligionDamageModifier() const;
+	int GetReligionTradeRouteHolyCityYield(CvCity* pDestCity, YieldTypes eYield) const;
+	int GetReligionTradeRouteHolyCityDestYield(CvCity* pDestCity, YieldTypes eYield) const;
+	int GetReligionTradeRouteSameReligionModifier(CvCity* pDestCity, YieldTypes eYield) const;
 
 	int getWaterTileDamage()const;
 	void changeWaterTileDamage(int iChange);
@@ -1205,6 +1225,9 @@ public:
 	void PurchaseCurrentOrder();
 #endif	
 	void Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectTypes eProjectType, YieldTypes ePurchaseYield);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	void GrantPurchasedBuildingXP(BuildingTypes eBuildingType);
+#endif
 
 	PlayerTypes getLiberationPlayer() const;
 	void liberate();
@@ -1370,10 +1393,17 @@ public:
 	CorruptionLevelTypes GetCorruptionLevel() const;
 	void UpdateCorruption();
 
+	// Guard setters for batch building transfer in CvPlayer::acquireCity.
+	// While set, processBuilding() skips per-building DoUpdateHappiness / player-level UpdateReligion
+	// cascades; one unified update is performed at the end of acquireCity.
+	void SetUpdatingCorruptionGuard(bool bValue) { m_bUpdatingCorruption = bValue; }
+	void SetUpdatingReligionGuard(bool bValue) { m_bUpdatingReligion = bValue; }
+
 	int CalculateTotalCorruptionScore() const;
 	int CalculateCorruptionScoreFromDistance() const;
 	int CalculateCorruptionScoreFromCoastalBonus() const;
 	int CalculateCorruptionScoreFromResource() const;
+	int CalculateCorruptionScoreFromReligion() const;
 	int CalculateCorruptionScoreFromTrait() const;
 	int CalculateCorruptionScoreModifierFromSpy() const;
 	int CalculateCorruptionScoreModifierFromTrait() const;
@@ -1385,8 +1415,12 @@ public:
 
 	int GetCorruptionLevelChangeFromBuilding() const;
 	void ChangeCorruptionLevelChangeFromBuilding(int value);
+	void ChangeCorruptionUnhappinessChangeFromBuildings(int value);
 
 	int GetCorruptionScoreModifierFromPolicy() const;
+	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	int GetCorruptionUnhappinessChangeFromBuildings() const;
+	int GetCorruptionScoreFromLocalHappiness() const;
 	int GetMaxCorruptionLevel() const;
 	bool IsCorruptionLevelReduceByOne() const;
 #endif
@@ -1569,6 +1603,8 @@ protected:
 
 	FAutoVariable<int, CvCity> m_iResetDamageValue;
 	FAutoVariable<int, CvCity> m_iReduceDamageValue;
+	FAutoVariable<int, CvCity> m_iFollowerCountDamageModifier;
+	FAutoVariable<int, CvCity> m_iFollowingCityCountDamageModifier;
 
 
 	FAutoVariable<int, CvCity> m_iWaterTileDamage;
@@ -1738,7 +1774,12 @@ protected:
 
 	int m_iCorruptionScoreChangeFromBuilding = 0;
 	int m_iCorruptionLevelChangeFromBuilding = 0;
+	int m_iCorruptionUnhappinessChangeFromBuildings = 0;
+
+	bool m_bUpdatingReligion = false;
 #endif
+	// guard during acquireCity building transfer
+	bool m_bUpdatingCorruption = false; 
 
 	bool m_bIsSecondCapital = false;
 

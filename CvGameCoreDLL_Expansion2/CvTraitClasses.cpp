@@ -35,6 +35,10 @@ CvTraitEntry::CvTraitEntry() :
 	m_iCityStateBonusModifier(0),
 	m_iCityStateFriendshipModifier(0),
 	m_iCityStateCombatModifier(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
+#endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iLandBarbarianConversionExtraUnits(0),
 	m_iSeaBarbarianConversionPercent(0),
@@ -77,7 +81,12 @@ CvTraitEntry::CvTraitEntry() :
 	m_iFreeUnitClassType(NO_UNITCLASS),
 	m_iNaturalWonderFirstFinderGold(0),
 	m_iNaturalWonderSubsequentFinderGold(0),
+	m_iNaturalWonderFirstFinderPolicies(0),
+	m_iNaturalWonderSubsequentFinderPolicies(0),
+	m_iNaturalWonderFirstFinderTech(0),
+	m_iNaturalWonderSubsequentFinderTech(0),
 	m_iNaturalWonderYieldModifier(0),
+	m_iNaturalWonderYieldModifierPerEra(0),
 	m_iNaturalWonderHappinessModifier(0),
 	m_iNearbyImprovementCombatBonus(0),
 	m_iNearbyImprovementBonusRange(0),
@@ -145,6 +154,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iCiviliansFreePromotion(NO_PROMOTION),
 	m_iTradeRouteLandGoldBonus(0),
 	m_iTradeRouteSeaGoldBonus(0),
+	m_bNewCityAutomaticReligion(false),
 #endif
 
 	m_eFreeUnitPrereqTech(NO_TECH),
@@ -162,6 +172,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_bNoHillsImprovementMaintenance(false),
 	m_bTechBoostFromCapitalScienceBuildings(false),
 	m_bArtistGoldenAgeTechBoost(false),
+	m_bGoldenAgeTechChainBoost(false),
 	m_bStaysAliveZeroCities(false),
 	m_bFaithFromUnimprovedForest(false),
 	m_bWLKDCityNoResearchCost(false),
@@ -201,6 +212,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_paiGoldenAgeYieldModifier(NULL),
 	m_piStrategicResourceQuantityModifier(NULL),
 	m_piResourceQuantityModifiers(NULL),
+	m_piBuildCostChange(NULL),
 	m_ppiImprovementYieldChanges(NULL),
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
 	m_ppiPlotYieldChanges(NULL),
@@ -246,6 +258,7 @@ CvTraitEntry::~CvTraitEntry()
 	SAFE_DELETE_ARRAY(m_paiGoldenAgeYieldModifier);
 	SAFE_DELETE_ARRAY(m_piStrategicResourceQuantityModifier);
 	SAFE_DELETE_ARRAY(m_piResourceQuantityModifiers);
+	SAFE_DELETE_ARRAY(m_piBuildCostChange);
 	SAFE_DELETE_ARRAY(m_piMovesChangeUnitCombats);
 	SAFE_DELETE_ARRAY(m_piMaintenanceModifierUnitCombats);
 #if defined(MOD_API_UNIFIED_YIELDS)
@@ -368,6 +381,19 @@ int CvTraitEntry::GetCityStateCombatModifier() const
 {
 	return m_iCityStateCombatModifier;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//	--------------------------------------------------------------------------
+	int CvTraitEntry::GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+
+	int CvTraitEntry::GetMinorCivAlliesThresholdModifier() const
+	{
+		return m_iMinorCivAlliesThresholdModifier;
+	}
+#endif
 
 /// Accessor:: percent chance a barbarian camp joins this civ
 int CvTraitEntry::GetLandBarbarianConversionPercent() const
@@ -540,11 +566,36 @@ int CvTraitEntry::GetNaturalWonderSubsequentFinderGold() const
 {
 	return m_iNaturalWonderSubsequentFinderGold;
 }
+/// Accessor:: bonus policies for being first to find a natural wonder
+int CvTraitEntry::GetNaturalWonderFirstFinderPolicies() const
+{
+	return m_iNaturalWonderFirstFinderPolicies;
+}
 
+/// Accessor:: bonus policies for being subsequent to find a natural wonder
+int CvTraitEntry::GetNaturalWonderSubsequentFinderPolicies() const
+{
+	return m_iNaturalWonderSubsequentFinderPolicies;
+}
+/// Accessor:: bonus techs for being first to find a natural wonder
+int CvTraitEntry::GetNaturalWonderFirstFinderTech() const
+{
+	return m_iNaturalWonderFirstFinderTech;
+}
+/// Accessor:: bonus techs for being subsequent to find a natural wonder
+int CvTraitEntry::GetNaturalWonderSubsequentFinderTech() const
+{
+	return m_iNaturalWonderSubsequentFinderTech;
+}	
 /// Accessor:: modifier to bonuses for having natural wonders worked or in territory
 int CvTraitEntry::GetNaturalWonderYieldModifier() const
 {
 	return m_iNaturalWonderYieldModifier;
+}
+/// Accessor:: modifier to bonuses for having natural wonders worked or in territory, scaled by current era
+int CvTraitEntry::GetNaturalWonderYieldModifierPerEra() const
+{
+	return m_iNaturalWonderYieldModifierPerEra;
 }
 
 /// Accessor: modifier to happiness received from finding natural wonders
@@ -846,6 +897,11 @@ int CvTraitEntry::GetTradeRouteSeaGoldBonus() const
 {
 	return m_iTradeRouteSeaGoldBonus;
 }
+
+bool CvTraitEntry::IsNewCityAutomaticReligion() const
+{
+	return m_bNewCityAutomaticReligion;
+}
 #endif
 
 /// Accessor: tech that triggers this free unit
@@ -940,6 +996,10 @@ bool CvTraitEntry::IsTechBoostFromCapitalScienceBuildings() const
 bool CvTraitEntry::IsArtistGoldenAgeTechBoost() const
 {
 	return m_bArtistGoldenAgeTechBoost;
+}
+bool CvTraitEntry::IsGoldenAgeTechChainBoost() const
+{
+	return m_bGoldenAgeTechChainBoost;
 }
 /// Accessor:: does this civ still exist with zero cities?
 bool CvTraitEntry::IsStaysAliveZeroCities() const
@@ -1123,6 +1183,13 @@ int CvTraitEntry::GetResourceQuantityModifier(int i) const
 	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piResourceQuantityModifiers ? m_piResourceQuantityModifiers[i] : -1;
+}
+
+int CvTraitEntry::GetBuildCostChange(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piBuildCostChange ? m_piBuildCostChange[i] : 0;
 }
 
 /// Accessor:: Extra yield from an improvement
@@ -1691,6 +1758,10 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iPopulationUnhappinessModifier    	= kResults.GetInt("PopulationUnhappinessModifier");
 	m_iCityStateBonusModifier               = kResults.GetInt("CityStateBonusModifier");
 	m_iCityStateFriendshipModifier          = kResults.GetInt("CityStateFriendshipModifier");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige					= kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier					= kResults.GetInt("MinorCivAlliesThresholdModifier");
+#endif
 	m_iCityStateCombatModifier				= kResults.GetInt("CityStateCombatModifier");
 	m_iLandBarbarianConversionPercent       = kResults.GetInt("LandBarbarianConversionPercent");
 	m_iLandBarbarianConversionExtraUnits    = kResults.GetInt("LandBarbarianConversionExtraUnits");
@@ -1725,7 +1796,12 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iExtraEmbarkMoves						= kResults.GetInt("ExtraEmbarkMoves");
 	m_iNaturalWonderFirstFinderGold         = kResults.GetInt("NaturalWonderFirstFinderGold");
 	m_iNaturalWonderSubsequentFinderGold    = kResults.GetInt("NaturalWonderSubsequentFinderGold");
+	m_iNaturalWonderFirstFinderPolicies     = kResults.GetInt("NaturalWonderFirstFinderPolicies");
+	m_iNaturalWonderSubsequentFinderPolicies = kResults.GetInt("NaturalWonderSubsequentFinderPolicies");
+	m_iNaturalWonderFirstFinderTech         = kResults.GetInt("NaturalWonderFirstFinderTech");
+	m_iNaturalWonderSubsequentFinderTech    = kResults.GetInt("NaturalWonderSubsequentFinderTech");
 	m_iNaturalWonderYieldModifier           = kResults.GetInt("NaturalWonderYieldModifier");
+	m_iNaturalWonderYieldModifierPerEra      = kResults.GetInt("NaturalWonderYieldModifierPerEra");
 	m_iNaturalWonderHappinessModifier       = kResults.GetInt("NaturalWonderHappinessModifier");
 	m_iNearbyImprovementCombatBonus			= kResults.GetInt("NearbyImprovementCombatBonus");
 	m_iNearbyImprovementBonusRange			= kResults.GetInt("NearbyImprovementBonusRange");
@@ -1834,6 +1910,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	}
 	m_iTradeRouteLandGoldBonus = kResults.GetInt("TradeRouteLandGoldBonus");
 	m_iTradeRouteSeaGoldBonus = kResults.GetInt("TradeRouteSeaGoldBonus");
+	m_bNewCityAutomaticReligion = kResults.GetBool("NewCityAutomaticReligion");
 #endif
 
 #if defined(MOD_TRAITS_OTHER_PREREQS)
@@ -1887,6 +1964,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_bNoHillsImprovementMaintenance = kResults.GetBool("NoHillsImprovementMaintenance");
 	m_bTechBoostFromCapitalScienceBuildings = kResults.GetBool("TechBoostFromCapitalScienceBuildings");
 	m_bArtistGoldenAgeTechBoost = kResults.GetBool("ArtistGoldenAgeTechBoost");
+	m_bGoldenAgeTechChainBoost = kResults.GetBool("GoldenAgeTechChainBoost");
 	m_bStaysAliveZeroCities = kResults.GetBool("StaysAliveZeroCities");
 	m_bFaithFromUnimprovedForest = kResults.GetBool("FaithFromUnimprovedForest");
 
@@ -1991,6 +2069,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 		std::multimap<int,int>(m_FreePromotionUnitCombats).swap(m_FreePromotionUnitCombats);
 
 		kUtility.PopulateArrayByValue(m_piResourceQuantityModifiers, "Resources", "Trait_ResourceQuantityModifiers", "ResourceType", "TraitType", szTraitType, "ResourceQuantityModifier");
+		kUtility.PopulateArrayByValue(m_piBuildCostChange, "Builds", "Trait_BuildCostChange", "BuildType", "TraitType", szTraitType, "Change");
 	}
 
 #if defined(MOD_TRAIT_NEW_EFFECT_FOR_SP)
@@ -2030,9 +2109,13 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 
 		pResults->Bind(1, szTraitType);
 
+		const int iNumBuildingClasses = kUtility.MaxRows("BuildingClasses");
+
 		while(pResults->Step())
 		{
-			if(!m_piBuildingClassFaithCost) m_piBuildingClassFaithCost = FNEW(int[kUtility.MaxRows("BuildingClasses")], c_eCiv5GameplayDLL, 0);
+			if(!m_piBuildingClassFaithCost)
+				kUtility.InitializeArray(m_piBuildingClassFaithCost, iNumBuildingClasses, 0);
+
 			const int BuildingClassID = pResults->GetInt(0);
 			const int iCost = pResults->GetInt(1);
 
@@ -2116,6 +2199,33 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 
 			m_ppiImprovementYieldChanges[ImprovementID][YieldID] = yield;
 		}
+	}
+	//AdjacentImprovementYieldChanges
+	{
+		std::string strKey("Trait_AdjacentImprovementYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"SELECT Imp1.ID as ImprovementID, Imp2.ID as OtherImprovementID, "
+				"Yields.ID as YieldID, Yield "
+				"FROM Trait_AdjacentImprovementYieldChanges "
+				"INNER JOIN Improvements AS Imp1 ON ImprovementType = Imp1.Type "
+				"INNER JOIN Improvements AS Imp2 ON OtherImprovementType = Imp2.Type "
+				"INNER JOIN Yields ON YieldType = Yields.Type "
+				"WHERE TraitType = ?");
+		}
+		pResults->Bind(1, szTraitType);
+		while (pResults->Step())
+		{
+			AdjacentImprovementYieldChange change;
+			change.m_iImprovementType = pResults->GetInt(0);
+			change.m_iOtherImprovementType = pResults->GetInt(1);
+			change.m_iYieldType = pResults->GetInt(2);
+			change.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChanges.push_back(change);
+		}
+		pResults->Reset();
 	}
 
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
@@ -2672,6 +2782,9 @@ CvTraitEntry* CvTraitXMLEntries::GetEntry(int index)
 /// Constructor
 CvPlayerTraits::CvPlayerTraits()
 {
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdModifier = 0;
+#endif
 }
 
 /// Destructor
@@ -2725,6 +2838,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iCityStateBonusModifier += trait->GetCityStateBonusModifier();
 			m_iCityStateFriendshipModifier += trait->GetCityStateFriendshipModifier();
 			m_iCityStateCombatModifier += trait->GetCityStateCombatModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			m_iDiplomaticPrestige += trait->GetDiplomaticPrestige();
+			m_iMinorCivAlliesThresholdModifier += trait->GetMinorCivAlliesThresholdModifier();
+#endif
 			m_iLandBarbarianConversionPercent += trait->GetLandBarbarianConversionPercent();
 			m_iLandBarbarianConversionExtraUnits += trait->GetLandBarbarianConversionExtraUnits();
 			m_iSeaBarbarianConversionPercent += trait->GetSeaBarbarianConversionPercent();
@@ -2756,7 +2873,12 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iExtraEmbarkMoves += trait->GetExtraEmbarkMoves();
 			m_iNaturalWonderFirstFinderGold += trait->GetNaturalWonderFirstFinderGold();
 			m_iNaturalWonderSubsequentFinderGold += trait->GetNaturalWonderSubsequentFinderGold();
+			m_iNaturalWonderFirstFinderPolicies += trait->GetNaturalWonderFirstFinderPolicies();
+			m_iNaturalWonderSubsequentFinderPolicies += trait->GetNaturalWonderSubsequentFinderPolicies();
+			m_iNaturalWonderFirstFinderTech += trait->GetNaturalWonderFirstFinderTech();
+			m_iNaturalWonderSubsequentFinderTech += trait->GetNaturalWonderSubsequentFinderTech();
 			m_iNaturalWonderYieldModifier += trait->GetNaturalWonderYieldModifier();
+			m_iNaturalWonderYieldModifierPerEra += trait->GetNaturalWonderYieldModifierPerEra();
 			m_iNaturalWonderHappinessModifier += trait->GetNaturalWonderHappinessModifier();
 			m_iNearbyImprovementCombatBonus += trait->GetNearbyImprovementCombatBonus();
 			m_iNearbyImprovementBonusRange += trait->GetNearbyImprovementBonusRange();
@@ -2859,6 +2981,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			{
 				m_bTrainedAll = true;
 			}
+			if (trait->IsNewCityAutomaticReligion())
+			{
+				m_bNewCityAutomaticReligion = true;
+			}
 			if (trait->IsCanConquerUC())
 			{
 				m_bCanConquerUC = true;
@@ -2903,6 +3029,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			if(trait->IsArtistGoldenAgeTechBoost())
 			{
 				m_bArtistGoldenAgeTechBoost = true;
+			}
+			if(trait->IsGoldenAgeTechChainBoost())
+			{
+				m_bGoldenAgeTechChainBoost = true;
 			}
 			if(trait->IsStaysAliveZeroCities())
 			{
@@ -3210,6 +3340,11 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_aiResourceQuantityModifier[iResource] = trait->GetResourceQuantityModifier(iResource);
 			}
 
+			for(int iBuild = 0; iBuild < GC.getNumBuildInfos(); iBuild++)
+			{
+				m_aiBuildCostChange[iBuild] = trait->GetBuildCostChange(iBuild);
+			}
+
 			for (int iUnitClass = 0; iUnitClass < GC.getNumUnitClassInfos(); iUnitClass++)
 			{
 				m_abNoTrain[iUnitClass] = trait->NoTrain((UnitClassTypes)iUnitClass);
@@ -3242,6 +3377,11 @@ void CvPlayerTraits::InitPlayerTraits()
 			}
 		}
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
+		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(m_iMinorCivAlliesThresholdModifier);
+#endif
 }
 
 /// Deallocate memory created in initialize
@@ -3294,6 +3434,12 @@ void CvPlayerTraits::Reset()
 	m_iCityStateBonusModifier = 0;
 	m_iCityStateFriendshipModifier = 0;
 	m_iCityStateCombatModifier = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = 0;
+	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
+		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
+	m_iMinorCivAlliesThresholdModifier = 0;
+#endif
 	m_iLandBarbarianConversionPercent = 0;
 	m_iLandBarbarianConversionExtraUnits = 0;
 	m_iSeaBarbarianConversionPercent = 0;
@@ -3325,7 +3471,12 @@ void CvPlayerTraits::Reset()
 	m_iExtraEmbarkMoves = 0;
 	m_iNaturalWonderFirstFinderGold = 0;
 	m_iNaturalWonderSubsequentFinderGold = 0;
+	m_iNaturalWonderFirstFinderPolicies = 0;
+	m_iNaturalWonderSubsequentFinderPolicies = 0;
+	m_iNaturalWonderFirstFinderTech = 0;
+	m_iNaturalWonderSubsequentFinderTech = 0;
 	m_iNaturalWonderYieldModifier = 0;
+	m_iNaturalWonderYieldModifierPerEra = 0;
 	m_iNaturalWonderHappinessModifier = 0;
 	m_iNearbyImprovementCombatBonus = 0;
 	m_iNearbyImprovementBonusRange = 0;
@@ -3391,6 +3542,7 @@ void CvPlayerTraits::Reset()
 	m_iTradeRouteSeaGoldBonus = 0;
 #endif
 	m_bTrainedAll = false;
+	m_bNewCityAutomaticReligion = false;
 	m_bCanConquerUC = false;
 	m_bFightWellDamaged = false;
 	m_bBuyOwnedTiles = false;
@@ -3402,6 +3554,7 @@ void CvPlayerTraits::Reset()
 	m_bNoHillsImprovementMaintenance = false;
 	m_bTechBoostFromCapitalScienceBuildings = false;
 	m_bArtistGoldenAgeTechBoost = false;
+	m_bGoldenAgeTechChainBoost = false;
 	m_bStaysAliveZeroCities = false;
 	m_bFaithFromUnimprovedForest = false;
 	m_bWLKDCityNoResearchCost = false;
@@ -3579,6 +3732,13 @@ void CvPlayerTraits::Reset()
 		m_aiResourceQuantityModifier[iResource] = 0;
 	}
 
+	m_aiBuildCostChange.clear();
+	m_aiBuildCostChange.resize(GC.getNumBuildInfos());
+	for(int iBuild = 0; iBuild < GC.getNumBuildInfos(); iBuild++)
+	{
+		m_aiBuildCostChange[iBuild] = 0;
+	}
+
 	m_abNoTrain.clear();
 	m_abNoTrain.resize(GC.getNumUnitClassInfos());
 	for (int iUnitClass = 0; iUnitClass < GC.getNumUnitClassInfos(); iUnitClass++)
@@ -3734,6 +3894,33 @@ int CvPlayerTraits::GetImprovementYieldChange(ImprovementTypes eImprovement, Yie
 	}
 
 	return m_ppaaiImprovementYieldChange[(int)eImprovement][(int)eYield];
+}
+
+/// Get adjacent improvement yield change from traits
+int CvPlayerTraits::GetAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield) const
+{
+	int rtnValue = 0;
+	for (int i = 0; i < GC.getNumTraitInfos(); i++)
+	{
+		if (HasTrait((TraitTypes)i))
+		{
+			CvTraitEntry* pTrait = GC.getTraitInfo((TraitTypes)i);
+			if (pTrait)
+			{
+				const auto& vChanges = pTrait->GetAdjacentImprovementYieldChanges();
+				for (const auto& change : vChanges)
+				{
+					if ((int)change.m_iImprovementType == (int)eImprovement &&
+						(int)change.m_iOtherImprovementType == (int)eOtherImprovement &&
+						(int)change.m_iYieldType == (int)eYield)
+					{
+						rtnValue += change.m_iYield;
+					}
+				}
+			}
+		}
+	}
+	return rtnValue;
 }
 
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
@@ -4662,6 +4849,10 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iCityStateBonusModifier;
 	kStream >> m_iCityStateFriendshipModifier;
 	kStream >> m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_READ(162, kStream, m_iDiplomaticPrestige, 0);
+	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
+#endif
 	kStream >> m_iLandBarbarianConversionPercent;
 	kStream >> m_iLandBarbarianConversionExtraUnits;
 	kStream >> m_iSeaBarbarianConversionPercent;
@@ -4725,8 +4916,13 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iNaturalWonderFirstFinderGold;
 
 	kStream >> m_iNaturalWonderSubsequentFinderGold;
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderPolicies, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderPolicies, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderTech, 0);
+	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderTech, 0);
 
 	kStream >> m_iNaturalWonderYieldModifier;
+	MOD_SERIALIZE_READ(159, kStream, m_iNaturalWonderYieldModifierPerEra, 0);
 	kStream >> m_iNaturalWonderHappinessModifier;
 
 	kStream >> m_iNearbyImprovementCombatBonus;
@@ -4904,6 +5100,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(52, kStream, m_iSeaTradeRouteRangeBonus, 0);
 #endif
 	kStream >> m_bTrainedAll;
+	MOD_SERIALIZE_READ(161, kStream, m_bNewCityAutomaticReligion, false);
 	kStream >> m_bCanConquerUC;
 	kStream >> m_bFightWellDamaged;
 	kStream >> m_bBuyOwnedTiles;
@@ -4920,6 +5117,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 
 	kStream >> m_bTechBoostFromCapitalScienceBuildings;
 	kStream >> m_bArtistGoldenAgeTechBoost;
+	MOD_SERIALIZE_READ(159, kStream, m_bGoldenAgeTechChainBoost, false);
 	kStream >> m_bStaysAliveZeroCities;
 
 	kStream >> m_bFaithFromUnimprovedForest;
@@ -5045,6 +5243,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, &m_iStrategicResourceQuantityModifier[0], GC.getNumTerrainInfos());
 
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_aiResourceQuantityModifier);
+	MOD_SERIALIZE_READ_HASH_VECTOR(161, kStream, m_aiBuildCostChange, GC.getNumBuildInfos(), 0);
 
 	kStream >> iNumEntries;
 	m_abNoTrain.clear();
@@ -5228,6 +5427,10 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iCityStateBonusModifier;
 	kStream << m_iCityStateFriendshipModifier;
 	kStream << m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_WRITE(kStream, m_iDiplomaticPrestige);
+	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
+#endif
 	kStream << m_iLandBarbarianConversionPercent;
 	kStream << m_iLandBarbarianConversionExtraUnits;
 	kStream << m_iSeaBarbarianConversionPercent;
@@ -5259,7 +5462,12 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iExtraEmbarkMoves;
 	kStream << m_iNaturalWonderFirstFinderGold;
 	kStream << m_iNaturalWonderSubsequentFinderGold;
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderPolicies);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderTech);
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderTech);
 	kStream << m_iNaturalWonderYieldModifier;
+	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderYieldModifierPerEra);
 	kStream << m_iNaturalWonderHappinessModifier;
 	kStream << m_iNearbyImprovementCombatBonus;
 	kStream << m_iNearbyImprovementBonusRange;
@@ -5326,6 +5534,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	MOD_SERIALIZE_WRITE(kStream, m_iSeaTradeRouteRangeBonus);
 #endif
 	kStream << m_bTrainedAll;
+	MOD_SERIALIZE_WRITE(kStream, m_bNewCityAutomaticReligion);
 	kStream << m_bCanConquerUC;
 	kStream << m_bFightWellDamaged;
 	kStream << m_bBuyOwnedTiles;
@@ -5337,6 +5546,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_bNoHillsImprovementMaintenance;
 	kStream << m_bTechBoostFromCapitalScienceBuildings;
 	kStream << m_bArtistGoldenAgeTechBoost;
+	MOD_SERIALIZE_WRITE(kStream, m_bGoldenAgeTechChainBoost);
 	kStream << m_bStaysAliveZeroCities;
 	kStream << m_bFaithFromUnimprovedForest;
 #if defined(MOD_TRAITS_ANY_BELIEF)
@@ -5396,6 +5606,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	
 	CvInfosSerializationHelper::WriteHashedDataArray<TerrainTypes>(kStream, &m_iStrategicResourceQuantityModifier[0], GC.getNumTerrainInfos());
 	CvInfosSerializationHelper::WriteHashedDataArray<ResourceTypes>(kStream, m_aiResourceQuantityModifier);
+	MOD_SERIALIZE_WRITE_HASH_VECTOR(kStream, m_aiBuildCostChange, BuildTypes);
 
 	kStream << m_abNoTrain.size();
 	for (uint ui = 0; ui < m_abNoTrain.size(); ui++)
