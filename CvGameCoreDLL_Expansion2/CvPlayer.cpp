@@ -2348,11 +2348,25 @@ CvCity* CvPlayer::initCity(int iX, int iY, bool bBumpUnits, bool bInitialFoundin
 	if(pCity != NULL)
 	{
 		CvAssertMsg(!(GC.getMap().plot(iX, iY)->isCity()), "No city is expected at this plot when initializing new city");
+
+		// PERF: suppress the per-building empire-wide happiness/religion cascade while
+		// CvCity::init() places its free buildings. Values still accumulate inside
+		// processBuilding(); only the publish (DoUpdateHappiness / UpdateReligion) is
+		// deferred, so batch it once below.
+		pCity->SetUpdatingCorruptionGuard(true);
+		pCity->SetUpdatingReligionGuard(true);
 #if defined(MOD_API_EXTENSIONS)
 		pCity->init(pCity->GetID(), GetID(), iX, iY, bBumpUnits, bInitialFounding, eInitialReligion, szName);
 #else
 		pCity->init(pCity->GetID(), GetID(), iX, iY, bBumpUnits, bInitialFounding);
 #endif
+		pCity->SetUpdatingCorruptionGuard(false);
+		pCity->SetUpdatingReligionGuard(false);
+
+		// Batch update once after init: UpdateReligion() recomputes empire happiness and
+		// refreshes city religion yields (including this new city).
+		UpdateReligion();
+
 		pCity->GetCityStrategyAI()->UpdateFlavorsForNewCity();
 	}
 
