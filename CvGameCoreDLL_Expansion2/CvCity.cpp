@@ -8784,11 +8784,6 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 
 	updateYield();
 
-#ifdef MOD_GLOBAL_CORRUPTION
-	// Ensure corruption cache is fresh before computing Belief_CorruptionScoreYieldRate
-	UpdateCorruption();
-#endif
-
 	// Reset city level yields
 	for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -8799,6 +8794,38 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 	const CvReligion* pReligion = (eNewMajority != NO_RELIGION) ? GC.getGame().GetGameReligions()->GetReligion(eNewMajority, getOwner()) : 0;
 	const CvBeliefEntry* pSecondaryPantheon = (eSecondaryPantheon != NO_BELIEF) ? GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon) : 0;
 	TerrainTypes eTerrain = plot()->getTerrainType();
+
+#ifdef MOD_GLOBAL_CORRUPTION
+	// Refresh corruption only when religion can affect it: old/new majority or secondary pantheon holds a corruption belief.
+	// This keeps the corruption level/fake buildings in sync when corruption-relevant beliefs change, while skipping the
+	// per-city corruption recompute when religion is irrelevant to corruption (e.g. player-wide religion refresh).
+	ReligionTypes eLastMajority = GetCityReligions()->GetLastReligiousMajority();
+	GetCityReligions()->SetLastReligiousMajority(eNewMajority);
+	bool bReligionAffectsCorruption = (pReligion && pReligion->m_Beliefs.GetCorruptionEffectCount() > 0);
+	if (!bReligionAffectsCorruption && eLastMajority > RELIGION_PANTHEON)
+	{
+		const CvReligion* pLastReligion = GC.getGame().GetGameReligions()->GetReligion(eLastMajority, getOwner());
+		if (pLastReligion && pLastReligion->m_Beliefs.GetCorruptionEffectCount() > 0)
+			bReligionAffectsCorruption = true;
+	}
+	if (eSecondaryPantheon != NO_BELIEF && pSecondaryPantheon)
+	{
+		if (pSecondaryPantheon->GetCityCorruptionScoreChange() != 0)
+			bReligionAffectsCorruption = true;
+		else
+		{
+			for (int iYield = 0; iYield < NUM_YIELD_TYPES && !bReligionAffectsCorruption; iYield++)
+			{
+				if (pSecondaryPantheon->GetCorruptionScoreYieldRate((YieldTypes)iYield) != 0)
+					bReligionAffectsCorruption = true;
+			}
+		}
+	}
+	if (bReligionAffectsCorruption)
+		UpdateCorruption();
+	// Cache the corruption score once for the yield loop below (only meaningful when a corruption yield-rate belief exists)
+	const int iTotalCorruptionScore = bReligionAffectsCorruption ? CalculateTotalCorruptionScore() : 0;
+#endif
 
 	for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -8865,8 +8892,7 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 						int iCorruptionRate = pReligion->m_Beliefs.GetCorruptionScoreYieldRate(eYield);
 						if (iCorruptionRate != 0)
 						{
-							// Use CalculateTotalCorruptionScore() directly to avoid stale cache
-							iReligionYieldChange += CalculateTotalCorruptionScore() * iCorruptionRate / 10000;
+							iReligionYieldChange += iTotalCorruptionScore * iCorruptionRate / 10000;
 						}
 					}
 					if (eSecondaryPantheon != NO_BELIEF)
@@ -8874,7 +8900,7 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 						int iSecCorruptionRate = pSecondaryPantheon->GetCorruptionScoreYieldRate(eYield);
 						if (iSecCorruptionRate != 0)
 						{
-							iReligionYieldChange += CalculateTotalCorruptionScore() * iSecCorruptionRate / 10000;
+							iReligionYieldChange += iTotalCorruptionScore * iSecCorruptionRate / 10000;
 						}
 					}
 				ChangeBaseYieldRateFromReligion(eYield, iReligionYieldChange);

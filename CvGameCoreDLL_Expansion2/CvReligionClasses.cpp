@@ -3387,7 +3387,8 @@ int CvPlayerReligions::GetNumNativeFollowers() const
 /// Constructor
 CvCityReligions::CvCityReligions(void):
 	m_bHasPaidAdoptionBonus(false),
-	m_iReligiousPressureModifier(0)
+	m_iReligiousPressureModifier(0),
+	m_eLastReligiousMajority(NO_RELIGION)
 {
 	m_ReligionStatus.clear();
 }
@@ -3404,6 +3405,7 @@ void CvCityReligions::Init(CvCity* pCity)
 	m_pCity = pCity;
 	m_bHasPaidAdoptionBonus = false;
 	m_iReligiousPressureModifier = 0;
+	m_eLastReligiousMajority = NO_RELIGION;
 	m_ReligionStatus.clear();
 }
 
@@ -5050,6 +5052,10 @@ FDataStream& operator>>(FDataStream& loadFrom, CvCityReligions& writeTo)
 		writeTo.m_ReligionStatus.push_back(tempItem);
 	}
 
+	ReligionTypes eLastMajority = NO_RELIGION;
+	MOD_SERIALIZE_READ(MOD_DLL_VERSION_NUMBER, loadFrom, eLastMajority, NO_RELIGION);
+	writeTo.SetLastReligiousMajority(eLastMajority);
+
 	return loadFrom;
 }
 
@@ -5071,6 +5077,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvCityReligions& readFrom)
 	{
 		saveTo << *it;
 	}
+
+	saveTo << readFrom.GetLastReligiousMajority();
 
 	return saveTo;
 }
