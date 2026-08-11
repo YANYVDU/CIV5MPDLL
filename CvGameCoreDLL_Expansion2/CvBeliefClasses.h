@@ -543,6 +543,10 @@ public:
 	{
 		return m_iCityCorruptionScoreChange;
 	}
+	int GetCorruptionEffectCount() const
+	{
+		return m_iCorruptionEffectCount;
+	}
 	int GetFirstConversionCitiesPerGoldenAge() const
 	{
 		return m_iFirstConversionCitiesPerGoldenAge;
@@ -702,6 +706,7 @@ private:
 	int m_iNumInquisitorProhibitSpreadInAlly;
 	int m_iCuttingBonusModifier;
 	int m_iCityCorruptionScoreChange;
+	int m_iCorruptionEffectCount;
 	int m_iFirstConversionCitiesPerGoldenAge;
 	int m_iFirstConversionCitiesPerPop;
 	int m_iCityExtraMissionarySpreads;

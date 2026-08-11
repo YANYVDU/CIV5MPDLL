@@ -939,6 +939,9 @@
 				{1_cityName}目前为{2_statusType}：{3_curNumber}/{4_maxNumber} [ICON_INFLUENCE]
 			</Text>
 		</Replace>
-	</Language_zh_CN>
+		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
+		<Text>{1_Civ}与城邦{2_Civ}建立了永久盟友关系。该城邦不再发布新任务，已有任务已清空。赠送金币等提升影响力的方法将不再生效。</Text>
+	</Row>
+</Language_zh_CN>
 
 </GameData>

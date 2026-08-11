@@ -1793,6 +1793,11 @@ public:
 	int GetCSTreasuryInterestRate() const;
 #endif
 
+	int GetPrestigeExemptAllyCount() const;
+	void SetPrestigeExemptAllyCount(int iValue);
+	void ChangePrestigeExemptAllyCount(int iChange);
+	bool IsPermanentAlly(PlayerTypes eMinor) const;
+	void SetPermanentAlly(PlayerTypes eMinor, bool bValue);
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
 	void ChangeExtraUnitPlayerInstances(int iChange);
@@ -2735,6 +2740,8 @@ protected:
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
 #endif
+	int m_iPrestigeExemptAllyCount;
+	std::vector<int> m_vecPermanentAllies;
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;
 	int m_iWaterTileDamageGlobal;

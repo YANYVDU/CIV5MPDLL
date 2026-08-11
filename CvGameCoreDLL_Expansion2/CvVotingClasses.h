@@ -129,6 +129,9 @@ struct CvResolutionEffects
 	int iGlobalWarCasualtiesChanges;
 	bool bEmbargoIdeology;
 #endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bool bPermanentAlly;
+#endif
 };
 
 FDataStream& operator>>(FDataStream&, CvResolutionEffects&);
@@ -1231,6 +1234,7 @@ public:
 	bool IsAutomaticProposal() const;
 	bool IsUniqueType() const;
 	bool IsNoProposalByPlayer() const;
+	CivilizationTypes GetCivilizationType() const;
 	int GetQuorumPercent() const;
 	int GetLeadersVoteBonusOnFail() const;
 	bool IsDiplomaticVictory() const;
@@ -1270,6 +1274,7 @@ protected:
 	bool m_bAutomaticProposal;
 	bool m_bUniqueType;
 	bool m_bNoProposalByPlayer;
+	CivilizationTypes m_eCivilizationType;
 	int m_iQuorumPercent;
 	int m_iLeadersVoteBonusOnFail;
 	bool m_bDiplomaticVictory;

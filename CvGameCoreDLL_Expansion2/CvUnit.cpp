@@ -5168,7 +5168,7 @@ bool CvUnit::canGift(bool bTestVisible, bool bTestTransport) const
 #endif
 
 			// Unless okay by trait
-			if(kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 || !IsGreatPerson())
+			if((kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 && !kPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly()) || !IsGreatPerson())
 			{
 				return false;
 			}
@@ -5307,7 +5307,7 @@ bool CvUnit::CanDistanceGift(PlayerTypes eToPlayer) const
 #endif
 
 			// Unless okay by trait
-			if(kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 || !IsGreatPerson())
+			if((kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 && !kPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly()) || !IsGreatPerson())
 			{
 				return false;
 			}
@@ -12338,6 +12338,14 @@ bool CvUnit::canBuyCityState(const CvPlot* pPlot, bool bTestVisible) const
 		{
 			return false;
 		}
+	}
+
+	// Cannot buy a CS that is a permanent ally
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(pPlot->getOwner()))
+			return false;
 	}
 
 	return true;

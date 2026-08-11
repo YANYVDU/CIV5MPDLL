@@ -61,6 +61,7 @@ public:
 	int GetGreatGeneralRateModifier() const;
 	int GetGreatGeneralExtraBonus() const;
 	int GetGreatPersonGiftInfluence() const;
+	bool IsGreatPersonGiftPermanentAlly() const;
 	int GetMaxGlobalBuildingProductionModifier() const;
 	int GetMaxTeamBuildingProductionModifier() const;
 	int GetMaxPlayerBuildingProductionModifier() const;
@@ -367,6 +368,7 @@ protected:
 	int m_iGreatGeneralRateModifier;
 	int m_iGreatGeneralExtraBonus;
 	int m_iGreatPersonGiftInfluence;
+	bool m_bGreatPersonGiftPermanentAlly;
 	int m_iMaxGlobalBuildingProductionModifier;
 	int m_iMaxTeamBuildingProductionModifier;
 	int m_iMaxPlayerBuildingProductionModifier;
@@ -726,6 +728,10 @@ public:
 	int GetGreatPersonGiftInfluence() const
 	{
 		return m_iGreatPersonGiftInfluence;
+	};
+	bool IsGreatPersonGiftPermanentAlly() const
+	{
+		return m_bGreatPersonGiftPermanentAlly;
 	};
 	int GetLevelExperienceModifier() const
 	{
@@ -1517,6 +1523,7 @@ private:
 	int m_iGreatGeneralRateModifier;
 	int m_iGreatGeneralExtraBonus;
 	int m_iGreatPersonGiftInfluence;
+	bool m_bGreatPersonGiftPermanentAlly;
 	int m_iLevelExperienceModifier;
 	int m_iMaxGlobalBuildingProductionModifier;
 	int m_iMaxTeamBuildingProductionModifier;

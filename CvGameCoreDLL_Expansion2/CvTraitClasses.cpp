@@ -27,6 +27,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iGreatGeneralRateModifier(0),
 	m_iGreatGeneralExtraBonus(0),
 	m_iGreatPersonGiftInfluence(0),
+	m_bGreatPersonGiftPermanentAlly(false),
 	m_iMaxGlobalBuildingProductionModifier(0),
 	m_iMaxTeamBuildingProductionModifier(0),
 	m_iMaxPlayerBuildingProductionModifier(0),
@@ -332,6 +333,11 @@ int CvTraitEntry::GetGreatGeneralExtraBonus() const
 int CvTraitEntry::GetGreatPersonGiftInfluence() const
 {
 	return m_iGreatPersonGiftInfluence;
+}
+
+bool CvTraitEntry::IsGreatPersonGiftPermanentAlly() const
+{
+	return m_bGreatPersonGiftPermanentAlly;
 }
 
 /// Accessor:: Overall production boost
@@ -1751,6 +1757,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iGreatGeneralRateModifier				= kResults.GetInt("GreatGeneralRateModifier");
 	m_iGreatGeneralExtraBonus				= kResults.GetInt("GreatGeneralExtraBonus");
 	m_iGreatPersonGiftInfluence				= kResults.GetInt("GreatPersonGiftInfluence");
+	m_bGreatPersonGiftPermanentAlly		    = kResults.GetBool("GreatPersonGiftPermanentAlly");
 	m_iMaxGlobalBuildingProductionModifier	= kResults.GetInt("MaxGlobalBuildingProductionModifier");
 	m_iMaxTeamBuildingProductionModifier	= kResults.GetInt("MaxTeamBuildingProductionModifier");
 	m_iMaxPlayerBuildingProductionModifier	= kResults.GetInt("MaxPlayerBuildingProductionModifier");
@@ -2981,6 +2988,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			{
 				m_bTrainedAll = true;
 			}
+			if (trait->IsGreatPersonGiftPermanentAlly())
+			{
+				m_bGreatPersonGiftPermanentAlly = true;
+			}
 			if (trait->IsNewCityAutomaticReligion())
 			{
 				m_bNewCityAutomaticReligion = true;
@@ -3425,6 +3436,7 @@ void CvPlayerTraits::Reset()
 	m_iGreatGeneralRateModifier = 0;
 	m_iGreatGeneralExtraBonus = 0;
 	m_iGreatPersonGiftInfluence = 0;
+	m_bGreatPersonGiftPermanentAlly = false;
 	m_iLevelExperienceModifier= 0;
 	m_iMaxGlobalBuildingProductionModifier = 0;
 	m_iMaxTeamBuildingProductionModifier = 0;
@@ -4839,6 +4851,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iGreatGeneralExtraBonus;
 
 	kStream >> m_iGreatPersonGiftInfluence;
+	MOD_SERIALIZE_READ(162, kStream, m_bGreatPersonGiftPermanentAlly, false);
 
 	kStream >> m_iLevelExperienceModifier;
 	kStream >> m_iMaxGlobalBuildingProductionModifier;
@@ -5418,6 +5431,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iGreatGeneralRateModifier;
 	kStream << m_iGreatGeneralExtraBonus;
 	kStream << m_iGreatPersonGiftInfluence;
+	MOD_SERIALIZE_WRITE(kStream, m_bGreatPersonGiftPermanentAlly);
 	kStream << m_iLevelExperienceModifier;
 	kStream << m_iMaxGlobalBuildingProductionModifier;
 	kStream << m_iMaxTeamBuildingProductionModifier;

@@ -98,6 +98,7 @@ public:
 	bool IsCanPillageNeutralTradeRoute() const;
 	// Belgrade (BeiErGeLaiDe)
 	int GetGarrisonCityDefenseModifier() const;
+	int GetMilitaryUnitProductionXP() const;
 	// Budapest (BuDaPeiSi)
 	bool IsLandUnitsImmuneRiverCrossing() const;
 	// Ha Noi (HeNei)
@@ -134,6 +135,8 @@ public:
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
+	// Prague (BuLaGe) / Yerevan (AiLiWen): building-class yield percentage modifiers
+	int GetBuildingClassYieldModifiers(int i, int j) const;
 	// Brussels (BuLuSaiEr): specialist great person point accumulation rate (%)
 	int GetSpecialistPointRate(int i) const;
 	// Brussels: each great work of a class grants great person points to a specialist (Rate=100 => 1 great work = 1 point)
@@ -182,6 +185,7 @@ private:
 	bool m_bCanPillageNeutralTradeRoute;
 	// Belgrade
 	int m_iGarrisonCityDefenseModifier;
+	int m_iMilitaryUnitProductionXP;
 	// Budapest
 	bool m_bLandUnitsImmuneRiverCrossing;
 	// Ha Noi
@@ -215,6 +219,8 @@ private:
 	// Panama
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	// Prague / Yerevan
+	int** m_ppiBuildingClassYieldModifiers;
 	// Brussels
 	int* m_piSpecialistPointRate;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;
@@ -334,6 +340,7 @@ public:
 	bool IsCanPillageNeutralTradeRoute() const;
 	// Belgrade
 	int GetGarrisonCityDefenseModifier() const;
+	int GetMilitaryUnitProductionXP() const;
 	// Budapest
 	bool IsLandUnitsImmuneRiverCrossing() const;
 	// Ha Noi
@@ -370,6 +377,9 @@ public:
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	int GetAllyInfluenceModFromBornGreatPerson() const;
+	// Prague / Yerevan: building-class yield percentage modifiers
+	int GetBuildingClassYieldModifier(BuildingClassTypes eBuildingClass, YieldTypes eYieldType) const;
+	bool HasBuildingClassYieldModifiers() const;
 	// Brussels
 	int GetSpecialistPointRate(SpecialistTypes eSpecialist) const;
 	int GetGreatWorkGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
@@ -406,6 +416,7 @@ protected:
 	int m_iPuppetTechCostPartial;
 	int m_iCanPillageNeutralTradeRouteCount;
 	int m_iGarrisonCityDefenseModifier;
+	int m_iMilitaryUnitProductionXP;
 	int m_iLandUnitsImmuneRiverCrossingCount;
 	int m_iEnemyFixedDamageModifierInBorders;
 	int m_iCulturePerWarPeace;
@@ -429,6 +440,9 @@ protected:
 	int m_iTradeRouteGoldModifierPerLuxuryType;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	// Prague / Yerevan
+	int** m_ppiBuildingClassYieldModifiers;
+	int m_iBuildingClassYieldModifierCount;
 	// Brussels
 	std::vector<int> m_aiSpecialistPointRate;
 	std::vector<GreatWorkGreatPersonPointsEntry> m_vGreatWorkGreatPersonPoints;

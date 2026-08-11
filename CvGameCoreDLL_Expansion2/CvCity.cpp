@@ -6117,7 +6117,7 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 					bool bAllUnlockedByBelief = false;
 					const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion, getOwner());
 					if(pReligion)
-					{	
+					{
 						if (pReligion->m_Beliefs.IsFaithPurchaseAllGreatPeople())
 						{
 							bAllUnlockedByBelief = true;
@@ -6745,16 +6745,21 @@ int CvCity::getProductionModifier(BuildingTypes eBuilding, CvString* toolTipSink
 		}
 
 		// Dubai CS UA: gold donation happiness -> wonder production modifier
-	int iGoldDonHappy = GET_PLAYER(getOwner()).GetGoldDonationHappiness();
-	if (iGoldDonHappy > 0) 
-	{
-		int iDubaiMod = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetWonderProductionPerDonationHappiness();
-		if (iDubaiMod > 0) 
+		int iGoldDonHappy = GET_PLAYER(getOwner()).GetGoldDonationHappiness();
+		if (iGoldDonHappy > 0)
 		{
-			iTempMod += iGoldDonHappy * iDubaiMod / 100;
+			int iDubaiMod = GET_PLAYER(getOwner()).GetPlayerCityStateUA()->GetWonderProductionPerDonationHappiness();
+			if (iDubaiMod > 0)
+			{
+				iTempMod = iGoldDonHappy * iDubaiMod / 100;
+				iMultiplier += iTempMod;
+				if(toolTipSink && iTempMod)
+				{
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_WONDER_PLAYER", iTempMod);
+				}
+			}
 		}
-	}
-	iTempMod = GetLocalResourceWonderProductionMod(eBuilding, toolTipSink);
+		iTempMod = GetLocalResourceWonderProductionMod(eBuilding, toolTipSink);
 		iMultiplier += iTempMod;
 
 		ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
@@ -8779,11 +8784,6 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 
 	updateYield();
 
-#ifdef MOD_GLOBAL_CORRUPTION
-	// Ensure corruption cache is fresh before computing Belief_CorruptionScoreYieldRate
-	UpdateCorruption();
-#endif
-
 	// Reset city level yields
 	for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -8794,6 +8794,38 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 	const CvReligion* pReligion = (eNewMajority != NO_RELIGION) ? GC.getGame().GetGameReligions()->GetReligion(eNewMajority, getOwner()) : 0;
 	const CvBeliefEntry* pSecondaryPantheon = (eSecondaryPantheon != NO_BELIEF) ? GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon) : 0;
 	TerrainTypes eTerrain = plot()->getTerrainType();
+
+#ifdef MOD_GLOBAL_CORRUPTION
+	// Refresh corruption only when religion can affect it: old/new majority or secondary pantheon holds a corruption belief.
+	// This keeps the corruption level/fake buildings in sync when corruption-relevant beliefs change, while skipping the
+	// per-city corruption recompute when religion is irrelevant to corruption (e.g. player-wide religion refresh).
+	ReligionTypes eLastMajority = GetCityReligions()->GetLastReligiousMajority();
+	GetCityReligions()->SetLastReligiousMajority(eNewMajority);
+	bool bReligionAffectsCorruption = (pReligion && pReligion->m_Beliefs.GetCorruptionEffectCount() > 0);
+	if (!bReligionAffectsCorruption && eLastMajority > RELIGION_PANTHEON)
+	{
+		const CvReligion* pLastReligion = GC.getGame().GetGameReligions()->GetReligion(eLastMajority, getOwner());
+		if (pLastReligion && pLastReligion->m_Beliefs.GetCorruptionEffectCount() > 0)
+			bReligionAffectsCorruption = true;
+	}
+	if (eSecondaryPantheon != NO_BELIEF && pSecondaryPantheon)
+	{
+		if (pSecondaryPantheon->GetCityCorruptionScoreChange() != 0)
+			bReligionAffectsCorruption = true;
+		else
+		{
+			for (int iYield = 0; iYield < NUM_YIELD_TYPES && !bReligionAffectsCorruption; iYield++)
+			{
+				if (pSecondaryPantheon->GetCorruptionScoreYieldRate((YieldTypes)iYield) != 0)
+					bReligionAffectsCorruption = true;
+			}
+		}
+	}
+	if (bReligionAffectsCorruption)
+		UpdateCorruption();
+	// Cache the corruption score once for the yield loop below (only meaningful when a corruption yield-rate belief exists)
+	const int iTotalCorruptionScore = bReligionAffectsCorruption ? CalculateTotalCorruptionScore() : 0;
+#endif
 
 	for(int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -8860,8 +8892,7 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 						int iCorruptionRate = pReligion->m_Beliefs.GetCorruptionScoreYieldRate(eYield);
 						if (iCorruptionRate != 0)
 						{
-							// Use CalculateTotalCorruptionScore() directly to avoid stale cache
-							iReligionYieldChange += CalculateTotalCorruptionScore() * iCorruptionRate / 10000;
+							iReligionYieldChange += iTotalCorruptionScore * iCorruptionRate / 10000;
 						}
 					}
 					if (eSecondaryPantheon != NO_BELIEF)
@@ -8869,7 +8900,7 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 						int iSecCorruptionRate = pSecondaryPantheon->GetCorruptionScoreYieldRate(eYield);
 						if (iSecCorruptionRate != 0)
 						{
-							iReligionYieldChange += CalculateTotalCorruptionScore() * iSecCorruptionRate / 10000;
+							iReligionYieldChange += iTotalCorruptionScore * iSecCorruptionRate / 10000;
 						}
 					}
 				ChangeBaseYieldRateFromReligion(eYield, iReligionYieldChange);
@@ -10253,6 +10284,47 @@ int CvCity::getTotalGreatPeopleRateModifier() const
 	return std::max(0, (iModifier + 100));
 }
 
+//	--------------------------------------------------------------------------------
+/// Total golden age great person rate modifier for a great person type,
+/// summed across all sources: player instance, traits, and this city's religion beliefs
+int CvCity::GetGoldenAgeGreatPersonRateModifier(GreatPersonTypes eGreatPerson) const
+{
+	VALIDATE_OBJECT
+	CvAssertMsg(eGreatPerson >= 0 && eGreatPerson < GC.getNumGreatPersonInfos(), "Invalid great person index");
+
+	int iMod = 0;
+	CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
+	iMod += kPlayer.getGoldenAgeGreatPersonRateModifier(eGreatPerson);
+	iMod += kPlayer.GetPlayerTraits()->GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+
+	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+	if (eMajority != NO_RELIGION)
+	{
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if (pReligion)
+		{
+			iMod += pReligion->m_Beliefs.GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+			BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
+			if (eSecondaryPantheon != NO_BELIEF)
+			{
+				iMod += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+			}
+		}
+	}
+
+	return iMod;
+}
+
+//	--------------------------------------------------------------------------------
+/// Specialist convenience wrapper for the above (for Lua/UI use)
+int CvCity::GetGoldenAgeGreatPersonRateModifierFromSpecialist(SpecialistTypes eSpecialist) const
+{
+	VALIDATE_OBJECT
+	GreatPersonTypes eGreatPerson = ::GetGreatPersonFromSpecialist(eSpecialist);
+	if (eGreatPerson == NO_GREATPERSON)
+		return 0;
+	return GetGoldenAgeGreatPersonRateModifier(eGreatPerson);
+}
 
 //	--------------------------------------------------------------------------------
 void CvCity::changeBaseGreatPeopleRate(int iChange)
@@ -13303,6 +13375,27 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	iModifier += iTempMod;
 	if(iTempMod != 0 && toolTipSink)
 		GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD", iTempMod);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// CityState UA: building-class yield modifiers (Prague, Yerevan)
+	CvPlayerCityStateUA* pCityStateUA = owner.GetPlayerCityStateUA();
+	if (pCityStateUA && pCityStateUA->HasBuildingClassYieldModifiers())
+	{
+		iTempMod = 0;
+		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+		{
+			int iCount = GetNumBuildingClass((BuildingClassTypes)iBC);
+			if (iCount > 0)
+				iTempMod += pCityStateUA->GetBuildingClassYieldModifier((BuildingClassTypes)iBC, eIndex) * iCount;
+		}
+		if (iTempMod != 0)
+		{
+			iModifier += iTempMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_BUILDING_CITY", iTempMod);
+		}
+	}
+#endif
 	
 	//Yield Modifier from PerEra
 	iTempMod = GetYieldModifierPerEra(eIndex)*(GET_PLAYER(getOwner()).GetCurrentEra()+1);
@@ -18621,6 +18714,21 @@ int CvCity::CreateUnit(UnitTypes eUnitType, bool bIsGold, bool bIsFaith, UnitAIT
 	CvUnitEntry & pkUnitInfo = pUnit->getUnitInfo();
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Belgrade UA: ally-built military units gain XP; purchases (gold/faith) do not apply
+	if (MOD_SP_UNIQUE_CITYSTATE && !bIsGold && !bIsFaith)
+	{
+		CvPlayerCityStateUA* pCSUA = thisPlayer.GetPlayerCityStateUA();
+		int iCSUAXP = (pCSUA != NULL) ? pCSUA->GetMilitaryUnitProductionXP() : 0;
+		if (iCSUAXP > 0 && (pkUnitInfo.GetCombat() > 0 || pkUnitInfo.GetRangedCombat() > 0))
+		{
+#if defined(MOD_UNITS_XP_TIMES_100)
+				pUnit->changeExperienceTimes100(iCSUAXP * 100);
+#else
+				pUnit->changeExperience(iCSUAXP);
+#endif
+		}
+	}
+
 	// Valletta UA: granting a configurable yield when a unit of the configured class is born
 	if (MOD_SP_UNIQUE_CITYSTATE)
 	{
@@ -19569,7 +19677,7 @@ void CvCity::Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectT
 			} else {
 #endif
 			ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
-			if (pkScriptSystem) 
+			if (pkScriptSystem)
 			{
 				CvLuaArgsHandle args;
 				args->Push(getOwner());
