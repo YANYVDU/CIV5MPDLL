@@ -10089,7 +10089,7 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 		}
 		if (kFromPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 		{
-			int iHighest = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+			int iHighest = GetAlliesThresholdForPlayer(eFromPlayer);
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
 				PlayerTypes e = (PlayerTypes)i;

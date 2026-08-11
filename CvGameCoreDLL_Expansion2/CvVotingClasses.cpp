@@ -1625,7 +1625,7 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		if (pMinorAI)
 		{
 			// Set influence above current ally to become the new ally
-			int iHighest = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+			int iHighest = pMinorAI->GetAlliesThresholdForPlayer(ePlayer);
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
 				PlayerTypes e = (PlayerTypes)i;
