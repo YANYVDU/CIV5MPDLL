@@ -2303,6 +2303,21 @@ int CvLeague::GetSessionTurnInterval()
 	// Modified by game speed
 	iInterval = (iInterval * GC.getGame().getGameSpeedInfo().getLeaguePercent()) / 100;
 
+
+	// Trait: WorldCongressTurnModifier (lower = shorter interval, e.g. 50 = half)
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive())
+		{
+			int iTraitMod = GET_PLAYER(e).GetPlayerTraits()->GetWorldCongressTurnModifier();
+			if (iTraitMod > 0 && iTraitMod < 100)
+			{
+				iInterval = (iInterval * iTraitMod) / 100;
+				break;
+			}
+		}
+	}
 	if (DEBUG_LEAGUES)
 	{
 		return 2;
@@ -7204,8 +7219,18 @@ void CvGameLeagues::DoTurn()
 				PlayerTypes eCiv = (PlayerTypes) iCiv;
 				if (GET_PLAYER(eCiv).isAlive())
 				{
-					// Has the unlock from tech?
-					if (GET_TEAM(GET_PLAYER(eCiv).getTeam()).HasTechForWorldCongress())
+						// Has the unlock from tech?
+						bool bHasWC = GET_TEAM(GET_PLAYER(eCiv).getTeam()).HasTechForWorldCongress();
+						// Trait: WorldCongressTechPrereq (e.g. TECH_MATHEMATICS for Tiandao)
+						if (!bHasWC)
+						{
+							int iAltTech = GET_PLAYER(eCiv).GetPlayerTraits()->GetWorldCongressTechPrereq();
+							if (iAltTech != -1)
+							{
+								bHasWC = GET_TEAM(GET_PLAYER(eCiv).getTeam()).GetTeamTechs()->HasTech((TechTypes)iAltTech);
+							}
+						}
+						if (bHasWC)
 					{
 						// Met every other civ?
 						bool bMetEveryone = true;

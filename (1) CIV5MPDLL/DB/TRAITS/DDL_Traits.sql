@@ -131,4 +131,7 @@ create table Trait_BuildCostChange (
 
 
 alter table Traits add GreatPersonGiftPermanentAlly boolean default 0;
+alter table Traits add CityStateBaseEffectModifier int default 0;
+alter table Traits add WorldCongressTurnModifier int default 0;
+alter table Traits add WorldCongressTechPrereq text default null;
 alter table Resolutions add CivilizationType text default null references Civilizations(Type);

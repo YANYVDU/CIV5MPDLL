@@ -1722,6 +1722,21 @@ int CvTraitEntry::GetShareAllyResearchPercent() const
 	return m_iShareAllyResearchPercent;
 }
 
+int CvTraitEntry::GetCityStateBaseEffectModifier() const
+{
+	return m_iCityStateBaseEffectModifier;
+}
+
+int CvTraitEntry::GetWorldCongressTurnModifier() const
+{
+	return m_iWorldCongressTurnModifier;
+}
+
+int CvTraitEntry::GetWorldCongressTechPrereq() const
+{
+	return m_iWorldCongressTechPrereq;
+}
+
 bool CvTraitEntry::CanPurchaseWonderInGoldenAge() const
 {
 	return m_bCanPurchaseWonderInGoldenAge;
@@ -2731,6 +2746,9 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iOthersTradeBonusModifier = kResults.GetInt("OthersTradeBonusModifier");
 	m_iGoldenAgeGrowThresholdModifier = kResults.GetInt("GoldenAgeGrowThresholdModifier");
 	m_iShareAllyResearchPercent = kResults.GetInt("ShareAllyResearchPercent");
+	m_iCityStateBaseEffectModifier = kResults.GetInt("CityStateBaseEffectModifier");
+	m_iWorldCongressTurnModifier = kResults.GetInt("WorldCongressTurnModifier");
+	{ const char* sz = kResults.GetText("WorldCongressTechPrereq"); m_iWorldCongressTechPrereq = sz ? (int)GC.getInfoTypeForString(sz) : -1; }
 	m_bCanPurchaseWonderInGoldenAge = kResults.GetBool("CanPurchaseWonderInGoldenAge");
 	m_bCanDiplomaticMarriage = kResults.GetBool("CanDiplomaticMarriage");
 	m_bWLKDCityNoResearchCost = kResults.GetBool("WLKDCityNoResearchCost");
@@ -3161,6 +3179,9 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iOthersTradeBonusModifier = trait->GetOthersTradeBonusModifier();
 			m_iGoldenAgeGrowThresholdModifier = trait->GetGoldenAgeGrowThresholdModifier();
 			m_iShareAllyResearchPercent = trait->GetShareAllyResearchPercent();
+			m_iCityStateBaseEffectModifier = trait->GetCityStateBaseEffectModifier();
+			m_iWorldCongressTurnModifier = trait->GetWorldCongressTurnModifier();
+			m_iWorldCongressTechPrereq = trait->GetWorldCongressTechPrereq();
 			m_bCanPurchaseWonderInGoldenAge = trait->CanPurchaseWonderInGoldenAge();
 			m_bCanDiplomaticMarriage = trait->CanDiplomaticMarriage();
 			m_bWLKDCityNoResearchCost = trait->IsWLKDCityNoResearchCost();
@@ -5412,6 +5433,18 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iOthersTradeBonusModifier;
 	kStream >> m_iGoldenAgeGrowThresholdModifier;
 	kStream >> m_iShareAllyResearchPercent;
+	if (uiVersion >= 20)
+	{
+	kStream >> m_iCityStateBaseEffectModifier;
+	kStream >> m_iWorldCongressTurnModifier;
+		kStream >> m_iWorldCongressTechPrereq;
+	}
+	else
+	{
+		m_iCityStateBaseEffectModifier = 0;
+		m_iWorldCongressTurnModifier = 0;
+		m_iWorldCongressTechPrereq = -1;
+	}
 	kStream >> m_bCanPurchaseWonderInGoldenAge;
 	kStream >> m_bCanDiplomaticMarriage;
 	kStream >> m_bWLKDCityNoResearchCost;
@@ -5422,7 +5455,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 void CvPlayerTraits::Write(FDataStream& kStream)
 {
 	// Current version number
-	uint uiVersion = 19;
+	uint uiVersion = 20;
 	kStream << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(kStream);
 
@@ -5724,6 +5757,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iOthersTradeBonusModifier;
 	kStream << m_iGoldenAgeGrowThresholdModifier;
 	kStream << m_iShareAllyResearchPercent;
+	kStream << m_iCityStateBaseEffectModifier;
+		kStream << m_iWorldCongressTurnModifier;
+		kStream << m_iWorldCongressTechPrereq;
 	kStream << m_bCanPurchaseWonderInGoldenAge;
 	kStream << m_bCanDiplomaticMarriage;
 	kStream << m_bWLKDCityNoResearchCost;
@@ -5975,6 +6011,21 @@ int CvPlayerTraits::GetGoldenAgeGrowThresholdModifier() const
 int CvPlayerTraits::GetShareAllyResearchPercent() const
 {
 	return m_iShareAllyResearchPercent;
+}
+
+int CvPlayerTraits::GetCityStateBaseEffectModifier() const
+{
+	return m_iCityStateBaseEffectModifier;
+}
+
+int CvPlayerTraits::GetWorldCongressTurnModifier() const
+{
+	return m_iWorldCongressTurnModifier;
+}
+
+int CvPlayerTraits::GetWorldCongressTechPrereq() const
+{
+	return m_iWorldCongressTechPrereq;
 }
 bool CvPlayerTraits::CanPurchaseWonderInGoldenAge() const
 {

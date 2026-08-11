@@ -356,6 +356,9 @@ public:
 	int GetGoldenAgeGrowThresholdModifier() const;
 
 	int GetShareAllyResearchPercent() const;
+	int GetCityStateBaseEffectModifier() const;
+	int GetWorldCongressTurnModifier() const;
+	int GetWorldCongressTechPrereq() const;
 	bool CanPurchaseWonderInGoldenAge() const;
 	bool CanDiplomaticMarriage() const;
 
@@ -643,6 +646,9 @@ protected:
 	int m_iGoldenAgeGrowThresholdModifier = 0;
 
 	int m_iShareAllyResearchPercent = 0;
+	int m_iCityStateBaseEffectModifier = 0;
+	int m_iWorldCongressTurnModifier = 0;
+	int m_iWorldCongressTechPrereq = -1;
 	bool m_bCanPurchaseWonderInGoldenAge = false;
 	bool m_bCanDiplomaticMarriage = false;
 
@@ -1496,6 +1502,9 @@ public:
 	int GetGoldenAgeGrowThresholdModifier() const;
 
 	int GetShareAllyResearchPercent() const;
+	int GetCityStateBaseEffectModifier() const;
+	int GetWorldCongressTurnModifier() const;
+	int GetWorldCongressTechPrereq() const;
 	bool CanPurchaseWonderInGoldenAge() const;
 	bool CanDiplomaticMarriage() const;
 	bool IsWLKDCityNoResearchCost() const;
@@ -1797,6 +1806,9 @@ private:
 	int m_iGoldenAgeGrowThresholdModifier = 0;
 
 	int m_iShareAllyResearchPercent = 0;
+	int m_iCityStateBaseEffectModifier = 0;
+	int m_iWorldCongressTurnModifier = 0;
+	int m_iWorldCongressTechPrereq = -1;
 	bool m_bCanPurchaseWonderInGoldenAge = false;
 	bool m_bCanDiplomaticMarriage = false;
 	bool m_bWLKDCityNoResearchCost = false;
