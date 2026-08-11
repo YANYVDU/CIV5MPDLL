@@ -132,6 +132,17 @@ struct CvResolutionEffects
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bool bPermanentAlly;
 #endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	bool bSubmitSuzerain;
+	int iVassalTaxPercent;
+	bool bVassalTaxScience;
+	bool bVassalTaxCulture;
+	bool bVassalTaxFaith;
+	bool bVassalTaxGold;
+	bool bVassalForcePeace;
+	bool bVassalNoDenounce;
+	bool bVassalGetUC;
+#endif
 };
 
 FDataStream& operator>>(FDataStream&, CvResolutionEffects&);
@@ -1267,6 +1278,16 @@ public:
 	int GetGlobalWarCasualtiesChanges() const;
 	bool IsEmbargoIdeology() const;
 #endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	int GetVassalTaxPercent() const;
+	bool IsVassalTaxScience() const;
+	bool IsVassalTaxCulture() const;
+	bool IsVassalTaxFaith() const;
+	bool IsVassalTaxGold() const;
+	bool IsVassalForcePeace() const;
+	bool IsVassalNoDenounce() const;
+	bool IsVassalGetUC() const;
+#endif
 protected:
 	ResolutionDecisionTypes m_eVoterDecision;
 	ResolutionDecisionTypes m_eProposerDecision;
@@ -1306,6 +1327,16 @@ protected:
 	int m_iGlobalAttackModifier;
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
+#endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	int m_iVassalTaxPercent;
+	bool m_bVassalTaxScience;
+	bool m_bVassalTaxCulture;
+	bool m_bVassalTaxFaith;
+	bool m_bVassalTaxGold;
+	bool m_bVassalForcePeace;
+	bool m_bVassalNoDenounce;
+	bool m_bVassalGetUC;
 #endif
 
 private:

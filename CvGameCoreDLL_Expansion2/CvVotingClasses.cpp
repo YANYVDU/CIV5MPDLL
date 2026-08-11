@@ -219,6 +219,17 @@ CvResolutionEffects::CvResolutionEffects(void)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
 #endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	bSubmitSuzerain = false;
+	iVassalTaxPercent = 0;
+	bVassalTaxScience = false;
+	bVassalTaxCulture = false;
+	bVassalTaxFaith = false;
+	bVassalTaxGold = false;
+	bVassalForcePeace = false;
+	bVassalNoDenounce = false;
+	bVassalGetUC = false;
+#endif
 }
 
 CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
@@ -259,6 +270,17 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
+#endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+		bSubmitSuzerain = (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC());
+		iVassalTaxPercent = pInfo->GetVassalTaxPercent();
+		bVassalTaxScience = pInfo->IsVassalTaxScience();
+		bVassalTaxCulture = pInfo->IsVassalTaxCulture();
+		bVassalTaxFaith = pInfo->IsVassalTaxFaith();
+		bVassalTaxGold = pInfo->IsVassalTaxGold();
+		bVassalForcePeace = pInfo->IsVassalForcePeace();
+		bVassalNoDenounce = pInfo->IsVassalNoDenounce();
+		bVassalGetUC = pInfo->IsVassalGetUC();
 #endif
 	}
 }
@@ -339,6 +361,11 @@ bool CvResolutionEffects::HasOngoingEffects() const
 		return true;
 #endif
 
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	if (bSubmitSuzerain)
+		return true;
+#endif
+
 	return false;
 }
 
@@ -373,6 +400,17 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iGlobalAttackModifier					+= pOtherEffects->iGlobalAttackModifier;
 	iGlobalWarCasualtiesChanges				+= pOtherEffects->iGlobalWarCasualtiesChanges;
 	bEmbargoIdeology						|= pOtherEffects->bEmbargoIdeology; // target ideology	
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
+	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
+	bVassalTaxScience						|= pOtherEffects->bVassalTaxScience;
+	bVassalTaxCulture						|= pOtherEffects->bVassalTaxCulture;
+	bVassalTaxFaith							|= pOtherEffects->bVassalTaxFaith;
+	bVassalTaxGold							|= pOtherEffects->bVassalTaxGold;
+	bVassalForcePeace						|= pOtherEffects->bVassalForcePeace;
+	bVassalNoDenounce						|= pOtherEffects->bVassalNoDenounce;
+	bVassalGetUC							|= pOtherEffects->bVassalGetUC;
+#endif
 #endif		
 }
 
@@ -488,6 +526,33 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	else
 		writeTo.bPermanentAlly = false;
 #endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	if (uiVersion >= 11)
+	{
+		loadFrom >> writeTo.bSubmitSuzerain;
+		loadFrom >> writeTo.iVassalTaxPercent;
+		loadFrom >> writeTo.bVassalTaxScience;
+		loadFrom >> writeTo.bVassalTaxCulture;
+		loadFrom >> writeTo.bVassalTaxFaith;
+		loadFrom >> writeTo.bVassalTaxGold;
+		loadFrom >> writeTo.bVassalForcePeace;
+		loadFrom >> writeTo.bVassalNoDenounce;
+		loadFrom >> writeTo.bVassalGetUC;
+	}
+	else
+	{
+		writeTo.bSubmitSuzerain = false;
+		writeTo.iVassalTaxPercent = 0;
+		writeTo.bVassalTaxScience = false;
+		writeTo.bVassalTaxCulture = false;
+		writeTo.bVassalTaxFaith = false;
+		writeTo.bVassalTaxGold = false;
+		writeTo.bVassalForcePeace = false;
+		writeTo.bVassalNoDenounce = false;
+		writeTo.bVassalGetUC = false;
+	}
+#endif
+
 
 	return loadFrom;
 }
@@ -495,7 +560,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 // Serialization Write
 FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom)
 {
-	uint uiVersion = 10;
+	uint uiVersion = 11;
 
 	saveTo << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(saveTo);
@@ -532,6 +597,17 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	saveTo << readFrom.bPermanentAlly;
+#endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	saveTo << readFrom.bSubmitSuzerain;
+	saveTo << readFrom.iVassalTaxPercent;
+	saveTo << readFrom.bVassalTaxScience;
+	saveTo << readFrom.bVassalTaxCulture;
+	saveTo << readFrom.bVassalTaxFaith;
+	saveTo << readFrom.bVassalTaxGold;
+	saveTo << readFrom.bVassalForcePeace;
+	saveTo << readFrom.bVassalNoDenounce;
+	saveTo << readFrom.bVassalGetUC;
 #endif
 
 	return saveTo;
@@ -1584,6 +1660,38 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		}
 	}
 
+
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	if (GetEffects()->bSubmitSuzerain)
+	{
+		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
+		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
+		CvPlayer& kOverlord = GET_PLAYER(eOverlord);
+		CvPlayer& kVassal = GET_PLAYER(eVassal);
+		// Establish vassal relationship
+		kOverlord.AddVassal(eVassal);
+		kVassal.SetOverlord(eOverlord);
+		// Force peace between overlord and vassal
+		if (GetEffects()->bVassalForcePeace)
+		{
+			TeamTypes eTeamA = kOverlord.getTeam();
+			TeamTypes eTeamB = kVassal.getTeam();
+			GET_TEAM(eTeamA).setForcePeace(eTeamB, true);
+			GET_TEAM(eTeamB).setForcePeace(eTeamA, true);
+		}
+		// Clear denouncements between overlord and vassal
+		if (GetEffects()->bVassalNoDenounce)
+		{
+			kOverlord.GetDiplomacyAI()->SetDenouncedPlayer(eVassal, false);
+			kVassal.GetDiplomacyAI()->SetDenouncedPlayer(eOverlord, false);
+		}
+		// Grant overlord access to vassal unique components
+		if (GetEffects()->bVassalGetUC)
+		{
+			kOverlord.RefreshUCFromVassals();
+		}
+	}
+#endif
 	m_iTurnEnacted = GC.getGame().getGameTurn();
 }
 
@@ -1763,6 +1871,32 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 #if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
 #endif
 	
+
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	if (GetEffects()->bSubmitSuzerain)
+	{
+		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
+		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
+		CvPlayer& kOverlord = GET_PLAYER(eOverlord);
+		CvPlayer& kVassal = GET_PLAYER(eVassal);
+		// Remove vassal relationship
+		kOverlord.RemoveVassal(eVassal);
+		kVassal.SetOverlord(NO_PLAYER);
+		// Remove force peace
+		if (GetEffects()->bVassalForcePeace)
+		{
+			TeamTypes eTeamA = kOverlord.getTeam();
+			TeamTypes eTeamB = kVassal.getTeam();
+			GET_TEAM(eTeamA).setForcePeace(eTeamB, false);
+			GET_TEAM(eTeamB).setForcePeace(eTeamA, false);
+		}
+		// Remove UC access acquired from vassals
+		if (GetEffects()->bVassalGetUC)
+		{
+			kOverlord.RefreshUCFromVassals();
+		}
+	}
+#endif
 	m_iTurnEnacted = -1;
 }
 
@@ -2731,6 +2865,39 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 	}
 #endif
 	
+
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	// Check vassal suzerain resolution conditions
+	if (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC())
+	{
+		PlayerTypes eTarget = (PlayerTypes)iChoice;
+		if (eTarget != NO_PLAYER && eTarget != eProposer && eProposer != NO_PLAYER)
+		{
+			CvPlayer& kProposer = GET_PLAYER(eProposer);
+			CvPlayer& kTarget = GET_PLAYER(eTarget);
+			// Require Declaration of Friendship
+			if (!kProposer.GetDiplomacyAI()->IsDoFAccepted(eTarget))
+				bValid = false;
+			// 2x condition: population, cities, and military might must all exceed target
+			if (kProposer.getTotalPopulation() < kTarget.getTotalPopulation() * 2)
+				bValid = false;
+			if (kProposer.getNumCities() < kTarget.getNumCities() * 2)
+				bValid = false;
+			if (kProposer.GetMilitaryMight() < kTarget.GetMilitaryMight() * 2)
+				bValid = false;
+			// Target must not already have an overlord
+			if (kTarget.GetOverlord() != NO_PLAYER)
+				bValid = false;
+			// Proposer must not already be a vassal
+			if (kProposer.GetOverlord() != NO_PLAYER)
+				bValid = false;
+		}
+		else
+		{
+			bValid = false;
+		}
+	}
+#endif
 	return bValid;
 }
 
@@ -10949,6 +11116,16 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_bEmbargoIdeology					= false;
 #endif
 	m_eCivilizationType = NO_CIVILIZATION;
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	m_iVassalTaxPercent = 0;
+	m_bVassalTaxScience = false;
+	m_bVassalTaxCulture = false;
+	m_bVassalTaxFaith = false;
+	m_bVassalTaxGold = false;
+	m_bVassalForcePeace = false;
+	m_bVassalNoDenounce = false;
+	m_bVassalGetUC = false;
+#endif
 }
 
 CvResolutionEntry::~CvResolutionEntry(void)
@@ -11001,6 +11178,16 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iGlobalAttackModifier				= kResults.GetInt("GlobalAttackModifier");
 	m_iGlobalWarCasualtiesChanges		= kResults.GetInt("GlobalWarCasualtiesChanges");
 	m_bEmbargoIdeology					= kResults.GetBool("EmbargoIdeology");
+#endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
+	m_bVassalTaxScience = kResults.GetBool("VassalTaxScience");
+	m_bVassalTaxCulture = kResults.GetBool("VassalTaxCulture");
+	m_bVassalTaxFaith   = kResults.GetBool("VassalTaxFaith");
+	m_bVassalTaxGold    = kResults.GetBool("VassalTaxGold");
+	m_bVassalForcePeace = kResults.GetBool("VassalForcePeace");
+	m_bVassalNoDenounce = kResults.GetBool("VassalNoDenounce");
+	m_bVassalGetUC      = kResults.GetBool("VassalGetUC");
 #endif
 	return true;
 }
@@ -11188,6 +11375,41 @@ bool CvResolutionEntry::IsEmbargoIdeology() const
 	return m_bEmbargoIdeology;
 }
 #endif
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+int CvResolutionEntry::GetVassalTaxPercent() const
+{
+	return m_iVassalTaxPercent;
+}
+bool CvResolutionEntry::IsVassalTaxScience() const
+{
+	return m_bVassalTaxScience;
+}
+bool CvResolutionEntry::IsVassalTaxCulture() const
+{
+	return m_bVassalTaxCulture;
+}
+bool CvResolutionEntry::IsVassalTaxFaith() const
+{
+	return m_bVassalTaxFaith;
+}
+bool CvResolutionEntry::IsVassalTaxGold() const
+{
+	return m_bVassalTaxGold;
+}
+bool CvResolutionEntry::IsVassalForcePeace() const
+{
+	return m_bVassalForcePeace;
+}
+bool CvResolutionEntry::IsVassalNoDenounce() const
+{
+	return m_bVassalNoDenounce;
+}
+bool CvResolutionEntry::IsVassalGetUC() const
+{
+	return m_bVassalGetUC;
+}
+#endif
+
 
 // ================================================================================
 //			CvResolutionXMLEntries

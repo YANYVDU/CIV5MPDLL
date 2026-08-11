@@ -7,3 +7,12 @@ ALTER TABLE Resolutions ADD COLUMN 'IsWorldWar' integer default 0;*/
 ALTER TABLE Resolutions ADD COLUMN 'EmbargoIdeology' boolean default 0;
 ALTER TABLE Resolutions ADD COLUMN 'GlobalAttackModifier' integer default 0;
 ALTER TABLE Resolutions ADD COLUMN 'GlobalWarCasualtiesChanges' integer default 0;
+-- Vassal/Suzerain submission resolution columns (all default 0 for reuse)
+ALTER TABLE Resolutions ADD COLUMN 'VassalTaxPercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalTaxScience' BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalTaxCulture' BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalTaxFaith'   BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalTaxGold'    BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalForcePeace'  BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalNoDenounce'  BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalGetUC'       BOOLEAN DEFAULT 0;

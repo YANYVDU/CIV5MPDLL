@@ -21567,6 +21567,13 @@ void CvDiplomacyAI::DoDenouncePlayer(PlayerTypes ePlayer)
 	TeamTypes eMyTeam = GetPlayer()->getTeam();
 	TeamTypes eTheirTeam = GET_PLAYER(ePlayer).getTeam();
 
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	// Block denouncement between overlord and vassal
+	CvPlayer& kMyPlayer = GET_PLAYER(eMyPlayer);
+	if (kMyPlayer.IsVassalOf(ePlayer) || kMyPlayer.IsOverlordOf(ePlayer))
+		return;
+#endif
+
 	SetDenouncedPlayer(ePlayer, true);
 
 	SetDenouncedPlayerCounter(ePlayer, 0);

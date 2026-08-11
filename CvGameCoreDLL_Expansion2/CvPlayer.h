@@ -1798,6 +1798,32 @@ public:
 	void ChangePrestigeExemptAllyCount(int iChange);
 	bool IsPermanentAlly(PlayerTypes eMinor) const;
 	void SetPermanentAlly(PlayerTypes eMinor, bool bValue);
+
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	// Vassal suzerain relationship
+	PlayerTypes GetOverlord() const;
+	void SetOverlord(PlayerTypes e);
+	bool IsVassalOf(PlayerTypes e) const;
+	bool IsOverlordOf(PlayerTypes e) const;
+	bool HasAnyVassal() const;
+	const std::vector<int>& GetVassals() const;
+	void AddVassal(PlayerTypes e);
+	void RemoveVassal(PlayerTypes e);
+	void RefreshUCFromVassals();
+	void ClearUCFromVassals();
+	std::tr1::unordered_set<UnitTypes>& GetUUFromVassals();
+	std::tr1::unordered_set<BuildingTypes>& GetUBFromVassals();
+	std::tr1::unordered_set<ImprovementTypes>& GetUIFromVassals();
+	void UpdateVassalTaxation();
+	unsigned long long GetScienceTimes100FromVassals() const;
+	int GetCultureFromVassals() const;
+	int GetFaithFromVassals() const;
+		int GetGoldFromVassals() const;
+		unsigned long long GetScienceTimes100FromOneVassal(PlayerTypes e) const;
+		int GetCultureFromOneVassal(PlayerTypes e) const;
+		int GetFaithFromOneVassal(PlayerTypes e) const;
+		int GetGoldFromOneVassal(PlayerTypes e) const;
+#endif
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
 	void ChangeExtraUnitPlayerInstances(int iChange);
@@ -2750,6 +2776,21 @@ protected:
 	int m_iLandTileDamageGlobal;
 	int m_iLandTileMovementReduceGlobal;
 	int m_iLandTileTurnDamageGlobal;
+#endif
+
+#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+	// Vassal suzerain relationship
+	PlayerTypes m_eOverlord;
+	std::vector<int> m_vecVassals;
+	// UC caches from vassals
+	std::tr1::unordered_set<UnitTypes> m_sUUFromVassals;
+	std::tr1::unordered_set<BuildingTypes> m_sUBFromVassals;
+	std::tr1::unordered_set<ImprovementTypes> m_sUIFromVassals;
+	// Per-turn tax caches from vassals
+	std::tr1::array<unsigned long long, MAX_MAJOR_CIVS> m_aScienceTimes100FromVassals;
+	std::tr1::array<int, MAX_MAJOR_CIVS> m_aCultureFromVassals;
+	std::tr1::array<int, MAX_MAJOR_CIVS> m_aFaithFromVassals;
+		std::tr1::array<int, MAX_MAJOR_CIVS> m_aGoldFromVassals;
 #endif
 
 #if defined(MOD_TRAITS_CITY_WORKING) || defined(MOD_BUILDINGS_CITY_WORKING) || defined(MOD_POLICIES_CITY_WORKING) || defined(MOD_TECHS_CITY_WORKING)
