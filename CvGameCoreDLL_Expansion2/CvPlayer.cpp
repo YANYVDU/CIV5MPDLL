@@ -10596,10 +10596,39 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 
 	ChangeGlobalGrowthFoodNeededModifier(pBuildingInfo->GetGlobalGrowthFoodNeededModifier() * iChange);
 
+	// Fast path: this loop is O(cities x building classes x yields) and a pure
+	// no-op for buildings that grant no building-class yield effects. Most
+	// buildings have none, so pre-scan and skip the whole city loop (big win
+	// when tearing down / adding many buildings for a large empire).
+	bool bHasClassYieldEffects = false;
+	for (iI = 0; iI < GC.getNumBuildingClassInfos() && !bHasClassYieldEffects; iI++)
+	{
+		for (iJ = 0; iJ < NUM_YIELD_TYPES; iJ++)
+		{
+			if (pBuildingInfo->GetBuildingClassYieldChange(iI, iJ) > 0 ||
+				pBuildingInfo->GetBuildingClassYieldModifier(iI, iJ) != 0)
+			{
+				bHasClassYieldEffects = true;
+				break;
+			}
+		}
+	}
+	if (!bHasClassYieldEffects)
+	{
+		for (iJ = 0; iJ < NUM_YIELD_TYPES; iJ++)
+		{
+			if (pBuildingInfo->GetYieldChangeWorldWonderGlobal((YieldTypes)iJ) != 0)
+			{
+				bHasClassYieldEffects = true;
+				break;
+			}
+		}
+	}
+
 	// Loop through Cities
 	int iLoop = 0;
 	int iBuildingCount = 0;
-	for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	for (CvCity* pLoopCity = firstCity(&iLoop); bHasClassYieldEffects && pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
 	{
 		// Building modifiers
 		BuildingClassTypes eBuildingClass;
