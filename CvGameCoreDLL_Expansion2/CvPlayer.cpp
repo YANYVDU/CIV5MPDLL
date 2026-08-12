@@ -2364,9 +2364,9 @@ CvCity* CvPlayer::initCity(int iX, int iY, bool bBumpUnits, bool bInitialFoundin
 		pCity->SetUpdatingReligionGuard(false);
 
 		// Batch update once after init: UpdateReligion() recomputes empire happiness and
-		// refreshes city religion yields (including this new city).
+		// refreshes city religion yields (including this new city). Note: while acquiring
+		// a city this is deferred by the suppression flag and happens once in acquireCity().
 		UpdateReligion();
-
 		pCity->GetCityStrategyAI()->UpdateFlavorsForNewCity();
 	}
 
@@ -2378,6 +2378,12 @@ CvCity* CvPlayer::initCity(int iX, int iY, bool bBumpUnits, bool bInitialFoundin
 CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool bKeepResources, bool bIsMajorCivBuyout, bool bNoKillPunishment)
 {
 	if(pOldCity == NULL) return NULL;
+
+	// RAII window guard: defers empire-wide happiness/religion/corruption publishes
+	// for the whole acquisition. Guaranteed to be released on every exit path
+	// (early returns, nested acquisitions, exceptions), so the suppression counter
+	// can never be left set. Published once below via Exit() + UpdateReligion().
+	CvGame::SuppressHappinessUpdateGuard kSuppressGuard;
 
 	DWORD dwStartTotal = GetTickCount();
 	DWORD dwStage = dwStartTotal;
@@ -3239,11 +3245,6 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 	}
 #endif
 
-	// Guard: skip per-building DoUpdateHappiness/UpdateReligion/UpdateCorruption cascades during batch transfer.
-	// One unified update is performed at the end of acquireCity (see "Batch happiness + religion update").
-	pNewCity->SetUpdatingCorruptionGuard(true);
-	pNewCity->SetUpdatingReligionGuard(true);
-
 	std::vector<BuildingTypes> freeConquestBuildings = m_pPlayerPolicies->GetFreeBuildingsOnConquest();
 	for(iI = 0; iI < (int)freeConquestBuildings.size(); iI++)
 	{
@@ -3693,17 +3694,34 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 		LuaSupport::CallHook(pkScriptSystem, "CityCaptureComplete", args.get(), bResult);
 	}
 
-	// Batch happiness + religion update once after all buildings transferred
-	if (pNewCity)
+	// End of the suppression window: single unified publish after all buildings
+	// transferred. UpdateReligion() internally calls DoUpdateHappiness() first,
+	// then refreshes every city's religion/corruption yields.
+	kSuppressGuard.Exit();
+	UpdateReligion();
+
+	// Q2/Q4 fix: UpdateReligion() computes happiness BEFORE the per-city corruption
+	// refresh, and the newly captured city's corruption level + corruption buildings
+	// are only computed during that refresh. Recompute happiness once more so the
+	// captured city's corruption unhappiness and corruption-building effects are
+	// included in the final value instead of lagging until the next recompute.
+	DoUpdateHappiness();
+
+	// The OLD owner's city was torn down while the suppression flag was set, so its
+	// derived happiness/religion/corruption were deferred (counters were updated).
+	// Refresh it once now - vanilla kept it incrementally fresh during the teardown.
+	if (eOldOwner != GetID() && GET_PLAYER(eOldOwner).isAlive())
 	{
-		pNewCity->SetUpdatingCorruptionGuard(false);
-		pNewCity->SetUpdatingReligionGuard(false);
-		DoUpdateHappiness();
-		UpdateReligion();
-#ifdef MOD_PERF_CITY_CONNECTIONS
-		GetCityConnections()->Update();
-#endif
+		GET_PLAYER(eOldOwner).UpdateReligion();
+		// Same corruption-ordering fix for the old owner: recompute happiness after
+		// its per-city corruption/religion refresh.
+		GET_PLAYER(eOldOwner).DoUpdateHappiness();
 	}
+
+#ifdef MOD_PERF_CITY_CONNECTIONS
+	// Refresh the capturing player's city connections after the new city is in place.
+	GetCityConnections()->Update();
+#endif
 
 	if (bConquest)
 	{
@@ -6070,6 +6088,9 @@ void CvPlayer::UpdateNotifications()
 //	--------------------------------------------------------------------------------
 void CvPlayer::UpdateReligion()
 {
+	// Deferred while acquiring a city (acquireCity() publishes once at the end).
+	if (GC.getGame().IsSuppressingHappinessUpdate()) return;
+
 	DoUpdateHappiness();
 
 #ifdef MOD_GLOBAL_CORRUPTION
@@ -12904,6 +12925,9 @@ void CvPlayer::DoUpdateAllCityYields()
 void CvPlayer::DoUpdateHappiness()
 {
 	if (isObserver() || isBarbarian()) return;
+
+	// Deferred while acquiring a city (acquireCity() publishes once at the end).
+	if (GC.getGame().IsSuppressingHappinessUpdate()) return;
 
 	DoUpdateTotalHappiness();
 	DoUpdateTotalUnhappiness();

@@ -667,7 +667,19 @@ public:
 	void GenerateMPSignalNotification(PlayerTypes iFromPlayer, int iPlotX, int iPlotY);
 #endif // MOD_API_MP_PLOT_SIGNAL
 
-	
+	// Transient suppression window for the whole of CvPlayer::acquireCity() so the
+	// empire-wide happiness/religion/corruption publishes (DoUpdateHappiness /
+	// UpdateReligion / UpdateCorruption) are deferred to the end of the acquisition.
+	// Lives on the singleton game object so it is shared across every player touched
+	// during the acquisition (teardown of the old owner's city included).
+	// Single-threaded game logic, so no locking is needed. Not serialized.
+	// Reference-counted so nested windows (e.g. a Lua hook capturing another city
+	// mid-acquisition) compose safely instead of collapsing the outer window.
+	// The window is opened/closed exclusively via the RAII SuppressHappinessUpdateGuard
+	// nested class declared at the end of this class.
+	bool IsSuppressingHappinessUpdate() const { return m_iSuppressHappinessUpdate > 0; }
+
+
 	//------------------------------------------------------------
 	//------------------------------------------------------------
 	//------------------------------------------------------------
@@ -680,6 +692,7 @@ private:
 
 protected:
 
+	static int m_iSuppressHappinessUpdate; // transient acquireCity suppression counter (see IsSuppressingHappinessUpdate). CvGame is a singleton, so a static counter matches its lifetime; defined & reset in CvGame.cpp
 	int m_iEndTurnMessagesSent;
 	int m_iElapsedGameTurns;
 	int m_iStartTurn;
@@ -886,6 +899,33 @@ protected:
 	void PopulateDigSite(CvPlot& kPlot, EraTypes eEra, GreatWorkArtifactClass eArtifact);
 	void SpawnArchaeologySitesHistorically();
 
+
+	// RAII scope guard for the suppression window - the ONLY way to open/close a
+	// window. Constructing it opens a window; the destructor always closes it, so the
+	// counter can never be left > 0 on any exit path. Call Exit() explicitly right
+	// before the deferred publish at the end of the outermost window; the destructor
+	// is then a no-op. Declared at the end of the class so m_iSuppressHappinessUpdate
+	// is already visible (nested classes can touch outer-class members, but only ones
+	// declared before them).
+public:
+	class SuppressHappinessUpdateGuard
+	{
+	public:
+		SuppressHappinessUpdateGuard() : m_bExited(false) { ++m_iSuppressHappinessUpdate; }
+		~SuppressHappinessUpdateGuard() { Exit(); }
+		void Exit()
+		{
+			if (!m_bExited)
+			{
+				m_bExited = true;
+				if (m_iSuppressHappinessUpdate > 0) --m_iSuppressHappinessUpdate;
+			}
+		}
+		SuppressHappinessUpdateGuard(const SuppressHappinessUpdateGuard&) = delete;
+		SuppressHappinessUpdateGuard& operator=(const SuppressHappinessUpdateGuard&) = delete;
+	private:
+		bool m_bExited;
+	};
 
 };
 

@@ -1938,6 +1938,9 @@ void CvCity::PreKill()
 #if defined(MOD_GLOBAL_CITY_AUTOMATON_WORKERS)
 	setAutomatons(0);
 #endif
+	// Note: keep bReassignPop=true (vanilla default) - DoRemoveWorstCitizen clears
+	// plot working references that the teardown relies on; skipping it would leave
+	// stale citizen assignments on the destroyed city's plots.
 	setPopulation(0);
 
 	CvPlot* pPlot = plot();
@@ -8775,6 +8778,9 @@ void CvCity::initFreeUnit(CvPlayer& owningPlayer, UnitTypes eUnit, int iCount, b
 /// Process the majority religion changing for a city
 void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 {
+	// Deferred while acquiring a city (acquireCity() publishes once at the end).
+	if (GC.getGame().IsSuppressingHappinessUpdate()) return;
+
 #ifdef MOD_GLOBAL_CORRUPTION
 	// Guard against recursion: UpdateCorruption() → SetNumRealBuilding() → processBuilding() → UpdateReligion()
 	if (m_bUpdatingReligion)
@@ -24317,6 +24323,9 @@ void CvCity::UpdateCorruption()
 	{
 		return;
 	}
+
+	// Deferred while acquiring a city (acquireCity() publishes once at the end).
+	if (GC.getGame().IsSuppressingHappinessUpdate()) return;
 
 	// Guard against cascade during building transfer
 	if (m_bUpdatingCorruption)

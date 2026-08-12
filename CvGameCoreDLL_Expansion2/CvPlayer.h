@@ -67,6 +67,10 @@ typedef std::vector< std::pair<UnitClassTypes, PromotionTypes> > UnitClassPromot
 typedef std::vector< std::pair<CivilizationTypes, LeaderHeadTypes> > CivLeaderArray;
 typedef FStaticVector<int, 180*92, true, c_eCiv5GameplayDLL, 0> CvPlotsVector; // allocate the size of HUGE Terra world just in case (this is max that we ship with)
 
+// Transient flag shared across players: set for the whole of CvPlayer::acquireCity()
+// so the empire-wide happiness/religion/corruption publishes (DoUpdateHappiness /
+// UpdateReligion / UpdateCorruption) are deferred to the end of the acquisition.
+// Backed by functions defined in CvPlayer.cpp (single program-wide instance), so the
 class CvPlayer : public CvGameObjectExtractable
 {
 	friend class CvPlayerPolicies;

@@ -1397,9 +1397,9 @@ public:
 	CorruptionLevelTypes GetCorruptionLevel() const;
 	void UpdateCorruption();
 
-	// Guard setters for batch building transfer in CvPlayer::acquireCity.
+	// Guard setters for batch building transfer (CvPlayer::acquireCity) and city init (CvPlayer::initCity).
 	// While set, processBuilding() skips per-building DoUpdateHappiness / player-level UpdateReligion
-	// cascades; one unified update is performed at the end of acquireCity.
+	// cascades; one unified update is performed after the batch.
 	void SetUpdatingCorruptionGuard(bool bValue) { m_bUpdatingCorruption = bValue; }
 	void SetUpdatingReligionGuard(bool bValue) { m_bUpdatingReligion = bValue; }
 

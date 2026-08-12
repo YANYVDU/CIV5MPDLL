@@ -88,6 +88,10 @@ CvGameInitialItemsOverrides::CvGameInitialItemsOverrides()
 }
 
 //------------------------------------------------------------------------------
+// static member definition for the transient acquireCity suppression counter
+// (declared in CvGame.h; CvGame is a singleton so a static counter matches its lifetime)
+int CvGame::m_iSuppressHappinessUpdate = 0;
+
 CvGame::CvGame() :
 	m_jonRand(false)
 	, m_endTurnTimer()
@@ -106,6 +110,7 @@ CvGame::CvGame() :
 #endif // MOD_API_MP_PLOT_SIGNAL
 	
 {
+	m_iSuppressHappinessUpdate = 0; // reset transient suppression counter (guards against residue across game restarts)
 	m_aiEndTurnMessagesReceived = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);
 	m_aiRankPlayer = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);        // Ordered by rank...
 	m_aiPlayerRank = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);        // Ordered by player ID...
