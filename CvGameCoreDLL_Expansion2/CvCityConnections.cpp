@@ -251,7 +251,7 @@ void CvCityConnections::UpdateRouteInfo(void)
 			for(pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
 			{
 				vpCities.push_back(pLoopCity);
-				pLoopCity->SetRouteToCapitalConnected(false, true);
+				pLoopCity->SetRouteToCapitalConnected(false);
 
 #if defined(MOD_EVENTS_CITY_CONNECTIONS)
 				if(!bAllowIndirectRoutes)
@@ -499,12 +499,12 @@ void CvCityConnections::UpdateRouteInfo(void)
 							while(pNode)
 							{
 								pPlot = GC.getMap().plot(pNode->m_iX, pNode->m_iY);
-							ConnectPlotRoute(pPlot);
+								ConnectPlotRoute(pPlot);
 								pNode = pNode->m_pParent;
 							}
 
-							pFirstCity->SetRouteToCapitalConnected(true, true);
-							pSecondCity->SetRouteToCapitalConnected(true, true);
+							pFirstCity->SetRouteToCapitalConnected(true);
+							pSecondCity->SetRouteToCapitalConnected(true);
 						}
 					}
 				}
