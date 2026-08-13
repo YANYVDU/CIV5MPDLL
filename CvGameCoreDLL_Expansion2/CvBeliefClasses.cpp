@@ -2969,7 +2969,7 @@ void CvReligionBeliefs::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerGoldenAge, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerPop, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iCityCorruptionScoreChange, 0);
-	MOD_SERIALIZE_READ(MOD_DLL_VERSION_NUMBER, kStream, m_iCorruptionEffectCount, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iCorruptionEffectCount, 0);
 	kStream >> m_iCityExtraMissionarySpreads;
 	kStream >> m_bAllowYieldPerBirth;
 #endif

@@ -5053,7 +5053,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvCityReligions& writeTo)
 	}
 
 	ReligionTypes eLastMajority = NO_RELIGION;
-	MOD_SERIALIZE_READ(MOD_DLL_VERSION_NUMBER, loadFrom, eLastMajority, NO_RELIGION);
+	MOD_SERIALIZE_READ(163, loadFrom, eLastMajority, NO_RELIGION);
 	writeTo.SetLastReligiousMajority(eLastMajority);
 
 	return loadFrom;
