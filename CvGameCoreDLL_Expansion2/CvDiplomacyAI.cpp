@@ -21569,7 +21569,7 @@ void CvDiplomacyAI::DoDenouncePlayer(PlayerTypes ePlayer)
 
 #if defined(MOD_GLOBAL_SUZERAIN)
 	// Block denouncement between overlord and vassal
-	CvPlayer& kMyPlayer = GET_PLAYER(eMyPlayer);
+	CvPlayer& kMyPlayer = *GetPlayer();
 	if (kMyPlayer.IsVassalOf(ePlayer) || kMyPlayer.IsOverlordOf(ePlayer))
 		return;
 #endif

@@ -5433,18 +5433,9 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iOthersTradeBonusModifier;
 	kStream >> m_iGoldenAgeGrowThresholdModifier;
 	kStream >> m_iShareAllyResearchPercent;
-	if (uiVersion >= 20)
-	{
-	kStream >> m_iCityStateBaseEffectModifier;
-	kStream >> m_iWorldCongressTurnModifier;
-		kStream >> m_iWorldCongressTechPrereq;
-	}
-	else
-	{
-		m_iCityStateBaseEffectModifier = 0;
-		m_iWorldCongressTurnModifier = 0;
-		m_iWorldCongressTechPrereq = -1;
-	}
+	MOD_SERIALIZE_READ(163, kStream, m_iCityStateBaseEffectModifier, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iWorldCongressTurnModifier, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iWorldCongressTechPrereq, -1);
 	kStream >> m_bCanPurchaseWonderInGoldenAge;
 	kStream >> m_bCanDiplomaticMarriage;
 	kStream >> m_bWLKDCityNoResearchCost;
@@ -5455,7 +5446,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 void CvPlayerTraits::Write(FDataStream& kStream)
 {
 	// Current version number
-	uint uiVersion = 20;
+	uint uiVersion = 19;
 	kStream << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(kStream);
 
@@ -5757,9 +5748,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iOthersTradeBonusModifier;
 	kStream << m_iGoldenAgeGrowThresholdModifier;
 	kStream << m_iShareAllyResearchPercent;
-	kStream << m_iCityStateBaseEffectModifier;
-		kStream << m_iWorldCongressTurnModifier;
-		kStream << m_iWorldCongressTechPrereq;
+	MOD_SERIALIZE_WRITE(kStream, m_iCityStateBaseEffectModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iWorldCongressTurnModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iWorldCongressTechPrereq);
 	kStream << m_bCanPurchaseWonderInGoldenAge;
 	kStream << m_bCanDiplomaticMarriage;
 	kStream << m_bWLKDCityNoResearchCost;

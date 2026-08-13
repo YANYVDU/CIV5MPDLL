@@ -527,30 +527,15 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 		writeTo.bPermanentAlly = false;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
-	if (uiVersion >= 11)
-	{
-		loadFrom >> writeTo.bSubmitSuzerain;
-		loadFrom >> writeTo.iVassalTaxPercent;
-		loadFrom >> writeTo.bVassalTaxScience;
-		loadFrom >> writeTo.bVassalTaxCulture;
-		loadFrom >> writeTo.bVassalTaxFaith;
-		loadFrom >> writeTo.bVassalTaxGold;
-		loadFrom >> writeTo.bVassalForcePeace;
-		loadFrom >> writeTo.bVassalNoDenounce;
-		loadFrom >> writeTo.bVassalGetUC;
-	}
-	else
-	{
-		writeTo.bSubmitSuzerain = false;
-		writeTo.iVassalTaxPercent = 0;
-		writeTo.bVassalTaxScience = false;
-		writeTo.bVassalTaxCulture = false;
-		writeTo.bVassalTaxFaith = false;
-		writeTo.bVassalTaxGold = false;
-		writeTo.bVassalForcePeace = false;
-		writeTo.bVassalNoDenounce = false;
-		writeTo.bVassalGetUC = false;
-	}
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bSubmitSuzerain, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.iVassalTaxPercent, 0);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxScience, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxCulture, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxFaith, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxGold, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalForcePeace, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalNoDenounce, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalGetUC, false);
 #endif
 
 
@@ -560,7 +545,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 // Serialization Write
 FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom)
 {
-	uint uiVersion = 11;
+	uint uiVersion = 10;
 
 	saveTo << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(saveTo);
@@ -599,15 +584,15 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	saveTo << readFrom.bPermanentAlly;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
-	saveTo << readFrom.bSubmitSuzerain;
-	saveTo << readFrom.iVassalTaxPercent;
-	saveTo << readFrom.bVassalTaxScience;
-	saveTo << readFrom.bVassalTaxCulture;
-	saveTo << readFrom.bVassalTaxFaith;
-	saveTo << readFrom.bVassalTaxGold;
-	saveTo << readFrom.bVassalForcePeace;
-	saveTo << readFrom.bVassalNoDenounce;
-	saveTo << readFrom.bVassalGetUC;
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bSubmitSuzerain);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalTaxPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxScience);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxCulture);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxFaith);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxGold);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalForcePeace);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalNoDenounce);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalGetUC);
 #endif
 
 	return saveTo;

@@ -5650,6 +5650,10 @@ void CvPlayer::doTurnPostDiplomacy()
 
 	const int iGameTurn = kGame.getGameTurn();
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+	UpdateVassalTaxation();
+#endif
+
 	GatherPerTurnReplayStats(iGameTurn);
 
 	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
@@ -31609,6 +31613,7 @@ void CvPlayer::RemoveVassal(PlayerTypes e)
 	m_aScienceTimes100FromVassals[e] = 0;
 	m_aCultureFromVassals[e] = 0;
 	m_aFaithFromVassals[e] = 0;
+	m_aGoldFromVassals[e] = 0;
 }
 
 //--------------------------------------------------------------------------------
@@ -31683,6 +31688,10 @@ void CvPlayer::UpdateVassalTaxation()
 		PlayerTypes e = (PlayerTypes)m_vecVassals[i];
 		CvPlayer& v = GET_PLAYER(e);
 		if (!v.isAlive()) continue;
+		// Taxes are levied on gross output. The vassal's per-turn getters already net out its own
+		// downstream vassal taxes, so re-adding the amount it pays to us makes the base "tax-on-tax":
+		// a vassal tithes a share of everything it produces, including what it receives from its own
+		// vassals. This is intentional.
 		// Science tax: gross output = net output + tax already paid to overlord
 		if (pVassalRes->GetEffects()->bVassalTaxScience)
 		{
@@ -33688,9 +33697,6 @@ void CvPlayer::GatherPerTurnReplayStats(int iGameTurn)
 	cvStopWatch watch("Replay Stat Recording");
 #endif
 
-#if defined(MOD_GLOBAL_SUZERAIN)
-	UpdateVassalTaxation();
-#endif
 	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
 	if(pkScriptSystem)
 	{
