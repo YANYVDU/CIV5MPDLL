@@ -23015,6 +23015,22 @@ void CvPlayer::DoUpdateProximityToPlayer(PlayerTypes ePlayer)
 /// Update the beakers accumulated during the term of RAs
 void CvPlayer::UpdateResearchAgreements(int iValue)
 {
+	int iTotalValue = iValue;
+#if defined(MOD_GLOBAL_SUZERAIN)
+	if (GetPlayerTraits()->IsResearchAgreementCountVassalScience() && HasAnyVassal())
+	{
+		unsigned long long iVassalScience = 0;
+		for (size_t i = 0; i < m_vecVassals.size(); i++)
+		{
+			PlayerTypes eVassal = (PlayerTypes)m_vecVassals[i];
+			CvPlayer& kVassal = GET_PLAYER(eVassal);
+			if (kVassal.isAlive())
+				iVassalScience += (unsigned long long)kVassal.GetScienceTimes100();
+		}
+		iTotalValue += (int)(iVassalScience / 100);
+	}
+#endif
+
 	PlayerTypes ePlayerLoop;
 	TeamTypes eTeamLoop;
 	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
@@ -23033,7 +23049,7 @@ void CvPlayer::UpdateResearchAgreements(int iValue)
 			// RAs, though made with players, are restricted and tracked by 1 per team.
 			// This must change if future implementations allow for multiple RAs to be
 			// made with a particular team.
-			ChangeResearchAgreementCounter(ePlayerLoop, iValue);
+			ChangeResearchAgreementCounter(ePlayerLoop, iTotalValue);
 		}
 		else if(GetResearchAgreementCounter(ePlayerLoop) != 0)
 		{

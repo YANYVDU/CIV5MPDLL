@@ -176,6 +176,7 @@ public:
 	int GetTradeRouteLandGoldBonus() const;
 	int GetTradeRouteSeaGoldBonus() const;
 	bool IsNewCityAutomaticReligion() const;
+	bool IsResearchAgreementCountVassalScience() const;
 #endif
 
 	TechTypes GetFreeUnitPrereqTech() const;
@@ -494,6 +495,7 @@ protected:
 	int m_iTradeRouteLandGoldBonus;
 	int m_iTradeRouteSeaGoldBonus;
 	bool m_bNewCityAutomaticReligion;
+	bool m_bResearchAgreementCountVassalScience;
 #endif
 
 	TechTypes m_eFreeUnitPrereqTech;
@@ -1162,6 +1164,10 @@ public:
 	{
 		return m_bNewCityAutomaticReligion;
 	};
+	bool IsResearchAgreementCountVassalScience() const
+	{
+		return m_bResearchAgreementCountVassalScience;
+	};
 	bool IsCanConquerUC() const
 	{
 		return m_bCanConquerUC;
@@ -1651,6 +1657,7 @@ private:
 	// Saved
 	bool m_bTrainedAll = false;
 	bool m_bNewCityAutomaticReligion = false;
+	bool m_bResearchAgreementCountVassalScience = false;
 	bool m_bCanConquerUC = false;
 	bool m_bFightWellDamaged = false;
 	bool m_bBuyOwnedTiles = false;

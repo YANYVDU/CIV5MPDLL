@@ -3667,7 +3667,12 @@ void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bo
 			CvTeam& kTeam = GET_TEAM(toPlayer.getTeam());
 			int iToPlayerBeakers = toPlayer.GetResearchAgreementCounter(eFromPlayer);
 			int iFromPlayerBeakers = fromPlayer.GetResearchAgreementCounter(eToPlayer);
+#if defined(MOD_GLOBAL_SUZERAIN)
+			bool bToPlayerCountsVassals = toPlayer.GetPlayerTraits()->IsResearchAgreementCountVassalScience() && toPlayer.HasAnyVassal();
+			int iBeakersBonus = (bToPlayerCountsVassals ? iToPlayerBeakers : min(iToPlayerBeakers, iFromPlayerBeakers)) / GC.getRESEARCH_AGREEMENT_BOOST_DIVISOR();
+#else
 			int iBeakersBonus = min(iToPlayerBeakers, iFromPlayerBeakers) / GC.getRESEARCH_AGREEMENT_BOOST_DIVISOR(); //one (third) of minimum contribution
+#endif
 			iBeakersBonus = (iBeakersBonus * toPlayer.GetMedianTechPercentage()) / 100;
 
 			TechTypes eCurrentTech = toPlayer.GetPlayerTechs()->GetCurrentResearch();

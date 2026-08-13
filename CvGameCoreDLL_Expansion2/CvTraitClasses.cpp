@@ -156,6 +156,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iTradeRouteLandGoldBonus(0),
 	m_iTradeRouteSeaGoldBonus(0),
 	m_bNewCityAutomaticReligion(false),
+	m_bResearchAgreementCountVassalScience(false),
 #endif
 
 	m_eFreeUnitPrereqTech(NO_TECH),
@@ -907,6 +908,10 @@ int CvTraitEntry::GetTradeRouteSeaGoldBonus() const
 bool CvTraitEntry::IsNewCityAutomaticReligion() const
 {
 	return m_bNewCityAutomaticReligion;
+}
+bool CvTraitEntry::IsResearchAgreementCountVassalScience() const
+{
+	return m_bResearchAgreementCountVassalScience;
 }
 #endif
 
@@ -1933,6 +1938,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iTradeRouteLandGoldBonus = kResults.GetInt("TradeRouteLandGoldBonus");
 	m_iTradeRouteSeaGoldBonus = kResults.GetInt("TradeRouteSeaGoldBonus");
 	m_bNewCityAutomaticReligion = kResults.GetBool("NewCityAutomaticReligion");
+	m_bResearchAgreementCountVassalScience = kResults.GetBool("ResearchAgreementCountVassalScience");
 #endif
 
 #if defined(MOD_TRAITS_OTHER_PREREQS)
@@ -3014,6 +3020,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			{
 				m_bNewCityAutomaticReligion = true;
 			}
+			if (trait->IsResearchAgreementCountVassalScience())
+			{
+				m_bResearchAgreementCountVassalScience = true;
+			}
 			if (trait->IsCanConquerUC())
 			{
 				m_bCanConquerUC = true;
@@ -3576,6 +3586,7 @@ void CvPlayerTraits::Reset()
 #endif
 	m_bTrainedAll = false;
 	m_bNewCityAutomaticReligion = false;
+	m_bResearchAgreementCountVassalScience = false;
 	m_bCanConquerUC = false;
 	m_bFightWellDamaged = false;
 	m_bBuyOwnedTiles = false;
@@ -5135,6 +5146,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 #endif
 	kStream >> m_bTrainedAll;
 	MOD_SERIALIZE_READ(161, kStream, m_bNewCityAutomaticReligion, false);
+	MOD_SERIALIZE_READ(163, kStream, m_bResearchAgreementCountVassalScience, false);
 	kStream >> m_bCanConquerUC;
 	kStream >> m_bFightWellDamaged;
 	kStream >> m_bBuyOwnedTiles;
@@ -5573,6 +5585,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 #endif
 	kStream << m_bTrainedAll;
 	MOD_SERIALIZE_WRITE(kStream, m_bNewCityAutomaticReligion);
+	MOD_SERIALIZE_WRITE(kStream, m_bResearchAgreementCountVassalScience);
 	kStream << m_bCanConquerUC;
 	kStream << m_bFightWellDamaged;
 	kStream << m_bBuyOwnedTiles;
