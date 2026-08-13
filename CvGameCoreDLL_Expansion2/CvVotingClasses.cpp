@@ -219,7 +219,7 @@ CvResolutionEffects::CvResolutionEffects(void)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain = false;
 	iVassalTaxPercent = 0;
 	bVassalTaxScience = false;
@@ -271,7 +271,7 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 		bSubmitSuzerain = (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC());
 		iVassalTaxPercent = pInfo->GetVassalTaxPercent();
 		bVassalTaxScience = pInfo->IsVassalTaxScience();
@@ -361,7 +361,7 @@ bool CvResolutionEffects::HasOngoingEffects() const
 		return true;
 #endif
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	if (bSubmitSuzerain)
 		return true;
 #endif
@@ -400,7 +400,7 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iGlobalAttackModifier					+= pOtherEffects->iGlobalAttackModifier;
 	iGlobalWarCasualtiesChanges				+= pOtherEffects->iGlobalWarCasualtiesChanges;
 	bEmbargoIdeology						|= pOtherEffects->bEmbargoIdeology; // target ideology	
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
 	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
 	bVassalTaxScience						|= pOtherEffects->bVassalTaxScience;
@@ -526,7 +526,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	else
 		writeTo.bPermanentAlly = false;
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	if (uiVersion >= 11)
 	{
 		loadFrom >> writeTo.bSubmitSuzerain;
@@ -598,7 +598,7 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	saveTo << readFrom.bPermanentAlly;
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	saveTo << readFrom.bSubmitSuzerain;
 	saveTo << readFrom.iVassalTaxPercent;
 	saveTo << readFrom.bVassalTaxScience;
@@ -1661,7 +1661,7 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	}
 
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	if (GetEffects()->bSubmitSuzerain)
 	{
 		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
@@ -1671,6 +1671,9 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		// Establish vassal relationship
 		kOverlord.AddVassal(eVassal);
 		kVassal.SetOverlord(eOverlord);
+		// Vassalization changes the overlord's effective control over original capitals -
+		// re-check domination victory immediately rather than waiting for the next city capture
+		GC.getGame().DoTestConquestVictory();
 		// Force peace between overlord and vassal
 		if (GetEffects()->bVassalForcePeace)
 		{
@@ -1872,7 +1875,7 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 #endif
 	
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	if (GetEffects()->bSubmitSuzerain)
 	{
 		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
@@ -2304,7 +2307,9 @@ int CvLeague::GetSessionTurnInterval()
 	iInterval = (iInterval * GC.getGame().getGameSpeedInfo().getLeaguePercent()) / 100;
 
 
-	// Trait: WorldCongressTurnModifier (lower = shorter interval, e.g. 50 = half)
+	// Trait: WorldCongressTurnModifier = reduction percent (e.g. 30 = interval reduced by 30%)
+	// Sum the reductions across all living players, floor the interval at 1
+	int iTotalModifier = 0;
 	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 	{
 		PlayerTypes e = (PlayerTypes)i;
@@ -2313,9 +2318,16 @@ int CvLeague::GetSessionTurnInterval()
 			int iTraitMod = GET_PLAYER(e).GetPlayerTraits()->GetWorldCongressTurnModifier();
 			if (iTraitMod > 0 && iTraitMod < 100)
 			{
-				iInterval = (iInterval * iTraitMod) / 100;
-				break;
+				iTotalModifier += iTraitMod;
 			}
+		}
+	}
+	if (iTotalModifier > 0)
+	{
+		iInterval = (iInterval * (100 - iTotalModifier)) / 100;
+		if (iInterval < 1)
+		{
+			iInterval = 1;
 		}
 	}
 	if (DEBUG_LEAGUES)
@@ -2881,7 +2893,7 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 #endif
 	
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	// Check vassal suzerain resolution conditions
 	if (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC())
 	{
@@ -2890,9 +2902,6 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 		{
 			CvPlayer& kProposer = GET_PLAYER(eProposer);
 			CvPlayer& kTarget = GET_PLAYER(eTarget);
-			// Require Declaration of Friendship
-			if (!kProposer.GetDiplomacyAI()->IsDoFAccepted(eTarget))
-				bValid = false;
 			// 2x condition: population, cities, and military might must all exceed target
 			if (kProposer.getTotalPopulation() < kTarget.getTotalPopulation() * 2)
 				bValid = false;
@@ -10182,6 +10191,39 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 	}
 #endif
 
+	// Vassal/Suzerain resolution: AI colludes against humans, otherwise score by opinion of the target
+#if defined(MOD_GLOBAL_SUZERAIN)
+	if (pProposal->GetEffects()->bSubmitSuzerain)
+	{
+		if (eTargetPlayer != NO_PLAYER)
+		{
+			if (GET_PLAYER(eTargetPlayer).isHuman())
+			{
+				// Human develops fastest - limit them first, and ride their fast lane via vassal tax
+				iScore += 60;
+			}
+			else if (eTargetPlayer == GetPlayer()->GetID())
+			{
+				// We are the target - becoming a vassal costs us yields
+				iScore += -100;
+			}
+			else
+			{
+				// AI target: score by our opinion of them (enemy = worth subjugating, friend = protect them)
+				MajorCivOpinionTypes eOpinion = GetPlayer()->GetDiplomacyAI()->GetMajorCivOpinion(eTargetPlayer);
+				if (eOpinion <= MAJOR_CIV_OPINION_COMPETITOR)
+				{
+					iScore += 20;
+				}
+				else if (eOpinion >= MAJOR_CIV_OPINION_FRIEND)
+				{
+					iScore += -40;
+				}
+			}
+		}
+	}
+#endif
+
 	// == Diplomat knowledge, Vote Commitments we secured ==
 
 	// == Alignment with Proposer ==
@@ -11141,7 +11183,7 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_bEmbargoIdeology					= false;
 #endif
 	m_eCivilizationType = NO_CIVILIZATION;
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = 0;
 	m_bVassalTaxScience = false;
 	m_bVassalTaxCulture = false;
@@ -11204,7 +11246,7 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iGlobalWarCasualtiesChanges		= kResults.GetInt("GlobalWarCasualtiesChanges");
 	m_bEmbargoIdeology					= kResults.GetBool("EmbargoIdeology");
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
 	m_bVassalTaxScience = kResults.GetBool("VassalTaxScience");
 	m_bVassalTaxCulture = kResults.GetBool("VassalTaxCulture");
@@ -11400,7 +11442,7 @@ bool CvResolutionEntry::IsEmbargoIdeology() const
 	return m_bEmbargoIdeology;
 }
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 int CvResolutionEntry::GetVassalTaxPercent() const
 {
 	return m_iVassalTaxPercent;

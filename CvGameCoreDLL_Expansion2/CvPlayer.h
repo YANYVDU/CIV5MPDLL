@@ -1799,7 +1799,7 @@ public:
 	bool IsPermanentAlly(PlayerTypes eMinor) const;
 	void SetPermanentAlly(PlayerTypes eMinor, bool bValue);
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	// Vassal suzerain relationship
 	PlayerTypes GetOverlord() const;
 	void SetOverlord(PlayerTypes e);
@@ -1818,11 +1818,16 @@ public:
 	unsigned long long GetScienceTimes100FromVassals() const;
 	int GetCultureFromVassals() const;
 	int GetFaithFromVassals() const;
-		int GetGoldFromVassals() const;
-		unsigned long long GetScienceTimes100FromOneVassal(PlayerTypes e) const;
-		int GetCultureFromOneVassal(PlayerTypes e) const;
-		int GetFaithFromOneVassal(PlayerTypes e) const;
-		int GetGoldFromOneVassal(PlayerTypes e) const;
+	int GetGoldFromVassals() const;
+	unsigned long long GetScienceTimes100FromOneVassal(PlayerTypes e) const;
+	int GetCultureFromOneVassal(PlayerTypes e) const;
+	int GetFaithFromOneVassal(PlayerTypes e) const;
+	int GetGoldFromOneVassal(PlayerTypes e) const;
+	// Tax paid to our overlord (vassal side)
+	unsigned long long GetScienceTimes100ToOverlord() const;
+	int GetCultureToOverlord() const;
+	int GetFaithToOverlord() const;
+	int GetGoldToOverlord() const;
 #endif
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
@@ -2778,7 +2783,7 @@ protected:
 	int m_iLandTileTurnDamageGlobal;
 #endif
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	// Vassal suzerain relationship
 	PlayerTypes m_eOverlord;
 	std::vector<int> m_vecVassals;
@@ -2790,7 +2795,12 @@ protected:
 	std::tr1::array<unsigned long long, MAX_MAJOR_CIVS> m_aScienceTimes100FromVassals;
 	std::tr1::array<int, MAX_MAJOR_CIVS> m_aCultureFromVassals;
 	std::tr1::array<int, MAX_MAJOR_CIVS> m_aFaithFromVassals;
-		std::tr1::array<int, MAX_MAJOR_CIVS> m_aGoldFromVassals;
+	std::tr1::array<int, MAX_MAJOR_CIVS> m_aGoldFromVassals;
+	// Per-turn tax paid to our overlord (vassal side)
+	unsigned long long m_iScienceTimes100ToOverlord;
+	int m_iCultureToOverlord;
+	int m_iFaithToOverlord;
+	int m_iGoldToOverlord;
 #endif
 
 #if defined(MOD_TRAITS_CITY_WORKING) || defined(MOD_BUILDINGS_CITY_WORKING) || defined(MOD_POLICIES_CITY_WORKING) || defined(MOD_TECHS_CITY_WORKING)

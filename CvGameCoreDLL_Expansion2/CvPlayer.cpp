@@ -409,8 +409,16 @@ CvPlayer::CvPlayer() :
 	, m_iCityStateAllyCount(0)
 	, m_iMinorCivAlliesThresholdModifier(0)
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	, m_eOverlord(NO_PLAYER)
+	, m_aScienceTimes100FromVassals()
+	, m_aCultureFromVassals()
+	, m_aFaithFromVassals()
+	, m_aGoldFromVassals()
+	, m_iScienceTimes100ToOverlord(0)
+	, m_iCultureToOverlord(0)
+	, m_iFaithToOverlord(0)
+	, m_iGoldToOverlord(0)
 #endif
 	, m_iPrestigeExemptAllyCount(0)
 	, m_iExtraUnitPlayerInstances(0)
@@ -8623,7 +8631,7 @@ bool CvPlayer::canTrain(UnitTypes eUnit, bool bContinue, bool bTestVisible, bool
 				|| const_cast<CvPlayer*>(this)->GetCanTrainUnitsFromCapturedOriginalCapitals().count(eUnit) > 0
 				|| const_cast<CvPlayer*>(this)->GetUUFromDualEmpire().count(eUnit) > 0
 				|| const_cast<CvPlayer*>(this)->GetUUFromExtra().count(eUnit) > 0
-					#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+					#if defined(MOD_GLOBAL_SUZERAIN)
 						|| const_cast<CvPlayer*>(this)->GetUUFromVassals().count(eUnit) > 0
 					#endif
 				|| this->CanAllUc();
@@ -8965,7 +8973,7 @@ bool CvPlayer::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestV
 		if (const_cast<CvPlayer*>(this)->GetCanConstructBuildingsFromCapturedOriginalCapitals().count(eBuilding) == 0
 			&& const_cast<CvPlayer*>(this)->GetUBFromDualEmpire().count(eBuilding) == 0
 			&& const_cast<CvPlayer*>(this)->GetUBFromExtra().count(eBuilding) == 0
-					#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+					#if defined(MOD_GLOBAL_SUZERAIN)
 						&& const_cast<CvPlayer*>(this)->GetUBFromVassals().count(eBuilding) == 0
 					#endif
 			&& !this->CanAllUc())
@@ -10806,7 +10814,7 @@ bool CvPlayer::canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestEra, b
 				if (const_cast<CvPlayer*>(this)->GetCanBuildImprovementsFromCapturedOriginalCapitals().count(eImprovement) == 0
 					&& const_cast<CvPlayer*>(this)->GetUIFromDualEmpire().count(eImprovement) == 0
 					&& const_cast<CvPlayer*>(this)->GetUIFromExtra().count(eImprovement) == 0
-						#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+						#if defined(MOD_GLOBAL_SUZERAIN)
 							&& const_cast<CvPlayer*>(this)->GetUIFromVassals().count(eImprovement) == 0
 						#endif
 					&& !CanAllUc())
@@ -11754,8 +11762,9 @@ int CvPlayer::GetTotalJONSCulturePerTurn() const
 		iCulturePerTurn += ((iCulturePerTurn * GC.getGOLDEN_AGE_CULTURE_MODIFIER()) / 100);
 	}
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	iCulturePerTurn += GetCultureFromVassals();
+	iCulturePerTurn -= GetCultureToOverlord();
 #endif
 	return iCulturePerTurn;
 }
@@ -12735,10 +12744,11 @@ int CvPlayer::GetTotalFaithPerTurn() const
 	// Faith per turn from Religion (Founder beliefs)
 	iFaithPerTurn += GetFaithPerTurnFromReligion();
 
-	const_cast<CvPlayer*>(this)->SetCachedTotalFaithPerTurn(iFaithPerTurn);
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	iFaithPerTurn += GetFaithFromVassals();
+	iFaithPerTurn -= GetFaithToOverlord();
 #endif
+	const_cast<CvPlayer*>(this)->SetCachedTotalFaithPerTurn(iFaithPerTurn);
 	return iFaithPerTurn;
 }
 
@@ -22436,8 +22446,9 @@ int CvPlayer::GetScienceTimes100(bool bIgnoreFriendships) const
 
 	if(!bIgnoreFriendships) iValue += GetScienceTimes100FromFriendships();
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	iValue += (int)GetScienceTimes100FromVassals();
+	iValue -= (int)GetScienceTimes100ToOverlord();
 #endif
 	return max(iValue, 0);
 }
@@ -29293,7 +29304,7 @@ void CvPlayer::Read(FDataStream& kStream)
 		int iCount = 0;
 		MOD_SERIALIZE_READ(162, kStream, iCount, 0);
 		m_vecPermanentAllies.clear();
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	m_eOverlord = NO_PLAYER;
 	m_vecVassals.clear();
 	m_sUUFromVassals.clear();
@@ -29312,20 +29323,20 @@ void CvPlayer::Read(FDataStream& kStream)
 			int iVal = 0;
 			MOD_SERIALIZE_READ(162, kStream, iVal, -1);
 			m_vecPermanentAllies.push_back(iVal);
-
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
-	{
+		}
+#if defined(MOD_GLOBAL_SUZERAIN)
 		MOD_SERIALIZE_READ(163, kStream, m_eOverlord, NO_PLAYER);
-		int iVassalCount = 0;
-		MOD_SERIALIZE_READ(163, kStream, iVassalCount, 0);
-		m_vecVassals.clear();
-		for (int j = 0; j < iVassalCount; j++)
 		{
+			int iVassalCount = 0;
+			MOD_SERIALIZE_READ(163, kStream, iVassalCount, 0);
+			m_vecVassals.clear();
+			for (int j = 0; j < iVassalCount; j++)
+			{
 				int iVal = 0;
 				MOD_SERIALIZE_READ(163, kStream, iVal, -1);
 				m_vecVassals.push_back(iVal);
+			}
 		}
-	}
 		{
 			if (uiDllSaveVersion >= 163)
 			{
@@ -29333,7 +29344,6 @@ void CvPlayer::Read(FDataStream& kStream)
 				kStream >> m_aCultureFromVassals;
 				kStream >> m_aFaithFromVassals;
 				kStream >> m_aGoldFromVassals;
-			
 			}
 			else
 			{
@@ -29346,8 +29356,11 @@ void CvPlayer::Read(FDataStream& kStream)
 				}
 			}
 		}
+		MOD_SERIALIZE_READ(163, kStream, m_iScienceTimes100ToOverlord, 0);
+		MOD_SERIALIZE_READ(163, kStream, m_iCultureToOverlord, 0);
+		MOD_SERIALIZE_READ(163, kStream, m_iFaithToOverlord, 0);
+		MOD_SERIALIZE_READ(163, kStream, m_iGoldToOverlord, 0);
 #endif
-		}
 	}
 	kStream >> m_iExtraUnitPlayerInstances;
 	MOD_SERIALIZE_READ(159, kStream, m_iConquestCasualtiesModifier, 0);
@@ -30156,7 +30169,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 		for (int i = 0; i < iCount; i++)
 			kStream << m_vecPermanentAllies[i];
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	kStream << m_eOverlord;
 	{
 		int iVassalCount = (int)m_vecVassals.size();
@@ -30168,6 +30181,10 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_aCultureFromVassals;
 	kStream << m_aFaithFromVassals;
 	kStream << m_aGoldFromVassals;
+	kStream << m_iScienceTimes100ToOverlord;
+	kStream << m_iCultureToOverlord;
+	kStream << m_iFaithToOverlord;
+	kStream << m_iGoldToOverlord;
 #endif
 	}
 	kStream << m_iExtraUnitPlayerInstances;
@@ -31530,7 +31547,7 @@ int CvPlayer::GetExtraUnitPlayerInstances() const
 }
 
 // Vassal Suzerain Relationship
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 
 //--------------------------------------------------------------------------------
 PlayerTypes CvPlayer::GetOverlord() const
@@ -31642,6 +31659,7 @@ std::tr1::unordered_set<ImprovementTypes>& CvPlayer::GetUIFromVassals()
 //--------------------------------------------------------------------------------
 void CvPlayer::UpdateVassalTaxation()
 {
+	if (!MOD_GLOBAL_SUZERAIN) return;
 	if (m_vecVassals.empty()) return;
 	// Find active vassal suzerain resolution affecting this player
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
@@ -31665,43 +31683,74 @@ void CvPlayer::UpdateVassalTaxation()
 		PlayerTypes e = (PlayerTypes)m_vecVassals[i];
 		CvPlayer& v = GET_PLAYER(e);
 		if (!v.isAlive()) continue;
+		// Science tax: gross output = net output + tax already paid to overlord
 		if (pVassalRes->GetEffects()->bVassalTaxScience)
-			m_aScienceTimes100FromVassals[e] = v.GetScienceTimes100(true) / 100 * iTaxPercent;
+		{
+			unsigned long long iScienceGross = v.GetScienceTimes100(true) + v.GetScienceTimes100ToOverlord();
+			unsigned long long iScienceTax = iScienceGross / 100 * iTaxPercent;
+			m_aScienceTimes100FromVassals[e] = iScienceTax;
+			v.m_iScienceTimes100ToOverlord = iScienceTax;
+		}
 		else
+		{
 			m_aScienceTimes100FromVassals[e] = 0;
+			v.m_iScienceTimes100ToOverlord = 0;
+		}
+		// Culture tax
 		if (pVassalRes->GetEffects()->bVassalTaxCulture)
-			m_aCultureFromVassals[e] = v.GetTotalJONSCulturePerTurn() * iTaxPercent / 100;
+		{
+			int iCultureGross = v.GetTotalJONSCulturePerTurn() + v.GetCultureToOverlord();
+			int iCultureTax = iCultureGross * iTaxPercent / 100;
+			m_aCultureFromVassals[e] = iCultureTax;
+			v.m_iCultureToOverlord = iCultureTax;
+		}
 		else
+		{
 			m_aCultureFromVassals[e] = 0;
+			v.m_iCultureToOverlord = 0;
+		}
+		// Faith tax
 		if (pVassalRes->GetEffects()->bVassalTaxFaith)
-			m_aFaithFromVassals[e] = v.GetTotalFaithPerTurn() * iTaxPercent / 100;
+		{
+			int iFaithGross = v.GetTotalFaithPerTurn() + v.GetFaithToOverlord();
+			int iFaithTax = iFaithGross * iTaxPercent / 100;
+			m_aFaithFromVassals[e] = iFaithTax;
+			v.m_iFaithToOverlord = iFaithTax;
+		}
 		else
+		{
 			m_aFaithFromVassals[e] = 0;
-			// Gold tax is applied directly and tracked per vassal
-			if (pVassalRes->GetEffects()->bVassalTaxGold)
+			v.m_iFaithToOverlord = 0;
+		}
+		// Gold tax is applied directly and tracked per vassal
+		if (pVassalRes->GetEffects()->bVassalTaxGold)
+		{
+			int iGoldTax = v.GetTreasury()->GetGoldFromCities() * iTaxPercent / 100;
+			if (iGoldTax > 0)
 			{
-				int iGoldTax = v.GetTreasury()->GetGoldFromCities() * iTaxPercent / 100;
-				if (iGoldTax > 0)
-				{
-					v.GetTreasury()->ChangeGold(-iGoldTax);
-					GetTreasury()->ChangeGold(iGoldTax);
-					m_aGoldFromVassals[e] = iGoldTax;
-				}
-				else
-				{
-					m_aGoldFromVassals[e] = 0;
-				}
+				v.GetTreasury()->ChangeGold(-iGoldTax);
+				GetTreasury()->ChangeGold(iGoldTax);
+				m_aGoldFromVassals[e] = iGoldTax;
+				v.m_iGoldToOverlord = iGoldTax;
 			}
 			else
 			{
 				m_aGoldFromVassals[e] = 0;
+				v.m_iGoldToOverlord = 0;
 			}
+		}
+		else
+		{
+			m_aGoldFromVassals[e] = 0;
+			v.m_iGoldToOverlord = 0;
+		}
 	}
 }
 
 //--------------------------------------------------------------------------------
 unsigned long long CvPlayer::GetScienceTimes100FromVassals() const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	unsigned long long iScience = 0;
 	for (size_t i = 0; i < m_vecVassals.size(); i++)
 	{
@@ -31715,6 +31764,7 @@ unsigned long long CvPlayer::GetScienceTimes100FromVassals() const
 //--------------------------------------------------------------------------------
 int CvPlayer::GetCultureFromVassals() const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	int iCulture = 0;
 	for (size_t i = 0; i < m_vecVassals.size(); i++)
 	{
@@ -31727,6 +31777,7 @@ int CvPlayer::GetCultureFromVassals() const
 //--------------------------------------------------------------------------------
 int CvPlayer::GetFaithFromVassals() const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	int iFaith = 0;
 	for (size_t i = 0; i < m_vecVassals.size(); i++)
 	{
@@ -31738,6 +31789,7 @@ int CvPlayer::GetFaithFromVassals() const
 //--------------------------------------------------------------------------------
 int CvPlayer::GetGoldFromVassals() const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	int iGold = 0;
 	for (size_t i = 0; i < m_vecVassals.size(); i++)
 	{
@@ -31750,6 +31802,7 @@ int CvPlayer::GetGoldFromVassals() const
 //--------------------------------------------------------------------------------
 unsigned long long CvPlayer::GetScienceTimes100FromOneVassal(PlayerTypes e) const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	if (e < 0 || e >= MAX_MAJOR_CIVS) return 0;
 	return m_aScienceTimes100FromVassals[e];
 }
@@ -31757,6 +31810,7 @@ unsigned long long CvPlayer::GetScienceTimes100FromOneVassal(PlayerTypes e) cons
 //--------------------------------------------------------------------------------
 int CvPlayer::GetCultureFromOneVassal(PlayerTypes e) const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	if (e < 0 || e >= MAX_MAJOR_CIVS) return 0;
 	return m_aCultureFromVassals[e];
 }
@@ -31764,6 +31818,7 @@ int CvPlayer::GetCultureFromOneVassal(PlayerTypes e) const
 //--------------------------------------------------------------------------------
 int CvPlayer::GetFaithFromOneVassal(PlayerTypes e) const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	if (e < 0 || e >= MAX_MAJOR_CIVS) return 0;
 	return m_aFaithFromVassals[e];
 }
@@ -31771,8 +31826,37 @@ int CvPlayer::GetFaithFromOneVassal(PlayerTypes e) const
 //--------------------------------------------------------------------------------
 int CvPlayer::GetGoldFromOneVassal(PlayerTypes e) const
 {
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	if (e < 0 || e >= MAX_MAJOR_CIVS) return 0;
 	return m_aGoldFromVassals[e];
+}
+
+//--------------------------------------------------------------------------------
+unsigned long long CvPlayer::GetScienceTimes100ToOverlord() const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	return m_iScienceTimes100ToOverlord;
+}
+
+//--------------------------------------------------------------------------------
+int CvPlayer::GetCultureToOverlord() const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	return m_iCultureToOverlord;
+}
+
+//--------------------------------------------------------------------------------
+int CvPlayer::GetFaithToOverlord() const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	return m_iFaithToOverlord;
+}
+
+//--------------------------------------------------------------------------------
+int CvPlayer::GetGoldToOverlord() const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	return m_iGoldToOverlord;
 }
 
 #endif
@@ -33604,7 +33688,7 @@ void CvPlayer::GatherPerTurnReplayStats(int iGameTurn)
 	cvStopWatch watch("Replay Stat Recording");
 #endif
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	UpdateVassalTaxation();
 #endif
 	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();

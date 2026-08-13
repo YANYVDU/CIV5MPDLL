@@ -132,7 +132,7 @@ struct CvResolutionEffects
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bool bPermanentAlly;
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	bool bSubmitSuzerain;
 	int iVassalTaxPercent;
 	bool bVassalTaxScience;
@@ -1278,7 +1278,7 @@ public:
 	int GetGlobalWarCasualtiesChanges() const;
 	bool IsEmbargoIdeology() const;
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	int GetVassalTaxPercent() const;
 	bool IsVassalTaxScience() const;
 	bool IsVassalTaxCulture() const;
@@ -1328,7 +1328,7 @@ protected:
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
 #endif
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	int m_iVassalTaxPercent;
 	bool m_bVassalTaxScience;
 	bool m_bVassalTaxCulture;

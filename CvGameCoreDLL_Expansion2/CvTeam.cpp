@@ -1127,7 +1127,7 @@ bool CvTeam::canDeclareWar(TeamTypes eTeam) const
 
 
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	// Block war declaration between overlord and vassal
 	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 	{
@@ -1136,10 +1136,10 @@ bool CvTeam::canDeclareWar(TeamTypes eTeam) const
 		CvPlayer& kMyPlayer = GET_PLAYER(eMyPlayer);
 		for (int j = 0; j < MAX_MAJOR_CIVS; j++)
 		{
-				PlayerTypes eTheirPlayer = (PlayerTypes)j;
-				if (!GET_PLAYER(eTheirPlayer).isAlive() || GET_PLAYER(eTheirPlayer).getTeam() != eTeam) continue;
-				if (kMyPlayer.IsVassalOf(eTheirPlayer) || kMyPlayer.IsOverlordOf(eTheirPlayer))
-					return false;
+			PlayerTypes eTheirPlayer = (PlayerTypes)j;
+			if (!GET_PLAYER(eTheirPlayer).isAlive() || GET_PLAYER(eTheirPlayer).getTeam() != eTeam) continue;
+			if (kMyPlayer.IsVassalOf(eTheirPlayer) || kMyPlayer.IsOverlordOf(eTheirPlayer))
+				return false;
 		}
 	}
 #endif

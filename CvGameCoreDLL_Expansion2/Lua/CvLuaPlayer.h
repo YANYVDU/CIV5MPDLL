@@ -1303,7 +1303,7 @@ protected:
 #endif
 
 	LUAAPIEXTN(GetScienceTimes100FromFriendsTable);
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	LUAAPIEXTN(GetScienceTimes100FromVassalsTable);
 	LUAAPIEXTN(GetCultureFromVassalsTable);
 	LUAAPIEXTN(GetFaithFromVassalsTable);
@@ -1343,6 +1343,10 @@ protected:
 	LUAAPIEXTN(GetCultureFromOneVassal, int, ePlayer);
 	LUAAPIEXTN(GetFaithFromOneVassal, int, ePlayer);
 	LUAAPIEXTN(GetGoldFromOneVassal, int, ePlayer);
+	LUAAPIEXTN(GetScienceTimes100ToOverlord, unsigned long long);
+	LUAAPIEXTN(GetCultureToOverlord, int);
+	LUAAPIEXTN(GetFaithToOverlord, int);
+	LUAAPIEXTN(GetGoldToOverlord, int);
 };
 
 #endif //CVLUAPLAYER_H

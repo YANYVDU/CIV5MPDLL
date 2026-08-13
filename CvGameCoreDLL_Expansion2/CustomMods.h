@@ -234,7 +234,7 @@
 // Removes free GP (from buildings, policies, traits, etc) from the GP counters (v61)
 #define MOD_GLOBAL_TRULY_FREE_GP                    gCustomMods.isGLOBAL_TRULY_FREE_GP()
 
-#define MOD_GLOBAL_TIANDAO_VASSAL              gCustomMods.isGLOBAL_TIANDAO_VASSAL()
+#define MOD_GLOBAL_SUZERAIN              gCustomMods.isGLOBAL_SUZERAIN()
 
 // Displays the opinion weight in the tooltip when meeting a leader (v80)
 #define MOD_DIPLOMACY_BY_NUMBERS                    gCustomMods.isDIPLOMACY_BY_NUMBERS()
@@ -1545,7 +1545,7 @@ public:
 	MOD_OPT_DECL(GLOBAL_CANNOT_EMBARK);
 	MOD_OPT_DECL(GLOBAL_SEPARATE_GP_COUNTERS);
 	MOD_OPT_DECL(GLOBAL_TRULY_FREE_GP);
-	MOD_OPT_DECL(GLOBAL_TIANDAO_VASSAL);
+	MOD_OPT_DECL(GLOBAL_SUZERAIN);
 	
 	MOD_OPT_DECL(DIPLOMACY_BY_NUMBERS);
 	MOD_OPT_DECL(DIPLOMACY_TECH_BONUSES);

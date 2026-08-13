@@ -1396,7 +1396,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 #endif
 
 	Method(GetScienceTimes100FromFriendsTable);
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 	Method(GetScienceTimes100FromVassalsTable);
 	Method(GetCultureFromVassalsTable);
 	Method(GetFaithFromVassalsTable);
@@ -1423,7 +1423,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetMilitaryPromiseTurnLeft);
 	Method(GetExpansionPromiseTurnLeft);
 	Method(GetBorderPromiseTurnLeft);
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 
 	Method(GetOverlord);
 	Method(IsVassalOf);
@@ -1437,6 +1437,10 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCultureFromOneVassal);
 	Method(GetFaithFromOneVassal);
 	Method(GetGoldFromOneVassal);
+	Method(GetScienceTimes100ToOverlord);
+	Method(GetCultureToOverlord);
+	Method(GetFaithToOverlord);
+	Method(GetGoldToOverlord);
 #endif
 }
 //------------------------------------------------------------------------------
@@ -6806,7 +6810,7 @@ int CvLuaPlayer::lGetCivUnit(lua_State* L)
 	return BasicLuaMethod(L, &CvPlayerAI::GetCivUnit);
 }
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 //------------------------------------------------------------------------------
 //PlayerTypes GetOverlord();
 int CvLuaPlayer::lGetOverlord(lua_State* L)
@@ -6843,7 +6847,9 @@ int CvLuaPlayer::lHasAnyVassal(lua_State* L)
 //int GetScienceTimes100FromVassals();
 int CvLuaPlayer::lGetScienceTimes100FromVassals(lua_State* L)
 {
-	return BasicLuaMethod(L, &CvPlayer::GetScienceTimes100FromVassals);
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100FromVassals());
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetCultureFromVassals();
@@ -6869,7 +6875,7 @@ int CvLuaPlayer::lGetScienceTimes100FromOneVassal(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
-	lua_pushinteger(L, pkPlayer->GetScienceTimes100FromOneVassal(e));
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100FromOneVassal(e));
 	return 1;
 }
 //------------------------------------------------------------------------------
@@ -6898,6 +6904,32 @@ int CvLuaPlayer::lGetGoldFromOneVassal(lua_State* L)
 	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
 	lua_pushinteger(L, pkPlayer->GetGoldFromOneVassal(e));
 	return 1;
+}
+//------------------------------------------------------------------------------
+//unsigned long long GetScienceTimes100ToOverlord();
+int CvLuaPlayer::lGetScienceTimes100ToOverlord(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100ToOverlord());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCultureToOverlord();
+int CvLuaPlayer::lGetCultureToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetCultureToOverlord);
+}
+//------------------------------------------------------------------------------
+//int GetFaithToOverlord();
+int CvLuaPlayer::lGetFaithToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetFaithToOverlord);
+}
+//------------------------------------------------------------------------------
+//int GetGoldToOverlord();
+int CvLuaPlayer::lGetGoldToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetGoldToOverlord);
 }
 #endif
 
@@ -13192,7 +13224,7 @@ int CvLuaPlayer::lGetScienceTimes100FromFriendsTable(lua_State* L)
     return 1; // Number of return values
 }
 
-#if defined(MOD_GLOBAL_TIANDAO_VASSAL)
+#if defined(MOD_GLOBAL_SUZERAIN)
 int CvLuaPlayer::lGetScienceTimes100FromVassalsTable(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
