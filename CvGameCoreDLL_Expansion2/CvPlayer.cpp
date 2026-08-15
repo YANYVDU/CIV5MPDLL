@@ -21094,6 +21094,21 @@ void CvPlayer::setAlive(bool bNewValue, bool bNotify)
 			clearResearchQueue();
 			killUnits();
 			killCities();
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+			// Release vassal relationships on death: break free from our overlord and free our vassals
+			if (GetOverlord() != NO_PLAYER)
+			{
+				GET_PLAYER(GetOverlord()).RemoveVassal(GetID());
+				SetOverlord(NO_PLAYER);
+			}
+			for (size_t iVassal = 0; iVassal < m_vecVassals.size(); iVassal++)
+			{
+				PlayerTypes eVassal = (PlayerTypes)m_vecVassals[iVassal];
+				GET_PLAYER(eVassal).SetOverlord(NO_PLAYER);
+			}
+			m_vecVassals.clear();
+#endif
 			if(CvPreGame::isNetworkMultiplayerGame() && m_eID == GC.getGame().getActivePlayer())
 				gDLL->netDisconnect();
 
@@ -31579,6 +31594,15 @@ PlayerTypes CvPlayer::GetOverlord() const
 void CvPlayer::SetOverlord(PlayerTypes e)
 {
 	m_eOverlord = e;
+	// When released from overlordship, clear any residual tax owed to the former
+	// overlord so the vassal's output is not permanently reduced with nobody collecting it
+	if (e == NO_PLAYER)
+	{
+		m_iScienceTimes100ToOverlord = 0;
+		m_iCultureToOverlord = 0;
+		m_iFaithToOverlord = 0;
+		m_iGoldToOverlord = 0;
+	}
 }
 
 //--------------------------------------------------------------------------------
@@ -31611,7 +31635,14 @@ const std::vector<int>& CvPlayer::GetVassals() const
 void CvPlayer::AddVassal(PlayerTypes e)
 {
 	if (!IsOverlordOf(e))
+	{
 		m_vecVassals.push_back((int)e);
+		// Initialize this vassal's tax cache slot so it reads as zero before the first taxation pass
+		m_aScienceTimes100FromVassals[e] = 0;
+		m_aCultureFromVassals[e] = 0;
+		m_aFaithFromVassals[e] = 0;
+		m_aGoldFromVassals[e] = 0;
+	}
 }
 
 //--------------------------------------------------------------------------------
@@ -31621,8 +31652,8 @@ void CvPlayer::RemoveVassal(PlayerTypes e)
 	{
 		if (m_vecVassals[i] == (int)e)
 		{
-				m_vecVassals.erase(m_vecVassals.begin() + i);
-				break;
+			m_vecVassals.erase(m_vecVassals.begin() + i);
+			break;
 		}
 	}
 	// Clear tax caches for this vassal

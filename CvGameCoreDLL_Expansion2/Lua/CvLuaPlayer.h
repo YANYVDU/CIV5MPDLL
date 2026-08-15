@@ -1331,6 +1331,7 @@ protected:
 	LUAAPIEXTN(GetExpansionPromiseTurnLeft, int, ePlayer);
 	LUAAPIEXTN(GetBorderPromiseTurnLeft, int, ePlayer);
 
+#if defined(MOD_GLOBAL_SUZERAIN)
 	LUAAPIEXTN(GetOverlord, int);
 	LUAAPIEXTN(IsVassalOf, bool, ePlayer);
 	LUAAPIEXTN(IsOverlordOf, bool, ePlayer);
@@ -1347,6 +1348,7 @@ protected:
 	LUAAPIEXTN(GetCultureToOverlord, int);
 	LUAAPIEXTN(GetFaithToOverlord, int);
 	LUAAPIEXTN(GetGoldToOverlord, int);
+#endif
 };
 
 #endif //CVLUAPLAYER_H

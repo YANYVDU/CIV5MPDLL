@@ -1651,35 +1651,39 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	{
 		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
 		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
-		CvPlayer& kOverlord = GET_PLAYER(eOverlord);
-		CvPlayer& kVassal = GET_PLAYER(eVassal);
-		// If the target is already someone's vassal, skip (first resolution wins)
-		if (kVassal.GetOverlord() == NO_PLAYER)
+		// Guard against invalid decision targets (e.g. a dead or missing player)
+		if (eOverlord != NO_PLAYER && eVassal != NO_PLAYER)
 		{
-			// Establish vassal relationship
-			kOverlord.AddVassal(eVassal);
-			kVassal.SetOverlord(eOverlord);
-			// Vassalization changes the overlord's effective control over original capitals -
-			// re-check domination victory immediately rather than waiting for the next city capture
-			GC.getGame().DoTestConquestVictory();
-			// Force peace between overlord and vassal
-			if (GetEffects()->bVassalForcePeace)
+			CvPlayer& kOverlord = GET_PLAYER(eOverlord);
+			CvPlayer& kVassal = GET_PLAYER(eVassal);
+			// If the target is already someone's vassal, skip (first resolution wins)
+			if (kVassal.GetOverlord() == NO_PLAYER)
 			{
-				TeamTypes eTeamA = kOverlord.getTeam();
-				TeamTypes eTeamB = kVassal.getTeam();
-				GET_TEAM(eTeamA).setForcePeace(eTeamB, true);
-				GET_TEAM(eTeamB).setForcePeace(eTeamA, true);
-			}
-			// Clear denouncements between overlord and vassal
-			if (GetEffects()->bVassalNoDenounce)
-			{
-				kOverlord.GetDiplomacyAI()->SetDenouncedPlayer(eVassal, false);
-				kVassal.GetDiplomacyAI()->SetDenouncedPlayer(eOverlord, false);
-			}
-			// Grant overlord access to vassal unique components
-			if (GetEffects()->bVassalGetUC)
-			{
-				kOverlord.RefreshUCFromVassals();
+				// Establish vassal relationship
+				kOverlord.AddVassal(eVassal);
+				kVassal.SetOverlord(eOverlord);
+				// Vassalization changes the overlord's effective control over original capitals -
+				// re-check domination victory immediately rather than waiting for the next city capture
+				GC.getGame().DoTestConquestVictory();
+				// Force peace between overlord and vassal
+				if (GetEffects()->bVassalForcePeace)
+				{
+					TeamTypes eTeamA = kOverlord.getTeam();
+					TeamTypes eTeamB = kVassal.getTeam();
+					GET_TEAM(eTeamA).setForcePeace(eTeamB, true);
+					GET_TEAM(eTeamB).setForcePeace(eTeamA, true);
+				}
+				// Clear denouncements between overlord and vassal
+				if (GetEffects()->bVassalNoDenounce)
+				{
+					kOverlord.GetDiplomacyAI()->SetDenouncedPlayer(eVassal, false);
+					kVassal.GetDiplomacyAI()->SetDenouncedPlayer(eOverlord, false);
+				}
+				// Grant overlord access to vassal unique components
+				if (GetEffects()->bVassalGetUC)
+				{
+					kOverlord.RefreshUCFromVassals();
+				}
 			}
 		}
 	}
@@ -1869,26 +1873,30 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 	{
 		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
 		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
-		CvPlayer& kOverlord = GET_PLAYER(eOverlord);
-		CvPlayer& kVassal = GET_PLAYER(eVassal);
-		// Only remove if this resolution actually established the relationship
-		if (kVassal.GetOverlord() == eOverlord)
+		// Guard against invalid decision targets (e.g. a dead or missing player)
+		if (eOverlord != NO_PLAYER && eVassal != NO_PLAYER)
 		{
-			// Remove vassal relationship
-			kOverlord.RemoveVassal(eVassal);
-			kVassal.SetOverlord(NO_PLAYER);
-			// Remove force peace
-			if (GetEffects()->bVassalForcePeace)
+			CvPlayer& kOverlord = GET_PLAYER(eOverlord);
+			CvPlayer& kVassal = GET_PLAYER(eVassal);
+			// Only remove if this resolution actually established the relationship
+			if (kVassal.GetOverlord() == eOverlord)
 			{
-				TeamTypes eTeamA = kOverlord.getTeam();
-				TeamTypes eTeamB = kVassal.getTeam();
-				GET_TEAM(eTeamA).setForcePeace(eTeamB, false);
-				GET_TEAM(eTeamB).setForcePeace(eTeamA, false);
-			}
-			// Remove UC access acquired from vassals
-			if (GetEffects()->bVassalGetUC)
-			{
-				kOverlord.RefreshUCFromVassals();
+				// Remove vassal relationship
+				kOverlord.RemoveVassal(eVassal);
+				kVassal.SetOverlord(NO_PLAYER);
+				// Remove force peace
+				if (GetEffects()->bVassalForcePeace)
+				{
+					TeamTypes eTeamA = kOverlord.getTeam();
+					TeamTypes eTeamB = kVassal.getTeam();
+					GET_TEAM(eTeamA).setForcePeace(eTeamB, false);
+					GET_TEAM(eTeamB).setForcePeace(eTeamA, false);
+				}
+				// Remove UC access acquired from vassals
+				if (GetEffects()->bVassalGetUC)
+				{
+					kOverlord.RefreshUCFromVassals();
+				}
 			}
 		}
 	}
