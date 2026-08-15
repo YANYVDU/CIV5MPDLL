@@ -1423,6 +1423,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetMilitaryPromiseTurnLeft);
 	Method(GetExpansionPromiseTurnLeft);
 	Method(GetBorderPromiseTurnLeft);
+	Method(IsPermanentAlly);
 #if defined(MOD_GLOBAL_SUZERAIN)
 
 	Method(GetOverlord);
@@ -6808,6 +6809,16 @@ int CvLuaPlayer::lGetCivBuilding(lua_State* L)
 int CvLuaPlayer::lGetCivUnit(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::GetCivUnit);
+}
+
+//------------------------------------------------------------------------------
+//bool IsPermanentAlly(PlayerTypes e);
+int CvLuaPlayer::lIsPermanentAlly(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsPermanentAlly(e));
+	return 1;
 }
 
 #if defined(MOD_GLOBAL_SUZERAIN)

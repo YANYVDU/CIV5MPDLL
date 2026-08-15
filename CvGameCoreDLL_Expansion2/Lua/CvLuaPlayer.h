@@ -1330,6 +1330,7 @@ protected:
 	LUAAPIEXTN(GetMilitaryPromiseTurnLeft, int, ePlayer);
 	LUAAPIEXTN(GetExpansionPromiseTurnLeft, int, ePlayer);
 	LUAAPIEXTN(GetBorderPromiseTurnLeft, int, ePlayer);
+	LUAAPIEXTN(IsPermanentAlly, bool, ePlayer);
 
 #if defined(MOD_GLOBAL_SUZERAIN)
 	LUAAPIEXTN(GetOverlord, int);
