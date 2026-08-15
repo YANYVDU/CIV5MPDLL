@@ -10036,7 +10036,17 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 	// GreatPersonGiftPermanentAlly: one-time permanent ally establishment
 	if (pGiftUnit->IsGreatPerson() && GET_PLAYER(eFromPlayer).GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 	{
-		if (!GET_PLAYER(eFromPlayer).IsPermanentAlly(GetPlayer()->GetID()))
+		// Only the first player to gift a Great Person becomes the permanent ally
+		bool bAlreadyPermanentAlly = false;
+		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		{
+			if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			{
+				bAlreadyPermanentAlly = true;
+				break;
+			}
+		}
+		if (!bAlreadyPermanentAlly)
 		{
 			GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
 			GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
