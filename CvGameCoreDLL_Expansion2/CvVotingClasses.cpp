@@ -1653,30 +1653,34 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
 		CvPlayer& kOverlord = GET_PLAYER(eOverlord);
 		CvPlayer& kVassal = GET_PLAYER(eVassal);
-		// Establish vassal relationship
-		kOverlord.AddVassal(eVassal);
-		kVassal.SetOverlord(eOverlord);
-		// Vassalization changes the overlord's effective control over original capitals -
-		// re-check domination victory immediately rather than waiting for the next city capture
-		GC.getGame().DoTestConquestVictory();
-		// Force peace between overlord and vassal
-		if (GetEffects()->bVassalForcePeace)
+		// If the target is already someone's vassal, skip (first resolution wins)
+		if (kVassal.GetOverlord() == NO_PLAYER)
 		{
-			TeamTypes eTeamA = kOverlord.getTeam();
-			TeamTypes eTeamB = kVassal.getTeam();
-			GET_TEAM(eTeamA).setForcePeace(eTeamB, true);
-			GET_TEAM(eTeamB).setForcePeace(eTeamA, true);
-		}
-		// Clear denouncements between overlord and vassal
-		if (GetEffects()->bVassalNoDenounce)
-		{
-			kOverlord.GetDiplomacyAI()->SetDenouncedPlayer(eVassal, false);
-			kVassal.GetDiplomacyAI()->SetDenouncedPlayer(eOverlord, false);
-		}
-		// Grant overlord access to vassal unique components
-		if (GetEffects()->bVassalGetUC)
-		{
-			kOverlord.RefreshUCFromVassals();
+			// Establish vassal relationship
+			kOverlord.AddVassal(eVassal);
+			kVassal.SetOverlord(eOverlord);
+			// Vassalization changes the overlord's effective control over original capitals -
+			// re-check domination victory immediately rather than waiting for the next city capture
+			GC.getGame().DoTestConquestVictory();
+			// Force peace between overlord and vassal
+			if (GetEffects()->bVassalForcePeace)
+			{
+				TeamTypes eTeamA = kOverlord.getTeam();
+				TeamTypes eTeamB = kVassal.getTeam();
+				GET_TEAM(eTeamA).setForcePeace(eTeamB, true);
+				GET_TEAM(eTeamB).setForcePeace(eTeamA, true);
+			}
+			// Clear denouncements between overlord and vassal
+			if (GetEffects()->bVassalNoDenounce)
+			{
+				kOverlord.GetDiplomacyAI()->SetDenouncedPlayer(eVassal, false);
+				kVassal.GetDiplomacyAI()->SetDenouncedPlayer(eOverlord, false);
+			}
+			// Grant overlord access to vassal unique components
+			if (GetEffects()->bVassalGetUC)
+			{
+				kOverlord.RefreshUCFromVassals();
+			}
 		}
 	}
 #endif
@@ -1867,21 +1871,25 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
 		CvPlayer& kOverlord = GET_PLAYER(eOverlord);
 		CvPlayer& kVassal = GET_PLAYER(eVassal);
-		// Remove vassal relationship
-		kOverlord.RemoveVassal(eVassal);
-		kVassal.SetOverlord(NO_PLAYER);
-		// Remove force peace
-		if (GetEffects()->bVassalForcePeace)
+		// Only remove if this resolution actually established the relationship
+		if (kVassal.GetOverlord() == eOverlord)
 		{
-			TeamTypes eTeamA = kOverlord.getTeam();
-			TeamTypes eTeamB = kVassal.getTeam();
-			GET_TEAM(eTeamA).setForcePeace(eTeamB, false);
-			GET_TEAM(eTeamB).setForcePeace(eTeamA, false);
-		}
-		// Remove UC access acquired from vassals
-		if (GetEffects()->bVassalGetUC)
-		{
-			kOverlord.RefreshUCFromVassals();
+			// Remove vassal relationship
+			kOverlord.RemoveVassal(eVassal);
+			kVassal.SetOverlord(NO_PLAYER);
+			// Remove force peace
+			if (GetEffects()->bVassalForcePeace)
+			{
+				TeamTypes eTeamA = kOverlord.getTeam();
+				TeamTypes eTeamB = kVassal.getTeam();
+				GET_TEAM(eTeamA).setForcePeace(eTeamB, false);
+				GET_TEAM(eTeamB).setForcePeace(eTeamA, false);
+			}
+			// Remove UC access acquired from vassals
+			if (GetEffects()->bVassalGetUC)
+			{
+				kOverlord.RefreshUCFromVassals();
+			}
 		}
 	}
 #endif
@@ -3290,7 +3298,52 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 		{
 			if (m_vMembers[i].ePlayer != eDecider && !GET_PLAYER(m_vMembers[i].ePlayer).isMinorCiv())
 			{
-				vChoices.push_back(m_vMembers[i].ePlayer);
+#if defined(MOD_GLOBAL_SUZERAIN)
+				PlayerTypes eMember = m_vMembers[i].ePlayer;
+				bool bSkip = false;
+				// Skip players already vassalized or already targeted by a vassalization resolution
+				if (GET_PLAYER(eMember).GetOverlord() != NO_PLAYER)
+				{
+					bSkip = true;
+				}
+				if (!bSkip)
+				{
+					for (uint j = 0; j < m_vEnactProposals.size(); j++)
+					{
+						if (m_vEnactProposals[j].GetEffects()->bSubmitSuzerain &&
+							m_vEnactProposals[j].GetProposerDecision()->GetDecision() == (int)eMember)
+						{
+							bSkip = true;
+							break;
+						}
+					}
+				}
+				if (!bSkip)
+				{
+					CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+					if (pLeagues)
+					{
+						CvLeague* pLeague = pLeagues->GetActiveLeague();
+						if (pLeague)
+						{
+							ActiveResolutionList vRes = pLeague->GetActiveResolutions();
+							for (size_t j = 0; j < vRes.size(); j++)
+							{
+								if (vRes[j].GetEffects()->bSubmitSuzerain &&
+									vRes[j].GetProposerDecision()->GetDecision() == (int)eMember)
+								{
+									bSkip = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+				if (!bSkip)
+#endif
+				{
+					vChoices.push_back(m_vMembers[i].ePlayer);
+				}
 			}
 		}
 		break;
