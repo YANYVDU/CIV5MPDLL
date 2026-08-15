@@ -11057,6 +11057,31 @@ void CvGame::DoTestConquestVictory()
 							iNumCapitalsControlled += 1;
 						}
 					}
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+					// Overlord counts its vassals' original capitals as its own for domination victory
+					if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(eLoopPlayer).HasAnyVassal())
+					{
+						const std::vector<int>& vecVassals = GET_PLAYER(eLoopPlayer).GetVassals();
+						for (size_t iVassal = 0; iVassal < vecVassals.size(); iVassal++)
+						{
+							PlayerTypes eVassal = (PlayerTypes)vecVassals[iVassal];
+							// Skip vassals on our own team - their capitals are already counted above
+							if (GET_PLAYER(eVassal).isAlive() && GET_PLAYER(eVassal).getTeam() != (TeamTypes)iTeamLoop)
+							{
+								int iVassalCityLoop;
+								CvCity* pVassalCity = NULL;
+								for(pVassalCity = GET_PLAYER(eVassal).firstCity(&iVassalCityLoop); pVassalCity != NULL; pVassalCity = GET_PLAYER(eVassal).nextCity(&iVassalCityLoop))
+								{
+									if (pVassalCity->getOriginalOwner() < MAX_MAJOR_CIVS && pVassalCity->IsOriginalCapital())
+									{
+										iNumCapitalsControlled += 1;
+									}
+								}
+							}
+						}
+					}
+#endif
 				}
 			}
 

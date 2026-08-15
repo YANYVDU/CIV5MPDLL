@@ -1396,6 +1396,12 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 #endif
 
 	Method(GetScienceTimes100FromFriendsTable);
+#if defined(MOD_GLOBAL_SUZERAIN)
+	Method(GetScienceTimes100FromVassalsTable);
+	Method(GetCultureFromVassalsTable);
+	Method(GetFaithFromVassalsTable);
+	Method(GetGoldFromVassalsTable);
+#endif
 	Method(GetBossLevel);
 	Method(ChangeBossLevel);
 	Method(SetBossLevel);
@@ -1417,6 +1423,25 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetMilitaryPromiseTurnLeft);
 	Method(GetExpansionPromiseTurnLeft);
 	Method(GetBorderPromiseTurnLeft);
+#if defined(MOD_GLOBAL_SUZERAIN)
+
+	Method(GetOverlord);
+	Method(IsVassalOf);
+	Method(IsOverlordOf);
+	Method(HasAnyVassal);
+	Method(GetScienceTimes100FromVassals);
+	Method(GetCultureFromVassals);
+	Method(GetFaithFromVassals);
+	Method(GetGoldFromVassals);
+	Method(GetScienceTimes100FromOneVassal);
+	Method(GetCultureFromOneVassal);
+	Method(GetFaithFromOneVassal);
+	Method(GetGoldFromOneVassal);
+	Method(GetScienceTimes100ToOverlord);
+	Method(GetCultureToOverlord);
+	Method(GetFaithToOverlord);
+	Method(GetGoldToOverlord);
+#endif
 }
 //------------------------------------------------------------------------------
 void CvLuaPlayer::HandleMissingInstance(lua_State* L)
@@ -6784,6 +6809,129 @@ int CvLuaPlayer::lGetCivUnit(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::GetCivUnit);
 }
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+//------------------------------------------------------------------------------
+//PlayerTypes GetOverlord();
+int CvLuaPlayer::lGetOverlord(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetOverlord());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsVassalOf(PlayerTypes e);
+int CvLuaPlayer::lIsVassalOf(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsVassalOf(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsOverlordOf(PlayerTypes e);
+int CvLuaPlayer::lIsOverlordOf(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsOverlordOf(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool HasAnyVassal();
+int CvLuaPlayer::lHasAnyVassal(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::HasAnyVassal);
+}
+//------------------------------------------------------------------------------
+//int GetScienceTimes100FromVassals();
+int CvLuaPlayer::lGetScienceTimes100FromVassals(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100FromVassals());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCultureFromVassals();
+int CvLuaPlayer::lGetCultureFromVassals(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetCultureFromVassals);
+}
+//------------------------------------------------------------------------------
+//int GetFaithFromVassals();
+int CvLuaPlayer::lGetFaithFromVassals(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetFaithFromVassals);
+}
+//------------------------------------------------------------------------------
+//int GetGoldFromVassals();
+int CvLuaPlayer::lGetGoldFromVassals(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetGoldFromVassals);
+}
+//------------------------------------------------------------------------------
+//int GetScienceTimes100FromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetScienceTimes100FromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100FromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCultureFromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetCultureFromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCultureFromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetFaithFromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetFaithFromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetFaithFromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetGoldFromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetGoldFromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetGoldFromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//unsigned long long GetScienceTimes100ToOverlord();
+int CvLuaPlayer::lGetScienceTimes100ToOverlord(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100ToOverlord());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCultureToOverlord();
+int CvLuaPlayer::lGetCultureToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetCultureToOverlord);
+}
+//------------------------------------------------------------------------------
+//int GetFaithToOverlord();
+int CvLuaPlayer::lGetFaithToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetFaithToOverlord);
+}
+//------------------------------------------------------------------------------
+//int GetGoldToOverlord();
+int CvLuaPlayer::lGetGoldToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetGoldToOverlord);
+}
+#endif
 
 int CvLuaPlayer::lGetCivBuildingWithDefault(lua_State* L)
 {
@@ -13075,6 +13223,76 @@ int CvLuaPlayer::lGetScienceTimes100FromFriendsTable(lua_State* L)
     // The table is now at the top of the stack. When the function returns, Lua will take it.
     return 1; // Number of return values
 }
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+int CvLuaPlayer::lGetScienceTimes100FromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		unsigned long long value = pkPlayer->GetScienceTimes100FromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+
+int CvLuaPlayer::lGetCultureFromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		int value = pkPlayer->GetCultureFromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+
+int CvLuaPlayer::lGetFaithFromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		int value = pkPlayer->GetFaithFromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+
+int CvLuaPlayer::lGetGoldFromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		int value = pkPlayer->GetGoldFromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+#endif
 
 LUAAPIIMPL(Player, GetNumCropsTotalTimes100)
 LUAAPIIMPL(Player, ChangeNumCropsTotalTimes100)

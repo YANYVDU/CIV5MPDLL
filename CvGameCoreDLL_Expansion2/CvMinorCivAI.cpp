@@ -7844,6 +7844,13 @@ int CvMinorCivAI::GetCurrentCultureFlatBonus(PlayerTypes ePlayer)
 		iAmount /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -7892,6 +7899,13 @@ int CvMinorCivAI::GetCurrentCulturePerBuildingBonus(PlayerTypes ePlayer)
 		iAmount /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -7975,6 +7989,13 @@ int CvMinorCivAI::GetCurrentHappinessFlatBonus(PlayerTypes ePlayer)
 		iAmount += GetHappinessFlatAlliesBonus(ePlayer);
 	if(IsFriends(ePlayer))
 		iAmount += GetHappinessFlatFriendshipBonus(ePlayer);
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -8078,6 +8099,13 @@ int CvMinorCivAI::GetCurrentHappinessPerLuxuryBonus(PlayerTypes ePlayer)
 		iAmount += GetHappinessPerLuxuryAlliesBonus(ePlayer);
 	if(IsFriends(ePlayer))
 		iAmount += GetHappinessPerLuxuryFriendshipBonus(ePlayer);
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -8212,6 +8240,13 @@ int CvMinorCivAI::GetCurrentFaithFlatBonus(PlayerTypes ePlayer)
 		iAmount /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -8252,6 +8287,13 @@ int CvMinorCivAI::GetFriendsCapitalFoodBonus(PlayerTypes ePlayer, EraTypes eAssu
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -8282,6 +8324,13 @@ int CvMinorCivAI::GetFriendsOtherCityFoodBonus(PlayerTypes ePlayer, EraTypes eAs
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -8298,6 +8347,13 @@ int CvMinorCivAI::GetAlliesCapitalFoodBonus(PlayerTypes ePlayer)
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -8314,6 +8370,13 @@ int CvMinorCivAI::GetAlliesOtherCityFoodBonus(PlayerTypes ePlayer)
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -9973,7 +10036,17 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 	// GreatPersonGiftPermanentAlly: one-time permanent ally establishment
 	if (pGiftUnit->IsGreatPerson() && GET_PLAYER(eFromPlayer).GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 	{
-		if (!GET_PLAYER(eFromPlayer).IsPermanentAlly(GetPlayer()->GetID()))
+		// Only the first player to gift a Great Person becomes the permanent ally
+		bool bAlreadyPermanentAlly = false;
+		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		{
+			if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			{
+				bAlreadyPermanentAlly = true;
+				break;
+			}
+		}
+		if (!bAlreadyPermanentAlly)
 		{
 			GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
 			GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
@@ -10026,7 +10099,7 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 		}
 		if (kFromPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 		{
-			int iHighest = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+			int iHighest = GetAlliesThresholdForPlayer(eFromPlayer);
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
 				PlayerTypes e = (PlayerTypes)i;

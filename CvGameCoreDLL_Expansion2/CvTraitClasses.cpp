@@ -157,6 +157,9 @@ CvTraitEntry::CvTraitEntry() :
 	m_iTradeRouteSeaGoldBonus(0),
 	m_bNewCityAutomaticReligion(false),
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	m_bResearchAgreementCountVassalScience(false),
+#endif
 
 	m_eFreeUnitPrereqTech(NO_TECH),
 	m_eFreeBuilding(NO_BUILDING),
@@ -907,6 +910,12 @@ int CvTraitEntry::GetTradeRouteSeaGoldBonus() const
 bool CvTraitEntry::IsNewCityAutomaticReligion() const
 {
 	return m_bNewCityAutomaticReligion;
+}
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+bool CvTraitEntry::IsResearchAgreementCountVassalScience() const
+{
+	return m_bResearchAgreementCountVassalScience;
 }
 #endif
 
@@ -1722,6 +1731,21 @@ int CvTraitEntry::GetShareAllyResearchPercent() const
 	return m_iShareAllyResearchPercent;
 }
 
+int CvTraitEntry::GetCityStateBaseEffectModifier() const
+{
+	return m_iCityStateBaseEffectModifier;
+}
+
+int CvTraitEntry::GetWorldCongressTurnModifier() const
+{
+	return m_iWorldCongressTurnModifier;
+}
+
+int CvTraitEntry::GetWorldCongressTechPrereq() const
+{
+	return m_iWorldCongressTechPrereq;
+}
+
 bool CvTraitEntry::CanPurchaseWonderInGoldenAge() const
 {
 	return m_bCanPurchaseWonderInGoldenAge;
@@ -1918,6 +1942,9 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iTradeRouteLandGoldBonus = kResults.GetInt("TradeRouteLandGoldBonus");
 	m_iTradeRouteSeaGoldBonus = kResults.GetInt("TradeRouteSeaGoldBonus");
 	m_bNewCityAutomaticReligion = kResults.GetBool("NewCityAutomaticReligion");
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	m_bResearchAgreementCountVassalScience = kResults.GetBool("ResearchAgreementCountVassalScience");
 #endif
 
 #if defined(MOD_TRAITS_OTHER_PREREQS)
@@ -2731,6 +2758,9 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iOthersTradeBonusModifier = kResults.GetInt("OthersTradeBonusModifier");
 	m_iGoldenAgeGrowThresholdModifier = kResults.GetInt("GoldenAgeGrowThresholdModifier");
 	m_iShareAllyResearchPercent = kResults.GetInt("ShareAllyResearchPercent");
+	m_iCityStateBaseEffectModifier = kResults.GetInt("CityStateBaseEffectModifier");
+	m_iWorldCongressTurnModifier = kResults.GetInt("WorldCongressTurnModifier");
+	{ const char* sz = kResults.GetText("WorldCongressTechPrereq"); m_iWorldCongressTechPrereq = sz ? (int)GC.getInfoTypeForString(sz) : -1; }
 	m_bCanPurchaseWonderInGoldenAge = kResults.GetBool("CanPurchaseWonderInGoldenAge");
 	m_bCanDiplomaticMarriage = kResults.GetBool("CanDiplomaticMarriage");
 	m_bWLKDCityNoResearchCost = kResults.GetBool("WLKDCityNoResearchCost");
@@ -2996,6 +3026,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			{
 				m_bNewCityAutomaticReligion = true;
 			}
+			if (trait->IsResearchAgreementCountVassalScience())
+			{
+				m_bResearchAgreementCountVassalScience = true;
+			}
 			if (trait->IsCanConquerUC())
 			{
 				m_bCanConquerUC = true;
@@ -3161,6 +3195,9 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iOthersTradeBonusModifier = trait->GetOthersTradeBonusModifier();
 			m_iGoldenAgeGrowThresholdModifier = trait->GetGoldenAgeGrowThresholdModifier();
 			m_iShareAllyResearchPercent = trait->GetShareAllyResearchPercent();
+			m_iCityStateBaseEffectModifier = trait->GetCityStateBaseEffectModifier();
+			m_iWorldCongressTurnModifier = trait->GetWorldCongressTurnModifier();
+			m_iWorldCongressTechPrereq = trait->GetWorldCongressTechPrereq();
 			m_bCanPurchaseWonderInGoldenAge = trait->CanPurchaseWonderInGoldenAge();
 			m_bCanDiplomaticMarriage = trait->CanDiplomaticMarriage();
 			m_bWLKDCityNoResearchCost = trait->IsWLKDCityNoResearchCost();
@@ -3555,6 +3592,7 @@ void CvPlayerTraits::Reset()
 #endif
 	m_bTrainedAll = false;
 	m_bNewCityAutomaticReligion = false;
+	m_bResearchAgreementCountVassalScience = false;
 	m_bCanConquerUC = false;
 	m_bFightWellDamaged = false;
 	m_bBuyOwnedTiles = false;
@@ -5114,6 +5152,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 #endif
 	kStream >> m_bTrainedAll;
 	MOD_SERIALIZE_READ(161, kStream, m_bNewCityAutomaticReligion, false);
+	MOD_SERIALIZE_READ(163, kStream, m_bResearchAgreementCountVassalScience, false);
 	kStream >> m_bCanConquerUC;
 	kStream >> m_bFightWellDamaged;
 	kStream >> m_bBuyOwnedTiles;
@@ -5412,6 +5451,9 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iOthersTradeBonusModifier;
 	kStream >> m_iGoldenAgeGrowThresholdModifier;
 	kStream >> m_iShareAllyResearchPercent;
+	MOD_SERIALIZE_READ(163, kStream, m_iCityStateBaseEffectModifier, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iWorldCongressTurnModifier, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iWorldCongressTechPrereq, -1);
 	kStream >> m_bCanPurchaseWonderInGoldenAge;
 	kStream >> m_bCanDiplomaticMarriage;
 	kStream >> m_bWLKDCityNoResearchCost;
@@ -5549,6 +5591,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 #endif
 	kStream << m_bTrainedAll;
 	MOD_SERIALIZE_WRITE(kStream, m_bNewCityAutomaticReligion);
+	MOD_SERIALIZE_WRITE(kStream, m_bResearchAgreementCountVassalScience);
 	kStream << m_bCanConquerUC;
 	kStream << m_bFightWellDamaged;
 	kStream << m_bBuyOwnedTiles;
@@ -5724,6 +5767,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iOthersTradeBonusModifier;
 	kStream << m_iGoldenAgeGrowThresholdModifier;
 	kStream << m_iShareAllyResearchPercent;
+	MOD_SERIALIZE_WRITE(kStream, m_iCityStateBaseEffectModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iWorldCongressTurnModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iWorldCongressTechPrereq);
 	kStream << m_bCanPurchaseWonderInGoldenAge;
 	kStream << m_bCanDiplomaticMarriage;
 	kStream << m_bWLKDCityNoResearchCost;
@@ -5975,6 +6021,21 @@ int CvPlayerTraits::GetGoldenAgeGrowThresholdModifier() const
 int CvPlayerTraits::GetShareAllyResearchPercent() const
 {
 	return m_iShareAllyResearchPercent;
+}
+
+int CvPlayerTraits::GetCityStateBaseEffectModifier() const
+{
+	return m_iCityStateBaseEffectModifier;
+}
+
+int CvPlayerTraits::GetWorldCongressTurnModifier() const
+{
+	return m_iWorldCongressTurnModifier;
+}
+
+int CvPlayerTraits::GetWorldCongressTechPrereq() const
+{
+	return m_iWorldCongressTechPrereq;
 }
 bool CvPlayerTraits::CanPurchaseWonderInGoldenAge() const
 {

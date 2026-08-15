@@ -177,6 +177,9 @@ public:
 	int GetTradeRouteSeaGoldBonus() const;
 	bool IsNewCityAutomaticReligion() const;
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	bool IsResearchAgreementCountVassalScience() const;
+#endif
 
 	TechTypes GetFreeUnitPrereqTech() const;
 	ImprovementTypes GetCombatBonusImprovement() const;
@@ -356,6 +359,9 @@ public:
 	int GetGoldenAgeGrowThresholdModifier() const;
 
 	int GetShareAllyResearchPercent() const;
+	int GetCityStateBaseEffectModifier() const;
+	int GetWorldCongressTurnModifier() const;
+	int GetWorldCongressTechPrereq() const;
 	bool CanPurchaseWonderInGoldenAge() const;
 	bool CanDiplomaticMarriage() const;
 
@@ -491,6 +497,9 @@ protected:
 	int m_iTradeRouteLandGoldBonus;
 	int m_iTradeRouteSeaGoldBonus;
 	bool m_bNewCityAutomaticReligion;
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	bool m_bResearchAgreementCountVassalScience;
 #endif
 
 	TechTypes m_eFreeUnitPrereqTech;
@@ -643,6 +652,9 @@ protected:
 	int m_iGoldenAgeGrowThresholdModifier = 0;
 
 	int m_iShareAllyResearchPercent = 0;
+	int m_iCityStateBaseEffectModifier = 0;
+	int m_iWorldCongressTurnModifier = 0;
+	int m_iWorldCongressTechPrereq = -1;
 	bool m_bCanPurchaseWonderInGoldenAge = false;
 	bool m_bCanDiplomaticMarriage = false;
 
@@ -1156,6 +1168,10 @@ public:
 	{
 		return m_bNewCityAutomaticReligion;
 	};
+	bool IsResearchAgreementCountVassalScience() const
+	{
+		return m_bResearchAgreementCountVassalScience;
+	};
 	bool IsCanConquerUC() const
 	{
 		return m_bCanConquerUC;
@@ -1496,6 +1512,9 @@ public:
 	int GetGoldenAgeGrowThresholdModifier() const;
 
 	int GetShareAllyResearchPercent() const;
+	int GetCityStateBaseEffectModifier() const;
+	int GetWorldCongressTurnModifier() const;
+	int GetWorldCongressTechPrereq() const;
 	bool CanPurchaseWonderInGoldenAge() const;
 	bool CanDiplomaticMarriage() const;
 	bool IsWLKDCityNoResearchCost() const;
@@ -1642,6 +1661,7 @@ private:
 	// Saved
 	bool m_bTrainedAll = false;
 	bool m_bNewCityAutomaticReligion = false;
+	bool m_bResearchAgreementCountVassalScience = false;
 	bool m_bCanConquerUC = false;
 	bool m_bFightWellDamaged = false;
 	bool m_bBuyOwnedTiles = false;
@@ -1797,6 +1817,9 @@ private:
 	int m_iGoldenAgeGrowThresholdModifier = 0;
 
 	int m_iShareAllyResearchPercent = 0;
+	int m_iCityStateBaseEffectModifier = 0;
+	int m_iWorldCongressTurnModifier = 0;
+	int m_iWorldCongressTechPrereq = -1;
 	bool m_bCanPurchaseWonderInGoldenAge = false;
 	bool m_bCanDiplomaticMarriage = false;
 	bool m_bWLKDCityNoResearchCost = false;
