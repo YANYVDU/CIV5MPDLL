@@ -6841,6 +6841,12 @@ void CvLeague::DoProjectReward(PlayerTypes ePlayer, LeagueProjectTypes eLeaguePr
 				}
 			}
 		}
+
+		// Diplomatic Prestige
+		if (pRewardInfo->GetDiplomaticPrestige() != 0)
+		{
+			GET_PLAYER(ePlayer).ChangeExtraDiplomaticPrestige(pRewardInfo->GetDiplomaticPrestige());
+		}
 	}
 }
 
@@ -10977,6 +10983,7 @@ CvLeagueProjectRewardEntry::CvLeagueProjectRewardEntry(void)
 	m_iGoldenAgePoints					= 0;
 	m_iCityStateInfluenceBoost			= 0;
 	m_iBaseBeakersTurnsToCount			= 0;
+	m_iDiplomaticPrestige				= 0;
 	m_eFreeUnitClass					= NO_UNITCLASS;
 }
 
@@ -10999,6 +11006,7 @@ bool CvLeagueProjectRewardEntry::CacheResults(Database::Results& kResults, CvDat
 	m_iGoldenAgePoints					= kResults.GetInt("GoldenAgePoints");
 	m_iCityStateInfluenceBoost			= kResults.GetInt("CityStateInfluenceBoost");
 	m_iBaseBeakersTurnsToCount			= kResults.GetInt("BaseBeakersTurnsToCount");
+	m_iDiplomaticPrestige				= kResults.GetInt("DiplomaticPrestige");
 	m_eFreeUnitClass					= (UnitClassTypes) GC.getInfoTypeForString(kResults.GetText("FreeUnitClass"), true);
 
 	return true;
@@ -11042,6 +11050,11 @@ int CvLeagueProjectRewardEntry::GetCityStateInfluenceBoost() const
 int CvLeagueProjectRewardEntry::GetBaseBeakersTurnsToCount() const
 {
 	return m_iBaseBeakersTurnsToCount;
+}
+
+int CvLeagueProjectRewardEntry::GetDiplomaticPrestige() const
+{
+	return m_iDiplomaticPrestige;
 }
 
 UnitClassTypes CvLeagueProjectRewardEntry::GetFreeUnitClass() const

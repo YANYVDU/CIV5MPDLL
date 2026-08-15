@@ -2,6 +2,8 @@
 alter table Buildings add DiplomaticPrestige int default 0;
 alter table Policies  add DiplomaticPrestige int default 0;
 alter table Traits    add DiplomaticPrestige int default 0;
+-- League project rewards: one-shot Diplomatic Prestige (e.g. World Trade Organization tier 2)
+alter table LeagueProjectRewards add DiplomaticPrestige int default 0;
 
 -- Diplomatic Overextension Penalty Ratios (GlobalDefines, Rule 20)
 INSERT INTO Defines (Name, Value) VALUES ('DIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER', 10);

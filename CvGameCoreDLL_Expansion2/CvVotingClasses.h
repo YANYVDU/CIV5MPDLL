@@ -1114,6 +1114,7 @@ public:
 	int GetGoldenAgePoints() const;
 	int GetCityStateInfluenceBoost() const;
 	int GetBaseBeakersTurnsToCount() const;
+	int GetDiplomaticPrestige() const;
 	UnitClassTypes GetFreeUnitClass() const;
 
 protected:
@@ -1125,6 +1126,7 @@ protected:
 	int m_iGoldenAgePoints;
 	int m_iCityStateInfluenceBoost;
 	int m_iBaseBeakersTurnsToCount;
+	int m_iDiplomaticPrestige;
 	UnitClassTypes m_eFreeUnitClass;
 
 
