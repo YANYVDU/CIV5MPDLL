@@ -260,6 +260,12 @@ protected:
 	static int lSetPlotExtraYield(lua_State* L);
 	static int lSetPlotExtraYieldSync(lua_State* L);
 	static int lChangePlotExtraCost(lua_State* L);
+	static int lSetPlotName(lua_State* L);
+	static int lGetPlotName(lua_State* L);
+	static int lRemovePlotName(lua_State* L);
+	static int lGetAllPlotNames(lua_State* L);
+
+	static int lGetProjectFirstData(lua_State* L);
 
 	static int lIsCivEverActive(lua_State* L);
 	static int lIsLeaderEverActive(lua_State* L);

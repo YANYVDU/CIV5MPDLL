@@ -15,6 +15,7 @@
 #include "CvDiplomacyAI.h"
 #include "CvGrandStrategyAI.h"
 #include "CvTypes.h"
+#include "CvCityStateUAClasses.h"
 
 #include "LintFree.h"
 
@@ -3590,6 +3591,21 @@ void CvPlayerCulture::DoPublicOpinion()
 		}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			CvPlayerCityStateUA* pDubaiUA = kPlayer.GetPlayerCityStateUA();
+			if (pDubaiUA != NULL)
+			{
+				int iDubaiPressureMod = pDubaiUA->GetIdeologyPressurePerDonationHappiness() * kPlayer.GetGoldDonationHappiness();
+				if (iDubaiPressureMod != 0)
+				{
+					iCulturalDominanceOverUs = (100 + iDubaiPressureMod) * iCulturalDominanceOverUs / 100;
+				}
+			}
+		}
+#endif
+
 		if (eOtherCivIdeology == eFreedomBranch)
 		{
 			iPressureForFreedom += iCulturalDominanceOverUs;
@@ -4527,6 +4543,13 @@ void CvCityCulture::CalculateBaseTourismBeforeModifiers(CvString& toolTipSink)
 		{
 			iPercent += iReligionPercent;
 		}
+	}
+	int iTotalX = m_pCity->GetCityBuildings()->GetLandmarksTourismPerXForeignFollowers();
+	if(iTotalX > 0)
+	{
+		int iForeignFollowers = kPlayer.GetReligions()->GetNumForeignFollowers(false);
+		int iBonus = iForeignFollowers / iTotalX;
+		iPercent += iBonus;
 	}
 #endif
 	if (iPercent > 0)

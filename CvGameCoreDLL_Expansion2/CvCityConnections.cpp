@@ -223,6 +223,11 @@ void CvCityConnections::UpdateRouteInfo(void)
 
 	// build city list
 	FStaticVector<CvCity*, SAFE_ESTIMATE_NUM_CITIES, true, c_eCiv5GameplayDLL, 0> vpCities;
+	// Track the player's own cities and their pre-update connection state so the
+	// deferred religion refresh below only touches cities whose connection actually
+	// changed (avoiding a per-city UpdateReligion cascade during the batch reset).
+	std::vector<CvCity*> vpOwnCities;
+	std::vector<bool> vbOwnOldConnected;
 	CvCity* pLoopCity = NULL;
 	int iLoop;
 
@@ -251,7 +256,9 @@ void CvCityConnections::UpdateRouteInfo(void)
 			for(pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
 			{
 				vpCities.push_back(pLoopCity);
-				pLoopCity->SetRouteToCapitalConnected(false);
+				vpOwnCities.push_back(pLoopCity);
+				vbOwnOldConnected.push_back(pLoopCity->IsRouteToCapitalConnected());
+				pLoopCity->SetRouteToCapitalConnected(false, true);
 
 #if defined(MOD_EVENTS_CITY_CONNECTIONS)
 				if(!bAllowIndirectRoutes)
@@ -311,6 +318,13 @@ void CvCityConnections::UpdateRouteInfo(void)
 	if(eBestRouteType == NO_ROUTE && !bAllowWaterRoutes)
 #endif
 	{
+		// No route types available: every own city was just reset to disconnected.
+		// Refresh religion only for cities whose connection state actually changed.
+		for(uint ui = 0; ui < vpOwnCities.size(); ui++)
+		{
+			if(vpOwnCities[ui]->IsRouteToCapitalConnected() != vbOwnOldConnected[ui])
+				vpOwnCities[ui]->UpdateReligion(vpOwnCities[ui]->GetCityReligions()->GetReligiousMajority());
+		}
 		return;
 	}
 
@@ -345,10 +359,15 @@ void CvCityConnections::UpdateRouteInfo(void)
 		CvAStar* pkLandRouteFinder;
 		pkLandRouteFinder = &GC.getRouteFinder();
 
+		// Precompute city->plotIndex mapping to avoid O(n) GetIndexFromCity in inner loop
+		std::vector<int> aiCityPlotIdx(vpCities.size());
+		for(uint _i = 0; _i < vpCities.size(); _i++)
+			aiCityPlotIdx[_i] = (int)GetIndexFromCity(vpCities[_i]);
+
 		for(uint uiFirstCityIndex = 0; uiFirstCityIndex < vpCities.size(); uiFirstCityIndex++)
 		{
 			pFirstCity = vpCities[uiFirstCityIndex];
-			int iFirstCityArrayIndex = GetIndexFromCity(pFirstCity);
+			int iFirstCityArrayIndex = aiCityPlotIdx[uiFirstCityIndex];
 
 			for(uint uiSecondCityIndex = 0; uiSecondCityIndex < vpCities.size(); uiSecondCityIndex++)
 			{
@@ -358,7 +377,7 @@ void CvCityConnections::UpdateRouteInfo(void)
 					continue;
 				}
 				pSecondCity = vpCities[uiSecondCityIndex];
-				int iSecondCityArrayIndex = GetIndexFromCity(pSecondCity);
+				int iSecondCityArrayIndex = aiCityPlotIdx[uiSecondCityIndex];
 
 				RouteInfo* pRouteInfo = GetRouteInfo(iFirstCityArrayIndex, iSecondCityArrayIndex);
 				RouteInfo* pInverseRouteInfo = GetRouteInfo(iSecondCityArrayIndex, iFirstCityArrayIndex);
@@ -498,13 +517,20 @@ void CvCityConnections::UpdateRouteInfo(void)
 								pNode = pNode->m_pParent;
 							}
 
-							pFirstCity->SetRouteToCapitalConnected(true);
-							pSecondCity->SetRouteToCapitalConnected(true);
+							pFirstCity->SetRouteToCapitalConnected(true, true);
+							pSecondCity->SetRouteToCapitalConnected(true, true);
 						}
 					}
 				}
 			}
 		}
+	}
+	// Deferred religion refresh: only own cities whose connection actually changed
+	// need a religion yield recompute (batch reset above suppressed per-city updates).
+	for(uint ui = 0; ui < vpOwnCities.size(); ui++)
+	{
+		if(vpOwnCities[ui]->IsRouteToCapitalConnected() != vbOwnOldConnected[ui])
+			vpOwnCities[ui]->UpdateReligion(vpOwnCities[ui]->GetCityReligions()->GetReligiousMajority());
 	}
 }
 

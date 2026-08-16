@@ -20,6 +20,7 @@ public:
 
 	BuildingClassTypes GetCityHallBuildingClass() const;
 	BuildingClassTypes GetPublicSecurityBuildingClass() const;
+	int GetCorruptionUnhappiness() const;
 
 private:
 	int m_iScoreLowerBoundBase = 0;
@@ -31,6 +32,7 @@ private:
 
 	BuildingClassTypes m_eCityHallBuildingClass = NO_BUILDINGCLASS;
 	BuildingClassTypes m_ePublicSecurityBuildingClass = NO_BUILDINGCLASS;
+	int m_iCorruptionUnhappiness = 0;
 };
 
 class CvCorruptionLevelXMLEntries {

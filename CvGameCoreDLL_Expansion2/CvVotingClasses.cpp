@@ -102,6 +102,16 @@ CvString LeagueHelpers::GetTextForChoice(ResolutionDecisionTypes eDecision, int 
 			}
 			break;
 		}
+	case RESOLUTION_DECISION_CITY_CSD:
+		{
+			if (iChoice >= MAX_MAJOR_CIVS && iChoice < MAX_CIV_PLAYERS)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_RESOLUTION_CHOICE_PLAYER");
+				sTemp << GET_PLAYER((PlayerTypes)iChoice).getCivilizationShortDescriptionKey();
+				s = sTemp.toUTF8();
+			}
+			break;
+		}
 	default:
 		{
 			break;
@@ -206,6 +216,20 @@ CvResolutionEffects::CvResolutionEffects(void)
 	iGlobalWarCasualtiesChanges = 0;
 	bEmbargoIdeology = false;
 #endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bPermanentAlly = false;
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	bSubmitSuzerain = false;
+	iVassalTaxPercent = 0;
+	bVassalTaxScience = false;
+	bVassalTaxCulture = false;
+	bVassalTaxFaith = false;
+	bVassalTaxGold = false;
+	bVassalForcePeace = false;
+	bVassalNoDenounce = false;
+	bVassalGetUC = false;
+#endif
 }
 
 CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
@@ -243,6 +267,25 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		iGlobalAttackModifier 				= pInfo->GetGlobalAttackModifier();
 		iGlobalWarCasualtiesChanges 		= pInfo->GetGlobalWarCasualtiesChanges();
 		bEmbargoIdeology					= pInfo->IsEmbargoIdeology();
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bPermanentAlly = false;
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+		// A resolution establishes vassalage if it levies any vassal tax or grants UC access.
+		// Checking the tax flags too (not just VassalTaxPercent) avoids silently ignoring a
+		// resolution that only sets a tax type.
+		bSubmitSuzerain = (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC()
+			|| pInfo->IsVassalTaxScience() || pInfo->IsVassalTaxCulture()
+			|| pInfo->IsVassalTaxFaith() || pInfo->IsVassalTaxGold());
+		iVassalTaxPercent = pInfo->GetVassalTaxPercent();
+		bVassalTaxScience = pInfo->IsVassalTaxScience();
+		bVassalTaxCulture = pInfo->IsVassalTaxCulture();
+		bVassalTaxFaith = pInfo->IsVassalTaxFaith();
+		bVassalTaxGold = pInfo->IsVassalTaxGold();
+		bVassalForcePeace = pInfo->IsVassalForcePeace();
+		bVassalNoDenounce = pInfo->IsVassalNoDenounce();
+		bVassalGetUC = pInfo->IsVassalGetUC();
 #endif
 	}
 }
@@ -316,8 +359,17 @@ bool CvResolutionEffects::HasOngoingEffects() const
 	if (iGlobalWarCasualtiesChanges != 0)
 		return true;	
 	if (bEmbargoIdeology)
-		return true;	
-#endif	
+		return true;
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (bPermanentAlly)
+		return true;
+#endif
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	if (bSubmitSuzerain)
+		return true;
+#endif
 
 	return false;
 }
@@ -353,6 +405,17 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iGlobalAttackModifier					+= pOtherEffects->iGlobalAttackModifier;
 	iGlobalWarCasualtiesChanges				+= pOtherEffects->iGlobalWarCasualtiesChanges;
 	bEmbargoIdeology						|= pOtherEffects->bEmbargoIdeology; // target ideology	
+#if defined(MOD_GLOBAL_SUZERAIN)
+	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
+	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
+	bVassalTaxScience						|= pOtherEffects->bVassalTaxScience;
+	bVassalTaxCulture						|= pOtherEffects->bVassalTaxCulture;
+	bVassalTaxFaith							|= pOtherEffects->bVassalTaxFaith;
+	bVassalTaxGold							|= pOtherEffects->bVassalTaxGold;
+	bVassalForcePeace						|= pOtherEffects->bVassalForcePeace;
+	bVassalNoDenounce						|= pOtherEffects->bVassalNoDenounce;
+	bVassalGetUC							|= pOtherEffects->bVassalGetUC;
+#endif
 #endif		
 }
 
@@ -461,7 +524,25 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	loadFrom >> writeTo.iGlobalAttackModifier;
 	loadFrom >> writeTo.iGlobalWarCasualtiesChanges;
 	loadFrom >> writeTo.bEmbargoIdeology;
-#endif	
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (uiVersion >= 10)
+		loadFrom >> writeTo.bPermanentAlly;
+	else
+		writeTo.bPermanentAlly = false;
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bSubmitSuzerain, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.iVassalTaxPercent, 0);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxScience, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxCulture, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxFaith, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalTaxGold, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalForcePeace, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalNoDenounce, false);
+	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalGetUC, false);
+#endif
+
 
 	return loadFrom;
 }
@@ -469,7 +550,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 // Serialization Write
 FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom)
 {
-	uint uiVersion = 9;
+	uint uiVersion = 10;
 
 	saveTo << uiVersion;
 	MOD_SERIALIZE_INIT_WRITE(saveTo);
@@ -503,7 +584,21 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	saveTo << readFrom.iGlobalAttackModifier;
 	saveTo << readFrom.iGlobalWarCasualtiesChanges;
 	saveTo << readFrom.bEmbargoIdeology;
-#endif	
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	saveTo << readFrom.bPermanentAlly;
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bSubmitSuzerain);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalTaxPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxScience);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxCulture);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxFaith);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalTaxGold);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalForcePeace);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalNoDenounce);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalGetUC);
+#endif
 
 	return saveTo;
 }
@@ -1312,6 +1407,11 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	{
 		eTargetIdeology = (PolicyBranchTypes) GetProposerDecision()->GetDecision();
 	}
+	PlayerTypes eTargetCityState = NO_PLAYER;
+	if (eProposerDecision == RESOLUTION_DECISION_CITY_CSD)
+	{
+		eTargetCityState = (PlayerTypes) GetProposerDecision()->GetDecision();
+	}
 
 	// == Voter Choices ==
 	ResolutionDecisionTypes eVoterDecision = GetVoterDecision()->GetType();
@@ -1507,6 +1607,92 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	}
 #endif
 	
+	// Civilization-unique proposal: lock target CS as permanent ally
+	// Only the proposer gets the effect, not every league member
+	if (eTargetCityState != NO_PLAYER && ePlayer == GetProposerDecision()->GetProposer())
+	{
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eTargetCityState).GetMinorCivAI();
+		if (pMinorAI)
+		{
+			// Set influence above current ally to become the new ally
+			int iHighest = pMinorAI->GetAlliesThresholdForPlayer(ePlayer);
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+			{
+				PlayerTypes e = (PlayerTypes)i;
+				if (GET_PLAYER(e).isAlive() && e != ePlayer)
+				{
+					int iTheir = pMinorAI->GetEffectiveFriendshipWithMajor(e);
+					if (iTheir > iHighest) iHighest = iTheir;
+				}
+			}
+			pMinorAI->SetFriendshipWithMajor(ePlayer, iHighest + 1);
+			// Mark as permanent ally to prevent decay and coups
+			GetEffects()->bPermanentAlly = true;
+			if (!pPlayer->IsPermanentAlly(eTargetCityState))
+			{
+				pPlayer->SetPermanentAlly(eTargetCityState, true);
+				pPlayer->ChangePrestigeExemptAllyCount(1);
+
+				// Clear all quests and notify players
+				pMinorAI->ResetQuestList();
+
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED");
+				sTemp << pPlayer->getCivilizationShortDescriptionKey();
+				sTemp << GET_PLAYER(eTargetCityState).getCivilizationShortDescriptionKey();
+				CvString sMsg = sTemp.toUTF8();
+				for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+				{
+					PlayerTypes e = (PlayerTypes)i;
+					if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isHuman())
+						pMinorAI->AddNotification(sMsg, sMsg, e, -1, -1);
+				}
+			}
+		}
+	}
+
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	if (GetEffects()->bSubmitSuzerain)
+	{
+		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
+		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
+		// Guard against invalid decision targets (e.g. a dead or missing player)
+		if (eOverlord != NO_PLAYER && eVassal != NO_PLAYER)
+		{
+			CvPlayer& kOverlord = GET_PLAYER(eOverlord);
+			CvPlayer& kVassal = GET_PLAYER(eVassal);
+			// If the target is already someone's vassal, skip (first resolution wins)
+			if (kVassal.GetOverlord() == NO_PLAYER)
+			{
+				// Establish vassal relationship
+				kOverlord.AddVassal(eVassal);
+				kVassal.SetOverlord(eOverlord);
+				// Vassalization changes the overlord's effective control over original capitals -
+				// re-check domination victory immediately rather than waiting for the next city capture
+				GC.getGame().DoTestConquestVictory();
+				// Force peace between overlord and vassal
+				if (GetEffects()->bVassalForcePeace)
+				{
+					TeamTypes eTeamA = kOverlord.getTeam();
+					TeamTypes eTeamB = kVassal.getTeam();
+					GET_TEAM(eTeamA).setForcePeace(eTeamB, true);
+					GET_TEAM(eTeamB).setForcePeace(eTeamA, true);
+				}
+				// Clear denouncements between overlord and vassal
+				if (GetEffects()->bVassalNoDenounce)
+				{
+					kOverlord.GetDiplomacyAI()->SetDenouncedPlayer(eVassal, false);
+					kVassal.GetDiplomacyAI()->SetDenouncedPlayer(eOverlord, false);
+				}
+				// Grant overlord access to vassal unique components
+				if (GetEffects()->bVassalGetUC)
+				{
+					kOverlord.RefreshUCFromVassals();
+				}
+			}
+		}
+	}
+#endif
 	m_iTurnEnacted = GC.getGame().getGameTurn();
 }
 
@@ -1686,6 +1872,40 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 #if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
 #endif
 	
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	if (GetEffects()->bSubmitSuzerain)
+	{
+		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
+		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
+		// Guard against invalid decision targets (e.g. a dead or missing player)
+		if (eOverlord != NO_PLAYER && eVassal != NO_PLAYER)
+		{
+			CvPlayer& kOverlord = GET_PLAYER(eOverlord);
+			CvPlayer& kVassal = GET_PLAYER(eVassal);
+			// Only remove if this resolution actually established the relationship
+			if (kVassal.GetOverlord() == eOverlord)
+			{
+				// Remove vassal relationship
+				kOverlord.RemoveVassal(eVassal);
+				kVassal.SetOverlord(NO_PLAYER);
+				// Remove force peace
+				if (GetEffects()->bVassalForcePeace)
+				{
+					TeamTypes eTeamA = kOverlord.getTeam();
+					TeamTypes eTeamB = kVassal.getTeam();
+					GET_TEAM(eTeamA).setForcePeace(eTeamB, false);
+					GET_TEAM(eTeamB).setForcePeace(eTeamA, false);
+				}
+				// Remove UC access acquired from vassals
+				if (GetEffects()->bVassalGetUC)
+				{
+					kOverlord.RefreshUCFromVassals();
+				}
+			}
+		}
+	}
+#endif
 	m_iTurnEnacted = -1;
 }
 
@@ -2092,6 +2312,30 @@ int CvLeague::GetSessionTurnInterval()
 	// Modified by game speed
 	iInterval = (iInterval * GC.getGame().getGameSpeedInfo().getLeaguePercent()) / 100;
 
+
+	// Trait: WorldCongressTurnModifier = reduction percent (e.g. 30 = interval reduced by 30%)
+	// Sum the reductions across all living players, floor the interval at 1
+	int iTotalModifier = 0;
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive())
+		{
+			int iTraitMod = GET_PLAYER(e).GetPlayerTraits()->GetWorldCongressTurnModifier();
+			if (iTraitMod > 0 && iTraitMod < 100)
+			{
+				iTotalModifier += iTraitMod;
+			}
+		}
+	}
+	if (iTotalModifier > 0)
+	{
+		iInterval = (iInterval * (100 - iTotalModifier)) / 100;
+		if (iInterval < 1)
+		{
+			iInterval = 1;
+		}
+	}
 	if (DEBUG_LEAGUES)
 	{
 		return 2;
@@ -2515,13 +2759,20 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 		// Must be a proposal that can be made by players
 		if (pInfo->IsNoProposalByPlayer())
 		{
-			if (sTooltipSink != NULL)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Check civilization-specific resolution access
+			if (pInfo->GetCivilizationType() == NO_CIVILIZATION ||
+				pInfo->GetCivilizationType() != GET_PLAYER(eProposer).getCivilizationType())
+#endif
 			{
-				(*sTooltipSink) += "[NEWLINE][NEWLINE][COLOR_WARNING_TEXT]";
-				(*sTooltipSink) += Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_INVALID_RESOLUTION_NO_PLAYER_PROPOSAL").toUTF8();
-				(*sTooltipSink) += "[ENDCOLOR]";
+				if (sTooltipSink != NULL)
+				{
+					(*sTooltipSink) += "[NEWLINE][NEWLINE][COLOR_WARNING_TEXT]";
+					(*sTooltipSink) += Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_INVALID_RESOLUTION_NO_PLAYER_PROPOSAL").toUTF8();
+					(*sTooltipSink) += "[ENDCOLOR]";
+				}
+				bValid = false;
 			}
-			bValid = false;
 		}
 
 		// Must be a member
@@ -2647,6 +2898,38 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 	}
 #endif
 	
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Check vassal suzerain resolution conditions
+	if (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC()
+		|| pInfo->IsVassalTaxScience() || pInfo->IsVassalTaxCulture()
+		|| pInfo->IsVassalTaxFaith() || pInfo->IsVassalTaxGold())
+	{
+		PlayerTypes eTarget = (PlayerTypes)iChoice;
+		if (eTarget != NO_PLAYER && eTarget != eProposer && eProposer != NO_PLAYER)
+		{
+			CvPlayer& kProposer = GET_PLAYER(eProposer);
+			CvPlayer& kTarget = GET_PLAYER(eTarget);
+			// 2x condition: population, cities, and military might must all exceed target
+			if (kProposer.getTotalPopulation() < kTarget.getTotalPopulation() * 2)
+				bValid = false;
+			if (kProposer.getNumCities() < kTarget.getNumCities() * 2)
+				bValid = false;
+			if (kProposer.GetMilitaryMight() < kTarget.GetMilitaryMight() * 2)
+				bValid = false;
+			// Target must not already have an overlord
+			if (kTarget.GetOverlord() != NO_PLAYER)
+				bValid = false;
+			// Proposer must not already be a vassal
+			if (kProposer.GetOverlord() != NO_PLAYER)
+				bValid = false;
+		}
+		else
+		{
+			bValid = false;
+		}
+	}
+#endif
 	return bValid;
 }
 
@@ -3030,7 +3313,52 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 		{
 			if (m_vMembers[i].ePlayer != eDecider && !GET_PLAYER(m_vMembers[i].ePlayer).isMinorCiv())
 			{
-				vChoices.push_back(m_vMembers[i].ePlayer);
+#if defined(MOD_GLOBAL_SUZERAIN)
+				PlayerTypes eMember = m_vMembers[i].ePlayer;
+				bool bSkip = false;
+				// Skip players already vassalized or already targeted by a vassalization resolution
+				if (GET_PLAYER(eMember).GetOverlord() != NO_PLAYER)
+				{
+					bSkip = true;
+				}
+				if (!bSkip)
+				{
+					for (uint j = 0; j < m_vEnactProposals.size(); j++)
+					{
+						if (m_vEnactProposals[j].GetEffects()->bSubmitSuzerain &&
+							m_vEnactProposals[j].GetProposerDecision()->GetDecision() == (int)eMember)
+						{
+							bSkip = true;
+							break;
+						}
+					}
+				}
+				if (!bSkip)
+				{
+					CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+					if (pLeagues)
+					{
+						CvLeague* pLeague = pLeagues->GetActiveLeague();
+						if (pLeague)
+						{
+							ActiveResolutionList vRes = pLeague->GetActiveResolutions();
+							for (size_t j = 0; j < vRes.size(); j++)
+							{
+								if (vRes[j].GetEffects()->bSubmitSuzerain &&
+									vRes[j].GetProposerDecision()->GetDecision() == (int)eMember)
+								{
+									bSkip = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+				if (!bSkip)
+#endif
+				{
+					vChoices.push_back(m_vMembers[i].ePlayer);
+				}
 			}
 		}
 		break;
@@ -3057,6 +3385,41 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 				if (pInfo->IsPurchaseByLevel())
 				{
 					vChoices.push_back(pInfo->GetID());
+				}
+			}
+		}
+		break;
+	case RESOLUTION_DECISION_CITY_CSD:
+		for (int i = MAX_MAJOR_CIVS; i < MAX_CIV_PLAYERS; i++)
+		{
+			PlayerTypes e = (PlayerTypes)i;
+			if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isMinorCiv())
+			{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Skip CSes already under permanent ally resolution
+				bool bSkip = false;
+				CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+				if (pLeagues)
+				{
+					CvLeague* pLeague = pLeagues->GetActiveLeague();
+					if (pLeague)
+					{
+						ActiveResolutionList vRes = pLeague->GetActiveResolutions();
+						for (size_t j = 0; j < vRes.size(); j++)
+						{
+							if (vRes[j].GetEffects()->bPermanentAlly &&
+								vRes[j].GetProposerDecision()->GetDecision() == i)
+							{
+								bSkip = true;
+								break;
+							}
+						}
+					}
+				}
+				if (!bSkip)
+#endif
+				{
+					vChoices.push_back(i);
 				}
 			}
 		}
@@ -6478,6 +6841,12 @@ void CvLeague::DoProjectReward(PlayerTypes ePlayer, LeagueProjectTypes eLeaguePr
 				}
 			}
 		}
+
+		// Diplomatic Prestige
+		if (pRewardInfo->GetDiplomaticPrestige() != 0)
+		{
+			GET_PLAYER(ePlayer).ChangeExtraDiplomaticPrestige(pRewardInfo->GetDiplomaticPrestige());
+		}
 	}
 }
 
@@ -6918,8 +7287,18 @@ void CvGameLeagues::DoTurn()
 				PlayerTypes eCiv = (PlayerTypes) iCiv;
 				if (GET_PLAYER(eCiv).isAlive())
 				{
-					// Has the unlock from tech?
-					if (GET_TEAM(GET_PLAYER(eCiv).getTeam()).HasTechForWorldCongress())
+						// Has the unlock from tech?
+						bool bHasWC = GET_TEAM(GET_PLAYER(eCiv).getTeam()).HasTechForWorldCongress();
+						// Trait: WorldCongressTechPrereq (e.g. TECH_MATHEMATICS for Tiandao)
+						if (!bHasWC)
+						{
+							int iAltTech = GET_PLAYER(eCiv).GetPlayerTraits()->GetWorldCongressTechPrereq();
+							if (iAltTech != -1)
+							{
+								bHasWC = GET_TEAM(GET_PLAYER(eCiv).getTeam()).GetTeamTechs()->HasTech((TechTypes)iAltTech);
+							}
+						}
+						if (bHasWC)
 					{
 						// Met every other civ?
 						bool bMetEveryone = true;
@@ -9871,6 +10250,39 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 	}
 #endif
 
+	// Vassal/Suzerain resolution: AI colludes against humans, otherwise score by opinion of the target
+#if defined(MOD_GLOBAL_SUZERAIN)
+	if (pProposal->GetEffects()->bSubmitSuzerain)
+	{
+		if (eTargetPlayer != NO_PLAYER)
+		{
+			if (GET_PLAYER(eTargetPlayer).isHuman())
+			{
+				// Human develops fastest - limit them first, and ride their fast lane via vassal tax
+				iScore += 60;
+			}
+			else if (eTargetPlayer == GetPlayer()->GetID())
+			{
+				// We are the target - becoming a vassal costs us yields
+				iScore += -100;
+			}
+			else
+			{
+				// AI target: score by our opinion of them (enemy = worth subjugating, friend = protect them)
+				MajorCivOpinionTypes eOpinion = GetPlayer()->GetDiplomacyAI()->GetMajorCivOpinion(eTargetPlayer);
+				if (eOpinion <= MAJOR_CIV_OPINION_COMPETITOR)
+				{
+					iScore += 20;
+				}
+				else if (eOpinion >= MAJOR_CIV_OPINION_FRIEND)
+				{
+					iScore += -40;
+				}
+			}
+		}
+	}
+#endif
+
 	// == Diplomat knowledge, Vote Commitments we secured ==
 
 	// == Alignment with Proposer ==
@@ -9910,6 +10322,39 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 				break;
 			}
 		}
+	}
+
+	// Tiandao unique resolution: score based on whether voter is the target CS ally
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		int iTiandaoRes = GC.getInfoTypeForString("RESOLUTION_TIANDAO_PROPOSAL", true);
+		if ((int)pProposal->GetType() == iTiandaoRes)
+			{
+				PlayerTypes eTargetCS = NO_PLAYER;
+				if (pProposal->GetProposerDecision()->GetType() == RESOLUTION_DECISION_CITY_CSD)
+					eTargetCS = (PlayerTypes)pProposal->GetProposerDecision()->GetDecision();
+
+				if (eTargetCS != NO_PLAYER)
+				{
+					// Score based on our desire to control this CS (same logic as gold gifting)
+					MinorCivApproachTypes eApproach = GetPlayer()->GetDiplomacyAI()->GetMinorCivApproach(eTargetCS);
+					if (eApproach == MINOR_CIV_APPROACH_PROTECTIVE || eApproach == MINOR_CIV_APPROACH_FRIENDLY)
+					{
+						// We want this CS - don't give it to Tiandao
+						iScore += -25;
+					}
+					else if (eApproach == MINOR_CIV_APPROACH_CONQUEST)
+					{
+						// We want to conquer it - let Tiandao have it (permanent ally means we can't conquer)
+						iScore += -10;
+					}
+					else
+					{
+						// IGNORE or other - don't care, support the proposal
+						iScore += 8;
+					}
+				}
+			}
 	}
 
 	// == Post-Processing ==
@@ -10538,6 +10983,7 @@ CvLeagueProjectRewardEntry::CvLeagueProjectRewardEntry(void)
 	m_iGoldenAgePoints					= 0;
 	m_iCityStateInfluenceBoost			= 0;
 	m_iBaseBeakersTurnsToCount			= 0;
+	m_iDiplomaticPrestige				= 0;
 	m_eFreeUnitClass					= NO_UNITCLASS;
 }
 
@@ -10560,6 +11006,7 @@ bool CvLeagueProjectRewardEntry::CacheResults(Database::Results& kResults, CvDat
 	m_iGoldenAgePoints					= kResults.GetInt("GoldenAgePoints");
 	m_iCityStateInfluenceBoost			= kResults.GetInt("CityStateInfluenceBoost");
 	m_iBaseBeakersTurnsToCount			= kResults.GetInt("BaseBeakersTurnsToCount");
+	m_iDiplomaticPrestige				= kResults.GetInt("DiplomaticPrestige");
 	m_eFreeUnitClass					= (UnitClassTypes) GC.getInfoTypeForString(kResults.GetText("FreeUnitClass"), true);
 
 	return true;
@@ -10603,6 +11050,11 @@ int CvLeagueProjectRewardEntry::GetCityStateInfluenceBoost() const
 int CvLeagueProjectRewardEntry::GetBaseBeakersTurnsToCount() const
 {
 	return m_iBaseBeakersTurnsToCount;
+}
+
+int CvLeagueProjectRewardEntry::GetDiplomaticPrestige() const
+{
+	return m_iDiplomaticPrestige;
 }
 
 UnitClassTypes CvLeagueProjectRewardEntry::GetFreeUnitClass() const
@@ -10796,6 +11248,17 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_iGlobalWarCasualtiesChanges		= 0;
 	m_bEmbargoIdeology					= false;
 #endif
+	m_eCivilizationType = NO_CIVILIZATION;
+#if defined(MOD_GLOBAL_SUZERAIN)
+	m_iVassalTaxPercent = 0;
+	m_bVassalTaxScience = false;
+	m_bVassalTaxCulture = false;
+	m_bVassalTaxFaith = false;
+	m_bVassalTaxGold = false;
+	m_bVassalForcePeace = false;
+	m_bVassalNoDenounce = false;
+	m_bVassalGetUC = false;
+#endif
 }
 
 CvResolutionEntry::~CvResolutionEntry(void)
@@ -10815,6 +11278,8 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_bAutomaticProposal				= kResults.GetBool("AutomaticProposal");
 	m_bUniqueType						= kResults.GetBool("UniqueType");
 	m_bNoProposalByPlayer				= kResults.GetBool("NoProposalByPlayer");
+	const char* szCivType = kResults.GetText("CivilizationType");
+	m_eCivilizationType = (CivilizationTypes)GC.getInfoTypeForString(szCivType, true);
 	m_iQuorumPercent					= kResults.GetInt("QuorumPercent");
 	m_iLeadersVoteBonusOnFail			= kResults.GetInt("LeadersVoteBonusOnFail");
 	m_bDiplomaticVictory				= kResults.GetBool("DiplomaticVictory");
@@ -10847,6 +11312,16 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iGlobalWarCasualtiesChanges		= kResults.GetInt("GlobalWarCasualtiesChanges");
 	m_bEmbargoIdeology					= kResults.GetBool("EmbargoIdeology");
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
+	m_bVassalTaxScience = kResults.GetBool("VassalTaxScience");
+	m_bVassalTaxCulture = kResults.GetBool("VassalTaxCulture");
+	m_bVassalTaxFaith   = kResults.GetBool("VassalTaxFaith");
+	m_bVassalTaxGold    = kResults.GetBool("VassalTaxGold");
+	m_bVassalForcePeace = kResults.GetBool("VassalForcePeace");
+	m_bVassalNoDenounce = kResults.GetBool("VassalNoDenounce");
+	m_bVassalGetUC      = kResults.GetBool("VassalGetUC");
+#endif
 	return true;
 }
 
@@ -10878,6 +11353,11 @@ bool CvResolutionEntry::IsUniqueType() const
 bool CvResolutionEntry::IsNoProposalByPlayer() const
 {
 	return m_bNoProposalByPlayer;
+}
+
+CivilizationTypes CvResolutionEntry::GetCivilizationType() const
+{
+	return m_eCivilizationType;
 }
 
 int CvResolutionEntry::GetQuorumPercent() const
@@ -11028,6 +11508,41 @@ bool CvResolutionEntry::IsEmbargoIdeology() const
 	return m_bEmbargoIdeology;
 }
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+int CvResolutionEntry::GetVassalTaxPercent() const
+{
+	return m_iVassalTaxPercent;
+}
+bool CvResolutionEntry::IsVassalTaxScience() const
+{
+	return m_bVassalTaxScience;
+}
+bool CvResolutionEntry::IsVassalTaxCulture() const
+{
+	return m_bVassalTaxCulture;
+}
+bool CvResolutionEntry::IsVassalTaxFaith() const
+{
+	return m_bVassalTaxFaith;
+}
+bool CvResolutionEntry::IsVassalTaxGold() const
+{
+	return m_bVassalTaxGold;
+}
+bool CvResolutionEntry::IsVassalForcePeace() const
+{
+	return m_bVassalForcePeace;
+}
+bool CvResolutionEntry::IsVassalNoDenounce() const
+{
+	return m_bVassalNoDenounce;
+}
+bool CvResolutionEntry::IsVassalGetUC() const
+{
+	return m_bVassalGetUC;
+}
+#endif
+
 
 // ================================================================================
 //			CvResolutionXMLEntries

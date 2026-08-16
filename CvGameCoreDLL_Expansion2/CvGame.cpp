@@ -88,6 +88,10 @@ CvGameInitialItemsOverrides::CvGameInitialItemsOverrides()
 }
 
 //------------------------------------------------------------------------------
+// static member definition for the transient acquireCity suppression counter
+// (declared in CvGame.h; CvGame is a singleton so a static counter matches its lifetime)
+int CvGame::m_iSuppressHappinessUpdate = 0;
+
 CvGame::CvGame() :
 	m_jonRand(false)
 	, m_endTurnTimer()
@@ -106,6 +110,7 @@ CvGame::CvGame() :
 #endif // MOD_API_MP_PLOT_SIGNAL
 	
 {
+	m_iSuppressHappinessUpdate = 0; // reset transient suppression counter (guards against residue across game restarts)
 	m_aiEndTurnMessagesReceived = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);
 	m_aiRankPlayer = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);        // Ordered by rank...
 	m_aiPlayerRank = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);        // Ordered by player ID...
@@ -975,6 +980,9 @@ void CvGame::uninit()
 
 	m_aPlotExtraYields.clear();
 	m_aPlotExtraCosts.clear();
+	m_mapPlotNames.clear();
+	m_mapProjectFirstPlayer.clear();
+	m_mapProjectFirstCityName.clear();
 
 	SAFE_DELETE(m_pDiploResponseQuery);
 
@@ -7749,6 +7757,7 @@ void CvGame::removeGreatPersonBornName(const CvString& szName)
 //	--------------------------------------------------------------------------------
 void CvGame::doTurn()
 {
+	AI_PERF_FORMAT("AI-perf.csv", ("CvGame::doTurn, Turn %03d", GC.getGame().getElapsedGameTurns()) );
 #ifndef FINAL_RELEASE
 	char temp[256];
 	sprintf_s(temp, "Turn %i\n", getGameTurn());
@@ -8535,9 +8544,33 @@ void CvGame::updateMoves()
 				{
 					if(needsAIUpdate || !player.isHuman())
 					{
+						int iLastSliceMovedBefore = player.GetLastSliceMoved();
 						player.AI_unitUpdate();
 
-						NET_MESSAGE_DEBUG_OSTR_ALWAYS("UpdateMoves() : player.AI_unitUpdate() called for player " << player.GetID() << " " << player.getName()); 
+						NET_MESSAGE_DEBUG_OSTR_ALWAYS("UpdateMoves() : player.AI_unitUpdate() called for player " << player.GetID() << " " << player.getName());
+
+						// Detect units stuck in AI loop: if no unit moved this slice but units
+						// remain ready, count consecutive no-progress slices.  After N slices
+						// without any unit moving, force-skip the remaining ready units.
+						// This catches stuck air units (no valid target in range) and any
+						// other unit type that the tactical AI cannot assign a move to.
+						if(!player.isHuman() && !player.hasBusyUnitOrCity())
+						{
+							int iReadyUnitsNow = player.GetCountReadyUnits();
+							if(iReadyUnitsNow > 0 && player.GetLastSliceMoved() == iLastSliceMovedBefore)
+							{
+								player.ChangeNoProgressCount(1);
+								if(player.GetNoProgressCount() > 5)
+								{
+									player.EndTurnsForReadyUnits();
+									player.SetNoProgressCount(0);
+								}
+							}
+							else
+							{
+								player.SetNoProgressCount(0);
+							}
+						}
 					}
 
 					int iReadyUnitsNow = player.GetCountReadyUnits();
@@ -9918,6 +9951,13 @@ void CvGame::Read(FDataStream& kStream)
 	kStream >> m_aPlotExtraYields;
 	kStream >> m_aPlotExtraCosts;
 
+	// Read plot names
+	MOD_SERIALIZE_READ_UNORDERED_MAP(161, kStream, m_mapPlotNames);
+
+	// Read project first completion
+	MOD_SERIALIZE_READ_UNORDERED_MAP(161, kStream, m_mapProjectFirstPlayer);
+	MOD_SERIALIZE_READ_UNORDERED_MAP(161, kStream, m_mapProjectFirstCityName);
+
 
 	// Get the active player information from the initialization structure
 	if(!isGameMultiPlayer())
@@ -10127,6 +10167,13 @@ void CvGame::Write(FDataStream& kStream) const
 
 	kStream << m_aPlotExtraYields;
 	kStream << m_aPlotExtraCosts;
+
+	// Write plot names
+	MOD_SERIALIZE_WRITE_UNORDERED_MAP(kStream, m_mapPlotNames);
+
+	// Write project first completion
+	MOD_SERIALIZE_WRITE_UNORDERED_MAP(kStream, m_mapProjectFirstPlayer);
+	MOD_SERIALIZE_WRITE_UNORDERED_MAP(kStream, m_mapProjectFirstCityName);
 
 	kStream << m_bArchaeologyTriggered;
 
@@ -10413,6 +10460,62 @@ void CvGame::removePlotExtraCost(int iX, int iY)
 			break;
 		}
 	}
+}
+
+//	--------------------------------------------------------------------------------
+void CvGame::SetPlotName(int iX, int iY, const char* szName)
+{
+	int iKey = iX * 10000 + iY;
+	if (szName && szName[0] != '\0')
+		m_mapPlotNames[iKey] = szName;
+	else
+		m_mapPlotNames.erase(iKey);
+}
+//	--------------------------------------------------------------------------------
+const char* CvGame::GetPlotName(int iX, int iY) const
+{
+	int iKey = iX * 10000 + iY;
+	std::map<int, std::string>::const_iterator it = m_mapPlotNames.find(iKey);
+	if (it != m_mapPlotNames.end())
+		return it->second.c_str();
+	return NULL;
+}
+//	--------------------------------------------------------------------------------
+void CvGame::RemovePlotName(int iX, int iY)
+{
+	m_mapPlotNames.erase(iX * 10000 + iY);
+}
+//	--------------------------------------------------------------------------------
+const std::map<int, std::string>& CvGame::GetAllPlotNames() const
+{
+	return m_mapPlotNames;
+}
+
+//	--------------------------------------------------------------------------------
+// Project first completion tracking (like wonder builder display in tech tree)
+//	--------------------------------------------------------------------------------
+void CvGame::SetProjectFirstCompletion(ProjectTypes eProject, PlayerTypes ePlayer, const char* szCityName)
+{
+	m_mapProjectFirstPlayer[(int)eProject] = (int)ePlayer;
+	m_mapProjectFirstCityName[(int)eProject] = szCityName ? szCityName : "";
+}
+int CvGame::GetProjectFirstPlayer(ProjectTypes eProject) const
+{
+	std::map<int, int>::const_iterator it = m_mapProjectFirstPlayer.find((int)eProject);
+	return (it != m_mapProjectFirstPlayer.end()) ? it->second : -1;
+}
+const char* CvGame::GetProjectFirstCityName(ProjectTypes eProject) const
+{
+	std::map<int, std::string>::const_iterator it = m_mapProjectFirstCityName.find((int)eProject);
+	return (it != m_mapProjectFirstCityName.end()) ? it->second.c_str() : NULL;
+}
+const std::map<int, int>& CvGame::GetAllProjectFirstPlayers() const
+{
+	return m_mapProjectFirstPlayer;
+}
+const std::map<int, std::string>& CvGame::GetAllProjectFirstCityNames() const
+{
+	return m_mapProjectFirstCityName;
 }
 
 
@@ -10954,6 +11057,31 @@ void CvGame::DoTestConquestVictory()
 							iNumCapitalsControlled += 1;
 						}
 					}
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+					// Overlord counts its vassals' original capitals as its own for domination victory
+					if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(eLoopPlayer).HasAnyVassal())
+					{
+						const std::vector<int>& vecVassals = GET_PLAYER(eLoopPlayer).GetVassals();
+						for (size_t iVassal = 0; iVassal < vecVassals.size(); iVassal++)
+						{
+							PlayerTypes eVassal = (PlayerTypes)vecVassals[iVassal];
+							// Skip vassals on our own team - their capitals are already counted above
+							if (GET_PLAYER(eVassal).isAlive() && GET_PLAYER(eVassal).getTeam() != (TeamTypes)iTeamLoop)
+							{
+								int iVassalCityLoop;
+								CvCity* pVassalCity = NULL;
+								for(pVassalCity = GET_PLAYER(eVassal).firstCity(&iVassalCityLoop); pVassalCity != NULL; pVassalCity = GET_PLAYER(eVassal).nextCity(&iVassalCityLoop))
+								{
+									if (pVassalCity->getOriginalOwner() < MAX_MAJOR_CIVS && pVassalCity->IsOriginalCapital())
+									{
+										iNumCapitalsControlled += 1;
+									}
+								}
+							}
+						}
+					}
+#endif
 				}
 			}
 

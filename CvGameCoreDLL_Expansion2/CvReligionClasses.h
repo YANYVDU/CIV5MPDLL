@@ -96,6 +96,7 @@ public:
 	int m_iTurnFounded;
 	bool m_bPantheon;
 	bool m_bEnhanced;
+	int m_iNumFirstConversions;
 	char m_szCustomName[128];
 	CvReligionBeliefs m_Beliefs;
 };
@@ -436,6 +437,14 @@ public:
 	{
 		SetReligiousPressureModifier(m_iReligiousPressureModifier + iNewValue);
 	}
+	ReligionTypes GetLastReligiousMajority() const
+	{
+		return m_eLastReligiousMajority;
+	};
+	void SetLastReligiousMajority(ReligionTypes eReligion)
+	{
+		m_eLastReligiousMajority = eReligion;
+	};
 	int GetTotalPressure();
 	int GetPressure(ReligionTypes eReligion);
 	int GetPressurePerTurn(ReligionTypes eReligion, int& iNumTradeRoutesInvolved);
@@ -489,6 +498,7 @@ private:
 	CvCity* m_pCity;
 	bool m_bHasPaidAdoptionBonus;
 	int m_iReligiousPressureModifier;
+	ReligionTypes m_eLastReligiousMajority;
 };
 
 FDataStream& operator>>(FDataStream&, CvCityReligions&);

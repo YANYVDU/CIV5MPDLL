@@ -6,6 +6,7 @@
 	All rights reserved. 
 	------------------------------------------------------------------------------------------------------- */
 #include "CvGameCoreDLLPCH.h"
+#include "cvStopWatch.h"
 #include "CvGrandStrategyAI.h"
 #include "CvEconomicAI.h"
 #include "CvCitySpecializationAI.h"
@@ -250,6 +251,7 @@ CvAIGrandStrategyXMLEntries* CvGrandStrategyAI::GetAIGrandStrategies()
 /// Runs every turn to determine what the player's Active Grand Strategy is and to change Priority Levels as necessary
 void CvGrandStrategyAI::DoTurn()
 {
+	AI_PERF_FORMAT("AI-perf.csv", ("GrandStrategyAI DoTurn, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription()) );
 	DoGuessOtherPlayersActiveGrandStrategy();
 
 	int iGrandStrategiesLoop;

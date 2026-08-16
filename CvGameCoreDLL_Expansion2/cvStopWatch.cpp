@@ -49,6 +49,9 @@ void cvStopWatch::InitPerfTest()
 //------------------------------------------------------------------------------
 void cvStopWatch::StartPerfTest()
 {
+	if (m_bDisable)
+		return;
+
 	InitPerfTest();
 	QueryPerformanceCounter(&m_oldTimerVal);
 	m_bStarted = true;
@@ -56,6 +59,9 @@ void cvStopWatch::StartPerfTest()
 //------------------------------------------------------------------------------
 void cvStopWatch::EndPerfTest()
 {
+	if (m_bDisable)
+		return;
+
 	if(!m_bStarted)
 		return;
 

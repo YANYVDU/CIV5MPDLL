@@ -413,6 +413,11 @@
 				[NEWLINE][ICON_BULLET]城市數量修正(政策): {1_Num}%
 			</Text>
 		</Row>
+		<Row Tag="TXT_KEY_PRODMOD_YIELD_POLICY_RELIGION_CITY_NUM">
+			<Text>
+				[NEWLINE][ICON_BULLET]每座信奉你的宗教的城市產出修正(政策): {1_Num}%
+			</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_ATTACKING_CITY_LOST_MOVEMENT">
 			<Text>你的{@1_name}攻擊城市后失去所有[ICON_MOVES]移動力！</Text>
 		</Row>
@@ -470,11 +475,44 @@
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING">
 			<Text>來自建築: {1_score}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_GLOBAL_CHANGE_FROM_BUILDING">
+			<Text>來自建築的全局變化: {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_BUILDING_GLOBAL">
+			<Text>來自建築(全局): {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_TECH">
+			<Text>因爲你擁有的{1_Source}，{2_Order}發現{3_Feature}後，獲得了{4_Num}項免費科技。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FINDER_POLICY">
+			<Text>因爲你擁有的{1_Source}，{2_Order}發現{3_Feature}後，獲得了{4_Num}項免費政策。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_NW_FINDER">
+			<Text>自然奇觀探索奖励</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SOURCE_TRAIT">
+			<Text>領袖特性</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SOURCE_POLICY">
+			<Text>政策</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_FIRST">
+			<Text>首次</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_NW_SUBSEQUENT">
+			<Text></Text>
+		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RESOURCE">
 			<Text>來自資源: {1_score}</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_TRAIT">
 			<Text>來自領袖特性: {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_RELIGION">
+			<Text>來自宗教: {1_score}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_FROM_LOCAL_HAPPINESS">
+			<Text>來自本地幸福度: {1_score}</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYBANNER_CORRUPTION_SCORE_MOD_FROM_SPY">
 			<Text>來自間諜: {1_score}%</Text>
@@ -577,6 +615,9 @@
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_OTHER_YIELD">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} 來自其他產出</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_ALLY_CS_UA">
+			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} 來自盟邦UA</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_TRADE_ROUTE">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} 來自城市連接</Text>
@@ -823,8 +864,77 @@
 		<Row Tag="TXT_KEY_BELIEF_CUTTING_NONUS">
 			<Text>宗教信條為{1_CityName}帶來了額外獎勵: {2_BonusStr}。</Text>
 		</Row>
+		<Row Tag="TXT_KEY_SP_CONCERT_TOUR_GOLD">
+			<Text>大音樂家演唱會在{1_CityName}演出，為你帶來+{2_Num}[ICON_GOLD]金幣！</Text>
+		</Row>
 		<Row Tag="TXT_KEY_MPDLL_ERROR_VERSION">
 			<Text>[COLOR_NEGATIVE_TEXT]MPDLL出現錯誤，如果你使用的都是最新版本，請和管理員聯系[COLOR_NEGATIVE_TEXT]</Text>
 		</Row>
-	</Language_zh_Hant_HK>
+		<Row Tag="TXT_KEY_POST_COMBAT_PROMOTION_NO_AVAILABLE">
+			<Text>[COLOR_NEGATIVE_TEXT]無法獲得新的戰後晉升，所有候選晉升已被獲取。[ENDCOLOR]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_GOLDEN_AGE">
+			<Text>[COLOR_YELLOW]由於你採納的信條，一次[ICON_GOLDEN_AGE]黃金時代開啟了！[ENDCOLOR]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
+			<Text>[COLOR_YELLOW]由於你採納的信條，{1_CityName}獲得了+1[ICON_CITIZEN]人口！[ENDCOLOR]</Text>
+		</Row>
+		<Replace Tag="TXT_KEY_FRIENDS_CSTATE_TT">
+			<Text>您與{1_CityStateName:textkey}是[COLOR_POSITIVE_TEXT]朋友[ENDCOLOR]。要升級為盟邦，您對城邦的影響力必須高於盟邦門檻{2_Num}，並且在所有達標文明中排名第一。</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MERCANTILE_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]商業[ENDCOLOR]城邦可為帝國帶來額外的[ICON_HAPPINESS_1]幸福度，並可產出無法用其他方式獲取的特殊奢侈品資源。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]奢侈品提供的[ICON_HAPPINESS_1]幸福度總額增加5%
+				[NEWLINE][ICON_BULLET]每回合獲得1%國庫結息（單次利息上限=時代數×100×遊戲速度修正）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_RELIGIOUS_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]宗教[ENDCOLOR]城邦可增加您的[ICON_PEACE]信仰值，透過新的信條與單位來壯大您的宗教。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET][ICON_PEACE]信仰購買價格下降5%
+				[NEWLINE][ICON_BULLET]盟友創立的宗教基礎壓力+10%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_NO_UU_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]尚武[ENDCOLOR]城邦可不時為您提供軍事單位。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陸軍單位每回合獲得1經驗
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_CULTURED_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]文化[ENDCOLOR]城邦可提供[ICON_CULTURE]文化方面的禮物，使您能更迅速地解鎖社會政策。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]推行社會政策所需[ICON_CULTURE]文化降低2%
+				[NEWLINE][ICON_BULLET]接收國際移民所需閾值降低2%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]尚武[ENDCOLOR]城邦可不時為您提供軍事單位。[NEWLINE][NEWLINE]此外他們還知曉[COLOR_POSITIVE_TEXT]{@1_UniqueUnitName}的秘密[ENDCOLOR]。如果您成為其盟友並完成{@2_PrereqTech}的研究，他們便會提供此單位作為獻禮。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陸軍單位每回合獲得1經驗
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MARITIME_TT">
+			<Text>
+				與其成為朋友後，[COLOR_POSITIVE_TEXT]沿海[ENDCOLOR]城邦會增加您[ICON_CAPITAL]首都的[ICON_FOOD]食物產量。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]將為全國城市提供[ICON_FOOD]食物
+				[NEWLINE][ICON_BULLET]盟友的海上商路+1[ICON_GOLD]金錢（隨時代增加）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_DIPLO_STATUS_TT">
+			<Text>
+				{1_cityName}當前為{2_statusType}：{3_curNumber}/{4_maxNumber} [ICON_INFLUENCE]
+			</Text>
+		</Replace>
+		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
+		<Text>{1_Civ}與城邦{2_Civ}建立了永久盟友關係。該城邦不再發佈新任務，已有任務已清空。贈送金幣等提升影響力的方法將不再生效。</Text>
+	</Row>
+</Language_zh_Hant_HK>
 </GameData>

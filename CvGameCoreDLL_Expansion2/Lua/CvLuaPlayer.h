@@ -322,6 +322,12 @@ protected:
 
 	static int lGetHappinessFromResources(lua_State* L);
 	static int lGetHappinessFromResourceVariety(lua_State* L);
+	static int lGetCSLuxuryHappinessModifier(lua_State* L);
+	static int lGetCSLuxuryHappinessValue(lua_State* L);
+	static int lGetTotalLuxuryHappinessModifier(lua_State* L);
+	static int lGetTotalLuxuryHappinessValue(lua_State* L);
+	static int lGetCrossContinentRouteUnhappinessReduction(lua_State* L);
+	static int lGetCityStateSpecialistPointRate(lua_State* L);
 	static int lGetExtraHappinessPerLuxury(lua_State* L);
 	static int lGetHappinessFromReligion(lua_State* L);
 	static int lGetHappinessFromNaturalWonders(lua_State* L);
@@ -333,6 +339,7 @@ protected:
 	static int lGetUnhappinessFromCityForUI(lua_State* L);
 
 	static int lGetUnhappinessFromCityCount(lua_State* L);
+	static int lGetUnhappinessFromCorruption(lua_State* L);
 	static int lGetUnhappinessFromCapturedCityCount(lua_State* L);
 	static int lGetUnhappinessFromCityPopulation(lua_State* L);
 	static int lGetUnhappinessFromCitySpecialists(lua_State* L);
@@ -504,6 +511,7 @@ protected:
 	static int lGetSettlerProductionModifier(lua_State* L);
 	static int lGetCapitalSettlerProductionModifier(lua_State* L);
 	static int lGetWonderProductionModifier(lua_State* L);
+	static int lGetGoldDonationHappiness(lua_State* L);
 
 	static int lGetUnitProductionMaintenanceMod(lua_State* L);
 	static int lGetNumUnitsSupplied(lua_State* L);
@@ -693,6 +701,14 @@ protected:
 	static int lGetPersonalityType(lua_State* L);
 	static int lSetPersonalityType(lua_State* L);
 	static int lGetCurrentEra(lua_State* L);
+	static int lGetMinorCivAlliesThreshold(lua_State* L);
+	LUAAPIEXTN(GetDiplomaticPrestige, int);
+	LUAAPIEXTN(GetExtraDiplomaticPrestige, int);
+	LUAAPIEXTN(GetNumCityStateAllies, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionCount, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionDecayPenalty, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionRisePenalty, int);
+	LUAAPIEXTN(GetDiplomaticOverextensionUnhappinessPercent, int);
 
 	static int lGetTeam(lua_State* L);
 
@@ -1031,6 +1047,8 @@ protected:
 	static int lAddTemporaryDominanceZone(lua_State* L);
 
 	static int lGetNaturalWonderYieldModifier(lua_State* L);
+	static int lGetNaturalWonderYieldModifierPerEra(lua_State* L);
+	static int lGetImmigrationRegressandModifier(lua_State* L);
 
 	static int lGetPolicyBuildingClassYieldModifier(lua_State* L);
 	static int lGetPolicyBuildingClassYieldChange(lua_State* L);
@@ -1098,6 +1116,7 @@ protected:
 	static int lGetInternationalTradeRouteYourBuildingBonus(lua_State* L);
 	static int lGetInternationalTradeRouteTheirBuildingBonus(lua_State* L);
 	static int lGetInternationalTradeRoutePolicyBonus(lua_State* L);
+	static int lGetInternationalTradeRouteCityStateBonus(lua_State* L);
 	static int lGetInternationalTradeRouteOtherTraitBonus(lua_State* L);
 	static int lGetInternationalTradeRouteTraitBonus(lua_State* L);
 	static int lGetInternationalTradeRouteRiverModifier(lua_State* L);
@@ -1237,10 +1256,13 @@ protected:
 	LUAAPIEXTN(GetYieldModifierFromHappinessPolicy, int, eYieldType);
 
 	LUAAPIEXTN(GetGlobalYieldModifierFromResource, int, eYieldType);
+	LUAAPIEXTN(GetPolicyYieldPerGlobalPop, int, eYieldType);
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	LUAAPIEXTN(IsCorruptionLevelReduceByOne, bool);
 	LUAAPIEXTN(GetCorruptionScoreModifierFromPolicy, int);
+	LUAAPIEXTN(GetCorruptionScoreGlobalChangeFromBuilding, int);
+	
 #endif
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
@@ -1281,6 +1303,12 @@ protected:
 #endif
 
 	LUAAPIEXTN(GetScienceTimes100FromFriendsTable);
+#if defined(MOD_GLOBAL_SUZERAIN)
+	LUAAPIEXTN(GetScienceTimes100FromVassalsTable);
+	LUAAPIEXTN(GetCultureFromVassalsTable);
+	LUAAPIEXTN(GetFaithFromVassalsTable);
+	LUAAPIEXTN(GetGoldFromVassalsTable);
+#endif
 	LUAAPIEXTN(GetBossLevel, int);
 	LUAAPIEXTN(ChangeBossLevel, void, iChange);
 	LUAAPIEXTN(SetBossLevel, void, iValue);
@@ -1300,6 +1328,28 @@ protected:
 	LUAAPIEXTN(ChangeFreeBuildingCount, void, BuildingTypes, int);
 
 	LUAAPIEXTN(GetMilitaryPromiseTurnLeft, int, ePlayer);
+	LUAAPIEXTN(GetExpansionPromiseTurnLeft, int, ePlayer);
+	LUAAPIEXTN(GetBorderPromiseTurnLeft, int, ePlayer);
+	LUAAPIEXTN(IsPermanentAlly, bool, ePlayer);
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	LUAAPIEXTN(GetOverlord, int);
+	LUAAPIEXTN(IsVassalOf, bool, ePlayer);
+	LUAAPIEXTN(IsOverlordOf, bool, ePlayer);
+	LUAAPIEXTN(HasAnyVassal, bool);
+	LUAAPIEXTN(GetScienceTimes100FromVassals, unsigned long long);
+	LUAAPIEXTN(GetCultureFromVassals, int);
+	LUAAPIEXTN(GetFaithFromVassals, int);
+	LUAAPIEXTN(GetGoldFromVassals, int);
+	LUAAPIEXTN(GetScienceTimes100FromOneVassal, unsigned long long, ePlayer);
+	LUAAPIEXTN(GetCultureFromOneVassal, int, ePlayer);
+	LUAAPIEXTN(GetFaithFromOneVassal, int, ePlayer);
+	LUAAPIEXTN(GetGoldFromOneVassal, int, ePlayer);
+	LUAAPIEXTN(GetScienceTimes100ToOverlord, unsigned long long);
+	LUAAPIEXTN(GetCultureToOverlord, int);
+	LUAAPIEXTN(GetFaithToOverlord, int);
+	LUAAPIEXTN(GetGoldToOverlord, int);
+#endif
 };
 
 #endif //CVLUAPLAYER_H

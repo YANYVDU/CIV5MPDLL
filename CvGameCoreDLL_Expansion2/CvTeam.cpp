@@ -1125,6 +1125,24 @@ bool CvTeam::canDeclareWar(TeamTypes eTeam) const
 		}
 	}
 
+
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Block war declaration between overlord and vassal
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes eMyPlayer = (PlayerTypes)i;
+		if (!GET_PLAYER(eMyPlayer).isAlive() || GET_PLAYER(eMyPlayer).getTeam() != GetID()) continue;
+		CvPlayer& kMyPlayer = GET_PLAYER(eMyPlayer);
+		for (int j = 0; j < MAX_MAJOR_CIVS; j++)
+		{
+			PlayerTypes eTheirPlayer = (PlayerTypes)j;
+			if (!GET_PLAYER(eTheirPlayer).isAlive() || GET_PLAYER(eTheirPlayer).getTeam() != eTeam) continue;
+			if (kMyPlayer.IsVassalOf(eTheirPlayer) || kMyPlayer.IsOverlordOf(eTheirPlayer))
+				return false;
+		}
+	}
+#endif
 	return true;
 }
 
@@ -5087,10 +5105,7 @@ void CvTeam::changeObsoleteBuildingCount(BuildingTypes eIndex, int iChange)
 					{
 						for(pLoopCity = GET_PLAYER((PlayerTypes)iI).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER((PlayerTypes)iI).nextCity(&iLoop))
 						{
-							if(pLoopCity->GetCityBuildings()->GetNumBuilding(eIndex) > 0)
-							{
-								pLoopCity->processBuilding(eIndex, ((isObsoleteBuilding(eIndex)) ? -pLoopCity->GetCityBuildings()->GetNumBuilding(eIndex) : pLoopCity->GetCityBuildings()->GetNumBuilding(eIndex)), /*bFirst*/ false, /*bObsolete*/ true);
-							}
+							pLoopCity->processBuildingObsolete(eIndex, isObsoleteBuilding(eIndex));
 						}
 					}
 				}
@@ -5922,7 +5937,7 @@ void CvTeam::setHasTech(TechTypes eIndex, bool bNewValue, PlayerTypes ePlayer, b
 				{
 					kPlayer.popResearch(eIndex);
 #ifdef MOD_GLOBAL_UNLIMITED_ONE_TURN_TECH
-					if (MOD_GLOBAL_UNLIMITED_ONE_TURN_TECH) {
+					if (MOD_GLOBAL_UNLIMITED_ONE_TURN_TECH || kPlayer.GetPlayerTraits()->IsGoldenAgeTechChainBoost() != 0 && kPlayer.isGoldenAge()) {
 						if (!kPlayer.isHuman()) {
 							kPlayer.AI_chooseResearch();
 						}

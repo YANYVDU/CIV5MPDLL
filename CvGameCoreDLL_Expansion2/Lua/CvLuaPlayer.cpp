@@ -432,6 +432,12 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(GetHappinessFromResources);
 	Method(GetHappinessFromResourceVariety);
+	Method(GetCSLuxuryHappinessModifier);
+	Method(GetCSLuxuryHappinessValue);
+	Method(GetTotalLuxuryHappinessModifier);
+	Method(GetTotalLuxuryHappinessValue);
+	Method(GetCrossContinentRouteUnhappinessReduction);
+	Method(GetCityStateSpecialistPointRate);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
 	Method(GetHappinessFromNaturalWonders);
@@ -442,11 +448,13 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(GetUnhappinessFromCityForUI);
 
-	Method(GetUnhappinessFromCityCount);
+	Method(GetUnhappinessFromCorruption);
 	Method(GetUnhappinessFromCapturedCityCount);
 	Method(GetUnhappinessFromCityPopulation);
 	Method(GetUnhappinessFromCitySpecialists);
 	Method(GetUnhappinessFromOccupiedCities);
+	Method(GetUnhappinessFromCityCount);
+	Method(GetUnhappinessFromCorruption);
 	Method(GetUnhappinessFromPuppetCityPopulation);
 	Method(GetUnhappinessFromPublicOpinion);
 	Method(GetUnhappinessFromUnits);
@@ -617,6 +625,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetSettlerProductionModifier);
 	Method(GetCapitalSettlerProductionModifier);
 	Method(GetWonderProductionModifier);
+	Method(GetGoldDonationHappiness);
 
 	Method(GetUnitProductionMaintenanceMod);
 	Method(GetNumUnitsSupplied);
@@ -805,6 +814,14 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetPersonalityType);
 	Method(SetPersonalityType);
 	Method(GetCurrentEra);
+	Method(GetMinorCivAlliesThreshold);
+	Method(GetDiplomaticPrestige);
+	Method(GetExtraDiplomaticPrestige);
+	Method(GetNumCityStateAllies);
+	Method(GetDiplomaticOverextensionCount);
+	Method(GetDiplomaticOverextensionDecayPenalty);
+	Method(GetDiplomaticOverextensionRisePenalty);
+	Method(GetDiplomaticOverextensionUnhappinessPercent);
 
 	Method(GetTeam);
 
@@ -1128,6 +1145,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(AddTemporaryDominanceZone);
 
 	Method(GetNaturalWonderYieldModifier);
+	Method(GetNaturalWonderYieldModifierPerEra);
+	Method(GetImmigrationRegressandModifier);
 
 	Method(GetPolicyBuildingClassYieldModifier);
 	Method(GetPolicyBuildingClassYieldChange);
@@ -1190,6 +1209,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetInternationalTradeRouteYourBuildingBonus);
 	Method(GetInternationalTradeRouteTheirBuildingBonus);
 	Method(GetInternationalTradeRoutePolicyBonus);
+	Method(GetInternationalTradeRouteCityStateBonus);
 	Method(GetInternationalTradeRouteOtherTraitBonus);
 	Method(GetInternationalTradeRouteTraitBonus);
 	Method(GetInternationalTradeRouteRiverModifier);
@@ -1331,9 +1351,12 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetYieldModifierFromHappinessPolicy);
 
 	Method(GetGlobalYieldModifierFromResource);
+	Method(GetPolicyYieldPerGlobalPop);
 
 	Method(IsCorruptionLevelReduceByOne);
 	Method(GetCorruptionScoreModifierFromPolicy);
+	Method(GetCorruptionScoreGlobalChangeFromBuilding);
+	
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	Method(GetDomainTroopsTotalTimes100);
@@ -1373,6 +1396,12 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 #endif
 
 	Method(GetScienceTimes100FromFriendsTable);
+#if defined(MOD_GLOBAL_SUZERAIN)
+	Method(GetScienceTimes100FromVassalsTable);
+	Method(GetCultureFromVassalsTable);
+	Method(GetFaithFromVassalsTable);
+	Method(GetGoldFromVassalsTable);
+#endif
 	Method(GetBossLevel);
 	Method(ChangeBossLevel);
 	Method(SetBossLevel);
@@ -1392,6 +1421,28 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(ChangeFreeBuildingCount);
 
 	Method(GetMilitaryPromiseTurnLeft);
+	Method(GetExpansionPromiseTurnLeft);
+	Method(GetBorderPromiseTurnLeft);
+	Method(IsPermanentAlly);
+#if defined(MOD_GLOBAL_SUZERAIN)
+
+	Method(GetOverlord);
+	Method(IsVassalOf);
+	Method(IsOverlordOf);
+	Method(HasAnyVassal);
+	Method(GetScienceTimes100FromVassals);
+	Method(GetCultureFromVassals);
+	Method(GetFaithFromVassals);
+	Method(GetGoldFromVassals);
+	Method(GetScienceTimes100FromOneVassal);
+	Method(GetCultureFromOneVassal);
+	Method(GetFaithFromOneVassal);
+	Method(GetGoldFromOneVassal);
+	Method(GetScienceTimes100ToOverlord);
+	Method(GetCultureToOverlord);
+	Method(GetFaithToOverlord);
+	Method(GetGoldToOverlord);
+#endif
 }
 //------------------------------------------------------------------------------
 void CvLuaPlayer::HandleMissingInstance(lua_State* L)
@@ -3448,6 +3499,51 @@ int CvLuaPlayer::lGetHappinessFromResourceVariety(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+//int GetCSLuxuryHappinessModifier() const;
+int CvLuaPlayer::lGetCSLuxuryHappinessModifier(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetCSLuxuryHappinessModifier);
+}
+
+//------------------------------------------------------------------------------
+//int GetCSLuxuryHappinessValue() const;
+int CvLuaPlayer::lGetCSLuxuryHappinessValue(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetCSLuxuryHappinessValue);
+}
+
+//------------------------------------------------------------------------------
+//int GetTotalLuxuryHappinessModifier() const;
+int CvLuaPlayer::lGetTotalLuxuryHappinessModifier(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetTotalLuxuryHappinessModifier);
+}
+
+//------------------------------------------------------------------------------
+//int GetTotalLuxuryHappinessValue() const;
+int CvLuaPlayer::lGetTotalLuxuryHappinessValue(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetTotalLuxuryHappinessValue);
+}
+
+//------------------------------------------------------------------------------
+//int GetCrossContinentRouteUnhappinessReduction() const;
+int CvLuaPlayer::lGetCrossContinentRouteUnhappinessReduction(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetCrossContinentRouteUnhappinessReduction);
+}
+
+//------------------------------------------------------------------------------
+//int GetCityStateSpecialistPointRate(SpecialistTypes eSpecialist) const;
+int CvLuaPlayer::lGetCityStateSpecialistPointRate(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCityStateSpecialistPointRate(eSpecialist));
+	return 1;
+}
+
+//------------------------------------------------------------------------------
 //int GetExtraHappinessPerLuxury() const;
 int CvLuaPlayer::lGetExtraHappinessPerLuxury(lua_State* L)
 {
@@ -3508,13 +3604,24 @@ int CvLuaPlayer::lGetUnhappinessFromCityForUI(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
-//int GetUnhappinessFromCityCount() const;
 int CvLuaPlayer::lGetUnhappinessFromCityCount(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	CvCity* pAnnexedCity = CvLuaCity::GetInstance(L, 2, false);
 	CvCity* pPuppetedCity = CvLuaCity::GetInstance(L, 3, false);
 	const int iResult = pkPlayer->GetUnhappinessFromCityCount(pAnnexedCity, pPuppetedCity);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetUnhappinessFromCorruption() const;
+int CvLuaPlayer::lGetUnhappinessFromCorruption(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvCity* pAnnexedCity = CvLuaCity::GetInstance(L, 2, false);
+	CvCity* pPuppetedCity = CvLuaCity::GetInstance(L, 3, false);
+	const int iResult = pkPlayer->GetUnhappinessFromCorruption(pAnnexedCity, pPuppetedCity);
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -4059,6 +4166,30 @@ int CvLuaPlayer::lGetInternationalTradeRoutePolicyBonus(lua_State* L)
 	kTradeConnection.m_eConnectionType = TRADE_CONNECTION_INTERNATIONAL;
 
 	int iResult = pPlayerTrade->GetTradeConnectionPolicyValueTimes100(kTradeConnection, YIELD_GOLD);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetInternationalTradeRouteCityStateBonus(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvPlayerTrade* pPlayerTrade = pkPlayer->GetTrade();
+	CvCity* pOriginCity = CvLuaCity::GetInstance(L, 2, true);
+	CvCity* pDestCity = CvLuaCity::GetInstance(L, 3, true);
+	DomainTypes eDomain = (DomainTypes)lua_tointeger(L, 4);
+
+	TradeConnection kTradeConnection;
+	kTradeConnection.m_iOriginX = pOriginCity->getX();
+	kTradeConnection.m_iOriginY = pOriginCity->getY();
+	kTradeConnection.m_iDestX = pDestCity->getX();
+	kTradeConnection.m_iDestY = pDestCity->getY();
+	kTradeConnection.m_eOriginOwner = pOriginCity->getOwner();
+	kTradeConnection.m_eDestOwner = pDestCity->getOwner();
+	kTradeConnection.m_eDomain = eDomain;
+	kTradeConnection.m_eConnectionType = TRADE_CONNECTION_INTERNATIONAL;
+
+	int iResult = pPlayerTrade->GetTradeConnectionCityStateValueTimes100(kTradeConnection, YIELD_GOLD);
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -6317,6 +6448,12 @@ int CvLuaPlayer::lGetWonderProductionModifier(lua_State* L)
 	return BasicLuaMethod(L, &CvPlayerAI::getWonderProductionModifier);
 }
 //------------------------------------------------------------------------------
+//int GetGoldDonationHappiness();
+int CvLuaPlayer::lGetGoldDonationHappiness(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetGoldDonationHappiness);
+}
+//------------------------------------------------------------------------------
 //int GetUnitProductionMaintenanceMod();
 int CvLuaPlayer::lGetUnitProductionMaintenanceMod(lua_State* L)
 {
@@ -6673,6 +6810,139 @@ int CvLuaPlayer::lGetCivUnit(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::GetCivUnit);
 }
+
+//------------------------------------------------------------------------------
+//bool IsPermanentAlly(PlayerTypes e);
+int CvLuaPlayer::lIsPermanentAlly(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsPermanentAlly(e));
+	return 1;
+}
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+//------------------------------------------------------------------------------
+//PlayerTypes GetOverlord();
+int CvLuaPlayer::lGetOverlord(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetOverlord());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsVassalOf(PlayerTypes e);
+int CvLuaPlayer::lIsVassalOf(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsVassalOf(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsOverlordOf(PlayerTypes e);
+int CvLuaPlayer::lIsOverlordOf(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsOverlordOf(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool HasAnyVassal();
+int CvLuaPlayer::lHasAnyVassal(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::HasAnyVassal);
+}
+//------------------------------------------------------------------------------
+//int GetScienceTimes100FromVassals();
+int CvLuaPlayer::lGetScienceTimes100FromVassals(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100FromVassals());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCultureFromVassals();
+int CvLuaPlayer::lGetCultureFromVassals(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetCultureFromVassals);
+}
+//------------------------------------------------------------------------------
+//int GetFaithFromVassals();
+int CvLuaPlayer::lGetFaithFromVassals(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetFaithFromVassals);
+}
+//------------------------------------------------------------------------------
+//int GetGoldFromVassals();
+int CvLuaPlayer::lGetGoldFromVassals(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetGoldFromVassals);
+}
+//------------------------------------------------------------------------------
+//int GetScienceTimes100FromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetScienceTimes100FromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100FromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCultureFromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetCultureFromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCultureFromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetFaithFromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetFaithFromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetFaithFromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetGoldFromOneVassal(PlayerTypes e);
+int CvLuaPlayer::lGetGoldFromOneVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetGoldFromOneVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//unsigned long long GetScienceTimes100ToOverlord();
+int CvLuaPlayer::lGetScienceTimes100ToOverlord(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushnumber(L, (double)pkPlayer->GetScienceTimes100ToOverlord());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCultureToOverlord();
+int CvLuaPlayer::lGetCultureToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetCultureToOverlord);
+}
+//------------------------------------------------------------------------------
+//int GetFaithToOverlord();
+int CvLuaPlayer::lGetFaithToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetFaithToOverlord);
+}
+//------------------------------------------------------------------------------
+//int GetGoldToOverlord();
+int CvLuaPlayer::lGetGoldToOverlord(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetGoldToOverlord);
+}
+#endif
 
 int CvLuaPlayer::lGetCivBuildingWithDefault(lua_State* L)
 {
@@ -7681,6 +7951,46 @@ int CvLuaPlayer::lSetPersonalityType(lua_State* L)
 int CvLuaPlayer::lGetCurrentEra(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::GetCurrentEra);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetMinorCivAlliesThreshold(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetMinorCivAlliesThreshold);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticPrestige(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticPrestige);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetExtraDiplomaticPrestige(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetExtraDiplomaticPrestige);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetNumCityStateAllies(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetNumCityStateAllies);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionCount(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionCount);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionDecayPenalty(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionDecayPenalty);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionRisePenalty(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionRisePenalty);
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomaticOverextensionUnhappinessPercent(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetDiplomaticOverextensionUnhappinessPercent);
 }
 //------------------------------------------------------------------------------
 //int getTeam();
@@ -10728,6 +11038,34 @@ int  CvLuaPlayer::lGetNaturalWonderYieldModifier(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+int CvLuaPlayer::lGetNaturalWonderYieldModifierPerEra(lua_State* L)
+{
+	int iYieldModifierPerEra = 0;
+	CvPlayer* pkPlayer = GetInstance(L);
+	if(pkPlayer)
+	{
+		CvPlayerTraits* pkPlayerTraits = pkPlayer->GetPlayerTraits();
+		if(pkPlayerTraits)
+		{
+			iYieldModifierPerEra = pkPlayerTraits->GetNaturalWonderYieldModifierPerEra();
+		}
+	}
+
+	lua_pushinteger(L, iYieldModifierPerEra);
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetImmigrationRegressandModifier(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	if(pkPlayer)
+	{
+		lua_pushinteger(L, pkPlayer->GetImmigrationRegressandModifier());
+		return 1;
+	}
+	return 0;
+}
+//------------------------------------------------------------------------------
 int CvLuaPlayer::lGetPolicyBuildingClassYieldModifier(lua_State* L)
 {
 	const BuildingClassTypes eBuildingClass = (BuildingClassTypes)luaL_checkint(L, 2);
@@ -12792,8 +13130,19 @@ int CvLuaPlayer::lGetGlobalYieldModifierFromResource(lua_State* L)
 	return 1;
 }
 
+int CvLuaPlayer::lGetPolicyYieldPerGlobalPop(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	YieldTypes eYield = static_cast<YieldTypes>(lua_tointeger(L, 2));
+	int result = pkPlayer->GetPolicyYieldPerGlobalPop(eYield);
+	lua_pushinteger(L, result);
+	return 1;
+}
+
 LUAAPIIMPL(Player, IsCorruptionLevelReduceByOne)
 LUAAPIIMPL(Player, GetCorruptionScoreModifierFromPolicy)
+LUAAPIIMPL(Player, GetCorruptionScoreGlobalChangeFromBuilding)
+
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 int CvLuaPlayer::lGetDomainTroopsTotalTimes100(lua_State* L)
@@ -12885,6 +13234,76 @@ int CvLuaPlayer::lGetScienceTimes100FromFriendsTable(lua_State* L)
     // The table is now at the top of the stack. When the function returns, Lua will take it.
     return 1; // Number of return values
 }
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+int CvLuaPlayer::lGetScienceTimes100FromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		unsigned long long value = pkPlayer->GetScienceTimes100FromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+
+int CvLuaPlayer::lGetCultureFromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		int value = pkPlayer->GetCultureFromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+
+int CvLuaPlayer::lGetFaithFromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		int value = pkPlayer->GetFaithFromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+
+int CvLuaPlayer::lGetGoldFromVassalsTable(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_newtable(L);
+	for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+	{
+		int value = pkPlayer->GetGoldFromOneVassal((PlayerTypes)i);
+		if (value != 0)
+		{
+			lua_pushinteger(L, i);
+			lua_pushinteger(L, value);
+			lua_settable(L, -3);
+		}
+	}
+	return 1;
+}
+#endif
 
 LUAAPIIMPL(Player, GetNumCropsTotalTimes100)
 LUAAPIIMPL(Player, ChangeNumCropsTotalTimes100)
@@ -13017,3 +13436,22 @@ int CvLuaPlayer::lGetMilitaryPromiseTurnLeft(lua_State* L)
 	}
 	return 1;
 }
+
+int CvLuaPlayer::lGetExpansionPromiseTurnLeft(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTargetPlayer = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDiplomacyAI()->GetExpansionPromiseTurnsLeft(eTargetPlayer));
+	return 1;
+}
+
+int CvLuaPlayer::lGetBorderPromiseTurnLeft(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTargetPlayer = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDiplomacyAI()->GetBorderPromiseTurnsLeft(eTargetPlayer));
+	return 1;
+}
+
+
+

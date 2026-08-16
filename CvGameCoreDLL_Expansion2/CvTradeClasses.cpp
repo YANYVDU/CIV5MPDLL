@@ -11,6 +11,7 @@
 #include "CvGameCoreUtils.h" 
 #include "CvInfosSerializationHelper.h" 
 #include "CvCitySpecializationAI.h"
+#include "CvCityStateUAClasses.h"
 
 #include "CvBarbarians.h"
 
@@ -2452,6 +2453,22 @@ int CvPlayerTrade::GetTradeConnectionPolicyValueTimes100(const TradeConnection& 
 }
 
 //	--------------------------------------------------------------------------------
+int CvPlayerTrade::GetTradeConnectionCityStateValueTimes100(const TradeConnection& kTradeConnection, YieldTypes eYield)
+{
+	int iValue = 0;
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	if (kTradeConnection.m_eConnectionType == TRADE_CONNECTION_INTERNATIONAL)
+	{
+		if (eYield == YIELD_GOLD && kTradeConnection.m_eDomain == DOMAIN_SEA)
+		{
+			iValue += GET_PLAYER(kTradeConnection.m_eOriginOwner).GetCSSeaTradeGoldBonus() * 100;
+		}
+	}
+#endif
+	return iValue;
+}
+
+//	--------------------------------------------------------------------------------
 int CvPlayerTrade::GetTradeConnectionOtherTraitValueTimes100(const TradeConnection& kTradeConnection, YieldTypes eYield, bool bAsOriginPlayer)
 {
 	int iValue = 0;
@@ -2620,6 +2637,7 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					int iResourceBonus = GetTradeConnectionResourceValueTimes100(kTradeConnection, eYield, bAsOriginPlayer);
 					int iExclusiveBonus = GetTradeConnectionExclusiveValueTimes100(kTradeConnection, eYield);
 					int iPolicyBonus = GetTradeConnectionPolicyValueTimes100(kTradeConnection, eYield);
+					int iCityStateBonus = GetTradeConnectionCityStateValueTimes100(kTradeConnection, eYield);
 					int iYourBuildingBonus = GetTradeConnectionYourBuildingValueTimes100(kTradeConnection, eYield, bAsOriginPlayer);
 					int iTheirBuildingBonus = GetTradeConnectionTheirBuildingValueTimes100(kTradeConnection, eYield, bAsOriginPlayer);
 					int iTraitBonus = GetTradeConnectionOtherTraitValueTimes100(kTradeConnection, eYield, bAsOriginPlayer);
@@ -2636,10 +2654,36 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					iValue += iTheirBuildingBonus;
 					iValue += iResourceBonus;
 					iValue += iPolicyBonus;
+					iValue += iCityStateBonus;
 					iValue += iTraitBonus;
 
 					iModifier += iDomainModifier;
 					iModifier += iOriginRiverModifier;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					if (MOD_SP_UNIQUE_CITYSTATE)
+					{
+						CvPlayerCityStateUA* pUA = kOriginPlayer.GetPlayerCityStateUA();
+						if (pUA)
+						{
+							// Malacca UA: trade route gold percentage per happy luxury type
+							iModifier += kOriginPlayer.GetHappyLuxuryTypeCount() * pUA->GetTradeRouteGoldModifierPerLuxuryType() / 100;
+
+							// Panama UA: trade route gold percentage per distance tile
+							int iDistanceModifier = pUA->GetTradeRouteGoldModifierPerDistance();
+							if (iDistanceModifier != 0)
+							{
+								CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
+								CvPlot* pDestPlot = GC.getMap().plot(kTradeConnection.m_iDestX, kTradeConnection.m_iDestY);
+								if (pOriginPlot && pDestPlot)
+								{
+									int iDistance = plotDistance(pOriginPlot->getX(), pOriginPlot->getY(), pDestPlot->getX(), pDestPlot->getY());
+									iModifier += iDistance * iDistanceModifier / 100;
+								}
+							}
+						}
+					}
+#endif
 
 					iMinValue = 100;
 				}
@@ -2683,12 +2727,80 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 			iValue *= iModifier;
 			iValue /= 100;
 			iValue = max(iMinValue, iValue);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Colombo UA: international trade routes ending at this city-state grant a flat
+			// per-era yield (Era+1 times YieldValue) to the allied/friendly origin player
+			if (MOD_SP_UNIQUE_CITYSTATE)
+			{
+				CvCity* pColomboDestCity = CvGameTrade::GetDestCity(kTradeConnection);
+				if (pColomboDestCity)
+				{
+					PlayerTypes eColomboDestPlayer = (PlayerTypes)pColomboDestCity->getOwner();
+					if (eColomboDestPlayer >= MAX_MAJOR_CIVS && GET_PLAYER(eColomboDestPlayer).isMinorCiv())
+					{
+						CvMinorCivAI* pColomboDestMinorAI = GET_PLAYER(eColomboDestPlayer).GetMinorCivAI();
+						CvMinorCivInfo* pColomboDestMinorInfo = pColomboDestMinorAI ? GC.getMinorCivInfo(pColomboDestMinorAI->GetMinorCivType()) : NULL;
+						const char* szColomboDestUAType = pColomboDestMinorInfo ? pColomboDestMinorInfo->GetUAType() : NULL;
+						if (szColomboDestUAType && szColomboDestUAType[0] != '\0')
+						{
+							CvCityStateUAEntry* pColomboDestUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szColomboDestUAType);
+							if (pColomboDestUAEntry)
+							{
+								int iColomboEffectID = -1;
+								if (pColomboDestMinorAI->IsAllies(kOriginPlayer.GetID()))
+									iColomboEffectID = pColomboDestUAEntry->GetAllyEffectID();
+								else if (pColomboDestMinorAI->IsFriends(kOriginPlayer.GetID()))
+									iColomboEffectID = pColomboDestUAEntry->GetFriendEffectID();
+								if (iColomboEffectID >= 0)
+								{
+									CvCityStateUAEffectEntry* pColomboEffect = GC.getCityStateUAEffectEntry(iColomboEffectID);
+									if (pColomboEffect)
+									{
+										int iColomboEraYield = pColomboEffect->GetInternalTRToUCSPerEraYield(eYield);
+										if (iColomboEraYield != 0)
+											iValue += iColomboEraYield * 100 * (kOriginPlayer.GetCurrentEra() + 1);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+#endif
 		}
 
 		iValue += pOriginCity->GetTradeRouteFromTheCityYields(eYield) * 100;
 		iValue += pOriginCity->GetTradeRouteFromTheCityYieldsPerEra(eYield) * 100 * (kOriginPlayer.GetCurrentEra() + 1);
 		if(kTradeConnection.m_eDomain == DOMAIN_SEA) iValue += kOriginPlayer.GetPlayerTraits()->GetSeaTradeRouteYieldPerEraTimes100(eYield) * (kOriginPlayer.GetCurrentEra() + 1);
 		if(kTradeConnection.m_eDomain == DOMAIN_SEA) iValue += kOriginPlayer.GetPlayerTraits()->GetSeaTradeRouteYieldTimes100(eYield);
+
+		// Trade route to holy city bonus for origin city (only for origin side)
+		if (bAsOriginPlayer)
+		{
+			CvCity* pDestCity = CvGameTrade::GetDestCity(kTradeConnection);
+			if (pDestCity)
+			{
+				ReligionTypes eMajority = pOriginCity->GetCityReligions()->GetReligiousMajority();
+				if (eMajority > RELIGION_PANTHEON)
+				{
+					const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, pOriginCity->getOwner());
+					if (pReligion && pDestCity->getX() == pReligion->m_iHolyCityX && pDestCity->getY() == pReligion->m_iHolyCityY)
+					{
+						iValue += pReligion->m_Beliefs.GetTradeRouteToHolyCityYield(eYield) * 100;
+					}
+				}
+				// Secondary pantheon: only if connected to its holy city
+				BeliefTypes eSecondaryPantheon = pOriginCity->GetCityReligions()->GetSecondaryReligionPantheonBelief();
+				if (eSecondaryPantheon != NO_BELIEF)
+				{
+					CvBeliefEntry* pSecondary = GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon);
+					if (pSecondary)
+					{
+						iValue += pSecondary->GetTradeRouteToHolyCityYield(eYield) * 100;
+					}
+				}
+			}
+		}
 	}
 	else
 	{
@@ -2745,6 +2857,7 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 
 				iValue *= iModifier;
 				iValue /= 100;
+
 			}
 		}
 		else
@@ -2859,7 +2972,68 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 		}
 	}
 
-	return iValue;	
+	// Same religion trade route modifier
+	CvCity* pDestCitySameReligion = CvGameTrade::GetDestCity(kTradeConnection);
+	if (pDestCitySameReligion && pOriginCity)
+	{
+		ReligionTypes eOriginReligion = pOriginCity->GetCityReligions()->GetReligiousMajority();
+		if (eOriginReligion > RELIGION_PANTHEON && eOriginReligion == pDestCitySameReligion->GetCityReligions()->GetReligiousMajority())
+		{
+			const CvReligion* pReligionSame = GC.getGame().GetGameReligions()->GetReligion(eOriginReligion, pOriginCity->getOwner());
+			if (pReligionSame)
+			{
+				int iSameReligionMod = pReligionSame->m_Beliefs.GetTradeRouteSameReligionYieldModifier(eYield);
+				if (iSameReligionMod != 0)
+				{
+					iValue = iValue * (100 + iSameReligionMod) / 100;
+				}
+			}
+		}
+		// Secondary pantheon: same religion check
+		BeliefTypes eSecondaryPantheonSR = pOriginCity->GetCityReligions()->GetSecondaryReligionPantheonBelief();
+		if (eSecondaryPantheonSR != NO_BELIEF && eOriginReligion == pDestCitySameReligion->GetCityReligions()->GetReligiousMajority())
+		{
+			CvBeliefEntry* pSecondary = GC.GetGameBeliefs()->GetEntry(eSecondaryPantheonSR);
+			if (pSecondary)
+			{
+				int iSecMod = pSecondary->GetTradeRouteSameReligionYieldModifier(eYield);
+				if (iSecMod != 0)
+				{
+					iValue = iValue * (100 + iSecMod) / 100;
+				}
+			}
+		}
+	}
+
+
+	// Trade route to holy city bonus for the holy city (destination only)
+	if (!bAsOriginPlayer)
+	{
+		CvCity* pHolyDestCity = CvGameTrade::GetDestCity(kTradeConnection);
+		if (pHolyDestCity && pOriginCity)
+		{
+			ReligionTypes eMajorityDest = pOriginCity->GetCityReligions()->GetReligiousMajority();
+			if (eMajorityDest > RELIGION_PANTHEON)
+			{
+				const CvReligion* pHolyReligion = GC.getGame().GetGameReligions()->GetReligion(eMajorityDest, pOriginCity->getOwner());
+				if (pHolyReligion && pHolyDestCity->getX() == pHolyReligion->m_iHolyCityX && pHolyDestCity->getY() == pHolyReligion->m_iHolyCityY)
+				{
+					iValue += pHolyReligion->m_Beliefs.GetTradeRouteToHolyCityDestYield(eYield) * 100;
+				}
+			}
+			// Secondary pantheon: only if destination is its holy city
+			BeliefTypes eSecondaryPantheonDest = pOriginCity->GetCityReligions()->GetSecondaryReligionPantheonBelief();
+			if (eSecondaryPantheonDest != NO_BELIEF)
+			{
+				CvBeliefEntry* pSecondary = GC.GetGameBeliefs()->GetEntry(eSecondaryPantheonDest);
+				if (pSecondary)
+				{
+					iValue += pSecondary->GetTradeRouteToHolyCityDestYield(eYield) * 100;
+				}
+			}
+		}
+	}
+	return iValue;
 }
 
 //	--------------------------------------------------------------------------------
@@ -2928,6 +3102,38 @@ int CvPlayerTrade::GetTradeValuesAtCityTimes100 (const CvCity *const pCity, Yiel
 	}
 
 	return iResult;
+}
+
+//	--------------------------------------------------------------------------------
+bool CvPlayerTrade::HasTradeRouteToPlayer (const CvCity* pOriginCity, PlayerTypes eDestPlayer)
+{
+	if (!pOriginCity)
+	{
+		return false;
+	}
+
+	int iCityX = pOriginCity->getX();
+	int iCityY = pOriginCity->getY();
+
+	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+	for (uint ui = 0; ui < pTrade->m_aTradeConnections.size(); ui++)
+	{
+		TradeConnection* pConnection = &(pTrade->m_aTradeConnections[ui]);
+
+		if (pTrade->IsTradeRouteIndexEmpty(ui))
+		{
+			continue;
+		}
+
+		if (pConnection->m_eOriginOwner == m_pPlayer->GetID()
+			&& pConnection->m_iOriginX == iCityX && pConnection->m_iOriginY == iCityY
+			&& pConnection->m_eDestOwner == eDestPlayer)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //	--------------------------------------------------------------------------------

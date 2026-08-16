@@ -35,6 +35,10 @@ public:
 	int GetGridX() const;
 	int GetGridY() const;
 	int GetLevel() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const;
+	int GetMinorCivAlliesThresholdModifier() const;
+#endif
 	int GetPolicyCostModifier() const;
 	int GetCulturePerCity() const;
 	int GetCulturePerWonder() const;
@@ -70,6 +74,7 @@ public:
 	int GetExtraHappinessPerCity() const;
 	int GetUnhappinessMod() const;
 	int GetCityCountUnhappinessMod() const;
+	int GetCorruptionUnhappinessModifier() const;
 	int GetOccupiedPopulationUnhappinessMod() const;
 	int GetCapitalUnhappinessMod() const;
 	int GetFreeExperience() const;
@@ -270,10 +275,21 @@ public:
 	std::pair<UnitClassTypes, int>* GetFreeUnitsByClass() const;
 	int GetTourismByUnitClassCreated(int i) const;
 	int GetImprovementCultureChanges(int i) const;
+	int GetImprovementHappinessWhenWorked(int i) const;
+
+	// AdjacentImprovementYieldChanges
+	struct AdjacentImprovementYieldChange {
+		int m_iImprovementType;
+		int m_iOtherImprovementType;
+		int m_iYieldType;
+		int m_iYield;
+	};
+	const std::vector<AdjacentImprovementYieldChange>& GetAdjacentImprovementYieldChanges() const { return m_vAdjacentImprovementYieldChanges; }
 
 	int GetHurryModifier(int i) const;
 	bool IsSpecialistValid(int i) const;
 	int GetImprovementYieldChanges(int i, int j) const;
+	int GetYieldPerGlobalPop(int i) const;
 	int GetCityLoveKingDayYieldMod(int i) const;
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
 	int GetPlotYieldChanges(int i, int j) const;
@@ -308,6 +324,7 @@ public:
 #endif
 	bool IsAlwaysWeLoveKindDayInGoldenAge() const;
 	bool IsNoResistance() const;
+	bool IsTechBoostFromCityWonderBuildings() const;
 	bool IsUpgradeAllTerritory() const;
 	bool IsNoTechForWonder() const;
 	bool IsNoTechForProject() const;
@@ -319,7 +336,13 @@ public:
 	int GetFreePopulation() const;
 	int GetFreePopulationCapital() const;
 	int GetExtraSpies() const;
+	int GetGreatPersonPoints(int i) const;
 	int GetGreatScientistBeakerPolicyModifier() const;
+	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
+	int GetNaturalWonderFirstFinderTech() const;
+	int GetNaturalWonderSubsequentFinderPolicies() const;
+	int GetNaturalWonderSubsequentFinderTech() const;
+	int GetNaturalWonderFirstFinderPolicies() const;
 	int GetProductionBeakerMod() const;
 	bool IsOneShot() const;
 	bool IncludesOneShotFreeUnits() const;
@@ -348,6 +371,7 @@ public:
 	std::vector<PolicyYieldInfo>& GetTradeRouteCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetCityNumberCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetHappinessYieldModifier();
+	std::vector<PolicyYieldInfo>& GetYieldPercentPerCityFollowingReligion();
 
 	std::vector<PolicyResourceInfo>& GetCityResources();
 
@@ -361,6 +385,8 @@ public:
 
 #ifdef MOD_GLOBAL_CORRUPTION
 	int GetCorruptionScoreModifier() const;
+	int GetLocalHappinessCorruptionScoreMod() const;
+	int GetGoldenAgeCorruptionScoreReduction() const;
 	bool GetCorruptionLevelReduceByOne() const;
 	bool IsInvolveCorruption() const;
 	int GetCorruptionLevelPolicyCostModifier(CorruptionLevelTypes level) const;
@@ -372,6 +398,10 @@ private:
 	int m_iGridX;
 	int m_iGridY;
 	int m_iLevel;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
 	int m_iPolicyCostModifier;
 	int m_iCulturePerCity;
 	int m_iCulturePerWonder;
@@ -407,6 +437,7 @@ private:
 	int m_iExtraHappinessPerCity;
 	int m_iUnhappinessMod;
 	int m_iCityCountUnhappinessMod;
+	int m_iCorruptionUnhappinessModifier;
 	int m_iOccupiedPopulationUnhappinessMod;
 	int m_iCapitalUnhappinessMod;
 	int m_iFreeExperience;
@@ -556,6 +587,7 @@ private:
 #endif
 	bool m_bAlwaysWeLoveKindDayInGoldenAge;
 	bool m_bNoResistance;
+	bool m_bTechBoostFromCityWonderBuildings;
 	bool m_bUpgradeAllTerritory;
 	bool m_bNoTechForWonder;
 	bool m_bNoTechForProject;
@@ -568,6 +600,12 @@ private:
 	int m_iFreePopulationCapital;
 	int m_iExtraSpies;
 	int m_iGreatScientistBeakerPolicyModifier;
+	int* m_piGreatPersonPoints;
+	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
+	int m_iNaturalWonderFirstFinderTech;
+	int m_iNaturalWonderFirstFinderPolicies;
+	int m_iNaturalWonderSubsequentFinderTech;
+	int m_iNaturalWonderSubsequentFinderPolicies;
 	int m_iProductionBeakerMod;
 	bool m_bOneShot;
 	bool m_bIncludesOneShotFreeUnits;
@@ -591,10 +629,12 @@ private:
 	int* m_piCapitalYieldChange;
 	int* m_piCapitalYieldPerPopChange;
 	int* m_piYieldPerPopChange;
+	int* m_piYieldPerGlobalPop;
 	int* m_piCapitalYieldModifier;
 	int* m_piGreatWorkYieldChange;
 	int* m_piSpecialistExtraYield;
 	int* m_piImprovementCultureChange;
+	int* m_piImprovementHappinessWhenWorked;
 	bool* m_pabFreePromotion;
 	int* m_paiUnitCombatProductionModifiers;
 	int* m_paiUnitCombatFreeExperiences;
@@ -664,6 +704,7 @@ private:
 	std::vector<PolicyYieldInfo> m_vTradeRouteCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vCityNumberCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vHappinessYieldModifier;
+	std::vector<PolicyYieldInfo> m_vYieldPercentPerCityFollowingReligion;
 	int m_iGlobalHappinessFromFaithPercent = 0;
 	int m_iHappinessInWLTKDCities = 0;
 
@@ -674,9 +715,14 @@ private:
 
 	std::vector<PolicyResourceInfo> m_vCityResources;
 
+	// AdjacentImprovementYieldChanges
+	std::vector<AdjacentImprovementYieldChange> m_vAdjacentImprovementYieldChanges;
+
 #ifdef MOD_GLOBAL_CORRUPTION
 	int m_iCorruptionScoreModifier = 0;
+	int m_iGoldenAgeCorruptionScoreReduction = 0;
 	bool m_bCorruptionLevelReduceByOne = false;
+	int m_iLocalHappinessCorruptionScoreMod = 0;
 	std::vector<int> m_paiCorruptionLevelPolicyCostModifier;
 #endif
 };
@@ -825,6 +871,7 @@ public:
 	int GetBuildingClassProductionModifier(BuildingClassTypes eBuildingClass);
 	int GetBuildingClassTourismModifier(BuildingClassTypes eBuildingClass);
 	int GetImprovementCultureChange(ImprovementTypes eImprovement);
+	int GetAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eOtherImprovement, YieldTypes eYield);
 	bool HasPolicyEncouragingGarrisons() const;
 	bool HasPolicyGrantingReformationBelief() const;
 	CvString GetWeLoveTheKingString();

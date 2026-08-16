@@ -275,6 +275,9 @@
     <ClCompile Include="CvTradeClasses.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CvCityStateUAClasses.cpp">
+      <Filter>CvClasses</Filter>
+    </ClCompile>
     <ClCompile Include="CvTraitClasses.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -837,6 +840,9 @@
     </ClInclude>
     <ClInclude Include="CvTradeClasses.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CvCityStateUAClasses.h">
+      <Filter>CvClasses</Filter>
     </ClInclude>
     <ClInclude Include="CvTraitClasses.h">
       <Filter>Header Files</Filter>

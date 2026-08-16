@@ -5,7 +5,7 @@
     <ProjectGuid>{0b961596-36f9-4289-a247-0e889fef1f39}</ProjectGuid>
     <Name>(1) CIV5MPDLL</Name>
     <Guid>a2969a0a-e4da-41cc-9e0b-19b29aa971d8</Guid>
-    <ModVersion>58</ModVersion>
+    <ModVersion>63</ModVersion>
     <Stability>Alpha</Stability>
     <Teaser>Based on whoward69's DLL-VMC v97, fixes multiplayer gaming sync bugs and provides more powerful modding utilities</Teaser>
     <Description>This mod is based on whoward69's DLL-VMC v97. It fixes out-of-sync problem of
@@ -328,6 +328,11 @@
       <Action>
         <Set>OnModActivated</Set>
         <Type>UpdateDatabase</Type>
+        <FileName>DB/PROMOTIONS/NewKillStacking.sql</FileName>
+      </Action>
+      <Action>
+        <Set>OnModActivated</Set>
+        <Type>UpdateDatabase</Type>
         <FileName>DB/RELIGION/ConversionModifiers.sql</FileName>
       </Action>
       <Action>
@@ -434,6 +439,11 @@
         <Set>OnModActivated</Set>
         <Type>UpdateDatabase</Type>
         <FileName>DB/TRAITS/DDL_Traits.sql</FileName>
+      </Action>
+      <Action>
+        <Set>OnModActivated</Set>
+        <Type>UpdateDatabase</Type>
+        <FileName>DB/UNIQUE_CITYSTATES/UNIQUE_CITYSTATES.sql</FileName>
       </Action>
       <Action>
         <Set>OnModActivated</Set>
@@ -566,6 +576,7 @@
     <Folder Include="DB\RESOURCES" />
     <Folder Include="DB\TECHS" />
     <Folder Include="DB\SPECIALISTS" />
+    <Folder Include="DB\UNIQUE_CITYSTATES\" />
     <Folder Include="DB\YIELDS" />
     <Folder Include="DB\POLICIES" />
     <Folder Include="DB\UNITS" />
@@ -577,6 +588,7 @@
     <Folder Include="DB\_TEXT" />
     <Folder Include="DLL" />
     <Folder Include="LUA" />
+    <Folder Include="MAPS\" />
     <Folder Include="UI" />
     <Folder Include="UI\InGame" />
     <Folder Include="UI\InGame\Popups" />
@@ -825,6 +837,10 @@
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
     </Content>
+    <Content Include="DB/PROMOTIONS/NewKillStacking.sql">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>False</ImportIntoVFS>
+    </Content>
     <Content Include="DB/PROMOTIONS/UnitNaming.xml">
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
@@ -1017,22 +1033,6 @@
       <SubType>Lua</SubType>
       <ImportIntoVFS>True</ImportIntoVFS>
     </Content>
-    <Content Include="UI/InGame/Popups/LeagueOverview.lua">
-      <SubType>Lua</SubType>
-      <ImportIntoVFS>True</ImportIntoVFS>
-    </Content>
-    <Content Include="UI/InGame/Popups/LeagueOverview.xml">
-      <SubType>Lua</SubType>
-      <ImportIntoVFS>True</ImportIntoVFS>
-    </Content>
-    <Content Include="UI/InGame/YieldIconManager.lua">
-      <SubType>Lua</SubType>
-      <ImportIntoVFS>True</ImportIntoVFS>
-    </Content>
-    <Content Include="UI/InGame/YieldIconManager.xml">
-      <SubType>Lua</SubType>
-      <ImportIntoVFS>True</ImportIntoVFS>
-    </Content>
     <Content Include="DB\BUILDINGS\DLL_Buildings.sql">
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
@@ -1049,6 +1049,10 @@
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
     </Content>
+    <Content Include="DB\UNIQUE_CITYSTATES\UNIQUE_CITYSTATES.sql">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>False</ImportIntoVFS>
+    </Content>
     <Content Include="DB\UNITS\NewUnits_DDL.sql">
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
@@ -1057,7 +1061,31 @@
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
     </Content>
+    <Content Include="UI/InGame/Popups/LeagueOverview.lua">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>True</ImportIntoVFS>
+    </Content>
+    <Content Include="UI/InGame/Popups/LeagueOverview.xml">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>True</ImportIntoVFS>
+    </Content>
+    <Content Include="UI/InGame/YieldIconManager.lua">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>True</ImportIntoVFS>
+    </Content>
+    <Content Include="UI/InGame/YieldIconManager.xml">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>True</ImportIntoVFS>
+    </Content>
     <Content Include="UI\InGame\CorruptionUIUtils.lua">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>True</ImportIntoVFS>
+    </Content>
+    <Content Include="UI/InGame/CityStateStatusHelper.lua">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>True</ImportIntoVFS>
+    </Content>
+    <Content Include="UI/InGame/Popups/CityStateDiploPopup.lua">
       <SubType>Lua</SubType>
       <ImportIntoVFS>True</ImportIntoVFS>
     </Content>
