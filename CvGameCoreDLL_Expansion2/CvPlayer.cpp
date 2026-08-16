@@ -5691,10 +5691,6 @@ void CvPlayer::doTurnPostDiplomacy()
 
 	const int iGameTurn = kGame.getGameTurn();
 
-#if defined(MOD_GLOBAL_SUZERAIN)
-	UpdateVassalTaxation();
-#endif
-
 	GatherPerTurnReplayStats(iGameTurn);
 
 	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
@@ -31793,30 +31789,26 @@ void CvPlayer::UpdateVassalTaxation()
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
 	if (!pLeague) return;
 	ActiveResolutionList vActiveResolutions = pLeague->GetActiveResolutions();
-	CvActiveResolution* pVassalRes = NULL;
+	// Each active suzerain resolution targets exactly one vassal (its decision) and
+	// carries its own tax rate, so levy taxes per-resolution rather than applying a
+	// single rate to all vassals.
 	for (uint iRes = 0; iRes < vActiveResolutions.size(); iRes++)
 	{
 		CvActiveResolution* pRes = &vActiveResolutions[iRes];
-		if (pRes->GetEffects()->bSubmitSuzerain && pRes->GetProposerDecision()->GetProposer() == GetID())
-		{
-			pVassalRes = pRes;
-			break;
-		}
-	}
-	if (!pVassalRes) return;
-	int iTaxPercent = pVassalRes->GetEffects()->iVassalTaxPercent;
-	if (iTaxPercent <= 0) iTaxPercent = 25;
-	for (size_t i = 0; i < m_vecVassals.size(); i++)
-	{
-		PlayerTypes e = (PlayerTypes)m_vecVassals[i];
+		if (!pRes->GetEffects()->bSubmitSuzerain) continue;
+		if (pRes->GetProposerDecision()->GetProposer() != GetID()) continue;
+		PlayerTypes e = (PlayerTypes)pRes->GetProposerDecision()->GetDecision();
+		if (e == NO_PLAYER) continue;
 		CvPlayer& v = GET_PLAYER(e);
 		if (!v.isAlive()) continue;
+		int iTaxPercent = pRes->GetEffects()->iVassalTaxPercent;
+		if (iTaxPercent <= 0) iTaxPercent = 25;
 		// Taxes are levied on gross output. The vassal's per-turn getters already net out its own
 		// downstream vassal taxes, so re-adding the amount it pays to us makes the base "tax-on-tax":
 		// a vassal tithes a share of everything it produces, including what it receives from its own
 		// vassals. This is intentional.
 		// Science tax: gross output = net output + tax already paid to overlord
-		if (pVassalRes->GetEffects()->bVassalTaxScience)
+		if (pRes->GetEffects()->bVassalTaxScience)
 		{
 			unsigned long long iScienceGross = v.GetScienceTimes100(true) + v.GetScienceTimes100ToOverlord();
 			// Science is tracked in x100 space; multiply before dividing so the fractional beakers are not truncated
@@ -31830,7 +31822,7 @@ void CvPlayer::UpdateVassalTaxation()
 			v.m_iScienceTimes100ToOverlord = 0;
 		}
 		// Culture tax
-		if (pVassalRes->GetEffects()->bVassalTaxCulture)
+		if (pRes->GetEffects()->bVassalTaxCulture)
 		{
 			int iCultureGross = v.GetTotalJONSCulturePerTurn() + v.GetCultureToOverlord();
 			int iCultureTax = iCultureGross * iTaxPercent / 100;
@@ -31843,7 +31835,7 @@ void CvPlayer::UpdateVassalTaxation()
 			v.m_iCultureToOverlord = 0;
 		}
 		// Faith tax
-		if (pVassalRes->GetEffects()->bVassalTaxFaith)
+		if (pRes->GetEffects()->bVassalTaxFaith)
 		{
 			int iFaithGross = v.GetTotalFaithPerTurn() + v.GetFaithToOverlord();
 			int iFaithTax = iFaithGross * iTaxPercent / 100;
@@ -31856,9 +31848,13 @@ void CvPlayer::UpdateVassalTaxation()
 			v.m_iFaithToOverlord = 0;
 		}
 		// Gold tax is applied directly and tracked per vassal
-		if (pVassalRes->GetEffects()->bVassalTaxGold)
+		if (pRes->GetEffects()->bVassalTaxGold)
 		{
-			int iGoldTax = v.GetTreasury()->GetGoldFromCities() * iTaxPercent / 100;
+			// Tax base mirrors the culture/science formula: the vassal's net gold
+			// (income minus expenses) plus tribute it already collected from its own
+			// vassals, so overlords tax a vassal's whole net surplus ("tax-on-tax").
+			int iGoldBase = v.calculateGoldRate() + v.GetGoldFromVassals();
+			int iGoldTax = iGoldBase * iTaxPercent / 100;
 			if (iGoldTax > 0)
 			{
 				v.GetTreasury()->ChangeGold(-iGoldTax);
