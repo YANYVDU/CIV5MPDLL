@@ -2374,6 +2374,16 @@ CvCity* CvPlayer::initCity(int iX, int iY, bool bBumpUnits, bool bInitialFoundin
 		pCity->SetUpdatingCorruptionGuard(false);
 		pCity->SetUpdatingReligionGuard(false);
 
+#ifdef MOD_GLOBAL_CORRUPTION
+		// The corruption guard above skipped UpdateCorruption() inside CvCity::init(),
+		// and UpdateReligion() below only refreshes corruption when a corruption belief
+		// exists (b463f8d). A brand-new city would otherwise keep INVALID_CORRUPTION
+		// (no corruption shown) until it converts to a corruption-affecting religion.
+		// Initialize it explicitly now that the guard is off. (Deferred to the end of
+		// acquireCity() when this runs inside the suppression window.)
+		pCity->UpdateCorruption();
+#endif
+
 		// Batch update once after init: UpdateReligion() recomputes empire happiness and
 		// refreshes city religion yields (including this new city). Note: while acquiring
 		// a city this is deferred by the suppression flag and happens once in acquireCity().
@@ -3709,6 +3719,19 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 	// transferred. UpdateReligion() internally calls DoUpdateHappiness() first,
 	// then refreshes every city's religion/corruption yields.
 	kSuppressGuard.Exit();
+
+#ifdef MOD_GLOBAL_CORRUPTION
+	// Ensure the newly acquired city's corruption level is initialized even when the
+	// capturing player has no corruption-affecting belief. 28816a7's initCity guard
+	// skipped the init-time refresh, and UpdateReligion() below only refreshes
+	// corruption when such a belief exists; otherwise the city stays INVALID_CORRUPTION
+	// until a corruption-affecting event (e.g. conversion to a corruption religion).
+	if (pNewCity != NULL)
+	{
+		pNewCity->UpdateCorruption();
+	}
+#endif
+
 	UpdateReligion();
 
 	// Q2/Q4 fix: UpdateReligion() computes happiness BEFORE the per-city corruption
