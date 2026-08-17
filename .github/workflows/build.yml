@@ -55,6 +55,7 @@ jobs:
               - 'CvWorldBuilderMap/**'
               - 'FirePlace/**'
               - 'ThirdPartyLibs/**'
+              - '(1) CIV5MPDLL/**'
               - '*.cpp'
               - '*.h'
             workflow:
@@ -462,6 +463,53 @@ jobs:
             Write-Error "Build failed with $totalErrors error(s). Check annotations above for details."
             exit 1
           }
+
+      - name: Copy built Release DLL into mod source directory
+        shell: pwsh
+        run: |
+          # DLL dir is not tracked by git, so create it and drop the freshly built DLL in.
+          New-Item -ItemType Directory -Force -Path "(1) CIV5MPDLL/DLL" | Out-Null
+          Copy-Item "BuildOutput/VS2022_ReleaseWin32/CvGameCore_Expansion2.dll" "(1) CIV5MPDLL/DLL/CvGameCore_Expansion2.dll" -Force
+          Write-Output "DLL copied into mod source."
+
+      - name: Set up civ5-mod-builder
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://github.com/qiuhuiming/vscode-civ5-mod-builder.git ./civ5-mod-builder
+          cd ./civ5-mod-builder
+          npm install --no-audit --no-fund
+          npx tsc -p ./
+          Write-Output "civ5-mod-builder ready."
+
+      - name: Build release mod folder
+        shell: pwsh
+        run: |
+          node ./civ5-mod-builder/out/cli/index.js --from "(1) CIV5MPDLL/(1) CIV5MPDLL.civ5proj" --to "./mod_output"
+          Get-ChildItem "./mod_output" -Directory | ForEach-Object { Write-Output "Built mod: $($_.FullName)" }
+
+      - name: Rename mod folder with short SHA and package zip
+        id: package_mod
+        shell: pwsh
+        run: |
+          $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+          $modFolder = Get-ChildItem "./mod_output" -Directory | Select-Object -First 1
+          if (-not $modFolder) { Write-Error "No mod folder found in mod_output"; exit 1 }
+          $newName = "$($modFolder.Name)-$shortSha"
+          Rename-Item $modFolder.FullName (Join-Path $modFolder.Parent.FullName $newName)
+          Write-Output "Renamed mod folder to $newName"
+          $zipPath = Join-Path (Get-Location) "$newName.zip"
+          Compress-Archive -Path (Join-Path $modFolder.Parent.FullName $newName) -DestinationPath $zipPath -CompressionLevel Optimal
+          Write-Output "Packed $zipPath"
+          # Spaces are risky in GitHub artifact names, so expose a space-free variant.
+          "MOD_NAME=$newName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "ARTIFACT_NAME=$($newName -replace ' ', '-')" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Upload release mod zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package_mod.outputs.ARTIFACT_NAME }}
+          path: '*.zip'
+          if-no-files-found: error
 
       - name: Create msvc debug artifact
         if: ${{ inputs.build_debug == 'true' }}
