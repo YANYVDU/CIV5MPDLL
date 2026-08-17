@@ -24327,6 +24327,7 @@ void CvCity::UpdateCorruption()
 	// Deferred while acquiring a city (acquireCity() publishes once at the end).
 	if (GC.getGame().IsSuppressingHappinessUpdate()) return;
 
+
 	// Guard against cascade during building transfer
 	if (m_bUpdatingCorruption)
 		return;

@@ -92,6 +92,7 @@ CvGameInitialItemsOverrides::CvGameInitialItemsOverrides()
 // (declared in CvGame.h; CvGame is a singleton so a static counter matches its lifetime)
 int CvGame::m_iSuppressHappinessUpdate = 0;
 
+
 CvGame::CvGame() :
 	m_jonRand(false)
 	, m_endTurnTimer()

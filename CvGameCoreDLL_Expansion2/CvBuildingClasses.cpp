@@ -2774,6 +2774,7 @@ int CvBuildingEntry::GetCorruptionUnhappinessChange() const
 	return m_iCorruptionUnhappinessChange;
 }
 
+
 /// NoOccupiedUnhappiness
 bool CvBuildingEntry::IsNoOccupiedUnhappiness() const
 {
