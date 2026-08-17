@@ -7872,6 +7872,18 @@ void CvGame::doTurn()
 			if (abProcessed[iPlayer]) continue;
 			kPlayer.UpdateVassalTaxation();
 		}
+
+		// Clear each player's this-turn lump-sum deal tax only after every
+		// overlord has read its vassals' base. Resetting inside
+		// UpdateVassalTaxation would zero a vassal's lump-sum before its own
+		// overlord (later in topological order) could include it in the base.
+		for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+		{
+			PlayerTypes ePlayer = (PlayerTypes)iPlayer;
+			CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+			if (!kPlayer.isAlive()) continue;
+			kPlayer.ResetGoldFromVassalDeals();
+		}
 	}
 #endif
 

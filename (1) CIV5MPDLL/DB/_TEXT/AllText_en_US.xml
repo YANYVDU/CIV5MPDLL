@@ -938,6 +938,43 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED">
 			<Text>Permanent alliance with {2_Civ}</Text>
 		</Row>
+
+<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>{2_Civ} is now your vassal, paying tribute in Science, Culture, Faith and Gold.</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>Vassal: {2_Civ}</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_VASSAL">
+			<Text>You have become a vassal of {1_Civ} and must pay them tribute.</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_VASSAL">
+			<Text>Vassal of {1_Civ}</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_OVERLORD">
+			<Text>{2_Civ} is no longer your vassal.</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_OVERLORD">
+			<Text>Vassal released: {2_Civ}</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_VASSAL">
+			<Text>You have been released from vassalage under {1_Civ}.</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_VASSAL">
+			<Text>Released from {1_Civ}</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GOLD_TAX">
+			<Text>Your vassal {1_Civ} agreed to a deal with {2_Civ}, earning you {3_value}[ICON_GOLD] Gold in vassal tax.</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GOLD_TAX">
+			<Text>Vassal deal tax +{2_value}[ICON_GOLD]</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GPT_TAX">
+			<Text>Your vassal {1_Civ} agreed to a deal with {2_Civ}, earning you {3_value}[ICON_GOLD] Gold per turn in vassal tax.</Text>
+		</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
+			<Text>Vassal deal tax +{2_value}[ICON_GOLD]/turn</Text>
+		</Row>
 </Language_en_US>
 
 </GameData>
