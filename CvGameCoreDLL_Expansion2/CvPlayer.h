@@ -1828,6 +1828,12 @@ public:
 	int GetCultureToOverlord() const;
 	int GetFaithToOverlord() const;
 	int GetGoldToOverlord() const;
+	int GetVassalTaxPercentFor(PlayerTypes eVassal) const;
+	int GetGoldFromVassalDeals() const;
+	void RecordVassalDealGold(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax);
+	void RecordVassalDealGPT(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax);
+	void RecordVassalDealGPTEnd(PlayerTypes eVassal, int iTax);
+	void NotifyVassalDealTax(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax, bool bPerTurn);
 #endif
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
@@ -2801,6 +2807,9 @@ protected:
 	int m_iCultureToOverlord;
 	int m_iFaithToOverlord;
 	int m_iGoldToOverlord;
+	// Vassal deal tax (gold received by our vassals from their own trades)
+	int m_iGoldFromVassalDeals;        // this-turn lump-sum deal tax, reset each turn (not serialized)
+	int m_iGoldPerTurnFromVassalDeals; // current total per-turn deal tax (serialized)
 #endif
 
 #if defined(MOD_TRAITS_CITY_WORKING) || defined(MOD_BUILDINGS_CITY_WORKING) || defined(MOD_POLICIES_CITY_WORKING) || defined(MOD_TECHS_CITY_WORKING)

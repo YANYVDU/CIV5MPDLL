@@ -419,6 +419,8 @@ CvPlayer::CvPlayer() :
 	, m_iCultureToOverlord(0)
 	, m_iFaithToOverlord(0)
 	, m_iGoldToOverlord(0)
+	, m_iGoldFromVassalDeals(0)
+	, m_iGoldPerTurnFromVassalDeals(0)
 #endif
 	, m_iPrestigeExemptAllyCount(0)
 	, m_iExtraUnitPlayerInstances(0)
@@ -29467,6 +29469,7 @@ void CvPlayer::Read(FDataStream& kStream)
 		MOD_SERIALIZE_READ(163, kStream, m_iCultureToOverlord, 0);
 		MOD_SERIALIZE_READ(163, kStream, m_iFaithToOverlord, 0);
 		MOD_SERIALIZE_READ(163, kStream, m_iGoldToOverlord, 0);
+		MOD_SERIALIZE_READ(163, kStream, m_iGoldPerTurnFromVassalDeals, 0);
 #endif
 	}
 	kStream >> m_iExtraUnitPlayerInstances;
@@ -30292,6 +30295,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iCultureToOverlord;
 	kStream << m_iFaithToOverlord;
 	kStream << m_iGoldToOverlord;
+	kStream << m_iGoldPerTurnFromVassalDeals;
 #endif
 	}
 	kStream << m_iExtraUnitPlayerInstances;
@@ -31784,6 +31788,7 @@ std::tr1::unordered_set<ImprovementTypes>& CvPlayer::GetUIFromVassals()
 void CvPlayer::UpdateVassalTaxation()
 {
 	if (!MOD_GLOBAL_SUZERAIN) return;
+	m_iGoldFromVassalDeals = 0;
 	if (m_vecVassals.empty()) return;
 	// Find active vassal suzerain resolution affecting this player
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
@@ -31926,6 +31931,76 @@ int CvPlayer::GetGoldFromVassals() const
 		iGold += m_aGoldFromVassals[e];
 	}
 	return iGold;
+}
+
+//--------------------------------------------------------------------------------
+// Returns the gold-tax percent this overlord levies on a given vassal, or 0 if
+// no active suzerain resolution taxes that vassal (or its gold-tax switch is off).
+int CvPlayer::GetVassalTaxPercentFor(PlayerTypes eVassal) const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
+	if (!pLeague) return 0;
+	ActiveResolutionList vActiveResolutions = pLeague->GetActiveResolutions();
+	for (uint iRes = 0; iRes < vActiveResolutions.size(); iRes++)
+	{
+		CvActiveResolution* pRes = &vActiveResolutions[iRes];
+		if (!pRes->GetEffects()->bSubmitSuzerain) continue;
+		if (pRes->GetProposerDecision()->GetProposer() != GetID()) continue;
+		if ((PlayerTypes)pRes->GetProposerDecision()->GetDecision() != eVassal) continue;
+		if (!pRes->GetEffects()->bVassalTaxGold) continue;
+		int iTaxPercent = pRes->GetEffects()->iVassalTaxPercent;
+		return (iTaxPercent > 0) ? iTaxPercent : 25;
+	}
+	return 0;
+}
+
+//--------------------------------------------------------------------------------
+int CvPlayer::GetGoldFromVassalDeals() const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	return m_iGoldFromVassalDeals + m_iGoldPerTurnFromVassalDeals;
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::RecordVassalDealGold(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax)
+{
+	m_iGoldFromVassalDeals += iTax;
+	NotifyVassalDealTax(eVassal, eCounterparty, iTax, false);
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::RecordVassalDealGPT(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax)
+{
+	m_iGoldPerTurnFromVassalDeals += iTax;
+	NotifyVassalDealTax(eVassal, eCounterparty, iTax, true);
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::RecordVassalDealGPTEnd(PlayerTypes eVassal, int iTax)
+{
+	m_iGoldPerTurnFromVassalDeals -= iTax;
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::NotifyVassalDealTax(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax, bool bPerTurn)
+{
+	if (!isHuman()) return;
+	CvNotifications* pNotifications = GetNotifications();
+	if (!pNotifications) return;
+	CvString strMessage;
+	CvString strSummary;
+	if (bPerTurn)
+	{
+		strMessage = GetLocalizedText("TXT_KEY_NOTIFICATION_VASSAL_DEAL_GPT_TAX", GET_PLAYER(eVassal).getNameKey(), GET_PLAYER(eCounterparty).getNameKey(), iTax);
+		strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX", GET_PLAYER(eVassal).getNameKey(), iTax);
+	}
+	else
+	{
+		strMessage = GetLocalizedText("TXT_KEY_NOTIFICATION_VASSAL_DEAL_GOLD_TAX", GET_PLAYER(eVassal).getNameKey(), GET_PLAYER(eCounterparty).getNameKey(), iTax);
+		strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GOLD_TAX", GET_PLAYER(eVassal).getNameKey(), iTax);
+	}
+	pNotifications->Add(NOTIFICATION_GENERIC, strMessage, strSummary, -1, -1, eVassal);
 }
 
 //--------------------------------------------------------------------------------
