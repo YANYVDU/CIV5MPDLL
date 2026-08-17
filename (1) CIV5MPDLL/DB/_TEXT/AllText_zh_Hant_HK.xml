@@ -936,5 +936,8 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
 		<Text>{1_Civ}與城邦{2_Civ}建立了永久盟友關係。該城邦不再發佈新任務，已有任務已清空。贈送金幣等提升影響力的方法將不再生效。</Text>
 	</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED">
+			<Text>與{2_Civ}建立永久同盟</Text>
+		</Row>
 </Language_zh_Hant_HK>
 </GameData>

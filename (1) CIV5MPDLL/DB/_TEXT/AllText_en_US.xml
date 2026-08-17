@@ -935,6 +935,9 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
 		<Text>{1_Civ} has formed a permanent alliance with {2_Civ}. This City-State will no longer issue quests and all existing quests have been cleared. Gold gifts and other influence-boosting methods will have no effect on this City-State.</Text>
 	</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED">
+			<Text>Permanent alliance with {2_Civ}</Text>
+		</Row>
 </Language_en_US>
 
 </GameData>
