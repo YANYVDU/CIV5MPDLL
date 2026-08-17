@@ -10393,7 +10393,7 @@ int CvLeagueAI::ScoreVoteChoicePlayer(CvProposal* pProposal, int iChoice, bool b
 		GetPlayer()->GetOverlord() != NO_PLAYER &&
 		eChoicePlayer == GetPlayer()->GetOverlord())
 	{
-		return 1000; // far above any normal score (max ~200), guarantees sole top choice
+		return 100000; // far above any normal score (max ~200), guarantees sole top choice
 	}
 #endif
 

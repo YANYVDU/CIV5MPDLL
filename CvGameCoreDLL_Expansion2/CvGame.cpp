@@ -7794,16 +7794,43 @@ void CvGame::doTurn()
 
 	m_kGameDeals.DoTurn();
 
+	for(iI = 0; iI < MAX_TEAMS; iI++)
+	{
+		if(GET_TEAM((TeamTypes)iI).isAlive())
+		{
+			GET_TEAM((TeamTypes)iI).doTurn();
+		}
+	}
+
+	GC.getMap().doTurn();
+
+	GC.GetEngineUserInterface()->doTurn();
+
+	CvBarbarians::DoCamps();
+
+	CvBarbarians::DoUnits();
+
+	GetGameReligions()->DoTurn();
+	GetGameTrade()->DoTurn();
+	GetGameLeagues()->DoTurn();
+
 #if defined(MOD_GLOBAL_SUZERAIN)
 	// Resolve all vassal taxes once, before any player's doTurn, so a vassal's
 	// deduction and its overlord's receipt this turn always match (no timing skew).
+	// Run after the league DoTurn above so this turn's newly-enacted or expired
+	// suzerain resolutions are already reflected in the active resolution list.
 	// Process in topological order (deepest vassals first) so that "tax-on-tax"
 	// uses each vassal's already-computed tribute from its own vassals.
 	{
 		std::vector<int> abProcessed(MAX_MAJOR_CIVS, 0);
 		bool bAnyProcessed = true;
-		while (bAnyProcessed)
+		// Cap passes so a vassal cycle (or a vassal list containing the player
+		// itself) cannot spin this loop forever. In a healthy game every pass
+		// processes at least one player, so the bound is never reached.
+		int iPass = 0;
+		while (bAnyProcessed && iPass < MAX_MAJOR_CIVS)
 		{
+			iPass++;
 			bAnyProcessed = false;
 			for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
 			{
@@ -7834,28 +7861,20 @@ void CvGame::doTurn()
 				}
 			}
 		}
+
+		// If a vassal cycle left some players unprocessed, tax them directly so
+		// no overlord is silently skipped.
+		for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+		{
+			PlayerTypes ePlayer = (PlayerTypes)iPlayer;
+			CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+			if (!kPlayer.isAlive()) continue;
+			if (abProcessed[iPlayer]) continue;
+			kPlayer.UpdateVassalTaxation();
+		}
 	}
 #endif
 
-	for(iI = 0; iI < MAX_TEAMS; iI++)
-	{
-		if(GET_TEAM((TeamTypes)iI).isAlive())
-		{
-			GET_TEAM((TeamTypes)iI).doTurn();
-		}
-	}
-
-	GC.getMap().doTurn();
-
-	GC.GetEngineUserInterface()->doTurn();
-
-	CvBarbarians::DoCamps();
-
-	CvBarbarians::DoUnits();
-
-	GetGameReligions()->DoTurn();
-	GetGameTrade()->DoTurn();
-	GetGameLeagues()->DoTurn();
 	GetGameCulture()->DoTurn();
 
 	GC.GetEngineUserInterface()->setCanEndTurn(false);

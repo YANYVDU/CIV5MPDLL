@@ -31857,8 +31857,9 @@ void CvPlayer::UpdateVassalTaxation()
 		{
 			// Tax base mirrors the culture/science formula: the vassal's net gold
 			// (income minus expenses) plus tribute it already collected from its own
-			// vassals, so overlords tax a vassal's whole net surplus ("tax-on-tax").
-			int iGoldBase = v.calculateGoldRate() + v.GetGoldFromVassals();
+			// vassals (regular gold tax and deal gold/GPT tax alike), so overlords
+			// tax a vassal's whole net surplus ("tax-on-tax").
+			int iGoldBase = v.calculateGoldRate() + v.GetGoldFromVassals() + v.GetGoldFromVassalDeals();
 			int iGoldTax = iGoldBase * iTaxPercent / 100;
 			if (iGoldTax > 0)
 			{
