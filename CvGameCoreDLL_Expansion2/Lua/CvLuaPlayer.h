@@ -1349,6 +1349,7 @@ protected:
 	LUAAPIEXTN(GetCultureToOverlord, int);
 	LUAAPIEXTN(GetFaithToOverlord, int);
 	LUAAPIEXTN(GetGoldToOverlord, int);
+	LUAAPIEXTN(GetGoldFromVassalDeals, int);
 #endif
 };
 

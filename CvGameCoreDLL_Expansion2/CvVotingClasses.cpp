@@ -10387,6 +10387,16 @@ int CvLeagueAI::ScoreVoteChoicePlayer(CvProposal* pProposal, int iChoice, bool b
 	// How much do we like this choice for this proposal?  Positive is like, negative is dislike
 	int iScore = 0;
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// A vassal always votes for its overlord on Host / World Leader elections
+	if ((pProposal->GetEffects()->bDiplomaticVictory || pProposal->GetEffects()->bChangeLeagueHost) &&
+		GetPlayer()->GetOverlord() != NO_PLAYER &&
+		eChoicePlayer == GetPlayer()->GetOverlord())
+	{
+		return 100000; // far above any normal score (max ~200), guarantees sole top choice
+	}
+#endif
+
 	// == Grand Strategy and other factors ==
 	AIGrandStrategyTypes eGrandStrategy = GetPlayer()->GetGrandStrategyAI()->GetActiveGrandStrategy();
 	bool bSeekingDiploVictory = eGrandStrategy == GC.getInfoTypeForString("AIGRANDSTRATEGY_UNITED_NATIONS");

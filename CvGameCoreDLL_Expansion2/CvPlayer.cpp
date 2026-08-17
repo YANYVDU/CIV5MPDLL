@@ -419,6 +419,8 @@ CvPlayer::CvPlayer() :
 	, m_iCultureToOverlord(0)
 	, m_iFaithToOverlord(0)
 	, m_iGoldToOverlord(0)
+	, m_iGoldFromVassalDeals(0)
+	, m_iGoldPerTurnFromVassalDeals(0)
 #endif
 	, m_iPrestigeExemptAllyCount(0)
 	, m_iExtraUnitPlayerInstances(0)
@@ -5690,10 +5692,6 @@ void CvPlayer::doTurnPostDiplomacy()
 	DoIncomingUnits();
 
 	const int iGameTurn = kGame.getGameTurn();
-
-#if defined(MOD_GLOBAL_SUZERAIN)
-	UpdateVassalTaxation();
-#endif
 
 	GatherPerTurnReplayStats(iGameTurn);
 
@@ -29471,6 +29469,7 @@ void CvPlayer::Read(FDataStream& kStream)
 		MOD_SERIALIZE_READ(163, kStream, m_iCultureToOverlord, 0);
 		MOD_SERIALIZE_READ(163, kStream, m_iFaithToOverlord, 0);
 		MOD_SERIALIZE_READ(163, kStream, m_iGoldToOverlord, 0);
+		MOD_SERIALIZE_READ(163, kStream, m_iGoldPerTurnFromVassalDeals, 0);
 #endif
 	}
 	kStream >> m_iExtraUnitPlayerInstances;
@@ -30296,6 +30295,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iCultureToOverlord;
 	kStream << m_iFaithToOverlord;
 	kStream << m_iGoldToOverlord;
+	kStream << m_iGoldPerTurnFromVassalDeals;
 #endif
 	}
 	kStream << m_iExtraUnitPlayerInstances;
@@ -31788,35 +31788,32 @@ std::tr1::unordered_set<ImprovementTypes>& CvPlayer::GetUIFromVassals()
 void CvPlayer::UpdateVassalTaxation()
 {
 	if (!MOD_GLOBAL_SUZERAIN) return;
+	m_iGoldFromVassalDeals = 0;
 	if (m_vecVassals.empty()) return;
 	// Find active vassal suzerain resolution affecting this player
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
 	if (!pLeague) return;
 	ActiveResolutionList vActiveResolutions = pLeague->GetActiveResolutions();
-	CvActiveResolution* pVassalRes = NULL;
+	// Each active suzerain resolution targets exactly one vassal (its decision) and
+	// carries its own tax rate, so levy taxes per-resolution rather than applying a
+	// single rate to all vassals.
 	for (uint iRes = 0; iRes < vActiveResolutions.size(); iRes++)
 	{
 		CvActiveResolution* pRes = &vActiveResolutions[iRes];
-		if (pRes->GetEffects()->bSubmitSuzerain && pRes->GetProposerDecision()->GetProposer() == GetID())
-		{
-			pVassalRes = pRes;
-			break;
-		}
-	}
-	if (!pVassalRes) return;
-	int iTaxPercent = pVassalRes->GetEffects()->iVassalTaxPercent;
-	if (iTaxPercent <= 0) iTaxPercent = 25;
-	for (size_t i = 0; i < m_vecVassals.size(); i++)
-	{
-		PlayerTypes e = (PlayerTypes)m_vecVassals[i];
+		if (!pRes->GetEffects()->bSubmitSuzerain) continue;
+		if (pRes->GetProposerDecision()->GetProposer() != GetID()) continue;
+		PlayerTypes e = (PlayerTypes)pRes->GetProposerDecision()->GetDecision();
+		if (e == NO_PLAYER) continue;
 		CvPlayer& v = GET_PLAYER(e);
 		if (!v.isAlive()) continue;
+		int iTaxPercent = pRes->GetEffects()->iVassalTaxPercent;
+		if (iTaxPercent <= 0) iTaxPercent = 25;
 		// Taxes are levied on gross output. The vassal's per-turn getters already net out its own
 		// downstream vassal taxes, so re-adding the amount it pays to us makes the base "tax-on-tax":
 		// a vassal tithes a share of everything it produces, including what it receives from its own
 		// vassals. This is intentional.
 		// Science tax: gross output = net output + tax already paid to overlord
-		if (pVassalRes->GetEffects()->bVassalTaxScience)
+		if (pRes->GetEffects()->bVassalTaxScience)
 		{
 			unsigned long long iScienceGross = v.GetScienceTimes100(true) + v.GetScienceTimes100ToOverlord();
 			// Science is tracked in x100 space; multiply before dividing so the fractional beakers are not truncated
@@ -31830,7 +31827,7 @@ void CvPlayer::UpdateVassalTaxation()
 			v.m_iScienceTimes100ToOverlord = 0;
 		}
 		// Culture tax
-		if (pVassalRes->GetEffects()->bVassalTaxCulture)
+		if (pRes->GetEffects()->bVassalTaxCulture)
 		{
 			int iCultureGross = v.GetTotalJONSCulturePerTurn() + v.GetCultureToOverlord();
 			int iCultureTax = iCultureGross * iTaxPercent / 100;
@@ -31843,7 +31840,7 @@ void CvPlayer::UpdateVassalTaxation()
 			v.m_iCultureToOverlord = 0;
 		}
 		// Faith tax
-		if (pVassalRes->GetEffects()->bVassalTaxFaith)
+		if (pRes->GetEffects()->bVassalTaxFaith)
 		{
 			int iFaithGross = v.GetTotalFaithPerTurn() + v.GetFaithToOverlord();
 			int iFaithTax = iFaithGross * iTaxPercent / 100;
@@ -31856,9 +31853,14 @@ void CvPlayer::UpdateVassalTaxation()
 			v.m_iFaithToOverlord = 0;
 		}
 		// Gold tax is applied directly and tracked per vassal
-		if (pVassalRes->GetEffects()->bVassalTaxGold)
+		if (pRes->GetEffects()->bVassalTaxGold)
 		{
-			int iGoldTax = v.GetTreasury()->GetGoldFromCities() * iTaxPercent / 100;
+			// Tax base mirrors the culture/science formula: the vassal's net gold
+			// (income minus expenses) plus tribute it already collected from its own
+			// vassals (regular gold tax and deal gold/GPT tax alike), so overlords
+			// tax a vassal's whole net surplus ("tax-on-tax").
+			int iGoldBase = v.calculateGoldRate() + v.GetGoldFromVassals() + v.GetGoldFromVassalDeals();
+			int iGoldTax = iGoldBase * iTaxPercent / 100;
 			if (iGoldTax > 0)
 			{
 				v.GetTreasury()->ChangeGold(-iGoldTax);
@@ -31930,6 +31932,76 @@ int CvPlayer::GetGoldFromVassals() const
 		iGold += m_aGoldFromVassals[e];
 	}
 	return iGold;
+}
+
+//--------------------------------------------------------------------------------
+// Returns the gold-tax percent this overlord levies on a given vassal, or 0 if
+// no active suzerain resolution taxes that vassal (or its gold-tax switch is off).
+int CvPlayer::GetVassalTaxPercentFor(PlayerTypes eVassal) const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
+	if (!pLeague) return 0;
+	ActiveResolutionList vActiveResolutions = pLeague->GetActiveResolutions();
+	for (uint iRes = 0; iRes < vActiveResolutions.size(); iRes++)
+	{
+		CvActiveResolution* pRes = &vActiveResolutions[iRes];
+		if (!pRes->GetEffects()->bSubmitSuzerain) continue;
+		if (pRes->GetProposerDecision()->GetProposer() != GetID()) continue;
+		if ((PlayerTypes)pRes->GetProposerDecision()->GetDecision() != eVassal) continue;
+		if (!pRes->GetEffects()->bVassalTaxGold) continue;
+		int iTaxPercent = pRes->GetEffects()->iVassalTaxPercent;
+		return (iTaxPercent > 0) ? iTaxPercent : 25;
+	}
+	return 0;
+}
+
+//--------------------------------------------------------------------------------
+int CvPlayer::GetGoldFromVassalDeals() const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	return m_iGoldFromVassalDeals + m_iGoldPerTurnFromVassalDeals;
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::RecordVassalDealGold(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax)
+{
+	m_iGoldFromVassalDeals += iTax;
+	NotifyVassalDealTax(eVassal, eCounterparty, iTax, false);
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::RecordVassalDealGPT(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax)
+{
+	m_iGoldPerTurnFromVassalDeals += iTax;
+	NotifyVassalDealTax(eVassal, eCounterparty, iTax, true);
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::RecordVassalDealGPTEnd(PlayerTypes eVassal, int iTax)
+{
+	m_iGoldPerTurnFromVassalDeals -= iTax;
+}
+
+//--------------------------------------------------------------------------------
+void CvPlayer::NotifyVassalDealTax(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax, bool bPerTurn)
+{
+	if (!isHuman()) return;
+	CvNotifications* pNotifications = GetNotifications();
+	if (!pNotifications) return;
+	CvString strMessage;
+	CvString strSummary;
+	if (bPerTurn)
+	{
+		strMessage = GetLocalizedText("TXT_KEY_NOTIFICATION_VASSAL_DEAL_GPT_TAX", GET_PLAYER(eVassal).getNameKey(), GET_PLAYER(eCounterparty).getNameKey(), iTax);
+		strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX", GET_PLAYER(eVassal).getNameKey(), iTax);
+	}
+	else
+	{
+		strMessage = GetLocalizedText("TXT_KEY_NOTIFICATION_VASSAL_DEAL_GOLD_TAX", GET_PLAYER(eVassal).getNameKey(), GET_PLAYER(eCounterparty).getNameKey(), iTax);
+		strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GOLD_TAX", GET_PLAYER(eVassal).getNameKey(), iTax);
+	}
+	pNotifications->Add(NOTIFICATION_GENERIC, strMessage, strSummary, -1, -1, eVassal);
 }
 
 //--------------------------------------------------------------------------------
