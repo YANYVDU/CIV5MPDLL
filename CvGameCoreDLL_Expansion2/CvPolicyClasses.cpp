@@ -5825,4 +5825,4 @@ int CvPolicyEntry::GetGreatPersonOutputModifierPerGWs(int i) const
 	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piGreatPersonOutputModifierPerGWs ? m_piGreatPersonOutputModifierPerGWs[i] : 0;
-}
+}
