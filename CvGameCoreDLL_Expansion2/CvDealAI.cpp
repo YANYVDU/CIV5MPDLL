@@ -1534,7 +1534,7 @@ int CvDealAI::GetCityValue(int iX, int iY, bool bFromMe, PlayerTypes eOtherPlaye
 			if(!GET_TEAM(GetTeam()).isAtWar(theOtherPlayer.getTeam()))
 			{
 #if defined(MOD_GLOBAL_SUZERAIN)
-				if(theOtherPlayer.isHuman() || theOtherPlayer.GetOverlord() == GetPlayer()->GetID())  // human, or our vassal, is trying to trick us
+				if(theOtherPlayer.isHuman())  // human is trying to trick us; vassals are trusted
 #else
 				if(theOtherPlayer.isHuman())  // he is obviously trying to trick us
 #endif

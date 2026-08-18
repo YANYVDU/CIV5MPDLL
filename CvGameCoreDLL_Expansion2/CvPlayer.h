@@ -1830,6 +1830,7 @@ public:
 	int GetGoldToOverlord() const;
 	int GetVassalTaxPercentFor(PlayerTypes eVassal) const;
 	int GetGoldFromVassalDeals() const;
+	void ResetGoldFromVassalDeals();
 	void RecordVassalDealGold(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax);
 	void RecordVassalDealGPT(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax);
 	void RecordVassalDealGPTEnd(PlayerTypes eVassal, int iTax);

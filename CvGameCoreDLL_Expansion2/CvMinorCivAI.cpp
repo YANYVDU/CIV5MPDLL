@@ -10058,11 +10058,15 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 			sTemp << GET_PLAYER(eFromPlayer).getCivilizationShortDescriptionKey();
 			sTemp << GetPlayer()->getCivilizationShortDescriptionKey();
 			CvString sMsg = sTemp.toUTF8();
+			Localization::String sSummaryTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED");
+			sSummaryTemp << GET_PLAYER(eFromPlayer).getCivilizationShortDescriptionKey();
+			sSummaryTemp << GetPlayer()->getCivilizationShortDescriptionKey();
+			CvString sSum = sSummaryTemp.toUTF8();
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
 				PlayerTypes e = (PlayerTypes)i;
 				if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isHuman())
-					AddNotification(sMsg, sMsg, e, -1, -1);
+					AddNotification(sMsg, sSum, e, -1, -1);
 			}
 		}
 	}

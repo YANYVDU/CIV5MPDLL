@@ -31788,7 +31788,6 @@ std::tr1::unordered_set<ImprovementTypes>& CvPlayer::GetUIFromVassals()
 void CvPlayer::UpdateVassalTaxation()
 {
 	if (!MOD_GLOBAL_SUZERAIN) return;
-	m_iGoldFromVassalDeals = 0;
 	if (m_vecVassals.empty()) return;
 	// Find active vassal suzerain resolution affecting this player
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
@@ -31957,6 +31956,12 @@ int CvPlayer::GetVassalTaxPercentFor(PlayerTypes eVassal) const
 }
 
 //--------------------------------------------------------------------------------
+void CvPlayer::ResetGoldFromVassalDeals()
+{
+	m_iGoldFromVassalDeals = 0;
+}
+
+//--------------------------------------------------------------------------------
 int CvPlayer::GetGoldFromVassalDeals() const
 {
 	if (!MOD_GLOBAL_SUZERAIN) return 0;
@@ -31987,6 +31992,7 @@ void CvPlayer::RecordVassalDealGPTEnd(PlayerTypes eVassal, int iTax)
 void CvPlayer::NotifyVassalDealTax(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax, bool bPerTurn)
 {
 	if (!isHuman()) return;
+	if (eCounterparty == NO_PLAYER) return;
 	CvNotifications* pNotifications = GetNotifications();
 	if (!pNotifications) return;
 	CvString strMessage;

@@ -1640,11 +1640,15 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 				sTemp << pPlayer->getCivilizationShortDescriptionKey();
 				sTemp << GET_PLAYER(eTargetCityState).getCivilizationShortDescriptionKey();
 				CvString sMsg = sTemp.toUTF8();
+				Localization::String sSummaryTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED");
+				sSummaryTemp << pPlayer->getCivilizationShortDescriptionKey();
+				sSummaryTemp << GET_PLAYER(eTargetCityState).getCivilizationShortDescriptionKey();
+				CvString sSum = sSummaryTemp.toUTF8();
 				for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 				{
 					PlayerTypes e = (PlayerTypes)i;
 					if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isHuman())
-						pMinorAI->AddNotification(sMsg, sMsg, e, -1, -1);
+						pMinorAI->AddNotification(sMsg, sSum, e, -1, -1);
 				}
 			}
 		}
@@ -1688,6 +1692,39 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 				if (GetEffects()->bVassalGetUC)
 				{
 					kOverlord.RefreshUCFromVassals();
+				}
+				// Notify overlord and vassal of the new relationship
+				if (kOverlord.isHuman())
+				{
+					CvNotifications* pNotifications = kOverlord.GetNotifications();
+					if (pNotifications)
+					{
+						Localization::String sMsgTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_OVERLORD");
+						sMsgTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sMsgTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sMsg = sMsgTemp.toUTF8();
+						Localization::String sSumTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_OVERLORD");
+						sSumTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sSumTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sSum = sSumTemp.toUTF8();
+						pNotifications->Add(NOTIFICATION_GENERIC, sMsg, sSum, -1, -1, eVassal);
+					}
+				}
+				if (kVassal.isHuman())
+				{
+					CvNotifications* pNotifications = kVassal.GetNotifications();
+					if (pNotifications)
+					{
+						Localization::String sMsgTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_VASSAL");
+						sMsgTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sMsgTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sMsg = sMsgTemp.toUTF8();
+						Localization::String sSumTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_VASSAL");
+						sSumTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sSumTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sSum = sSumTemp.toUTF8();
+						pNotifications->Add(NOTIFICATION_GENERIC, sMsg, sSum, -1, -1, eOverlord);
+					}
 				}
 			}
 		}
@@ -1901,6 +1938,39 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 				if (GetEffects()->bVassalGetUC)
 				{
 					kOverlord.RefreshUCFromVassals();
+				}
+				// Notify overlord and vassal that the relationship has ended
+				if (kOverlord.isHuman())
+				{
+					CvNotifications* pNotifications = kOverlord.GetNotifications();
+					if (pNotifications)
+					{
+						Localization::String sMsgTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_VASSAL_RELEASED_OVERLORD");
+						sMsgTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sMsgTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sMsg = sMsgTemp.toUTF8();
+						Localization::String sSumTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_OVERLORD");
+						sSumTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sSumTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sSum = sSumTemp.toUTF8();
+						pNotifications->Add(NOTIFICATION_GENERIC, sMsg, sSum, -1, -1, eVassal);
+					}
+				}
+				if (kVassal.isHuman())
+				{
+					CvNotifications* pNotifications = kVassal.GetNotifications();
+					if (pNotifications)
+					{
+						Localization::String sMsgTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_VASSAL_RELEASED_VASSAL");
+						sMsgTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sMsgTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sMsg = sMsgTemp.toUTF8();
+						Localization::String sSumTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_VASSAL");
+						sSumTemp << kOverlord.getCivilizationShortDescriptionKey();
+						sSumTemp << kVassal.getCivilizationShortDescriptionKey();
+						CvString sSum = sSumTemp.toUTF8();
+						pNotifications->Add(NOTIFICATION_GENERIC, sMsg, sSum, -1, -1, eOverlord);
+					}
 				}
 			}
 		}

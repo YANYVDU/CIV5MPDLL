@@ -940,8 +940,48 @@
 			</Text>
 		</Replace>
 		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
-		<Text>{1_Civ}与城邦{2_Civ}建立了永久盟友关系。该城邦不再发布新任务，已有任务已清空。赠送金币等提升影响力的方法将不再生效。</Text>
-	</Row>
+			<Text>{1_Civ}与城邦{2_Civ}建立了永久盟友关系。该城邦不再发布新任务，已有任务已清空。赠送金币等提升影响力的方法将不再生效。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED">
+			<Text>与{2_Civ}建立永久同盟</Text>
+		</Row>
+
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>{2_Civ}现在成为了你的附庸，向你上缴科研、文化、信仰与金钱产出。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>附庸：{2_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_VASSAL">
+			<Text>你已成为{1_Civ}的附庸，需向其缴纳一定比例的产出。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_VASSAL">
+			<Text>臣服于{1_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_OVERLORD">
+			<Text>{2_Civ}不再是你的附庸。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_OVERLORD">
+			<Text>附庸脱离：{2_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_VASSAL">
+			<Text>你已脱离{1_Civ}的附庸关系。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_VASSAL">
+			<Text>脱离{1_Civ}附庸</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GOLD_TAX">
+			<Text>附庸 {1_Civ} 与 {2_Civ} 达成的交易为您带来了 {3_value}[ICON_GOLD] 金币附庸税。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GOLD_TAX">
+			<Text>附庸交易税 +{2_value}[ICON_GOLD]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GPT_TAX">
+			<Text>附庸 {1_Civ} 与 {2_Civ} 达成的交易为您每回合带来 {3_value}[ICON_GOLD] 金币附庸税。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
+			<Text>附庸交易税 +{2_value}[ICON_GOLD]/回合</Text>
+		</Row>
 </Language_zh_CN>
 
 </GameData>
