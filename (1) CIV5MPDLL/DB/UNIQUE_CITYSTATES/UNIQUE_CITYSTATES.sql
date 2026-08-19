@@ -228,3 +228,11 @@ create table MinorCivilization_FreeBuildingClasses (
     MinorCivType text references MinorCivilizations(Type),
     BuildingClassType text references BuildingClasses(Type)
 );
+
+-- CityState UA (Prague): a city with our own spy garrisoned in it grants a configurable
+-- yield percentage modifier (per YieldType) to that city, e.g. YIELD_SCIENCE / 20 = +20% science
+create table CityStateUAEffect_SpyGarrisonYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);

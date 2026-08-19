@@ -61,6 +61,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_piSpecialistPointRate(nullptr)
 	, m_piGreatPersonOneShotModifier(nullptr)
+	, m_piSpyGarrisonYieldModifiers(nullptr)
 	, m_iSpyKillGainSpyProgress(0)
 {
 }
@@ -70,8 +71,9 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiBuildingClassYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piSpecialistPointRate);
-	
+
 	SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
+	SAFE_DELETE_ARRAY(m_piSpyGarrisonYieldModifiers);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -167,6 +169,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Brussels: specialist great person point accumulation rate (%)
 	kUtility.PopulateArrayByValue(m_piSpecialistPointRate, "Specialists", "CityStateUAEffect_SpecialistPointRate", "SpecialistType", "EffectType", GetType(), "Rate");
+	//Prague: city with our own spy garrisoned grants yield percentage modifiers (per YieldType)
+	kUtility.PopulateArrayByValue(m_piSpyGarrisonYieldModifiers, "Yields", "CityStateUAEffect_SpyGarrisonYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 	//Brussels: each great work of a class grants great person points to a specialist
 	{
 		m_vGreatWorkGreatPersonPoints.clear();
@@ -403,6 +407,13 @@ int CvCityStateUAEffectEntry::GetSpecialistPointRate(int i) const
 	return m_piSpecialistPointRate ? m_piSpecialistPointRate[i] : 0;
 }
 
+int CvCityStateUAEffectEntry::GetSpyGarrisonYieldModifiers(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piSpyGarrisonYieldModifiers ? m_piSpyGarrisonYieldModifiers[i] : 0;
+}
+
 int CvCityStateUAEffectEntry::GetSpyKillGainSpyProgress() const
 {
 	return m_iSpyKillGainSpyProgress;
@@ -614,6 +625,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
 	, m_ppiBuildingClassYieldModifiers(NULL)
+	, m_iSpyGarrisonYieldModifierCount(0)
 	, m_iSpyKillGainSpyProgress(0)
 {
 }
@@ -683,6 +695,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
 	m_iBuildingClassYieldModifierCount = 0;
 	m_iSpyKillGainSpyProgress = 0;
+	m_iSpyGarrisonYieldModifierCount = 0;
+	m_aiSpyGarrisonYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -800,6 +814,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 					}
 				}
 			}
+		}
+	}
+	//Prague: city with our own spy garrisoned grants yield percentage modifiers
+	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+	{
+		int iMod = pEffect->GetSpyGarrisonYieldModifiers(iYield);
+		if (iMod != 0)
+		{
+			m_aiSpyGarrisonYieldModifiers[iYield] += iMod * iChange;
+			m_iSpyGarrisonYieldModifierCount += iChange;
 		}
 	}
 	//Brussels: specialist great person point accumulation rate
@@ -992,6 +1016,16 @@ int CvPlayerCityStateUA::GetBuildingClassYieldModifier(BuildingClassTypes eBuild
 bool CvPlayerCityStateUA::HasBuildingClassYieldModifiers() const
 {
 	return m_iBuildingClassYieldModifierCount > 0;
+}
+
+int CvPlayerCityStateUA::GetSpyGarrisonYieldModifier(YieldTypes eYieldType) const
+{
+	return (eYieldType >= 0 && (int)eYieldType < (int)m_aiSpyGarrisonYieldModifiers.size()) ? m_aiSpyGarrisonYieldModifiers[(int)eYieldType] : 0;
+}
+
+bool CvPlayerCityStateUA::HasSpyGarrisonYieldModifiers() const
+{
+	return m_iSpyGarrisonYieldModifierCount > 0;
 }
 
 int CvPlayerCityStateUA::GetSpyKillGainSpyProgress() const
