@@ -162,6 +162,7 @@ public:
 	int GetResourceYieldModifiers(int i, int j) const;
 	// Antananarivo
 	int GetCoastalCityGrowthThresholdModifier() const;
+	int GetDiplomaticPrestigePerCity() const;
 
 private:
 	// Florence
@@ -249,6 +250,7 @@ private:
 	int** m_ppiResourceYieldModifiers;
 	// Antananarivo
 	int m_iCoastalCityGrowthThresholdModifier;
+	int m_iDiplomaticPrestigePerCity;
 };
 
 //======================================================================================================
@@ -411,6 +413,7 @@ public:
 	bool HasResourceYieldModifiers() const;
 	// Antananarivo
 	int GetCoastalCityGrowthThresholdModifier() const;
+	int GetDiplomaticPrestigePerCity() const;
 
 	void Reset();
 
@@ -485,6 +488,7 @@ protected:
 	int m_iResourceYieldModifierCount;
 	// Antananarivo
 	int m_iCoastalCityGrowthThresholdModifier;
+	int m_iDiplomaticPrestigePerCity;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

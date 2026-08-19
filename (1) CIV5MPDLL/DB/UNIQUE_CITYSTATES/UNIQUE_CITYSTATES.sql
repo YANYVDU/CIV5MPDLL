@@ -115,6 +115,8 @@ CREATE TABLE CityStateUAEffects (
     SpyKillGainSpyProgress                           integer DEFAULT 0,
     -- Antananarivo: coastal city food growth threshold modifier (ordinary modifier, -20 = -20%)
     CoastalCityGrowthThresholdModifier              integer DEFAULT 0,
+    -- Antananarivo: diplomatic prestige per city (value = prestige * 100; 10 = 0.1 prestige per city)
+    DiplomaticPrestigePerCity                       integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

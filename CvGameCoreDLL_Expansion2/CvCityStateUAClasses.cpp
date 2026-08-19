@@ -65,6 +65,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iSpyKillGainSpyProgress(0)
 	, m_ppiResourceYieldModifiers(NULL)
 	, m_iCoastalCityGrowthThresholdModifier(0)
+	, m_iDiplomaticPrestigePerCity(0)
 {
 }
 
@@ -150,6 +151,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iSpyKillGainSpyProgress						= kResults.GetInt("SpyKillGainSpyProgress");
 
 	m_iCoastalCityGrowthThresholdModifier			= kResults.GetInt("CoastalCityGrowthThresholdModifier");
+	m_iDiplomaticPrestigePerCity					= kResults.GetInt("DiplomaticPrestigePerCity");
 
 	//CityState UA (Melbourne): city owning the specified improved resource grants yield percentage modifiers
 	{
@@ -460,6 +462,11 @@ int CvCityStateUAEffectEntry::GetCoastalCityGrowthThresholdModifier() const
 	return m_iCoastalCityGrowthThresholdModifier;
 }
 
+int CvCityStateUAEffectEntry::GetDiplomaticPrestigePerCity() const
+{
+	return m_iDiplomaticPrestigePerCity;
+}
+
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
 	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
@@ -671,6 +678,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_ppiResourceYieldModifiers(NULL)
 	, m_iResourceYieldModifierCount(0)
 	, m_iCoastalCityGrowthThresholdModifier(0)
+	, m_iDiplomaticPrestigePerCity(0)
 {
 }
 
@@ -743,6 +751,7 @@ void CvPlayerCityStateUA::Reset()
 	m_aiSpyGarrisonYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_iResourceYieldModifierCount = 0;
 	m_iCoastalCityGrowthThresholdModifier = 0;
+	m_iDiplomaticPrestigePerCity = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -864,6 +873,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
 	m_iSpyKillGainSpyProgress						+= pEffect->GetSpyKillGainSpyProgress() * iChange;
 	m_iCoastalCityGrowthThresholdModifier			+= pEffect->GetCoastalCityGrowthThresholdModifier() * iChange;
+	m_iDiplomaticPrestigePerCity					+= pEffect->GetDiplomaticPrestigePerCity() * iChange;
 	{
 		if (m_ppiBuildingClassYieldModifiers)
 		{
@@ -1130,6 +1140,11 @@ bool CvPlayerCityStateUA::HasResourceYieldModifiers() const
 int CvPlayerCityStateUA::GetCoastalCityGrowthThresholdModifier() const
 {
 	return m_iCoastalCityGrowthThresholdModifier;
+}
+
+int CvPlayerCityStateUA::GetDiplomaticPrestigePerCity() const
+{
+	return m_iDiplomaticPrestigePerCity;
 }
 
 int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const

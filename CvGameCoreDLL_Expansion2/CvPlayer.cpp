@@ -31488,7 +31488,19 @@ void CvPlayer::ChangeExtraDiplomaticPrestige(int iChange)
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetDiplomaticPrestige() const
 {
-	return GetCurrentEra() + GetExtraDiplomaticPrestige();
+	int iResult = GetCurrentEra() + GetExtraDiplomaticPrestige();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
+	if (pUA)
+	{
+		int iPerCity = pUA->GetDiplomaticPrestigePerCity();
+		if (iPerCity > 0)
+			iResult += (getNumCities() * iPerCity) / 100;
+	}
+#endif
+
+	return iResult;
 }
 
 //	--------------------------------------------------------------------------------
