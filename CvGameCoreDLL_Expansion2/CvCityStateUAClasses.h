@@ -163,6 +163,7 @@ public:
 	// Antananarivo
 	int GetCoastalCityGrowthThresholdModifier() const;
 	int GetDiplomaticPrestigePerCity() const;
+	int GetImprovementYieldModifiers(int i, int j) const;
 
 private:
 	// Florence
@@ -251,6 +252,7 @@ private:
 	// Antananarivo
 	int m_iCoastalCityGrowthThresholdModifier;
 	int m_iDiplomaticPrestigePerCity;
+	int** m_ppiImprovementYieldModifiers;
 };
 
 //======================================================================================================
@@ -414,6 +416,8 @@ public:
 	// Antananarivo
 	int GetCoastalCityGrowthThresholdModifier() const;
 	int GetDiplomaticPrestigePerCity() const;
+	int GetImprovementYieldModifier(ImprovementTypes eImprovement, YieldTypes eYield) const;
+	bool HasImprovementYieldModifiers() const;
 
 	void Reset();
 
@@ -489,6 +493,8 @@ protected:
 	// Antananarivo
 	int m_iCoastalCityGrowthThresholdModifier;
 	int m_iDiplomaticPrestigePerCity;
+	int** m_ppiImprovementYieldModifiers;
+	int m_iImprovementYieldModifierCount;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

@@ -249,3 +249,12 @@ create table CityStateUAEffect_ResourceYieldModifiers (
     YieldType text references Yields(Type),
     YieldMod integer default 0
 );
+
+-- CityState UA (Antananarivo): each worked plot holding the specified improvement
+-- grants a yield percentage modifier to the city (e.g. MINE / YIELD_GOLD / 3 = +3% gold per worked mine)
+create table CityStateUAEffect_ImprovementYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    ImprovementType text references Improvements(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);

@@ -66,6 +66,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_ppiResourceYieldModifiers(NULL)
 	, m_iCoastalCityGrowthThresholdModifier(0)
 	, m_iDiplomaticPrestigePerCity(0)
+	, m_ppiImprovementYieldModifiers(NULL)
 {
 }
 
@@ -78,6 +79,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
 	SAFE_DELETE_ARRAY(m_piSpyGarrisonYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -172,6 +174,28 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			const int iYieldMod = pResults->GetInt(2);
 
 			m_ppiResourceYieldModifiers[iResourceID][iYieldID] = iYieldMod;
+		}
+	}
+
+	//CityState UA (Antananarivo): each worked plot holding the specified improvement grants yield percentage modifiers
+	{
+		kUtility.Initialize2DArray(m_ppiImprovementYieldModifiers, "Improvements", "Yields");
+
+		std::string strKey("CityStateUAEffect_ImprovementYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Improvements.ID as ImprovementID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_ImprovementYieldModifiers inner join Improvements on Improvements.Type = ImprovementType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			const int iImprovementID = pResults->GetInt(0);
+			const int iYieldID = pResults->GetInt(1);
+			const int iYieldMod = pResults->GetInt(2);
+
+			m_ppiImprovementYieldModifiers[iImprovementID][iYieldID] = iYieldMod;
 		}
 	}
 
@@ -467,6 +491,15 @@ int CvCityStateUAEffectEntry::GetDiplomaticPrestigePerCity() const
 	return m_iDiplomaticPrestigePerCity;
 }
 
+int CvCityStateUAEffectEntry::GetImprovementYieldModifiers(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppiImprovementYieldModifiers ? m_ppiImprovementYieldModifiers[i][j] : 0;
+}
+
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
 	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
@@ -679,6 +712,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iResourceYieldModifierCount(0)
 	, m_iCoastalCityGrowthThresholdModifier(0)
 	, m_iDiplomaticPrestigePerCity(0)
+	, m_ppiImprovementYieldModifiers(NULL)
+	, m_iImprovementYieldModifierCount(0)
 {
 }
 
@@ -752,6 +787,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iResourceYieldModifierCount = 0;
 	m_iCoastalCityGrowthThresholdModifier = 0;
 	m_iDiplomaticPrestigePerCity = 0;
+	m_iImprovementYieldModifierCount = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -788,6 +824,24 @@ void CvPlayerCityStateUA::Reset()
 			{
 				m_ppiResourceYieldModifiers[i] = m_ppiResourceYieldModifiers[i-1] + NUM_YIELD_TYPES;
 				for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiResourceYieldModifiers[i][j] = 0;
+			}
+		}
+	}
+	// Mirrors CvDatabaseUtility::Initialize2DArray (non-static, so allocate manually here)
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
+	{
+		const int iNumImp = GC.getNumImprovementInfos();
+		if (iNumImp > 0)
+		{
+			const unsigned int iNumBytes = iNumImp * sizeof(int*) + iNumImp * NUM_YIELD_TYPES * sizeof(int);
+			unsigned char* pData = FNEW(unsigned char[iNumBytes], c_eCiv5GameplayDLL, 0);
+			m_ppiImprovementYieldModifiers = (int**)pData;
+			m_ppiImprovementYieldModifiers[0] = (int*)(pData + iNumImp * sizeof(int*));
+			for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiImprovementYieldModifiers[0][j] = 0;
+			for (int i = 1; i < iNumImp; i++)
+			{
+				m_ppiImprovementYieldModifiers[i] = m_ppiImprovementYieldModifiers[i-1] + NUM_YIELD_TYPES;
+				for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiImprovementYieldModifiers[i][j] = 0;
 			}
 		}
 	}
@@ -904,6 +958,24 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 					{
 						m_ppiResourceYieldModifiers[iRes][iYield] += iMod * iChange;
 						m_iResourceYieldModifierCount += iChange;
+					}
+				}
+			}
+		}
+	}
+	//CityState UA (Antananarivo): each worked plot holding the specified improvement grants yield percentage modifiers
+	{
+		if (m_ppiImprovementYieldModifiers)
+		{
+			for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
+			{
+				for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+				{
+					int iMod = pEffect->GetImprovementYieldModifiers(iImp, iYield);
+					if (iMod != 0)
+					{
+						m_ppiImprovementYieldModifiers[iImp][iYield] += iMod * iChange;
+						m_iImprovementYieldModifierCount += iChange;
 					}
 				}
 			}
@@ -1145,6 +1217,17 @@ int CvPlayerCityStateUA::GetCoastalCityGrowthThresholdModifier() const
 int CvPlayerCityStateUA::GetDiplomaticPrestigePerCity() const
 {
 	return m_iDiplomaticPrestigePerCity;
+}
+
+int CvPlayerCityStateUA::GetImprovementYieldModifier(ImprovementTypes eImprovement, YieldTypes eYield) const
+{
+	if (!m_ppiImprovementYieldModifiers) return 0;
+	return m_ppiImprovementYieldModifiers[(int)eImprovement][(int)eYield];
+}
+
+bool CvPlayerCityStateUA::HasImprovementYieldModifiers() const
+{
+	return m_iImprovementYieldModifierCount > 0;
 }
 
 int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const
