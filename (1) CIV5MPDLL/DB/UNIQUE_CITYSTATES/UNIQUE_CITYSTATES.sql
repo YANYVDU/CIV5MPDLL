@@ -258,3 +258,11 @@ create table CityStateUAEffect_ImprovementYieldModifiers (
     YieldType text references Yields(Type),
     YieldMod integer default 0
 );
+
+-- CityState UA (Zanzibar): each worked plot holding the specified improvement
+-- grants flat local happiness to the city (e.g. PLANTATION / 2 = +2 local happiness per worked plantation)
+create table CityStateUAEffect_ImprovementHappiness (
+    EffectType text references CityStateUAEffects(Type),
+    ImprovementType text references Improvements(Type),
+    Happiness integer default 0
+);

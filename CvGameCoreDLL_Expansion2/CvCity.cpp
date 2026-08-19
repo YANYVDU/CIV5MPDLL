@@ -12689,6 +12689,22 @@ int CvCity::GetLocalHappiness() const
 		}
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
+	CvPlayerCityStateUA* pCityStateUA = kPlayer.GetPlayerCityStateUA();
+	if (pCityStateUA && pCityStateUA->HasImprovementHappiness())
+	{
+		for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
+		{
+			int iImpHappy = pCityStateUA->GetImprovementHappiness((ImprovementTypes)iImp);
+			if (iImpHappy != 0)
+			{
+				iLocalHappiness += iImpHappy * const_cast<CvCity*>(this)->GetNumImprovementWorked((ImprovementTypes)iImp);
+			}
+		}
+	}
+#endif
+
 	if (GetWeLoveTheKingDayCounter() > 0)
 	{
 		iLocalHappiness += kPlayer.GetHappinessInWLTKDCities();

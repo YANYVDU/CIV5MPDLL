@@ -67,6 +67,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iCoastalCityGrowthThresholdModifier(0)
 	, m_iDiplomaticPrestigePerCity(0)
 	, m_ppiImprovementYieldModifiers(NULL)
+	, m_piImprovementHappiness(nullptr)
 {
 }
 
@@ -80,6 +81,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	SAFE_DELETE_ARRAY(m_piSpyGarrisonYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
+	SAFE_DELETE_ARRAY(m_piImprovementHappiness);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -198,6 +200,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_ppiImprovementYieldModifiers[iImprovementID][iYieldID] = iYieldMod;
 		}
 	}
+
+	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
+	kUtility.PopulateArrayByValue(m_piImprovementHappiness, "Improvements", "CityStateUAEffect_ImprovementHappiness", "ImprovementType", "EffectType", GetType(), "Happiness");
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -500,6 +505,15 @@ int CvCityStateUAEffectEntry::GetImprovementYieldModifiers(int i, int j) const
 	return m_ppiImprovementYieldModifiers ? m_ppiImprovementYieldModifiers[i][j] : 0;
 }
 
+int CvCityStateUAEffectEntry::GetImprovementHappiness(int i) const
+{
+	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	if (!m_piImprovementHappiness || i < 0 || i >= GC.getNumImprovementInfos())
+		return 0;
+	return m_piImprovementHappiness[i];
+}
+
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
 	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
@@ -714,6 +728,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iDiplomaticPrestigePerCity(0)
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_iImprovementYieldModifierCount(0)
+	, m_iImprovementHappinessCount(0)
 {
 }
 
@@ -788,6 +803,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iCoastalCityGrowthThresholdModifier = 0;
 	m_iDiplomaticPrestigePerCity = 0;
 	m_iImprovementYieldModifierCount = 0;
+	m_iImprovementHappinessCount = 0;
+	m_aiImprovementHappiness.assign(GC.getNumImprovementInfos(), 0);
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -979,6 +996,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 					}
 				}
 			}
+		}
+	}
+	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
+	for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
+	{
+		int iHappy = pEffect->GetImprovementHappiness(iImp);
+		if (iHappy != 0)
+		{
+			m_aiImprovementHappiness[iImp] += iHappy * iChange;
+			m_iImprovementHappinessCount += iChange;
 		}
 	}
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
@@ -1228,6 +1255,16 @@ int CvPlayerCityStateUA::GetImprovementYieldModifier(ImprovementTypes eImproveme
 bool CvPlayerCityStateUA::HasImprovementYieldModifiers() const
 {
 	return m_iImprovementYieldModifierCount > 0;
+}
+
+int CvPlayerCityStateUA::GetImprovementHappiness(ImprovementTypes eImprovement) const
+{
+	return (eImprovement >= 0 && (int)eImprovement < (int)m_aiImprovementHappiness.size()) ? m_aiImprovementHappiness[(int)eImprovement] : 0;
+}
+
+bool CvPlayerCityStateUA::HasImprovementHappiness() const
+{
+	return m_iImprovementHappinessCount > 0;
 }
 
 int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const

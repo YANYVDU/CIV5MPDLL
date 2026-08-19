@@ -164,6 +164,8 @@ public:
 	int GetCoastalCityGrowthThresholdModifier() const;
 	int GetDiplomaticPrestigePerCity() const;
 	int GetImprovementYieldModifiers(int i, int j) const;
+	// Zanzibar: each worked plot holding the specified improvement grants flat local happiness
+	int GetImprovementHappiness(int i) const;
 
 private:
 	// Florence
@@ -253,6 +255,8 @@ private:
 	int m_iCoastalCityGrowthThresholdModifier;
 	int m_iDiplomaticPrestigePerCity;
 	int** m_ppiImprovementYieldModifiers;
+	// Zanzibar
+	int* m_piImprovementHappiness;
 };
 
 //======================================================================================================
@@ -418,6 +422,9 @@ public:
 	int GetDiplomaticPrestigePerCity() const;
 	int GetImprovementYieldModifier(ImprovementTypes eImprovement, YieldTypes eYield) const;
 	bool HasImprovementYieldModifiers() const;
+	// Zanzibar
+	int GetImprovementHappiness(ImprovementTypes eImprovement) const;
+	bool HasImprovementHappiness() const;
 
 	void Reset();
 
@@ -495,6 +502,9 @@ protected:
 	int m_iDiplomaticPrestigePerCity;
 	int** m_ppiImprovementYieldModifiers;
 	int m_iImprovementYieldModifierCount;
+	// Zanzibar
+	std::vector<int> m_aiImprovementHappiness;
+	int m_iImprovementHappinessCount;
 };
 
 #endif // CVCITYSTATEUACLASSES_H
