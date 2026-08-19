@@ -236,3 +236,12 @@ create table CityStateUAEffect_SpyGarrisonYieldModifiers (
     YieldType text references Yields(Type),
     YieldMod integer default 0
 );
+
+-- CityState UA (Melbourne): a city that owns the specified resource (must be improved with its
+-- standard improvement) grants a yield percentage modifier per YieldType, e.g. RESOURCE_GOLD / YIELD_GOLD / 50 = +50% gold
+create table CityStateUAEffect_ResourceYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    ResourceType text references Resources(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);

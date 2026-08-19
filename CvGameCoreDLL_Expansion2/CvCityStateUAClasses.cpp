@@ -63,6 +63,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_piGreatPersonOneShotModifier(nullptr)
 	, m_piSpyGarrisonYieldModifiers(nullptr)
 	, m_iSpyKillGainSpyProgress(0)
+	, m_ppiResourceYieldModifiers(NULL)
 {
 }
 
@@ -74,6 +75,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 
 	SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
 	SAFE_DELETE_ARRAY(m_piSpyGarrisonYieldModifiers);
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -145,6 +147,28 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
 	m_iSpyKillGainSpyProgress						= kResults.GetInt("SpyKillGainSpyProgress");
+
+	//CityState UA (Melbourne): city owning the specified improved resource grants yield percentage modifiers
+	{
+		kUtility.Initialize2DArray(m_ppiResourceYieldModifiers, "Resources", "Yields");
+
+		std::string strKey("CityStateUAEffect_ResourceYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Resources.ID as ResourceID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_ResourceYieldModifiers inner join Resources on Resources.Type = ResourceType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			const int iResourceID = pResults->GetInt(0);
+			const int iYieldID = pResults->GetInt(1);
+			const int iYieldMod = pResults->GetInt(2);
+
+			m_ppiResourceYieldModifiers[iResourceID][iYieldID] = iYieldMod;
+		}
+	}
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -419,6 +443,15 @@ int CvCityStateUAEffectEntry::GetSpyKillGainSpyProgress() const
 	return m_iSpyKillGainSpyProgress;
 }
 
+int CvCityStateUAEffectEntry::GetResourceYieldModifiers(int i, int j) const
+{
+	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	CvAssertMsg(j < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(j > -1, "Index out of bounds");
+	return m_ppiResourceYieldModifiers ? m_ppiResourceYieldModifiers[i][j] : 0;
+}
+
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
 	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
@@ -627,6 +660,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_iSpyGarrisonYieldModifierCount(0)
 	, m_iSpyKillGainSpyProgress(0)
+	, m_ppiResourceYieldModifiers(NULL)
+	, m_iResourceYieldModifierCount(0)
 {
 }
 
@@ -697,6 +732,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iSpyKillGainSpyProgress = 0;
 	m_iSpyGarrisonYieldModifierCount = 0;
 	m_aiSpyGarrisonYieldModifiers.assign(NUM_YIELD_TYPES, 0);
+	m_iResourceYieldModifierCount = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -715,6 +751,24 @@ void CvPlayerCityStateUA::Reset()
 			{
 				m_ppiBuildingClassYieldModifiers[i] = m_ppiBuildingClassYieldModifiers[i-1] + NUM_YIELD_TYPES;
 				for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiBuildingClassYieldModifiers[i][j] = 0;
+			}
+		}
+	}
+	// Mirrors CvDatabaseUtility::Initialize2DArray (non-static, so allocate manually here)
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
+	{
+		const int iNumRes = GC.getNumResourceInfos();
+		if (iNumRes > 0)
+		{
+			const unsigned int iNumBytes = iNumRes * sizeof(int*) + iNumRes * NUM_YIELD_TYPES * sizeof(int);
+			unsigned char* pData = FNEW(unsigned char[iNumBytes], c_eCiv5GameplayDLL, 0);
+			m_ppiResourceYieldModifiers = (int**)pData;
+			m_ppiResourceYieldModifiers[0] = (int*)(pData + iNumRes * sizeof(int*));
+			for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiResourceYieldModifiers[0][j] = 0;
+			for (int i = 1; i < iNumRes; i++)
+			{
+				m_ppiResourceYieldModifiers[i] = m_ppiResourceYieldModifiers[i-1] + NUM_YIELD_TYPES;
+				for (int j = 0; j < NUM_YIELD_TYPES; ++j) m_ppiResourceYieldModifiers[i][j] = 0;
 			}
 		}
 	}
@@ -811,6 +865,24 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 					{
 						m_ppiBuildingClassYieldModifiers[iBC][iYield] += iMod * iChange;
 						m_iBuildingClassYieldModifierCount += iChange;
+					}
+				}
+			}
+		}
+	}
+	//CityState UA (Melbourne): city owning the specified improved resource grants yield percentage modifiers
+	{
+		if (m_ppiResourceYieldModifiers)
+		{
+			for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
+			{
+				for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+				{
+					int iMod = pEffect->GetResourceYieldModifiers(iRes, iYield);
+					if (iMod != 0)
+					{
+						m_ppiResourceYieldModifiers[iRes][iYield] += iMod * iChange;
+						m_iResourceYieldModifierCount += iChange;
 					}
 				}
 			}
@@ -1031,6 +1103,17 @@ bool CvPlayerCityStateUA::HasSpyGarrisonYieldModifiers() const
 int CvPlayerCityStateUA::GetSpyKillGainSpyProgress() const
 {
 	return m_iSpyKillGainSpyProgress;
+}
+
+int CvPlayerCityStateUA::GetResourceYieldModifier(ResourceTypes eResource, YieldTypes eYield) const
+{
+	if (!m_ppiResourceYieldModifiers) return 0;
+	return m_ppiResourceYieldModifiers[(int)eResource][(int)eYield];
+}
+
+bool CvPlayerCityStateUA::HasResourceYieldModifiers() const
+{
+	return m_iResourceYieldModifierCount > 0;
 }
 
 int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const
