@@ -9466,6 +9466,22 @@ int CvCity::growthThreshold() const
 	VALIDATE_OBJECT
 	int iNumFoodNeeded = GET_PLAYER(getOwner()).getGrowthThreshold(getPopulation());
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (isCoastal())
+	{
+		CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		if (pUA)
+		{
+			int iMod = pUA->GetCoastalCityGrowthThresholdModifier();
+			if (iMod != 0)
+			{
+				iNumFoodNeeded *= (100 + iMod);
+				iNumFoodNeeded /= 100;
+			}
+		}
+	}
+#endif
+
 	return (iNumFoodNeeded);
 }
 

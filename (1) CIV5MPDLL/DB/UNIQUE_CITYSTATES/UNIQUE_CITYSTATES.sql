@@ -112,7 +112,9 @@ CREATE TABLE CityStateUAEffects (
     -- Valletta: enemy city besieged by >= this many of our combat units cannot heal
     EnemyCityNoHealBesiegeCount                      integer DEFAULT 0,
     -- Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1, 20 = kill 5 gain 1)
-    SpyKillGainSpyProgress                           integer DEFAULT 0
+    SpyKillGainSpyProgress                           integer DEFAULT 0,
+    -- Antananarivo: coastal city food growth threshold modifier (ordinary modifier, -20 = -20%)
+    CoastalCityGrowthThresholdModifier              integer DEFAULT 0,
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

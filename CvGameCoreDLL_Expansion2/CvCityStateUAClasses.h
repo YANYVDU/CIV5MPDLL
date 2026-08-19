@@ -160,6 +160,8 @@ public:
 	int GetSpyKillGainSpyProgress() const;
 	// Melbourne: a city that owns the specified improved resource grants yield percentage modifiers (per YieldType)
 	int GetResourceYieldModifiers(int i, int j) const;
+	// Antananarivo
+	int GetCoastalCityGrowthThresholdModifier() const;
 
 private:
 	// Florence
@@ -245,6 +247,8 @@ private:
 	int m_iSpyKillGainSpyProgress;
 	// Melbourne
 	int** m_ppiResourceYieldModifiers;
+	// Antananarivo
+	int m_iCoastalCityGrowthThresholdModifier;
 };
 
 //======================================================================================================
@@ -405,6 +409,8 @@ public:
 	int GetSpyKillGainSpyProgress() const;
 	int GetResourceYieldModifier(ResourceTypes eResource, YieldTypes eYield) const;
 	bool HasResourceYieldModifiers() const;
+	// Antananarivo
+	int GetCoastalCityGrowthThresholdModifier() const;
 
 	void Reset();
 
@@ -477,6 +483,8 @@ protected:
 	// Melbourne
 	int** m_ppiResourceYieldModifiers;
 	int m_iResourceYieldModifierCount;
+	// Antananarivo
+	int m_iCoastalCityGrowthThresholdModifier;
 };
 
 #endif // CVCITYSTATEUACLASSES_H
