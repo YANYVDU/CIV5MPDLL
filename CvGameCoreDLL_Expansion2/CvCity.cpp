@@ -14136,7 +14136,7 @@ int CvCity::getBaseYieldRate(YieldTypes eIndex, const bool bIgnoreFromOtherYield
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (MOD_SP_UNIQUE_CITYSTATE && !bIgnoreFromOtherYield)
 	{
-		iValue += GetYieldRateFromFaithConversion(eIndex);
+		iValue += GetYieldRateFromUCSConversion(eIndex);
 	}
 #endif
 
@@ -14481,7 +14481,7 @@ CvString CvCity::getYieldRateInfoTool(YieldTypes eIndex, bool bIgnoreTrade) cons
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (MOD_SP_UNIQUE_CITYSTATE)
 	{
-		iBaseValue = GetYieldRateFromFaithConversion(eIndex);
+		iBaseValue = GetYieldRateFromUCSConversion(eIndex);
 		if(iBaseValue != 0)
 		{
 			szRtnValue += GetLocalizedText("TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_ALLY_CS_UA", iBaseValue, YieldIcon);
@@ -15064,7 +15064,7 @@ int CvCity::GetBaseYieldRateFromOtherYield(YieldTypes eYield) const
 #endif
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-int CvCity::GetYieldRateFromFaithConversion(YieldTypes eYield) const
+int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 {
 	VALIDATE_OBJECT
 	CvAssertMsg(eYield >= 0, "eYield expected to be >= 0");
@@ -15073,7 +15073,7 @@ int CvCity::GetYieldRateFromFaithConversion(YieldTypes eYield) const
 	int iResult = 0;
 	PlayerTypes ePlayer = getOwner();
 
-	// iterate all minor civs, looking for an allied/friendly city-state whose UA grants a faith conversion
+	// iterate all minor civs, looking for an allied/friendly city-state whose UA grants a yield conversion
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
 	{
 		PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
@@ -15102,17 +15102,21 @@ int CvCity::GetYieldRateFromFaithConversion(YieldTypes eYield) const
 		if (!pEffectEntry)
 			continue;
 
-		int iPercent = pEffectEntry->GetYieldToYieldViaTRToUCS(YIELD_FAITH, eYield);
-		if (iPercent <= 0)
-			continue;
-
 		// the conversion only applies to cities that actually run a trade route to this city-state
 		if (!GET_PLAYER(ePlayer).GetTrade()->HasTradeRouteToPlayer(this, eMinor))
 			continue;
 
-		// faith base yield (ignore other-yield conversions to avoid recursion)
-		int iFaithBase = getBasicYieldRateTimes100(YIELD_FAITH, false, true) / 100;
-		iResult += (iFaithBase * iPercent) / 100;
+		// iterate all input yields that convert into the requested OUT yield; the source
+		// base yield is computed without other-yield conversions to avoid recursion
+		for (int iIn = 0; iIn < NUM_YIELD_TYPES; iIn++)
+		{
+			int iPercent = pEffectEntry->GetYieldToYieldViaTRToUCS((YieldTypes)iIn, eYield);
+			if (iPercent <= 0)
+				continue;
+
+			int iInBase = getBasicYieldRateTimes100((YieldTypes)iIn, false, true) / 100;
+			iResult += (iInBase * iPercent) / 100;
+		}
 	}
 
 	return iResult;

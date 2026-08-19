@@ -822,8 +822,8 @@ public:
 #endif
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	// Colombo: extra yield granted from a percentage of faith base yield for cities with a trade route to an allied city-state
-	int GetYieldRateFromFaithConversion(YieldTypes eYield) const;
+	// City-State UA: extra yield granted from a percentage of input base yield for cities with a trade route to an allied/friendly city-state
+	int GetYieldRateFromUCSConversion(YieldTypes eYield) const;
 #endif
 
 	int getBaseYieldRateModifier(YieldTypes eIndex, int iExtra = 0, CvString* toolTipSink = NULL) const;
