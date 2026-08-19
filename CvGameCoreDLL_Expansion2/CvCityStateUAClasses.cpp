@@ -53,6 +53,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iIdeologyPressurePerDonationHappiness(0)
 	, m_iGoldDonationInfluenceModifierPerSeaRoute(0)
+	, m_iGoldenAgeThresholdPerPopulation(0)
 	, m_iLuxuryHappinessModifier(0)
 	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iTradeRouteGoldModifierPerLuxuryType(0)
@@ -147,6 +148,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iIdeologyPressurePerDonationHappiness			= kResults.GetInt("IdeologyPressurePerDonationHappiness");
 
 	m_iGoldDonationInfluenceModifierPerSeaRoute		= kResults.GetInt("GoldDonationInfluenceModifierPerSeaRoute");
+	m_iGoldenAgeThresholdPerPopulation				= kResults.GetInt("GoldenAgeThresholdPerPopulation");
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
 	m_iFoodKeptModifierPerLuxury						= kResults.GetInt("FoodKeptModifierPerLuxury");
@@ -446,6 +448,7 @@ int CvCityStateUAEffectEntry::GetGoldDonationInterval() const { return m_iGoldDo
 int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 int CvCityStateUAEffectEntry::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 int CvCityStateUAEffectEntry::GetGoldDonationInfluenceModifierPerSeaRoute() const { return m_iGoldDonationInfluenceModifierPerSeaRoute; }
+int CvCityStateUAEffectEntry::GetGoldenAgeThresholdPerPopulation() const { return m_iGoldenAgeThresholdPerPopulation; }
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvCityStateUAEffectEntry::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
@@ -718,6 +721,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iIdeologyPressurePerDonationHappiness(0)
 	, m_iGoldDonationInfluenceModifierPerSeaRoute(0)
+	, m_iGoldenAgeThresholdPerPopulation(0)
 	, m_iLuxuryHappinessModifier(0)
 	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iTradeRouteGoldModifierPerLuxuryType(0)
@@ -796,6 +800,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iWonderProductionPerDonationHappiness = 0;
 	m_iIdeologyPressurePerDonationHappiness = 0;
 	m_iGoldDonationInfluenceModifierPerSeaRoute = 0;
+	m_iGoldenAgeThresholdPerPopulation = 0;
 	m_iLuxuryHappinessModifier = 0;
 	m_iFoodKeptModifierPerLuxury = 0;
 	m_iTradeRouteGoldModifierPerLuxuryType = 0;
@@ -942,6 +947,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iWonderProductionPerDonationHappiness			+= pEffect->GetWonderProductionPerDonationHappiness() * iChange;
 	m_iIdeologyPressurePerDonationHappiness			+= pEffect->GetIdeologyPressurePerDonationHappiness() * iChange;
 	m_iGoldDonationInfluenceModifierPerSeaRoute		+= pEffect->GetGoldDonationInfluenceModifierPerSeaRoute() * iChange;
+	m_iGoldenAgeThresholdPerPopulation				+= pEffect->GetGoldenAgeThresholdPerPopulation() * iChange;
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
 	m_iFoodKeptModifierPerLuxury						+= pEffect->GetFoodKeptModifierPerLuxury() * iChange;
@@ -1153,6 +1159,7 @@ int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonatio
 int CvPlayerCityStateUA::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 int CvPlayerCityStateUA::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 int CvPlayerCityStateUA::GetGoldDonationInfluenceModifierPerSeaRoute() const { return m_iGoldDonationInfluenceModifierPerSeaRoute; }
+int CvPlayerCityStateUA::GetGoldenAgeThresholdPerPopulation() const { return m_iGoldenAgeThresholdPerPopulation; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvPlayerCityStateUA::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerLuxuryType() const { return m_iTradeRouteGoldModifierPerLuxuryType; }

@@ -127,6 +127,8 @@ public:
 	int GetIdeologyPressurePerDonationHappiness() const;
 	// Genoa (ReNaYa): gold-gift influence +% per sea trade route
 	int GetGoldDonationInfluenceModifierPerSeaRoute() const;
+	// Vilnius (WeiErNiWuSi): fixed GA threshold reduction per population (before percentage modifier)
+	int GetGoldenAgeThresholdPerPopulation() const;
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
@@ -228,6 +230,8 @@ private:
 	int m_iIdeologyPressurePerDonationHappiness;
 	// Genoa
 	int m_iGoldDonationInfluenceModifierPerSeaRoute;
+	// Vilnius
+	int m_iGoldenAgeThresholdPerPopulation;
 	// Malacca
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
@@ -396,6 +400,8 @@ public:
 	int GetIdeologyPressurePerDonationHappiness() const;
 	// Genoa
 	int GetGoldDonationInfluenceModifierPerSeaRoute() const;
+	// Vilnius
+	int GetGoldenAgeThresholdPerPopulation() const;
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
@@ -479,6 +485,8 @@ protected:
 	int m_iIdeologyPressurePerDonationHappiness;
 	// Genoa
 	int m_iGoldDonationInfluenceModifierPerSeaRoute;
+	// Vilnius
+	int m_iGoldenAgeThresholdPerPopulation;
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
 	int m_iTradeRouteGoldModifierPerLuxuryType;

@@ -15906,6 +15906,18 @@ int CvPlayer::GetGoldenAgeProgressThreshold() const
 	int iCostExtra = int(iThreshold * (getNumCities() - 1) * /*0.02*/ GC.getGOLDEN_AGE_THRESHOLD_CITY_MULTIPLIER());
 	iThreshold += iCostExtra;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Vilnius: Mod-type GA threshold change per population (before percentage modifier; -100 = -1 threshold per population)
+	if (m_pCityStateUA)
+	{
+		int iThreshPerPop = m_pCityStateUA->GetGoldenAgeThresholdPerPopulation();
+		if (iThreshPerPop != 0)
+		{
+			iThreshold += iThreshPerPop * getTotalPopulation() / 100;
+		}
+	}
+#endif
+
 	if(GetGoldenAgeMeterMod() != 0)
 	{
 		int iMod = GetGoldenAgeMeterMod();
