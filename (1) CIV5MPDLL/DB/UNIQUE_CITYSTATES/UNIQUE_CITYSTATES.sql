@@ -99,6 +99,8 @@ CREATE TABLE CityStateUAEffects (
     GoldDonationInterval                            integer DEFAULT 0,
     WonderProductionPerDonationHappiness            integer DEFAULT 0,
     IdeologyPressurePerDonationHappiness            integer DEFAULT 0,
+    -- Genoa: each sea trade route grants a bonus % to influence gained from gold donations (1 = +1% per sea route)
+    GoldDonationInfluenceModifierPerSeaRoute        integer DEFAULT 0,
     -- Malacca: luxury happiness
     LuxuryHappinessModifier                         integer DEFAULT 0,
     -- Malacca: food surplus per happy luxury type (value = per-type food% * 100; 每1=100, 每2=50)

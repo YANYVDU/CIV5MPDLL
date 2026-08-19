@@ -125,6 +125,8 @@ public:
 	int GetGoldDonationInterval() const;
 	int GetWonderProductionPerDonationHappiness() const;
 	int GetIdeologyPressurePerDonationHappiness() const;
+	// Genoa (ReNaYa): gold-gift influence +% per sea trade route
+	int GetGoldDonationInfluenceModifierPerSeaRoute() const;
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
@@ -224,6 +226,8 @@ private:
 	int m_iGoldDonationInterval;
 	int m_iWonderProductionPerDonationHappiness;
 	int m_iIdeologyPressurePerDonationHappiness;
+	// Genoa
+	int m_iGoldDonationInfluenceModifierPerSeaRoute;
 	// Malacca
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
@@ -390,6 +394,8 @@ public:
 	int GetGoldDonationInterval() const;
 	int GetWonderProductionPerDonationHappiness() const;
 	int GetIdeologyPressurePerDonationHappiness() const;
+	// Genoa
+	int GetGoldDonationInfluenceModifierPerSeaRoute() const;
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
@@ -471,6 +477,8 @@ protected:
 	int m_iGoldDonationInterval;
 	int m_iWonderProductionPerDonationHappiness;
 	int m_iIdeologyPressurePerDonationHappiness;
+	// Genoa
+	int m_iGoldDonationInfluenceModifierPerSeaRoute;
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
 	int m_iTradeRouteGoldModifierPerLuxuryType;

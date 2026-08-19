@@ -1149,6 +1149,10 @@ public:
 	int getMinorGoldFriendshipMod() const;
 	void changeMinorGoldFriendshipMod(int iChange);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetCSUAGoldDonationInfluenceModifier() const;
+#endif
+
 	int GetMinorFriendshipAnchorMod() const;
 	void SetMinorFriendshipAnchorMod(int iValue);
 	void ChangeMinorFriendshipAnchorMod(int iChange);

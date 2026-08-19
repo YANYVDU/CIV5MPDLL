@@ -3440,6 +3440,28 @@ int CvPlayerTrade::GetNumberOfCityStateTradeRoutes()
 }
 
 //	--------------------------------------------------------------------------------
+//Returns the number of sea trade routes connected from this player
+int CvPlayerTrade::GetNumberOfSeaTradeRoutes()
+{
+	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+	int iNumConnections = 0;
+	for (uint ui = 0; ui < pTrade->m_aTradeConnections.size(); ui++)
+	{
+		TradeConnection* pConnection = &(pTrade->m_aTradeConnections[ui]);
+
+		if (pConnection->m_eOriginOwner == m_pPlayer->GetID())
+		{
+			if (pConnection->m_eDomain == DOMAIN_SEA)
+			{
+				iNumConnections++;
+			}
+		}
+	}
+
+	return iNumConnections;
+}
+
+//	--------------------------------------------------------------------------------
 bool CvPlayerTrade::IsPreviousTradeRoute(CvCity* pOriginCity, CvCity* pDestCity, DomainTypes eDomain, TradeConnectionType eConnectionType)
 {
 	int iOriginCityX = pOriginCity->getX();

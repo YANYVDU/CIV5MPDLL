@@ -17987,6 +17987,14 @@ int CvPlayer::GetGoldDonationHappiness() const
 	if (iInterval <= 0) return 0;
 	return (m_iTotalGoldDonated / iInterval) * m_pCityStateUA->GetHappinessPerGoldDonated();
 }
+// Genoa: each sea trade route adds a % bonus to gold-gift influence
+int CvPlayer::GetCSUAGoldDonationInfluenceModifier() const
+{
+	if (!m_pCityStateUA) return 0;
+	int iPerSeaRoute = m_pCityStateUA->GetGoldDonationInfluenceModifierPerSeaRoute();
+	if (iPerSeaRoute == 0) return 0;
+	return iPerSeaRoute * GetTrade()->GetNumberOfSeaTradeRoutes();
+}
 int CvPlayer::GetTotalGoldDonated() const
 {
 	return m_iTotalGoldDonated;

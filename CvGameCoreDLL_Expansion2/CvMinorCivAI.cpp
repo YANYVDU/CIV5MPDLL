@@ -10243,6 +10243,10 @@ int CvMinorCivAI::GetFriendshipFromGoldGift(PlayerTypes eMajor, int iGold)
 	// Mod (Policies, etc.)
 	int iFriendshipMod = GET_PLAYER(eMajor).getMinorGoldFriendshipMod();
 	iFriendshipMod += GET_PLAYER(eMajor).GetReligions()->GetCityStateInfluenceModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Genoa: gold-gift influence bonus per sea trade route
+	iFriendshipMod += GET_PLAYER(eMajor).GetCSUAGoldDonationInfluenceModifier();
+#endif
 	if(iFriendshipMod != 0)
 	{
 		iFriendship *= (100 + iFriendshipMod);
