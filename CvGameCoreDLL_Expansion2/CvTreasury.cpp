@@ -486,6 +486,15 @@ int CvTreasury::CalculateGrossGoldTimes100()
 	// International trade
 	iNetGold += GetGoldPerTurnFromTraits() * 100;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Vilnius: gold +% per unlocked social policy
+	int iCSUAGoldMod = m_pPlayer->GetCSUAYieldPercentModifier(YIELD_GOLD);
+	if (iCSUAGoldMod != 0)
+	{
+		iNetGold = iNetGold * (100 + iCSUAGoldMod) / 100;
+	}
+#endif
+
 	return iNetGold;
 }
 

@@ -270,3 +270,27 @@ create table CityStateUAEffect_ImprovementHappiness (
     ImprovementType text references Improvements(Type),
     Happiness integer default 0
 );
+
+-- CityState UA (Genoa): each friendly city-state grants a yield percentage modifier per YieldType
+-- (e.g. YIELD_SCIENCE / 100 = +1% science per friendly city-state; Rate=100 => +1%)
+create table CityStateUAEffect_FriendCityStateYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
+
+-- CityState UA (Genoa): each allied city-state grants a yield percentage modifier per YieldType
+-- (e.g. YIELD_SCIENCE / 200 = +2% science per allied city-state; Rate=100 => +1%)
+create table CityStateUAEffect_AllyCityStateYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
+
+-- CityState UA (Vilnius): each unlocked social policy grants a yield percentage modifier per YieldType
+-- (e.g. YIELD_GOLD / 200 = +2% gold per unlocked policy; Rate=100 => +1%)
+create table CityStateUAEffect_PolicyYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);

@@ -127,6 +127,10 @@ public:
 	int GetIdeologyPressurePerDonationHappiness() const;
 	// Genoa (ReNaYa): gold-gift influence +% per sea trade route
 	int GetGoldDonationInfluenceModifierPerSeaRoute() const;
+	// Genoa / Vilnius: per-unit yield % modifiers, keyed by YieldType (Rate=100 => +1% per friend/ally city-state or unlocked policy)
+	int GetFriendCityStateYieldModifier(YieldTypes eYieldType) const;
+	int GetAllyCityStateYieldModifier(YieldTypes eYieldType) const;
+	int GetPolicyYieldModifier(YieldTypes eYieldType) const;
 	// Vilnius (WeiErNiWuSi): fixed GA threshold reduction per population (before percentage modifier)
 	int GetGoldenAgeThresholdPerPopulation() const;
 	// Malacca (MaLiuJia)
@@ -230,6 +234,10 @@ private:
 	int m_iIdeologyPressurePerDonationHappiness;
 	// Genoa
 	int m_iGoldDonationInfluenceModifierPerSeaRoute;
+	// Genoa / Vilnius (per YieldType arrays)
+	int* m_piFriendCityStateYieldModifiers;
+	int* m_piAllyCityStateYieldModifiers;
+	int* m_piPolicyYieldModifiers;
 	// Vilnius
 	int m_iGoldenAgeThresholdPerPopulation;
 	// Malacca
@@ -400,6 +408,10 @@ public:
 	int GetIdeologyPressurePerDonationHappiness() const;
 	// Genoa
 	int GetGoldDonationInfluenceModifierPerSeaRoute() const;
+	// Genoa / Vilnius: per-unit yield % modifiers, keyed by YieldType
+	int GetFriendCityStateYieldModifier(YieldTypes eYieldType) const;
+	int GetAllyCityStateYieldModifier(YieldTypes eYieldType) const;
+	int GetPolicyYieldModifier(YieldTypes eYieldType) const;
 	// Vilnius
 	int GetGoldenAgeThresholdPerPopulation() const;
 	// Malacca
@@ -485,6 +497,10 @@ protected:
 	int m_iIdeologyPressurePerDonationHappiness;
 	// Genoa
 	int m_iGoldDonationInfluenceModifierPerSeaRoute;
+	// Genoa / Vilnius (per YieldType accumulated)
+	std::vector<int> m_aiFriendCityStateYieldModifiers;
+	std::vector<int> m_aiAllyCityStateYieldModifiers;
+	std::vector<int> m_aiPolicyYieldModifiers;
 	// Vilnius
 	int m_iGoldenAgeThresholdPerPopulation;
 	int m_iLuxuryHappinessModifier;

@@ -18007,6 +18007,19 @@ int CvPlayer::GetCSUAGoldDonationInfluenceModifier() const
 	if (iPerSeaRoute == 0) return 0;
 	return iPerSeaRoute * GetTrade()->GetNumberOfSeaTradeRoutes();
 }
+// Genoa / Vilnius: per-yield % modifier from friend/ally city-states and unlocked policies (Rate=100 => +1%)
+int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
+{
+	if (!m_pCityStateUA) return 0;
+	int iMod = m_pCityStateUA->GetFriendCityStateYieldModifier(eYield) * GetNumCSFriends();
+	iMod += m_pCityStateUA->GetAllyCityStateYieldModifier(eYield) * GetNumCSAllies();
+#if defined(MOD_BUGFIX_DUMMY_POLICIES)
+	iMod += m_pCityStateUA->GetPolicyYieldModifier(eYield) * GetPlayerPolicies()->GetNumPoliciesOwned(MOD_BUGFIX_DUMMY_POLICIES);
+#else
+	iMod += m_pCityStateUA->GetPolicyYieldModifier(eYield) * GetPlayerPolicies()->GetNumPoliciesOwned();
+#endif
+	return iMod / 100;
+}
 int CvPlayer::GetTotalGoldDonated() const
 {
 	return m_iTotalGoldDonated;
@@ -22597,6 +22610,15 @@ int CvPlayer::GetScienceTimes100(bool bIgnoreFriendships) const
 	iValue += GetScienceFromBudgetDeficitTimes100();
 
 	if(!bIgnoreFriendships) iValue += GetScienceTimes100FromFriendships();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Genoa / Vilnius: science +% per friend/ally city-state or unlocked policy
+	int iCSUAScienceMod = GetCSUAYieldPercentModifier(YIELD_SCIENCE);
+	if (iCSUAScienceMod != 0)
+	{
+		iValue = iValue * (100 + iCSUAScienceMod) / 100;
+	}
+#endif
 
 #if defined(MOD_GLOBAL_SUZERAIN)
 	iValue += (int)GetScienceTimes100FromVassals();

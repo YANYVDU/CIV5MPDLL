@@ -53,6 +53,9 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iWonderProductionPerDonationHappiness(0)
 	, m_iIdeologyPressurePerDonationHappiness(0)
 	, m_iGoldDonationInfluenceModifierPerSeaRoute(0)
+	, m_piFriendCityStateYieldModifiers(nullptr)
+	, m_piAllyCityStateYieldModifiers(nullptr)
+	, m_piPolicyYieldModifiers(nullptr)
 	, m_iGoldenAgeThresholdPerPopulation(0)
 	, m_iLuxuryHappinessModifier(0)
 	, m_iFoodKeptModifierPerLuxury(0)
@@ -81,6 +84,9 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 
 	SAFE_DELETE_ARRAY(m_piGreatPersonOneShotModifier);
 	SAFE_DELETE_ARRAY(m_piSpyGarrisonYieldModifiers);
+	SAFE_DELETE_ARRAY(m_piFriendCityStateYieldModifiers);
+	SAFE_DELETE_ARRAY(m_piAllyCityStateYieldModifiers);
+	SAFE_DELETE_ARRAY(m_piPolicyYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piImprovementHappiness);
@@ -149,6 +155,11 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iGoldDonationInfluenceModifierPerSeaRoute		= kResults.GetInt("GoldDonationInfluenceModifierPerSeaRoute");
 	m_iGoldenAgeThresholdPerPopulation				= kResults.GetInt("GoldenAgeThresholdPerPopulation");
+
+	//CityState UA (Genoa / Vilnius): per-unit yield % modifiers, keyed by YieldType (Rate=100 => +1% per friend/ally CS or unlocked policy)
+	kUtility.PopulateArrayByValue(m_piFriendCityStateYieldModifiers, "Yields", "CityStateUAEffect_FriendCityStateYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
+	kUtility.PopulateArrayByValue(m_piAllyCityStateYieldModifiers, "Yields", "CityStateUAEffect_AllyCityStateYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
+	kUtility.PopulateArrayByValue(m_piPolicyYieldModifiers, "Yields", "CityStateUAEffect_PolicyYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
 	m_iFoodKeptModifierPerLuxury						= kResults.GetInt("FoodKeptModifierPerLuxury");
@@ -448,6 +459,21 @@ int CvCityStateUAEffectEntry::GetGoldDonationInterval() const { return m_iGoldDo
 int CvCityStateUAEffectEntry::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 int CvCityStateUAEffectEntry::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 int CvCityStateUAEffectEntry::GetGoldDonationInfluenceModifierPerSeaRoute() const { return m_iGoldDonationInfluenceModifierPerSeaRoute; }
+int CvCityStateUAEffectEntry::GetFriendCityStateYieldModifier(YieldTypes eYieldType) const
+{
+	CvAssertMsg(eYieldType >= 0 && eYieldType < NUM_YIELD_TYPES, "Index out of bounds");
+	return m_piFriendCityStateYieldModifiers ? m_piFriendCityStateYieldModifiers[(int)eYieldType] : 0;
+}
+int CvCityStateUAEffectEntry::GetAllyCityStateYieldModifier(YieldTypes eYieldType) const
+{
+	CvAssertMsg(eYieldType >= 0 && eYieldType < NUM_YIELD_TYPES, "Index out of bounds");
+	return m_piAllyCityStateYieldModifiers ? m_piAllyCityStateYieldModifiers[(int)eYieldType] : 0;
+}
+int CvCityStateUAEffectEntry::GetPolicyYieldModifier(YieldTypes eYieldType) const
+{
+	CvAssertMsg(eYieldType >= 0 && eYieldType < NUM_YIELD_TYPES, "Index out of bounds");
+	return m_piPolicyYieldModifiers ? m_piPolicyYieldModifiers[(int)eYieldType] : 0;
+}
 int CvCityStateUAEffectEntry::GetGoldenAgeThresholdPerPopulation() const { return m_iGoldenAgeThresholdPerPopulation; }
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
@@ -800,6 +826,9 @@ void CvPlayerCityStateUA::Reset()
 	m_iWonderProductionPerDonationHappiness = 0;
 	m_iIdeologyPressurePerDonationHappiness = 0;
 	m_iGoldDonationInfluenceModifierPerSeaRoute = 0;
+	m_aiFriendCityStateYieldModifiers.assign(NUM_YIELD_TYPES, 0);
+	m_aiAllyCityStateYieldModifiers.assign(NUM_YIELD_TYPES, 0);
+	m_aiPolicyYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_iGoldenAgeThresholdPerPopulation = 0;
 	m_iLuxuryHappinessModifier = 0;
 	m_iFoodKeptModifierPerLuxury = 0;
@@ -947,6 +976,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iWonderProductionPerDonationHappiness			+= pEffect->GetWonderProductionPerDonationHappiness() * iChange;
 	m_iIdeologyPressurePerDonationHappiness			+= pEffect->GetIdeologyPressurePerDonationHappiness() * iChange;
 	m_iGoldDonationInfluenceModifierPerSeaRoute		+= pEffect->GetGoldDonationInfluenceModifierPerSeaRoute() * iChange;
+	//Genoa / Vilnius: per-unit yield % modifiers (per friend/ally CS or unlocked policy)
+	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+	{
+		int iFriendMod = pEffect->GetFriendCityStateYieldModifier((YieldTypes)iYield);
+		if (iFriendMod != 0) m_aiFriendCityStateYieldModifiers[iYield] += iFriendMod * iChange;
+		int iAllyMod = pEffect->GetAllyCityStateYieldModifier((YieldTypes)iYield);
+		if (iAllyMod != 0) m_aiAllyCityStateYieldModifiers[iYield] += iAllyMod * iChange;
+		int iPolicyMod = pEffect->GetPolicyYieldModifier((YieldTypes)iYield);
+		if (iPolicyMod != 0) m_aiPolicyYieldModifiers[iYield] += iPolicyMod * iChange;
+	}
 	m_iGoldenAgeThresholdPerPopulation				+= pEffect->GetGoldenAgeThresholdPerPopulation() * iChange;
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
@@ -1159,6 +1198,18 @@ int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonatio
 int CvPlayerCityStateUA::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }
 int CvPlayerCityStateUA::GetIdeologyPressurePerDonationHappiness() const { return m_iIdeologyPressurePerDonationHappiness; }
 int CvPlayerCityStateUA::GetGoldDonationInfluenceModifierPerSeaRoute() const { return m_iGoldDonationInfluenceModifierPerSeaRoute; }
+int CvPlayerCityStateUA::GetFriendCityStateYieldModifier(YieldTypes eYieldType) const
+{
+	return (eYieldType >= 0 && (int)eYieldType < (int)m_aiFriendCityStateYieldModifiers.size()) ? m_aiFriendCityStateYieldModifiers[(int)eYieldType] : 0;
+}
+int CvPlayerCityStateUA::GetAllyCityStateYieldModifier(YieldTypes eYieldType) const
+{
+	return (eYieldType >= 0 && (int)eYieldType < (int)m_aiAllyCityStateYieldModifiers.size()) ? m_aiAllyCityStateYieldModifiers[(int)eYieldType] : 0;
+}
+int CvPlayerCityStateUA::GetPolicyYieldModifier(YieldTypes eYieldType) const
+{
+	return (eYieldType >= 0 && (int)eYieldType < (int)m_aiPolicyYieldModifiers.size()) ? m_aiPolicyYieldModifiers[(int)eYieldType] : 0;
+}
 int CvPlayerCityStateUA::GetGoldenAgeThresholdPerPopulation() const { return m_iGoldenAgeThresholdPerPopulation; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvPlayerCityStateUA::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }

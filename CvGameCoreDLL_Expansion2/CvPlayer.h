@@ -1151,6 +1151,7 @@ public:
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetCSUAGoldDonationInfluenceModifier() const;
+	int GetCSUAYieldPercentModifier(YieldTypes eYield) const;
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;
