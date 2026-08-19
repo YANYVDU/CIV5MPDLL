@@ -2043,6 +2043,8 @@ public:
 	int GetCrossContinentRouteUnhappinessReduction() const;
 	int GetCityStateSpecialistPointRate(SpecialistTypes eSpecialist) const;
 	void DoUnitBornYield(UnitClassTypes eUnitClass);
+	void DoCityStateUASpyKill(int iProgressGained);
+	int GetSpyKillGainSpyProgressPerKill() const;
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
 	CvCitySpecializationAI* GetCitySpecializationAI() const;
@@ -3135,6 +3137,7 @@ protected:
 	CvPlayerTraits* m_pTraits;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	CvPlayerCityStateUA* m_pCityStateUA;
+	int m_iCityStateUASpyKillProgress;
 #endif
 
 	// human player wanted to end turn processing but hasn't received

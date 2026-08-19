@@ -1246,6 +1246,7 @@ void CvPlayer::uninit()
 	m_iExtraDiplomaticPrestige = 0;
 	m_iCityStateAllyCount = 0;
 	m_iMinorCivAlliesThresholdModifier = 0;
+	m_iCityStateUASpyKillProgress = 0;
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
@@ -14553,6 +14554,44 @@ void CvPlayer::DoUnitBornYield(UnitClassTypes eUnitClass)
 			}
 		}
 	}
+#endif
+}
+
+/// CityState UA (Prague): killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1)
+void CvPlayer::DoCityStateUASpyKill(int iProgressGained)
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (!MOD_SP_UNIQUE_CITYSTATE)
+		return;
+
+	if (iProgressGained > 0)
+	{
+		m_iCityStateUASpyKillProgress += iProgressGained;
+		while (m_iCityStateUASpyKillProgress >= 100)
+		{
+			m_iCityStateUASpyKillProgress -= 100;
+			CvPlayerEspionage* pEspionage = GetEspionage();
+			if (pEspionage)
+				pEspionage->CreateSpy();
+		}
+	}
+#endif
+}
+
+/// CityState UA (Prague): aggregated spy progress gained per enemy spy killed from all sources (currently city-state UA; future policies / buildings accumulate here)
+int CvPlayer::GetSpyKillGainSpyProgressPerKill() const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (!MOD_SP_UNIQUE_CITYSTATE)
+		return 0;
+
+	int iProgress = 0;
+	if (m_pCityStateUA)
+		iProgress += m_pCityStateUA->GetSpyKillGainSpyProgress();
+	// future sources (policies, buildings) accumulate here
+	return iProgress;
+#else
+	return 0;
 #endif
 }
 
@@ -29407,6 +29446,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(162, kStream, m_iExtraDiplomaticPrestige, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iCityStateAllyCount, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iCityStateUASpyKillProgress, 0);
 #endif
 	MOD_SERIALIZE_READ(162, kStream, m_iPrestigeExemptAllyCount, 0);
 	{
@@ -30271,6 +30311,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iExtraDiplomaticPrestige);
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateAllyCount);
 	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iCityStateUASpyKillProgress);
 #endif
 	MOD_SERIALIZE_WRITE(kStream, m_iPrestigeExemptAllyCount);
 	{

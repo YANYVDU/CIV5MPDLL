@@ -154,6 +154,8 @@ public:
 	const std::vector<PurchasedBuildingXPEntry>& GetPurchasedBuildingXPEntries() const { return m_vPurchasedBuildingXP; }
 	// Valletta: born unit of the specified unit class grants a configurable yield = YieldMod% of influence with MinorCivType
 	const std::vector<UnitBornYieldEntry>& GetUnitBornYieldEntries() const { return m_vUnitBornYield; }
+	// Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1)
+	int GetSpyKillGainSpyProgress() const;
 
 private:
 	// Florence
@@ -234,6 +236,8 @@ private:
 	int m_iEnemyCityNoHealBesiegeCount;
 	std::vector<PurchasedBuildingXPEntry> m_vPurchasedBuildingXP;
 	std::vector<UnitBornYieldEntry> m_vUnitBornYield;
+	// Prague
+	int m_iSpyKillGainSpyProgress;
 };
 
 //======================================================================================================
@@ -389,6 +393,7 @@ public:
 	int GetEnemyCityNoHealBesiegeCount() const;
 	const std::vector<PurchasedBuildingXPEntry>& GetPurchasedBuildingXPEntries() const;
 	const std::vector<UnitBornYieldEntry>& GetUnitBornYieldEntries() const;
+	int GetSpyKillGainSpyProgress() const;
 
 	void Reset();
 
@@ -454,6 +459,8 @@ protected:
 	int m_iEnemyCityNoHealBesiegeCount;
 	std::vector<PurchasedBuildingXPEntry> m_vPurchasedBuildingXP;
 	std::vector<UnitBornYieldEntry> m_vUnitBornYield;
+	// Prague
+	int m_iSpyKillGainSpyProgress;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

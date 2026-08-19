@@ -110,7 +110,9 @@ CREATE TABLE CityStateUAEffects (
     -- Panama: population unhappiness reduction per cross-continental trade route (value = per-route % * 100; 每1=100, cap 90)
     UnhappinessReductionPerCrossContinentRoute      integer DEFAULT 0,
     -- Valletta: enemy city besieged by >= this many of our combat units cannot heal
-    EnemyCityNoHealBesiegeCount                      integer DEFAULT 0
+    EnemyCityNoHealBesiegeCount                      integer DEFAULT 0,
+    -- Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1, 20 = kill 5 gain 1)
+    SpyKillGainSpyProgress                           integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

@@ -61,6 +61,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_piSpecialistPointRate(nullptr)
 	, m_piGreatPersonOneShotModifier(nullptr)
+	, m_iSpyKillGainSpyProgress(0)
 {
 }
 
@@ -141,6 +142,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
 
 	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
+	m_iSpyKillGainSpyProgress						= kResults.GetInt("SpyKillGainSpyProgress");
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -401,6 +403,11 @@ int CvCityStateUAEffectEntry::GetSpecialistPointRate(int i) const
 	return m_piSpecialistPointRate ? m_piSpecialistPointRate[i] : 0;
 }
 
+int CvCityStateUAEffectEntry::GetSpyKillGainSpyProgress() const
+{
+	return m_iSpyKillGainSpyProgress;
+}
+
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
 	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
@@ -607,6 +614,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
 	, m_ppiBuildingClassYieldModifiers(NULL)
+	, m_iSpyKillGainSpyProgress(0)
 {
 }
 
@@ -674,6 +682,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iTradeRouteGoldModifierPerDistance = 0;
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
 	m_iBuildingClassYieldModifierCount = 0;
+	m_iSpyKillGainSpyProgress = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -775,6 +784,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iTradeRouteGoldModifierPerDistance			+= pEffect->GetTradeRouteGoldModifierPerDistance() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
 	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
+	m_iSpyKillGainSpyProgress						+= pEffect->GetSpyKillGainSpyProgress() * iChange;
 	{
 		if (m_ppiBuildingClassYieldModifiers)
 		{
@@ -982,6 +992,11 @@ int CvPlayerCityStateUA::GetBuildingClassYieldModifier(BuildingClassTypes eBuild
 bool CvPlayerCityStateUA::HasBuildingClassYieldModifiers() const
 {
 	return m_iBuildingClassYieldModifierCount > 0;
+}
+
+int CvPlayerCityStateUA::GetSpyKillGainSpyProgress() const
+{
+	return m_iSpyKillGainSpyProgress;
 }
 
 int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const
