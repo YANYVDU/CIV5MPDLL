@@ -4072,7 +4072,7 @@ bool CvCity::IsHasResourceLocal(ResourceTypes eResource, bool bTestVisible) cons
 }
 
 #if defined(MOD_API_EXTENSIONS) || defined(MOD_TRADE_WONDER_RESOURCE_ROUTES)
-int CvCity::GetNumResourceLocal(ResourceTypes eResource, bool bImproved)
+int CvCity::GetNumResourceLocal(ResourceTypes eResource, bool bImproved) const
 {
 	VALIDATE_OBJECT
 	CvAssertMsg(eResource > -1 && eResource < GC.getNumResourceInfos(), "Invalid resource index.");
@@ -4082,7 +4082,27 @@ int CvCity::GetNumResourceLocal(ResourceTypes eResource, bool bImproved)
 	} else {
 		int iCount = 0;
 		CvImprovementEntry* pImprovement = GC.GetGameImprovements()->GetImprovementForResource(eResource);
+		// Resource without a standard improvement cannot be "improved" - treat as not developed
+		if (pImprovement == NULL)
+			return 0;
 		CvCityCitizens* pCityCitizens = GetCityCitizens();
+
+		// A resource is "developed" when its plot holds the standard improvement or any
+		// improvement on that standard improvement's upgrade chain (MOD_IMPROVEMENTS_UPGRADE)
+		auto IsDevelopedByImprovement = [pImprovement](ImprovementTypes ePlotImprovement) -> bool {
+			ImprovementTypes eCur = (ImprovementTypes)pImprovement->GetID();
+			int iGuard = 0;
+			while (eCur != NO_IMPROVEMENT && iGuard++ < 32)
+			{
+				if (eCur == ePlotImprovement)
+					return true;
+				CvImprovementEntry* pEntry = GC.getImprovementInfo(eCur);
+				if (!pEntry)
+					break;
+				eCur = pEntry->GetUpgradeImprovementType();
+			}
+			return false;
+		};
 
 #if defined(MOD_GLOBAL_CITY_WORKING)
 		for(int iI = 0; iI < GetNumWorkablePlots(); iI++)
@@ -4093,7 +4113,7 @@ int CvCity::GetNumResourceLocal(ResourceTypes eResource, bool bImproved)
 			CvPlot* pLoopPlot = pCityCitizens->GetCityPlotFromIndex(iI);
 
 			if (pLoopPlot != NULL && pLoopPlot->getWorkingCity() == this) {
-				if (pLoopPlot->getResourceType() == eResource && pLoopPlot->getImprovementType() == ((ImprovementTypes) pImprovement->GetID()) && !pLoopPlot->IsImprovementPillaged()) {
+				if (pLoopPlot->getResourceType() == eResource && IsDevelopedByImprovement(pLoopPlot->getImprovementType()) && !pLoopPlot->IsImprovementPillaged()) {
 					++iCount;
 				}
 			}
