@@ -14172,8 +14172,8 @@ int CvPlayer::GetUnhappinessFromCityForUI(CvCity* pCity) const
 
 	int iPopulation = pCity->getPopulation() * 100;
 
-	// No Unhappiness from Specialist Pop? (Policies, etc.)
-	if(isHalfSpecialistUnhappiness())
+	// No Unhappiness from Specialist Pop? (Policies, etc.) -- skipped when the trait already removes it all
+	if(isHalfSpecialistUnhappiness() && !GetPlayerTraits()->IsNoSpecialistUnhappiness())
 	{
 		int iSpecialistCount = pCity->GetCityCitizens()->GetTotalSpecialistCount() * 100;
 		iPopulation -= (iSpecialistCount / 2);
@@ -14415,8 +14415,8 @@ int CvPlayer::GetUnhappinessFromCityPopulation(CvCity* pAssumeCityAnnexed, CvCit
 		{
 			iPopulation = pLoopCity->getPopulation();
 
-			// No Unhappiness from Specialist Pop? (Policies, etc.)
-			if(isHalfSpecialistUnhappiness())
+			// No Unhappiness from Specialist Pop? (Policies, etc.) -- skipped when the trait already removes it all
+			if(isHalfSpecialistUnhappiness() && !GetPlayerTraits()->IsNoSpecialistUnhappiness())
 			{
 				iSpecialistCount = pLoopCity->GetCityCitizens()->GetTotalSpecialistCount();
 				iSpecialistCount++; // Round up
@@ -14702,8 +14702,8 @@ int CvPlayer::GetUnhappinessFromCitySpecialists(CvCity* pAssumeCityAnnexed, CvCi
 		{
 			iPopulation = pLoopCity->GetCityCitizens()->GetTotalSpecialistCount();
 
-			// No Unhappiness from Specialist Pop? (Policies, etc.)
-			if(isHalfSpecialistUnhappiness())
+			// No Unhappiness from Specialist Pop? (Policies, etc.) -- skipped when the trait already removes it all
+			if(isHalfSpecialistUnhappiness() && !GetPlayerTraits()->IsNoSpecialistUnhappiness())
 			{
 				iPopulation++; // Round up
 				iPopulation /= 2;
@@ -14775,8 +14775,8 @@ int CvPlayer::GetUnhappinessFromOccupiedCities(CvCity* pAssumeCityAnnexed, CvCit
 		{
 			iPopulation = pLoopCity->getPopulation();
 
-			// No Unhappiness from Specialist Pop? (Policies, etc.)
-			if(isHalfSpecialistUnhappiness())
+			// No Unhappiness from Specialist Pop? (Policies, etc.) -- skipped when the trait already removes it all
+			if(isHalfSpecialistUnhappiness() && !GetPlayerTraits()->IsNoSpecialistUnhappiness())
 			{
 				iSpecialistCount = pLoopCity->GetCityCitizens()->GetTotalSpecialistCount();
 				iSpecialistCount++; // Round up

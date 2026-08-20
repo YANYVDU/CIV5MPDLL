@@ -10056,6 +10056,8 @@ int CvMinorCivAI::GetPermanentAllyTargetInfluence(PlayerTypes ePlayer)
 			if (iTheir > iHighest) iHighest = iTheir;
 		}
 	}
+	// The hard floor normally dominates (PERMANENT_ALLY_INFLUENCE_FLOOR is far above any reachable influence),
+	// so the permanent ally can never be displaced; the two terms above are defensive fallbacks for edge values.
 	int iTarget = std::max(iCurrentInf + iAlliesThreshold + 1, iHighest + 1);
 	iTarget = std::max(iTarget, PERMANENT_ALLY_INFLUENCE_FLOOR);
 	return iTarget;
@@ -10069,6 +10071,11 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 
 	CvAssertMsg(pGiftUnit != NULL, "pGiftUnit is NULL");
 	if (pGiftUnit == NULL) return;
+
+	// Permanent ally: no unit gifts are accepted, the ally's influence is fully locked and the gift would be wasted
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
 
 	ChangeNumUnitsGifted(eFromPlayer, 1);
 

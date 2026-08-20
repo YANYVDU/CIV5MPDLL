@@ -9328,8 +9328,8 @@ int CvCity::foodConsumption(bool /*bNoAngry*/, int iExtra) const
 
 	int iNum = iPopulation * iFoodPerPop;
 
-	// Specialists eat less food? (Policies, etc.)
-	if(GET_PLAYER(getOwner()).isHalfSpecialistFood())
+	// Specialists eat less food? (Policies, etc.) -- skipped when the trait already removes it all
+	if(GET_PLAYER(getOwner()).isHalfSpecialistFood() && !GET_PLAYER(getOwner()).GetPlayerTraits()->IsNoSpecialistFood())
 	{
 		int iFoodReduction = GetCityCitizens()->GetTotalSpecialistCount() * iFoodPerPop;
 		iFoodReduction /= 2;
