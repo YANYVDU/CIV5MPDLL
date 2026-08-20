@@ -1614,8 +1614,10 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		CvMinorCivAI* pMinorAI = GET_PLAYER(eTargetCityState).GetMinorCivAI();
 		if (pMinorAI)
 		{
-			// Set influence above current ally to become the new ally
-			int iHighest = pMinorAI->GetAlliesThresholdForPlayer(ePlayer);
+			// Set influence above the current highest holder, plus the ally buffer, with a 10000 floor so the permanent ally cannot be displaced
+			int iCurrentInf = pMinorAI->GetEffectiveFriendshipWithMajor(ePlayer);
+			int iRequiredInf = pMinorAI->GetAlliesThresholdForPlayer(ePlayer);
+			int iHighest = 0;
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
 				PlayerTypes e = (PlayerTypes)i;
@@ -1625,7 +1627,9 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 					if (iTheir > iHighest) iHighest = iTheir;
 				}
 			}
-			pMinorAI->SetFriendshipWithMajor(ePlayer, iHighest + 1);
+			int iTarget = max(iCurrentInf + iRequiredInf + 1, iHighest + 1);
+			iTarget = max(iTarget, 10000);
+			pMinorAI->SetFriendshipWithMajor(ePlayer, iTarget);
 			// Mark as permanent ally to prevent decay and coups
 			GetEffects()->bPermanentAlly = true;
 			if (!pPlayer->IsPermanentAlly(eTargetCityState))
