@@ -10103,7 +10103,9 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 		}
 		if (kFromPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 		{
-			int iHighest = GetAlliesThresholdForPlayer(eFromPlayer);
+			int iCurrentInf = GetEffectiveFriendshipWithMajor(eFromPlayer);
+			int iRequiredInf = GetAlliesThresholdForPlayer(eFromPlayer);
+			int iHighest = 0;
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
 				PlayerTypes e = (PlayerTypes)i;
@@ -10113,7 +10115,9 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 					if (iTheir > iHighest) iHighest = iTheir;
 				}
 			}
-			iInfluence += std::max(0, iHighest + 1 - GetEffectiveFriendshipWithMajor(eFromPlayer));
+			int iTarget = std::max(iCurrentInf + iRequiredInf + 1, iHighest + 1);
+			iTarget = std::max(iTarget, 10000);
+			iInfluence += std::max(0, iTarget - iCurrentInf);
 		}
 	}
 	else
