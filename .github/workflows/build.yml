@@ -484,6 +484,13 @@ jobs:
       - name: Build release mod folder
         shell: pwsh
         run: |
+          # Workaround: upstream civ5-mod-builder's mkdir call is missing await, so the modinfo
+          # write races the directory creation and fails with ENOENT. Pre-create the mod output
+          # dir first (name/version read dynamically from the project file) to bypass the race.
+          $proj = Get-Content "(1) CIV5MPDLL/(1) CIV5MPDLL.civ5proj" -Raw
+          $modName = [regex]::Match($proj, '<Name>(.*?)</Name>').Groups[1].Value
+          $modVer  = [regex]::Match($proj, '<ModVersion>(.*?)</ModVersion>').Groups[1].Value
+          New-Item -ItemType Directory -Force -Path (Join-Path "./mod_output" "$modName (v $modVer)") | Out-Null
           node ./civ5-mod-builder/out/cli/index.js --from "(1) CIV5MPDLL/(1) CIV5MPDLL.civ5proj" --to "./mod_output"
           Get-ChildItem "./mod_output" -Directory | ForEach-Object { Write-Output "Built mod: $($_.FullName)" }
 
