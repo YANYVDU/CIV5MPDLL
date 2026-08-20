@@ -22611,15 +22611,6 @@ int CvPlayer::GetScienceTimes100(bool bIgnoreFriendships) const
 
 	if(!bIgnoreFriendships) iValue += GetScienceTimes100FromFriendships();
 
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	// Genoa / Vilnius: science +% per friend/ally city-state or unlocked policy
-	int iCSUAScienceMod = GetCSUAYieldPercentModifier(YIELD_SCIENCE);
-	if (iCSUAScienceMod != 0)
-	{
-		iValue = iValue * (100 + iCSUAScienceMod) / 100;
-	}
-#endif
-
 #if defined(MOD_GLOBAL_SUZERAIN)
 	iValue += (int)GetScienceTimes100FromVassals();
 	iValue -= (int)GetScienceTimes100ToOverlord();

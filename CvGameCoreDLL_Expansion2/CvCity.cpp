@@ -13509,6 +13509,17 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
+	//CityState UA (Genoa/Vilnius): global friend/ally/policy yield % modifier, applied per city so it shows in the city yield tooltip
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	iTempMod = owner.GetCSUAYieldPercentModifier(eIndex);
+	if (iTempMod != 0)
+	{
+		iModifier += iTempMod;
+		if (toolTipSink)
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+	}
+#endif
+
 	//Yield Modifier from PerEra
 	iTempMod = GetYieldModifierPerEra(eIndex)*(GET_PLAYER(getOwner()).GetCurrentEra()+1);
 	iModifier += iTempMod;
