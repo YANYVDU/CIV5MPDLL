@@ -9857,6 +9857,13 @@ int CvPlot::calculateYield(YieldTypes eYield, bool bDisplay)
 			{
 				iYield += kYield.getGoldenAgeYield();
 			}
+
+			// Golden Age yield changes from Traits (absolute bonus per yield)
+			int iTraitGoldenAgeYield = GET_PLAYER(ePlayer).GetPlayerTraits()->GetGoldenAgeYieldChange(eYield);
+			if(iTraitGoldenAgeYield > 0 && iYield >= 1)
+			{
+				iYield += iTraitGoldenAgeYield;
+			}
 		}
 	}
 
@@ -13005,6 +13012,13 @@ int CvPlot::getYieldWithBuild(BuildTypes eBuild, YieldTypes eYield, bool bWithUp
 			if(iYield >= kYield.getGoldenAgeYieldThreshold())
 			{
 				iYield += kYield.getGoldenAgeYield();
+			}
+
+			// Golden Age yield changes from Traits (absolute bonus per yield)
+			int iTraitGoldenAgeYield = GET_PLAYER(ePlayer).GetPlayerTraits()->GetGoldenAgeYieldChange(eYield);
+			if(iTraitGoldenAgeYield > 0 && iYield >= 1)
+			{
+				iYield += iTraitGoldenAgeYield;
 			}
 		}
 	}

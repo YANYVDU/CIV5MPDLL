@@ -1350,6 +1350,7 @@ protected:
 	LUAAPIEXTN(GetFaithToOverlord, int);
 	LUAAPIEXTN(GetGoldToOverlord, int);
 	LUAAPIEXTN(GetGoldFromVassalDeals, int);
+	LUAAPIEXTN(GetGoldFromVassalDealsLumpSum, int);
 #endif
 };
 

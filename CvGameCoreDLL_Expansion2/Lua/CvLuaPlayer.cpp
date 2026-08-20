@@ -1443,6 +1443,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetFaithToOverlord);
 	Method(GetGoldToOverlord);
 	Method(GetGoldFromVassalDeals);
+	Method(GetGoldFromVassalDealsLumpSum);
 #endif
 }
 //------------------------------------------------------------------------------
@@ -6948,6 +6949,12 @@ int CvLuaPlayer::lGetGoldToOverlord(lua_State* L)
 int CvLuaPlayer::lGetGoldFromVassalDeals(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayer::GetGoldFromVassalDeals);
+}
+//------------------------------------------------------------------------------
+//int GetGoldFromVassalDealsLumpSum();
+int CvLuaPlayer::lGetGoldFromVassalDealsLumpSum(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayer::GetGoldFromVassalDealsLumpSum);
 }
 #endif
 

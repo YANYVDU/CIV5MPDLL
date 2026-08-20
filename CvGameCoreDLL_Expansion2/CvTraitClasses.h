@@ -238,6 +238,7 @@ public:
 	int GetYieldChangeIncomingTradeRoute(int i) const;
 	int GetYieldModifier(int i) const;
 	int GetGoldenAgeYieldModifier(int i) const;
+	int GetGoldenAgeYieldChange(int i) const;
 	int GetStrategicResourceQuantityModifier(int i) const;
 	int GetObsoleteTech() const;
 	int GetPrereqTech() const;
@@ -364,6 +365,8 @@ public:
 	int GetWorldCongressTechPrereq() const;
 	bool CanPurchaseWonderInGoldenAge() const;
 	bool CanDiplomaticMarriage() const;
+	bool IsNoSpecialistFood() const;
+	bool IsNoSpecialistUnhappiness() const;
 
 	virtual bool CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility);
 
@@ -375,6 +378,8 @@ protected:
 	int m_iGreatGeneralExtraBonus;
 	int m_iGreatPersonGiftInfluence;
 	bool m_bGreatPersonGiftPermanentAlly;
+	bool m_bNoSpecialistFood;
+	bool m_bNoSpecialistUnhappiness;
 	int m_iMaxGlobalBuildingProductionModifier;
 	int m_iMaxTeamBuildingProductionModifier;
 	int m_iMaxPlayerBuildingProductionModifier;
@@ -565,6 +570,7 @@ protected:
 	int* m_paiYieldChangeIncomingTradeRoute;
 	int* m_paiYieldModifier;
 	int* m_paiGoldenAgeYieldModifier;
+	int* m_paiGoldenAgeYieldChange;
 	int* m_piStrategicResourceQuantityModifier;
 	int* m_piResourceQuantityModifiers;
 	int* m_piBuildCostChange;
@@ -744,6 +750,14 @@ public:
 	bool IsGreatPersonGiftPermanentAlly() const
 	{
 		return m_bGreatPersonGiftPermanentAlly;
+	};
+	bool IsNoSpecialistFood() const
+	{
+		return m_bNoSpecialistFood;
+	};
+	bool IsNoSpecialistUnhappiness() const
+	{
+		return m_bNoSpecialistUnhappiness;
 	};
 	int GetLevelExperienceModifier() const
 	{
@@ -1331,6 +1345,10 @@ public:
 	{
 		return m_iGoldenAgeYieldRateModifier[(int)eYield];
 	};
+	int GetGoldenAgeYieldChange(YieldTypes eYield) const
+	{
+		return m_iGoldenAgeYieldChange[(int)eYield];
+	};
 	int GetStrategicResourceQuantityModifier(TerrainTypes eTerrain) const
 	{
 		return m_iStrategicResourceQuantityModifier[(int)eTerrain];
@@ -1543,6 +1561,8 @@ private:
 	int m_iGreatGeneralExtraBonus;
 	int m_iGreatPersonGiftInfluence;
 	bool m_bGreatPersonGiftPermanentAlly;
+	bool m_bNoSpecialistFood;
+	bool m_bNoSpecialistUnhappiness;
 	int m_iLevelExperienceModifier;
 	int m_iMaxGlobalBuildingProductionModifier;
 	int m_iMaxTeamBuildingProductionModifier;
@@ -1721,6 +1741,7 @@ private:
 	int m_iYieldChangeIncomingTradeRoute[NUM_YIELD_TYPES];
 	int m_iYieldRateModifier[NUM_YIELD_TYPES];
 	int m_iGoldenAgeYieldRateModifier[NUM_YIELD_TYPES];
+	int m_iGoldenAgeYieldChange[NUM_YIELD_TYPES];
 	int m_iStrategicResourceQuantityModifier[NUM_TERRAIN_TYPES];
 	std::vector<int> m_aiResourceQuantityModifier;
 	std::vector<int> m_aiBuildCostChange;

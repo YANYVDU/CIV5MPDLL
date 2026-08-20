@@ -28,6 +28,8 @@ CvTraitEntry::CvTraitEntry() :
 	m_iGreatGeneralExtraBonus(0),
 	m_iGreatPersonGiftInfluence(0),
 	m_bGreatPersonGiftPermanentAlly(false),
+	m_bNoSpecialistFood(false),
+	m_bNoSpecialistUnhappiness(false),
 	m_iMaxGlobalBuildingProductionModifier(0),
 	m_iMaxTeamBuildingProductionModifier(0),
 	m_iMaxPlayerBuildingProductionModifier(0),
@@ -214,6 +216,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_paiYieldChangeIncomingTradeRoute(NULL),
 	m_paiYieldModifier(NULL),
 	m_paiGoldenAgeYieldModifier(NULL),
+	m_paiGoldenAgeYieldChange(NULL),
 	m_piStrategicResourceQuantityModifier(NULL),
 	m_piResourceQuantityModifiers(NULL),
 	m_piBuildCostChange(NULL),
@@ -260,6 +263,7 @@ CvTraitEntry::~CvTraitEntry()
 	SAFE_DELETE_ARRAY(m_paiYieldChangeIncomingTradeRoute);
 	SAFE_DELETE_ARRAY(m_paiYieldModifier);
 	SAFE_DELETE_ARRAY(m_paiGoldenAgeYieldModifier);
+	SAFE_DELETE_ARRAY(m_paiGoldenAgeYieldChange);
 	SAFE_DELETE_ARRAY(m_piStrategicResourceQuantityModifier);
 	SAFE_DELETE_ARRAY(m_piResourceQuantityModifiers);
 	SAFE_DELETE_ARRAY(m_piBuildCostChange);
@@ -341,6 +345,18 @@ int CvTraitEntry::GetGreatPersonGiftInfluence() const
 bool CvTraitEntry::IsGreatPersonGiftPermanentAlly() const
 {
 	return m_bGreatPersonGiftPermanentAlly;
+}
+
+/// Accessor:: Specialists consume no food
+bool CvTraitEntry::IsNoSpecialistFood() const
+{
+	return m_bNoSpecialistFood;
+}
+
+/// Accessor:: Specialists cause no unhappiness
+bool CvTraitEntry::IsNoSpecialistUnhappiness() const
+{
+	return m_bNoSpecialistUnhappiness;
 }
 
 /// Accessor:: Overall production boost
@@ -1186,6 +1202,11 @@ int CvTraitEntry::GetGoldenAgeYieldModifier(int i) const
 	return m_paiGoldenAgeYieldModifier ? m_paiGoldenAgeYieldModifier[i] : -1;
 }
 
+int CvTraitEntry::GetGoldenAgeYieldChange(int i) const
+{
+	return m_paiGoldenAgeYieldChange ? m_paiGoldenAgeYieldChange[i] : -1;
+}
+
 /// Accessor:: Additional quantity of strategic resources
 int CvTraitEntry::GetStrategicResourceQuantityModifier(int i) const
 {
@@ -1782,6 +1803,8 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iGreatGeneralExtraBonus				= kResults.GetInt("GreatGeneralExtraBonus");
 	m_iGreatPersonGiftInfluence				= kResults.GetInt("GreatPersonGiftInfluence");
 	m_bGreatPersonGiftPermanentAlly		    = kResults.GetBool("GreatPersonGiftPermanentAlly");
+	m_bNoSpecialistFood					= kResults.GetBool("NoSpecialistFood");
+	m_bNoSpecialistUnhappiness			= kResults.GetBool("NoSpecialistUnhappiness");
 	m_iMaxGlobalBuildingProductionModifier	= kResults.GetInt("MaxGlobalBuildingProductionModifier");
 	m_iMaxTeamBuildingProductionModifier	= kResults.GetInt("MaxTeamBuildingProductionModifier");
 	m_iMaxPlayerBuildingProductionModifier	= kResults.GetInt("MaxPlayerBuildingProductionModifier");
@@ -2050,6 +2073,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	kUtility.SetYields(m_paiYieldChangeIncomingTradeRoute, "Trait_YieldChangesIncomingTradeRoute", "TraitType", szTraitType);
 	kUtility.SetYields(m_paiYieldModifier, "Trait_YieldModifiers", "TraitType", szTraitType);
 	kUtility.SetYields(m_paiGoldenAgeYieldModifier, "Trait_GoldenAgeYieldModifiers", "TraitType", szTraitType);
+	kUtility.SetYields(m_paiGoldenAgeYieldChange, "Trait_GoldenAgeYieldChanges", "TraitType", szTraitType);
 
 	const int iNumTerrains = GC.getNumTerrainInfos();
 
@@ -3022,6 +3046,14 @@ void CvPlayerTraits::InitPlayerTraits()
 			{
 				m_bGreatPersonGiftPermanentAlly = true;
 			}
+			if (trait->IsNoSpecialistFood())
+			{
+				m_bNoSpecialistFood = true;
+			}
+			if (trait->IsNoSpecialistUnhappiness())
+			{
+				m_bNoSpecialistUnhappiness = true;
+			}
 			if (trait->IsNewCityAutomaticReligion())
 			{
 				m_bNewCityAutomaticReligion = true;
@@ -3216,6 +3248,7 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_iYieldChangeIncomingTradeRoute[iYield] = trait->GetYieldChangeIncomingTradeRoute(iYield);
 				m_iYieldRateModifier[iYield] = trait->GetYieldModifier(iYield);
 				m_iGoldenAgeYieldRateModifier[iYield] = trait->GetGoldenAgeYieldModifier(iYield);
+				m_iGoldenAgeYieldChange[iYield] = trait->GetGoldenAgeYieldChange(iYield);
 
 				for(int iFeatureLoop = 0; iFeatureLoop < GC.getNumFeatureInfos(); iFeatureLoop++)
 				{
@@ -3474,6 +3507,8 @@ void CvPlayerTraits::Reset()
 	m_iGreatGeneralExtraBonus = 0;
 	m_iGreatPersonGiftInfluence = 0;
 	m_bGreatPersonGiftPermanentAlly = false;
+	m_bNoSpecialistFood = false;
+	m_bNoSpecialistUnhappiness = false;
 	m_iLevelExperienceModifier= 0;
 	m_iMaxGlobalBuildingProductionModifier = 0;
 	m_iMaxTeamBuildingProductionModifier = 0;
@@ -3696,6 +3731,7 @@ void CvPlayerTraits::Reset()
 		m_iYieldChangeIncomingTradeRoute[iYield] = 0;
 		m_iYieldRateModifier[iYield] = 0;
 		m_iGoldenAgeYieldRateModifier[iYield] = 0;
+		m_iGoldenAgeYieldChange[iYield] = 0;
 
 		for(int iImprovement = 0; iImprovement < GC.getNumImprovementInfos(); iImprovement++)
 		{
@@ -4890,6 +4926,9 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 
 	kStream >> m_iGreatPersonGiftInfluence;
 	MOD_SERIALIZE_READ(162, kStream, m_bGreatPersonGiftPermanentAlly, false);
+	MOD_SERIALIZE_READ(163, kStream, m_bNoSpecialistFood, false);
+	MOD_SERIALIZE_READ(163, kStream, m_bNoSpecialistUnhappiness, false);
+	MOD_SERIALIZE_READ_ARRAY(163, kStream, m_iGoldenAgeYieldChange, int, NUM_YIELD_TYPES, 0);
 
 	kStream >> m_iLevelExperienceModifier;
 	kStream >> m_iMaxGlobalBuildingProductionModifier;
@@ -5474,6 +5513,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iGreatGeneralExtraBonus;
 	kStream << m_iGreatPersonGiftInfluence;
 	MOD_SERIALIZE_WRITE(kStream, m_bGreatPersonGiftPermanentAlly);
+	MOD_SERIALIZE_WRITE(kStream, m_bNoSpecialistFood);
+	MOD_SERIALIZE_WRITE(kStream, m_bNoSpecialistUnhappiness);
+	MOD_SERIALIZE_WRITE_ARRAY(kStream, m_iGoldenAgeYieldChange, int, NUM_YIELD_TYPES);
 	kStream << m_iLevelExperienceModifier;
 	kStream << m_iMaxGlobalBuildingProductionModifier;
 	kStream << m_iMaxTeamBuildingProductionModifier;
