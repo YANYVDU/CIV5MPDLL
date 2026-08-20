@@ -397,8 +397,89 @@ void CvGame::init(HandicapTypes eHandicap)
 }
 
 //	--------------------------------------------------------------------------------
+// Apply player-selected city states: fill the fixed selections first, then random-fill the rest.
+static void ApplySelectedMinorCivs()
+{
+	int iNumMinors = CvPreGame::numMinorCivs();
+	if(iNumMinors < 0)
+		iNumMinors = CvPreGame::worldInfo().getDefaultMinorCivs();
+	const int iFirstMinor = MAX_MAJOR_CIVS;
+	int iLastMinor = iFirstMinor + iNumMinors;
+	if(iLastMinor > MAX_CIV_PLAYERS)
+		iLastMinor = MAX_CIV_PLAYERS;
+
+	// Feature gate: only apply when the front-end enabled custom city-state selection.
+	int iEnabled = 0;
+	CvPreGame::GetGameOption("GAMEOPTION_SP_CS_ENABLED", iEnabled);
+	if(iEnabled != 1)
+		return; // Not enabled -> keep the vanilla random assignment.
+
+	// Collect the chosen valid city-state types from the front-end GameOptions.
+	std::vector<MinorCivTypes> aChosen;
+	for(int slot = iFirstMinor; slot < iLastMinor; ++slot)
+	{
+		char szBuf[64];
+		sprintf_s(szBuf, 64, "GAMEOPTION_SP_CS_%d", slot);
+		int iValue = -1;
+		CvPreGame::GetGameOption(szBuf, iValue);
+		if(iValue >= 0 && iValue < GC.getNumMinorCivInfos())
+			aChosen.push_back((MinorCivTypes)iValue);
+	}
+	if(aChosen.empty())
+		return; // No selections -> keep the vanilla random assignment.
+
+	// Deduplicate in slot order.
+	std::vector<MinorCivTypes> aUnique;
+	for(size_t i = 0; i < aChosen.size(); ++i)
+	{
+		bool bDup = false;
+		for(size_t j = 0; j < aUnique.size(); ++j)
+		{
+			if(aUnique[j] == aChosen[i]) { bDup = true; break; }
+		}
+		if(!bDup)
+			aUnique.push_back(aChosen[i]);
+	}
+
+	const int iSlots = iLastMinor - iFirstMinor;
+	const int iPool = GC.getNumMinorCivInfos();
+	if(iPool == 0)
+		return;
+
+	std::vector<bool> bUsed(iPool, false);
+	for(size_t i = 0; i < aUnique.size(); ++i)
+		bUsed[aUnique[i]] = true;
+
+	// Fisher-Yates shuffle of the full pool using the persistent (MP-synced) RNG.
+	std::vector<int> iShuffle(iPool);
+	shuffleArray(&iShuffle[0], iPool, GC.getGame().getJonRand());
+
+	int iFill = 0;
+	for(int s = 0; s < iSlots; ++s)
+	{
+		MinorCivTypes mc;
+		if(s < (int)aUnique.size())
+		{
+			mc = aUnique[s]; // Use a user-selected type first.
+		}
+		else
+		{
+			while(iFill < iPool && bUsed[iShuffle[iFill]])
+				++iFill;
+			if(iFill >= iPool)
+				break; // Pool exhausted; leave the remaining slots at their default.
+			mc = (MinorCivTypes)iShuffle[iFill];
+			bUsed[mc] = true;
+			++iFill;
+		}
+		CvPreGame::setMinorCivType((PlayerTypes)(iFirstMinor + s), mc);
+	}
+}
+
+//	--------------------------------------------------------------------------------
 bool CvGame::init2()
 {
+	ApplySelectedMinorCivs();
 	InitPlayers();
 
 	CvGameInitialItemsOverrides kItemOverrides;
