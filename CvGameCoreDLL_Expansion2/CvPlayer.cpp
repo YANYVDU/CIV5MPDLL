@@ -14179,6 +14179,12 @@ int CvPlayer::GetUnhappinessFromCityForUI(CvCity* pCity) const
 		iPopulation -= (iSpecialistCount / 2);
 	}
 
+	// Specialists cause no unhappiness at all? (Traits)
+	if(GetPlayerTraits()->IsNoSpecialistUnhappiness())
+	{
+		iPopulation -= pCity->GetCityCitizens()->GetTotalSpecialistCount() * 100;
+	}
+
 	// Occupied?
 	if(pCity->IsOccupied() && !pCity->IsIgnoreCityForHappiness())
 	{
@@ -14415,6 +14421,12 @@ int CvPlayer::GetUnhappinessFromCityPopulation(CvCity* pAssumeCityAnnexed, CvCit
 				iSpecialistCount = pLoopCity->GetCityCitizens()->GetTotalSpecialistCount();
 				iSpecialistCount++; // Round up
 				iPopulation -= (iSpecialistCount / 2);
+			}
+
+			// Specialists cause no unhappiness at all? (Traits)
+			if(GetPlayerTraits()->IsNoSpecialistUnhappiness())
+			{
+				iPopulation -= pLoopCity->GetCityCitizens()->GetTotalSpecialistCount();
 			}
 
 			iUnhappinessFromThisCity = iPopulation * iUnhappinessPerPop;
@@ -14697,6 +14709,12 @@ int CvPlayer::GetUnhappinessFromCitySpecialists(CvCity* pAssumeCityAnnexed, CvCi
 				iPopulation /= 2;
 			}
 
+			// Specialists cause no unhappiness at all? (Traits)
+			if(GetPlayerTraits()->IsNoSpecialistUnhappiness())
+			{
+				iPopulation = 0;
+			}
+
 			iUnhappinessFromThisCity = iPopulation * iUnhappinessPerPop;
 
 			if(pLoopCity->isCapital() && GetCapitalUnhappinessMod() != 0)
@@ -14763,6 +14781,12 @@ int CvPlayer::GetUnhappinessFromOccupiedCities(CvCity* pAssumeCityAnnexed, CvCit
 				iSpecialistCount = pLoopCity->GetCityCitizens()->GetTotalSpecialistCount();
 				iSpecialistCount++; // Round up
 				iPopulation -= (iSpecialistCount / 2);
+			}
+
+			// Specialists cause no unhappiness at all? (Traits)
+			if(GetPlayerTraits()->IsNoSpecialistUnhappiness())
+			{
+				iPopulation -= pLoopCity->GetCityCitizens()->GetTotalSpecialistCount();
 			}
 
 			iUnhappinessFromThisCity = int(double(iPopulation) * fUnhappinessPerPop);
@@ -32052,6 +32076,13 @@ int CvPlayer::GetGoldFromVassalDeals() const
 {
 	if (!MOD_GLOBAL_SUZERAIN) return 0;
 	return m_iGoldFromVassalDeals + m_iGoldPerTurnFromVassalDeals;
+}
+
+//--------------------------------------------------------------------------------
+int CvPlayer::GetGoldFromVassalDealsLumpSum() const
+{
+	if (!MOD_GLOBAL_SUZERAIN) return 0;
+	return m_iGoldFromVassalDeals;
 }
 
 //--------------------------------------------------------------------------------

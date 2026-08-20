@@ -9336,6 +9336,13 @@ int CvCity::foodConsumption(bool /*bNoAngry*/, int iExtra) const
 		iNum -= iFoodReduction;
 	}
 
+	// Specialists consume no food at all? (Traits)
+	if(GET_PLAYER(getOwner()).GetPlayerTraits()->IsNoSpecialistFood())
+	{
+		int iFoodReduction = GetCityCitizens()->GetTotalSpecialistCount() * iFoodPerPop;
+		iNum -= iFoodReduction;
+	}
+
 	TerrainTypes eTerrain = plot()->getTerrainType();
 	if(eTerrain == NO_TERRAIN) return iNum;
 
