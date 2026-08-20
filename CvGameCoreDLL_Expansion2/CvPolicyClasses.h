@@ -35,6 +35,10 @@ public:
 	int GetGridX() const;
 	int GetGridY() const;
 	int GetLevel() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const;
+	int GetMinorCivAlliesThresholdModifier() const;
+#endif
 	int GetPolicyCostModifier() const;
 	int GetCulturePerCity() const;
 	int GetCulturePerWonder() const;
@@ -271,6 +275,7 @@ public:
 	std::pair<UnitClassTypes, int>* GetFreeUnitsByClass() const;
 	int GetTourismByUnitClassCreated(int i) const;
 	int GetImprovementCultureChanges(int i) const;
+	int GetImprovementHappinessWhenWorked(int i) const;
 
 	// AdjacentImprovementYieldChanges
 	struct AdjacentImprovementYieldChange {
@@ -284,6 +289,7 @@ public:
 	int GetHurryModifier(int i) const;
 	bool IsSpecialistValid(int i) const;
 	int GetImprovementYieldChanges(int i, int j) const;
+	int GetYieldPerGlobalPop(int i) const;
 	int GetCityLoveKingDayYieldMod(int i) const;
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
 	int GetPlotYieldChanges(int i, int j) const;
@@ -330,6 +336,7 @@ public:
 	int GetFreePopulation() const;
 	int GetFreePopulationCapital() const;
 	int GetExtraSpies() const;
+	int GetGreatPersonPoints(int i) const;
 	int GetGreatScientistBeakerPolicyModifier() const;
 	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
 	int GetNaturalWonderFirstFinderTech() const;
@@ -364,6 +371,7 @@ public:
 	std::vector<PolicyYieldInfo>& GetTradeRouteCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetCityNumberCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetHappinessYieldModifier();
+	std::vector<PolicyYieldInfo>& GetYieldPercentPerCityFollowingReligion();
 
 	std::vector<PolicyResourceInfo>& GetCityResources();
 
@@ -390,6 +398,10 @@ private:
 	int m_iGridX;
 	int m_iGridY;
 	int m_iLevel;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
 	int m_iPolicyCostModifier;
 	int m_iCulturePerCity;
 	int m_iCulturePerWonder;
@@ -588,6 +600,7 @@ private:
 	int m_iFreePopulationCapital;
 	int m_iExtraSpies;
 	int m_iGreatScientistBeakerPolicyModifier;
+	int* m_piGreatPersonPoints;
 	int m_iInstantTourismBombWhenFirstConquerMajorCapital;
 	int m_iNaturalWonderFirstFinderTech;
 	int m_iNaturalWonderFirstFinderPolicies;
@@ -616,10 +629,12 @@ private:
 	int* m_piCapitalYieldChange;
 	int* m_piCapitalYieldPerPopChange;
 	int* m_piYieldPerPopChange;
+	int* m_piYieldPerGlobalPop;
 	int* m_piCapitalYieldModifier;
 	int* m_piGreatWorkYieldChange;
 	int* m_piSpecialistExtraYield;
 	int* m_piImprovementCultureChange;
+	int* m_piImprovementHappinessWhenWorked;
 	bool* m_pabFreePromotion;
 	int* m_paiUnitCombatProductionModifiers;
 	int* m_paiUnitCombatFreeExperiences;
@@ -689,6 +704,7 @@ private:
 	std::vector<PolicyYieldInfo> m_vTradeRouteCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vCityNumberCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vHappinessYieldModifier;
+	std::vector<PolicyYieldInfo> m_vYieldPercentPerCityFollowingReligion;
 	int m_iGlobalHappinessFromFaithPercent = 0;
 	int m_iHappinessInWLTKDCities = 0;
 

@@ -1674,6 +1674,7 @@ CvReligionBeliefs::CvReligionBeliefs(const CvReligionBeliefs& source)
 	m_iFirstConversionCitiesPerGoldenAge = source.m_iFirstConversionCitiesPerGoldenAge;
 	m_iFirstConversionCitiesPerPop = source.m_iFirstConversionCitiesPerPop;
 	m_iCityCorruptionScoreChange = source.m_iCityCorruptionScoreChange;
+	m_iCorruptionEffectCount = source.m_iCorruptionEffectCount;
 	m_iCityExtraMissionarySpreads = source.m_iCityExtraMissionarySpreads;
 	m_bAllowYieldPerBirth = source.m_bAllowYieldPerBirth;
 #endif
@@ -1749,6 +1750,7 @@ void CvReligionBeliefs::Reset()
 	m_iFirstConversionCitiesPerGoldenAge = 0;
 	m_iFirstConversionCitiesPerPop = 0;
 	m_iCityCorruptionScoreChange = 0;
+	m_iCorruptionEffectCount = 0;
 	m_iCityExtraMissionarySpreads = 0;
 	m_bAllowYieldPerBirth = false;
 #endif
@@ -1834,6 +1836,21 @@ void CvReligionBeliefs::AddBelief(BeliefTypes eBelief, PlayerTypes ePlayer)
 	m_iFirstConversionCitiesPerGoldenAge += belief->GetFirstConversionCitiesPerGoldenAge();
 	m_iFirstConversionCitiesPerPop += belief->GetFirstConversionCitiesPerPop();
 	m_iCityCorruptionScoreChange += belief->GetCityCorruptionScoreChange();
+	if (belief->GetCityCorruptionScoreChange() != 0)
+	{
+		m_iCorruptionEffectCount++;
+	}
+	else
+	{
+		for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+		{
+			if (belief->GetCorruptionScoreYieldRate((YieldTypes)iYield) != 0)
+			{
+				m_iCorruptionEffectCount++;
+				break;
+			}
+		}
+	}
 	m_iCityExtraMissionarySpreads += belief->GetCityExtraMissionarySpreads();
 	m_bAllowYieldPerBirth = m_bAllowYieldPerBirth || belief->AllowYieldPerBirth();
 #endif
@@ -2952,6 +2969,7 @@ void CvReligionBeliefs::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerGoldenAge, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iFirstConversionCitiesPerPop, 0);
 	MOD_SERIALIZE_READ(161, kStream, m_iCityCorruptionScoreChange, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iCorruptionEffectCount, 0);
 	kStream >> m_iCityExtraMissionarySpreads;
 	kStream >> m_bAllowYieldPerBirth;
 #endif
@@ -3023,6 +3041,7 @@ void CvReligionBeliefs::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iFirstConversionCitiesPerGoldenAge);
 	MOD_SERIALIZE_WRITE(kStream, m_iFirstConversionCitiesPerPop);
 	MOD_SERIALIZE_WRITE(kStream, m_iCityCorruptionScoreChange);
+	MOD_SERIALIZE_WRITE(kStream, m_iCorruptionEffectCount);
 	kStream << m_iCityExtraMissionarySpreads;
 	kStream << m_bAllowYieldPerBirth;
 #endif

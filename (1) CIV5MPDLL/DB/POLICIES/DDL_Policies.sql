@@ -132,3 +132,33 @@ create table Policy_AdjacentImprovementYieldChanges (
     YieldType text references Yields(Type),
     Yield integer default 0
 );
+--******************** Great Person Points (per SpecialistType) ********************--
+create table Policy_GreatPersonPoints (
+    PolicyType text references Policies(Type),
+    SpecialistType text references Specialists(Type),
+    Points integer default 0
+);
+--******************** Yield per Global Population ********************--
+-- YieldModifier is a percentage conversion: total population x YieldModifier / 100 -> player-level yield (not per city)
+-- e.g. YieldModifier 33 on YIELD_SCIENCE is roughly a 3:1 population-to-science conversion
+create table Policy_YieldPerGlobalPop (
+    PolicyType text references Policies(Type),
+    YieldType text references Yields(Type),
+    YieldModifier integer default 0
+);
+
+--******************** Yield Percent per City Following Founder Religion ********************--
+-- Percent is added to all cities' YieldType output per city (worldwide) following the player's founder religion
+-- e.g. Percent 2 on YIELD_CULTURE -> each city following the player's religion grants +2% national culture
+create table Policy_YieldPercentPerCityFollowingReligion (
+    PolicyType text references Policies(Type),
+    YieldType text references Yields(Type),
+    Percent integer default 0
+);
+
+--******************** Improvement Happiness When Worked ********************--
+create table Policy_ImprovementHappinessWhenWorked (
+    PolicyType text references Policies(Type),
+    ImprovementType text references Improvements(Type),
+    Happiness integer default 0
+);

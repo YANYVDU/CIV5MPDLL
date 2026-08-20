@@ -48,4 +48,5 @@ alter table Policies add column LocalHappinessCorruptionScoreMod integer not nul
 alter table Buildings add column CorruptionPolicyCostModifier integer not null default 0;
 alter table Buildings add column CorruptionScoreGlobalChange integer not null default 0;
 alter table Buildings add column CorruptionUnhappinessModifier integer not null default 0;
+alter table Buildings add column CorruptionUnhappinessChange integer not null default 0;
 alter table Policies add column CorruptionUnhappinessModifier integer not null default 0;

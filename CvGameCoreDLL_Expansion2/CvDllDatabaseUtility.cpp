@@ -23,6 +23,7 @@
 #include "CvMilitaryAI.h"
 #include "CvCitySpecializationAI.h"
 #include "CvMinorCivAI.h"
+#include "CvCityStateUAClasses.h"
 #include "CvImprovementClasses.h"
 #include "CvDatabaseUtility.h"
 #include "CvGameTextMgr.h"
@@ -464,6 +465,11 @@ bool CvDllDatabaseUtility::PrefetchGameData()
 			CvAssertMsg(false, DB.ErrorMessage());
 		}
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	PrefetchCollection(GC.GetGameCityStateUAEffects()->GetEffectEntries(), "CityStateUAEffects");
+	PrefetchCollection(GC.GetGameCityStateUAs()->GetUAEntries(), "CityStateUAs");
+#endif
 
 	ValidatePrefetchProcess();
 

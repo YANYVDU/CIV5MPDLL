@@ -411,6 +411,11 @@
 				[NEWLINE][ICON_BULLET]城市数量修正(政策): {1_Num}%
 			</Text>
 		</Row>
+		<Row Tag="TXT_KEY_PRODMOD_YIELD_POLICY_RELIGION_CITY_NUM">
+			<Text>
+				[NEWLINE][ICON_BULLET]每座信仰你的宗教的城市产出修正(政策): {1_Num}%
+			</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_ATTACKING_CITY_LOST_MOVEMENT">
 			<Text>你的{@1_name}攻击城市后失去了所有[ICON_MOVES]移动力！</Text>
 		</Row>
@@ -612,6 +617,9 @@
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_OTHER_YIELD">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} 来自其他产出</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_ALLY_CS_UA">
+			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} 来自盟邦UA</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_TRADE_ROUTE">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} 来自城市连接</Text>
@@ -860,6 +868,9 @@
 		<Row Tag="TXT_KEY_BELIEF_CUTTING_NONUS">
 			<Text>宗教信条为{1_CityName}带来了额外奖励: {2_BonusStr}。</Text>
 		</Row>
+		<Row Tag="TXT_KEY_SP_CONCERT_TOUR_GOLD">
+			<Text>大音乐家演唱会在{1_CityName}演出，为你带来+{2_Num}[ICON_GOLD]金币！</Text>
+		</Row>
 		<Row Tag="TXT_KEY_MPDLL_ERROR_VERSION">
 			<Text>[COLOR_NEGATIVE_TEXT]MPDLL出现错误，如果你使用的都是最新版本，请和管理员联系[COLOR_NEGATIVE_TEXT]</Text>
 		</Row>
@@ -872,6 +883,105 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
 			<Text>[COLOR_YELLOW]由于你采取的信条，{1_CityName}获得了+1[ICON_CITIZEN]人口！[ENDCOLOR]</Text>
 		</Row>
-	</Language_zh_CN>
+		<Replace Tag="TXT_KEY_FRIENDS_CSTATE_TT">
+			<Text>{1_CityStateName:textkey}是你的[COLOR_POSITIVE_TEXT]友邦[ENDCOLOR]。要升级为盟邦，你对城邦的影响力必须高于盟邦门槛{2_Num}，并且在所有达标文明中排名第一。</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MERCANTILE_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]商业型[ENDCOLOR]城邦会向你的帝国提供额外的[ICON_HAPPINESS_1]快乐，并提供其他办法无法获得的奢侈资源。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]奢侈品提供的[ICON_HAPPINESS_1]快乐总额增加5%
+				[NEWLINE][ICON_BULLET]每回合获得1%国库结息（单次利息上限=时代数×100×游戏速度修正）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_RELIGIOUS_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]宗教型[ENDCOLOR]城邦会增加您的[ICON_PEACE]信仰，加速你选择新的信条来强化你的宗教或购买解锁的特殊建筑与单位
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET][ICON_PEACE]信仰购买价格下降5%
+				[NEWLINE][ICON_BULLET]盟友创立的宗教基础压力+10%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_NO_UU_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]军事型[ENDCOLOR]城邦将向你提供高级军事单位。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陆军单位每回合获得1经验
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_CULTURED_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]文化型[ENDCOLOR]城邦将向你提供[ICON_CULTURE]文化，允许你更快地推行社会政策。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]推行社会政策所需[ICON_CULTURE]文化降低2%
+				[NEWLINE][ICON_BULLET]接收国际移民所需阈值降低2%
+			 </Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]军事型[ENDCOLOR]城邦将向你提供高级军事单位。
+				[NEWLINE]
+				[NEWLINE]他们掌握[COLOR_POSITIVE_TEXT]{@1_UniqueUnitName}[ENDCOLOR]的秘密。如果你是他们的盟友，并已发现{@2_PrereqTech}，他们会赠送你此单位。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]盟友的陆军单位每回合获得1经验
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MARITIME_TT">
+			<Text>
+				友好的[COLOR_POSITIVE_TEXT]航海型[ENDCOLOR]城邦将向你的首都提供[ICON_FOOD]食物，以加速首都[ICON_CITIZEN]人口增长。
+				[NEWLINE]盟友加成：
+				[NEWLINE][ICON_BULLET]将为全国城市提供[ICON_FOOD]食物
+				[NEWLINE][ICON_BULLET]盟友的海上商路+1[ICON_GOLD]金钱（随时代增加）
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_DIPLO_STATUS_TT">
+			<Text>
+				{1_cityName}目前为{2_statusType}：{3_curNumber}/{4_maxNumber} [ICON_INFLUENCE]
+			</Text>
+		</Replace>
+		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
+			<Text>{1_Civ}与城邦{2_Civ}建立了永久盟友关系。该城邦不再发布新任务，已有任务已清空。赠送金币等提升影响力的方法将不再生效。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED">
+			<Text>与{2_Civ}建立永久同盟</Text>
+		</Row>
+
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>{2_Civ}现在成为了你的附庸，向你上缴科研、文化、信仰与金钱产出。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>附庸：{2_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_VASSAL">
+			<Text>你已成为{1_Civ}的附庸，需向其缴纳一定比例的产出。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_VASSAL">
+			<Text>臣服于{1_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_OVERLORD">
+			<Text>{2_Civ}不再是你的附庸。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_OVERLORD">
+			<Text>附庸脱离：{2_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_VASSAL">
+			<Text>你已脱离{1_Civ}的附庸关系。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_VASSAL">
+			<Text>脱离{1_Civ}附庸</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GOLD_TAX">
+			<Text>附庸 {1_Civ} 与 {2_Civ} 达成的交易为您带来了 {3_value}[ICON_GOLD] 金币附庸税。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GOLD_TAX">
+			<Text>附庸交易税 +{2_value}[ICON_GOLD]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GPT_TAX">
+			<Text>附庸 {1_Civ} 与 {2_Civ} 达成的交易为您每回合带来 {3_value}[ICON_GOLD] 金币附庸税。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
+			<Text>附庸交易税 +{2_value}[ICON_GOLD]/回合</Text>
+		</Row>
+</Language_zh_CN>
 
 </GameData>

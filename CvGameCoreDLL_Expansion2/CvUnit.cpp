@@ -37,6 +37,7 @@
 #include "CvAchievementUnlocker.h"
 #include "CvMilitaryAI.h"
 #include "CvTypes.h"
+#include "CvCityStateUAClasses.h"
 
 #include "CvDllPlot.h"
 #include "CvDllUnit.h"
@@ -5167,7 +5168,7 @@ bool CvUnit::canGift(bool bTestVisible, bool bTestTransport) const
 #endif
 
 			// Unless okay by trait
-			if(kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 || !IsGreatPerson())
+			if((kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 && !kPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly()) || !IsGreatPerson())
 			{
 				return false;
 			}
@@ -5306,7 +5307,7 @@ bool CvUnit::CanDistanceGift(PlayerTypes eToPlayer) const
 #endif
 
 			// Unless okay by trait
-			if(kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 || !IsGreatPerson())
+			if((kPlayer.GetPlayerTraits()->GetGreatPersonGiftInfluence() == 0 && !kPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly()) || !IsGreatPerson())
 			{
 				return false;
 			}
@@ -7822,7 +7823,7 @@ int CvUnit::GetDynamicCombatModifierFromPromotions(const CvUnit* pOtherUnit, boo
 		CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
 		if (kPlayer.isGoldenAge())
 		{
-			int iGoldenAgeTurns = kPlayer.GetGoldenAgeProgressMeter() / 100;
+			int iGoldenAgeTurns = kPlayer.getGoldenAgeTurns();
 			if (bAttacking)
 				iModifier += iGoldenAgeTurns * m_iGoldenAgeTurnAttackModifier / 100;
 			else
@@ -11816,6 +11817,15 @@ int CvUnit::getDiscoverAmount()
 			}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Brussels UA: specified great person class one-shot output modifier
+			int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+			if (iOneShotMod != 0)
+			{
+				iValue += (iValue * iOneShotMod) / 100;
+			}
+#endif
+
 			// Modify based on game speed
 			iValue *= GC.getGame().getGameSpeedInfo().getResearchPercent();
 			iValue /= 100;
@@ -12156,6 +12166,15 @@ int CvUnit::getTradeGold(const CvPlot* /*pPlot*/) const
 	iGold *= (100 + GetTradeMissionGoldModifier());
 	iGold /= 100;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Brussels UA: specified great person class one-shot output modifier
+	int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+	if (iOneShotMod != 0)
+	{
+		iGold += (iGold * iOneShotMod) / 100;
+	}
+#endif
+
 	return std::max(0, iGold);
 }
 
@@ -12173,6 +12192,14 @@ int CvUnit::getTradeInfluence(const CvPlot* pPlot) const
 			iInf = /*30*/ GC.getMINOR_FRIENDSHIP_FROM_TRADE_MISSION();
 			int iInfTimes100 = iInf * (100 + GetTradeMissionInfluenceModifier());
 			iInf = iInfTimes100 / 100;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Brussels UA: specified great person class one-shot output modifier
+			int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+			if (iOneShotMod != 0)
+			{
+				iInf += (iInf * iOneShotMod) / 100;
+			}
+#endif
 		}
 	}
 	return iInf;
@@ -12311,6 +12338,14 @@ bool CvUnit::canBuyCityState(const CvPlot* pPlot, bool bTestVisible) const
 		{
 			return false;
 		}
+	}
+
+	// Cannot buy a CS that is a permanent ally
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(pPlot->getOwner()))
+			return false;
 	}
 
 	return true;
@@ -12939,6 +12974,15 @@ int CvUnit::getGivePoliciesCulture()
 		}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Brussels UA: specified great person class one-shot output modifier
+		int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+		if (iOneShotMod != 0)
+		{
+			iValue += (iValue * iOneShotMod) / 100;
+		}
+#endif
+
 		// Modify based on game speed
 		iValue *= GC.getGame().getGameSpeedInfo().getCulturePercent();
 		iValue /= 100;
@@ -13033,6 +13077,18 @@ bool CvUnit::canBlastTourism(const CvPlot* pPlot, bool bTestVisible) const
 }
 
 //	--------------------------------------------------------------------------------
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvUnit::GetGreatPersonOneShotModifierFromCityStateUA() const
+{
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		return (pCSUA != NULL) ? pCSUA->GetGreatPersonOneShotModifier((UnitClassTypes)m_pUnitInfo->GetUnitClassType()) : 0;
+	}
+	return 0;
+}
+#endif
+
 int CvUnit::getBlastTourism()
 {
 	if (!canBlastTourism(plot()))
@@ -13048,6 +13104,18 @@ int CvUnit::getBlastTourism()
 	}
 #endif
 	iTourismBlast = iTourismBlast * GC.getGame().getGameSpeedInfo().getCulturePercent() / 100;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		// Brussels UA: specified great person class one-shot output modifier
+		int iOneShotMod = GetGreatPersonOneShotModifierFromCityStateUA();
+		if (iOneShotMod != 0)
+		{
+			iTourismBlast = iTourismBlast * (100 + iOneShotMod) / 100;
+		}
+	}
+#endif
 
 	return iTourismBlast;
 }
@@ -13071,10 +13139,38 @@ bool CvUnit::blastTourism()
 	PlayerTypes eOwner = pPlot->getOwner();
 	CvPlayer &kUnitOwner = GET_PLAYER(getOwner());
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		// Brussels UA: concert tourism grants gold equal to a percentage of the blast
+		CvPlayerCityStateUA* pCSUA = kUnitOwner.GetPlayerCityStateUA();
+		int iGoldPercent = (pCSUA != NULL) ? pCSUA->GetGreatMusicianConcertGoldPercent() : 0;
+		if (iGoldPercent > 0)
+		{
+			iGoldFromTourismModifier = iGoldFromTourismModifier + iGoldPercent;
+		}
+	}
+#endif
 	// Apply to target
 	kUnitOwner.GetCulture()->ChangeInfluenceOn(eOwner, iTourismBlast);
 	// Get Gold from tourism
-	kUnitOwner.GetTreasury()->ChangeGold( iTourismBlast * iGoldFromTourismModifier / 100);
+	int iGoldFromTour = iTourismBlast * iGoldFromTourismModifier / 100;
+	kUnitOwner.GetTreasury()->ChangeGold(iGoldFromTour);
+	// Show a city message when the concert tour yields gold
+	if (iGoldFromTour > 0)
+	{
+		CvCity* pTargetCity = pPlot->getPlotCity();
+		// Concert tour can be performed on any enemy tile, not necessarily the city tile itself
+		if (pTargetCity == NULL)
+		{
+			pTargetCity = pPlot->GetAdjacentCity();
+		}
+		if (pTargetCity != NULL)
+		{
+			CvString strBuffer = GetLocalizedText("TXT_KEY_SP_CONCERT_TOUR_GOLD", pTargetCity->getNameKey(), iGoldFromTour);
+			SHOW_CITY_MESSAGE(pTargetCity, getOwner(), strBuffer);
+		}
+	}
 	// Apply lesser amount to other civs
 	int iTourismBlastOthers = iTourismBlast * iTourismBlastPercentOthers / 100;
 	PlayerTypes eLoopPlayer;

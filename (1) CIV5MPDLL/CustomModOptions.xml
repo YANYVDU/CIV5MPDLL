@@ -244,6 +244,9 @@
     <!-- See also: "Global - Truly Free Great People" -->
     <Row Class="6" Name="GLOBAL_TRULY_FREE_GP" Value="0"/>
 
+    <!-- Overlord-Vassal suzerain system: vassal pays yields tax to overlord (v163). Enabled by the Tiandao mod. -->
+    <Row Class="6" Name="GLOBAL_SUZERAIN" Value="0"/>
+
     <!-- Displays the opinion weight in the tooltip when meeting a leader (v80) -->
     <!-- See also: "Diplomacy - By Numbers" -->
     <!-- Enabled option may influence Game -->
@@ -1189,6 +1192,8 @@
 
     <Row Class="6" Name="SP_SMART_AI" Value="0"/>
     <Row Class="6" Name="SP_FASTER_AI" Value="0"/>
+    <Row Class="6" Name="SP_UNIQUE_CITYSTATE" Value="0"/>
+    <Row Class="6" Name="SP_CITYSTATE_BASIC" Value="0"/>
 
     <Row Class="6" Name="TRAITS_SPREAD_RELIGION_AFTER_KILLING" Value="0"/>
     <Row Class="6" Name="TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY" Value="0"/>

@@ -18,6 +18,9 @@
 #define ENABLE_PERMANENT_WAR false
 #define SAFE_ESTIMATE_NUM_QUESTS_PER_PLAYER (5)
 
+// Hard floor for a permanent ally's influence, far above any normal attainable value, so the ally cannot be displaced
+#define PERMANENT_ALLY_INFLUENCE_FLOOR 10000
+
 enum MinorCivStatusTypes
 {
     NO_MINOR_CIV_STATUS_TYPE = -1,
@@ -391,7 +394,10 @@ public:
 	bool IsFriendshipAboveFriendsThreshold(int iFriendship) const;
 	int GetFriendsThreshold() const;
 	bool IsFriendshipAboveAlliesThreshold(int iFriendship) const;
+	bool IsFriendshipAboveAlliesThresholdForPlayer(PlayerTypes ePlayer, int iFriendship) const;
 	int GetAlliesThreshold() const;
+	int GetAlliesThresholdForPlayer(PlayerTypes ePlayer) const;
+	int GetPermanentAllyTargetInfluence(PlayerTypes ePlayer);
 	void DoSetBonus(PlayerTypes ePlayer, bool bAdd, bool bFriends, bool bAllies, bool bSuppressNotifications = false, bool bPassedBySomeone = false, PlayerTypes eNewAlly = NO_PLAYER);
 
 	void DoIntrusion();
@@ -672,6 +678,8 @@ public:
 	void setArtStyleSuffix(const char* szVal);
 
 	int GetMinorCivTrait() const;
+	const char* GetUAType() const;
+	bool isFreeBuildingClass(int i) const;
 
 	// Deprecated Members
 	const char* getAdjectiveKeyWide() const;
@@ -688,6 +696,7 @@ protected:
 	int m_iArtStyleType;
 	int m_iNumLeaders;				 // the number of leaders the Civ has, this is needed so that random leaders can be generated easily
 	int m_iMinorCivTrait;
+	CvString m_strUAType;
 
 	bool m_bAIPlayable;
 	bool m_bPlayable;
@@ -708,6 +717,7 @@ protected:
 
 	// Arrays
 	int* m_piFlavorValue;
+	bool* m_pbFreeBuildingClass;
 	std::vector<CvString> m_vCityNames;
 };
 

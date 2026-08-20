@@ -2402,6 +2402,18 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 	{
 		bool bIncrementTRInfluencing = false;
 		iPressure = GC.getGame().getGameSpeedInfo().getReligiousPressureAdjacentCity();
+#if defined(MOD_SP_CITYSTATE_BASIC)
+		// Religious CS basic effect: boost pressure of religions founded by allies
+		{
+			PlayerTypes eFounder = pReligion->m_eFounder;
+			int iReligiousPressureMod = GET_PLAYER(eFounder).GetCSReligiousPressureModifier();
+			if (iReligiousPressureMod > 0)
+			{
+				iPressure = (iPressure * (100 + iReligiousPressureMod)) / 100;
+			}
+		}
+#endif
+
 		if (bConnectedWithTrade && !bWithinDistance)
 		{
 			if (!bIncrementTRInfluencing)
@@ -2492,7 +2504,7 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 			iPressure *= (100 + iHolyCityModifier);
 			iPressure /=100;
 		}
-#endif		
+#endif
 	}
 
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
@@ -3375,7 +3387,8 @@ int CvPlayerReligions::GetNumNativeFollowers() const
 /// Constructor
 CvCityReligions::CvCityReligions(void):
 	m_bHasPaidAdoptionBonus(false),
-	m_iReligiousPressureModifier(0)
+	m_iReligiousPressureModifier(0),
+	m_eLastReligiousMajority(NO_RELIGION)
 {
 	m_ReligionStatus.clear();
 }
@@ -3392,6 +3405,7 @@ void CvCityReligions::Init(CvCity* pCity)
 	m_pCity = pCity;
 	m_bHasPaidAdoptionBonus = false;
 	m_iReligiousPressureModifier = 0;
+	m_eLastReligiousMajority = NO_RELIGION;
 	m_ReligionStatus.clear();
 }
 
@@ -5038,6 +5052,10 @@ FDataStream& operator>>(FDataStream& loadFrom, CvCityReligions& writeTo)
 		writeTo.m_ReligionStatus.push_back(tempItem);
 	}
 
+	ReligionTypes eLastMajority = NO_RELIGION;
+	MOD_SERIALIZE_READ(163, loadFrom, eLastMajority, NO_RELIGION);
+	writeTo.SetLastReligiousMajority(eLastMajority);
+
 	return loadFrom;
 }
 
@@ -5059,6 +5077,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvCityReligions& readFrom)
 	{
 		saveTo << *it;
 	}
+
+	saveTo << readFrom.GetLastReligiousMajority();
 
 	return saveTo;
 }

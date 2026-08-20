@@ -6,6 +6,7 @@
 	All rights reserved. 
 	------------------------------------------------------------------------------------------------------- */
 #include "CvGameCoreDLLPCH.h"
+#include "CvCityStateUAClasses.h"
 #include "CvMinorCivAI.h"
 #include "ICvDLLUserInterface.h"
 #include "CvGameCoreUtils.h"
@@ -3429,6 +3430,11 @@ bool CvMinorCivAI::IsProxyWarActiveForMajor(PlayerTypes eMajor)
 /// Update turn for Quests
 void CvMinorCivAI::DoTurnQuests()
 {
+	// Permanent ally: no quests for anyone
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
+
 	// ********************
 	// Check Current Quests
 	// ********************
@@ -6016,7 +6022,7 @@ void CvMinorCivAI::DoFriendship()
 			if(GetPlayer()->isAlive() && IsHasMetPlayer(ePlayer))
 			{
 				const int iTurnsWarning = 2;
-				const int iAlliesThreshold = GetAlliesThreshold() * 100;
+				const int iAlliesThreshold = GetAlliesThresholdForPlayer(ePlayer) * 100;
 				const int iFriendsThreshold = GetFriendsThreshold() * 100;
 				int iEffectiveFriendship = GetEffectiveFriendshipWithMajorTimes100(ePlayer);
 				if(IsAllies(ePlayer))
@@ -6064,6 +6070,11 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 {
 	CvPlayer& kPlayer = GET_PLAYER(ePlayer);
 	int iChangeThisTurn = 0;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (kPlayer.IsPermanentAlly(GetPlayer()->GetID()))
+		return 0;
+#endif
 
 	// Modifier to rate based on traits and religion
 	int iTraitMod = kPlayer.GetPlayerTraits()->GetCityStateFriendshipModifier();
@@ -6231,6 +6242,25 @@ void CvMinorCivAI::ChangeFriendshipWithMajorTimes100(PlayerTypes ePlayer, int iC
 
 	if(iChange != 0)
 	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Permanent ally: fully lock the permanent ally's influence and block others from raising theirs
+		if (GET_PLAYER(ePlayer).IsPermanentAlly(GetPlayer()->GetID()))
+		{
+			// The permanent ally's influence is fully locked (no raise, no decay or weakening)
+			return;
+		}
+		else if (iChange > 0)
+		{
+			// Other players cannot raise influence on a city-state that has a permanent ally
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+			{
+				PlayerTypes e = (PlayerTypes)i;
+				if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
+					return;
+			}
+		}
+#endif
+
 		// If this friendship was earned from a Quest, then we might apply a modifier to it
 		if(bFromQuest && iChange > 0)
 		{
@@ -6240,6 +6270,19 @@ void CvMinorCivAI::ChangeFriendshipWithMajorTimes100(PlayerTypes ePlayer, int iC
 				iChange /= 100;
 			}
 		}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Diplomatic Overextension Penalty: all sources of influence gain are reduced
+		if (MOD_SP_UNIQUE_CITYSTATE && iChange > 0)
+		{
+			int iRisePenalty = GET_PLAYER(ePlayer).GetDiplomaticOverextensionRisePenalty();
+			if (iRisePenalty != 0)
+			{
+				iChange = iChange * (100 + iRisePenalty) / 100;
+				if (iChange < 0) iChange = 0;
+			}
+		}
+#endif
 
 		SetFriendshipWithMajorTimes100(ePlayer, GetBaseFriendshipWithMajorTimes100(ePlayer) + iChange, bFromQuest);
 	}
@@ -6481,6 +6524,16 @@ void CvMinorCivAI::SetAlly(PlayerTypes eNewAlly)
 	m_eAlly = eNewAlly;
 	m_iTurnAllied = GC.getGame().getGameTurn();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		if (eOldAlly != NO_PLAYER)
+			GET_PLAYER(eOldAlly).ChangeNumCityStateAllies(-1);
+		if (eNewAlly != NO_PLAYER)
+			GET_PLAYER(eNewAlly).ChangeNumCityStateAllies(1);
+	}
+#endif
+
 	// Seed the GP counter?
 	if(eNewAlly != NO_PLAYER)
 	{
@@ -6631,7 +6684,7 @@ void CvMinorCivAI::SetEverFriends(PlayerTypes ePlayer, bool bValue)
 /// Are we about to lose our status? (used in Diplo AI)
 bool CvMinorCivAI::IsCloseToNotBeingAllies(PlayerTypes ePlayer)
 {
-	int iBuffer = GetEffectiveFriendshipWithMajor(ePlayer) - GetAlliesThreshold();
+	int iBuffer = GetEffectiveFriendshipWithMajor(ePlayer) - GetAlliesThresholdForPlayer(ePlayer);
 
 	if(iBuffer >= 0 && iBuffer < /*8*/ GC.getMINOR_FRIENDSHIP_CLOSE_AMOUNT())
 		return true;
@@ -6760,8 +6813,7 @@ void CvMinorCivAI::DoFriendshipChangeEffects(PlayerTypes ePlayer, int iOldFriend
 	}
 
 	// Resolve Allies status
-	bool bWasAboveAlliesThreshold = IsFriendshipAboveAlliesThreshold(iOldFriendship);
-	bool bNowAboveAlliesThreshold = IsFriendshipAboveAlliesThreshold(iNewFriendship);
+	bool bNowAboveAlliesThreshold = IsFriendshipAboveAlliesThresholdForPlayer(ePlayer, iNewFriendship);
 	PlayerTypes eOldAlly = GetAlly();
 
 	// No old ally and our friendship is now above the threshold, OR our friendship is now higher than a previous ally
@@ -6794,7 +6846,11 @@ void CvMinorCivAI::DoFriendshipChangeEffects(PlayerTypes ePlayer, int iOldFriend
 #endif
 	}
 	// Remove Allies bonus
-	else if(eOldAlly == ePlayer && bWasAboveAlliesThreshold && !bNowAboveAlliesThreshold)
+	// Strip the alliance whenever the current ally no longer meets the threshold. The former
+	// bWasAboveAlliesThreshold guard was evaluated against the current (possibly raised) threshold,
+	// so once an era change pushed the allies threshold above this player's influence it became
+	// permanently false and the alliance could never be removed, even with influence far below it.
+	else if(eOldAlly == ePlayer && !bNowAboveAlliesThreshold)
 	{
 		bAdd = false;
 		bAllies = true;
@@ -6864,6 +6920,19 @@ int CvMinorCivAI::GetFriendsThreshold() const
 }
 
 /// Is the player above the treshold to get the Allies bonus?
+bool CvMinorCivAI::IsFriendshipAboveAlliesThresholdForPlayer(PlayerTypes ePlayer, int iFriendship) const
+{
+	int iFriendshipThresholdAllies = GetAlliesThresholdForPlayer(ePlayer);
+
+	if(iFriendship >= iFriendshipThresholdAllies)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+/// What is the allies threshold (global)?
 bool CvMinorCivAI::IsFriendshipAboveAlliesThreshold(int iFriendship) const
 {
 	int iFriendshipThresholdAllies = GetAlliesThreshold();
@@ -6880,6 +6949,18 @@ bool CvMinorCivAI::IsFriendshipAboveAlliesThreshold(int iFriendship) const
 int CvMinorCivAI::GetAlliesThreshold() const
 {
 	return /*60*/ GC.getFRIENDSHIP_THRESHOLD_ALLIES();
+}
+
+/// Per-player allies threshold (Rule 20+Rule 8)
+int CvMinorCivAI::GetAlliesThresholdForPlayer(PlayerTypes ePlayer) const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		return GET_PLAYER(ePlayer).GetMinorCivAlliesThreshold();
+	}
+#endif
+	return GetAlliesThreshold();
 }
 
 /// Sets a major to get a Bonus (or not) - set both bFriends and bAllies to be true if you're adding/removing both states at once
@@ -7769,6 +7850,13 @@ int CvMinorCivAI::GetCurrentCultureFlatBonus(PlayerTypes ePlayer)
 		iAmount /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -7817,6 +7905,13 @@ int CvMinorCivAI::GetCurrentCulturePerBuildingBonus(PlayerTypes ePlayer)
 		iAmount /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -7900,6 +7995,13 @@ int CvMinorCivAI::GetCurrentHappinessFlatBonus(PlayerTypes ePlayer)
 		iAmount += GetHappinessFlatAlliesBonus(ePlayer);
 	if(IsFriends(ePlayer))
 		iAmount += GetHappinessFlatFriendshipBonus(ePlayer);
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -8003,6 +8105,13 @@ int CvMinorCivAI::GetCurrentHappinessPerLuxuryBonus(PlayerTypes ePlayer)
 		iAmount += GetHappinessPerLuxuryAlliesBonus(ePlayer);
 	if(IsFriends(ePlayer))
 		iAmount += GetHappinessPerLuxuryFriendshipBonus(ePlayer);
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -8137,6 +8246,13 @@ int CvMinorCivAI::GetCurrentFaithFlatBonus(PlayerTypes ePlayer)
 		iAmount /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iAmount *= iBaseMod;
+		iAmount /= 100;
+	}
 	return iAmount;
 }
 
@@ -8177,6 +8293,13 @@ int CvMinorCivAI::GetFriendsCapitalFoodBonus(PlayerTypes ePlayer, EraTypes eAssu
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -8207,6 +8330,13 @@ int CvMinorCivAI::GetFriendsOtherCityFoodBonus(PlayerTypes ePlayer, EraTypes eAs
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -8223,6 +8353,13 @@ int CvMinorCivAI::GetAlliesCapitalFoodBonus(PlayerTypes ePlayer)
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -8239,6 +8376,13 @@ int CvMinorCivAI::GetAlliesOtherCityFoodBonus(PlayerTypes ePlayer)
 		iBonus /= 100;
 	}
 
+	// Trait: CityStateBaseEffectModifier (200 = double base effects)
+	int iBaseMod = GET_PLAYER(ePlayer).GetPlayerTraits()->GetCityStateBaseEffectModifier();
+	if (iBaseMod > 0)
+	{
+		iBonus *= iBaseMod;
+		iBonus /= 100;
+	}
 	return iBonus;
 }
 
@@ -8840,6 +8984,17 @@ void CvMinorCivAI::DoAcquire(PlayerTypes eMajor, int &iNumUnits, int& iCapitalX,
 void CvMinorCivAI::DoAcquire(PlayerTypes eMajor, int &iNumUnits, int& iCapitalX, int& iCapitalY)
 #endif
 {
+	// Clean up permanent ally status when CS is acquired/conquered
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
+		{
+			GET_PLAYER(e).SetPermanentAlly(GetPlayer()->GetID(), false);
+			GET_PLAYER(e).ChangePrestigeExemptAllyCount(-1);
+		}
+	}
+
 	// Take their units
 	CvUnit* pLoopUnit = NULL;
 	int iLoopUnit;
@@ -9746,12 +9901,29 @@ void CvMinorCivAI::DoElection()
 		fcn = MakeDelegate(&GC.getGame(), &CvGame::getJonRandNum);
 		PlayerTypes eElectionWinner = wvVotes.ChooseByWeight(&fcn, "Choosing CS election winner by weight");
 
+		// Permanent ally city-states are immune to rigged elections: no influence change, no notification
+		bool bHasPermanentAlly = false;
+		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		{
+			if (GET_PLAYER((PlayerTypes)i).isAlive() && GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			{
+				bHasPermanentAlly = true;
+				break;
+			}
+		}
+
 		for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
 		{
 			PlayerTypes ePlayer = (PlayerTypes)ui;
 
 			if(ePlayer == eElectionWinner)
 			{
+				// Permanent ally city-states are immune to rigged elections
+				if (bHasPermanentAlly)
+				{
+					continue;
+				}
+
 				CvNotifications* pNotifications = GET_PLAYER(ePlayer).GetNotifications();
 				if(pNotifications)
 				{
@@ -9869,6 +10041,28 @@ void CvMinorCivAI::ChangeNumUnitsGifted(PlayerTypes ePlayer, int iChange)
 	SetNumUnitsGifted(ePlayer, GetNumUnitsGifted(ePlayer) + iChange);
 }
 
+// Target influence for a permanent ally: above the current highest holder, plus the ally threshold buffer, with a hard floor
+int CvMinorCivAI::GetPermanentAllyTargetInfluence(PlayerTypes ePlayer)
+{
+	int iCurrentInf = GetEffectiveFriendshipWithMajor(ePlayer);
+	int iAlliesThreshold = GetAlliesThresholdForPlayer(ePlayer);
+	int iHighest = 0;
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive() && e != ePlayer)
+		{
+			int iTheir = GetEffectiveFriendshipWithMajor(e);
+			if (iTheir > iHighest) iHighest = iTheir;
+		}
+	}
+	// The hard floor normally dominates (PERMANENT_ALLY_INFLUENCE_FLOOR is far above any reachable influence),
+	// so the permanent ally can never be displaced; the two terms above are defensive fallbacks for edge values.
+	int iTarget = std::max(iCurrentInf + iAlliesThreshold + 1, iHighest + 1);
+	iTarget = std::max(iTarget, PERMANENT_ALLY_INFLUENCE_FLOOR);
+	return iTarget;
+}
+
 void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUnit, bool bDistanceGift)
 {
 	CvAssertMsg(eFromPlayer >= 0, "eFromPlayer is expected to be non-negative (invalid Index)");
@@ -9878,11 +10072,54 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 	CvAssertMsg(pGiftUnit != NULL, "pGiftUnit is NULL");
 	if (pGiftUnit == NULL) return;
 
+	// Permanent ally: no unit gifts are accepted, the ally's influence is fully locked and the gift would be wasted
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
+
 	ChangeNumUnitsGifted(eFromPlayer, 1);
 
 	// Influence
 	int iInfluence = GetFriendshipFromUnitGift(eFromPlayer, pGiftUnit->IsGreatPerson(), bDistanceGift);
 	ChangeFriendshipWithMajor(eFromPlayer, iInfluence);
+
+	// GreatPersonGiftPermanentAlly: one-time permanent ally establishment
+	if (pGiftUnit->IsGreatPerson() && GET_PLAYER(eFromPlayer).GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
+	{
+		// Only the first player to gift a Great Person becomes the permanent ally
+		bool bAlreadyPermanentAlly = false;
+		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		{
+			if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			{
+				bAlreadyPermanentAlly = true;
+				break;
+			}
+		}
+		if (!bAlreadyPermanentAlly)
+		{
+			GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
+			GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
+
+			// Clear all quests and notify players
+			ResetQuestList();
+
+			Localization::String sTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED");
+			sTemp << GET_PLAYER(eFromPlayer).getCivilizationShortDescriptionKey();
+			sTemp << GetPlayer()->getCivilizationShortDescriptionKey();
+			CvString sMsg = sTemp.toUTF8();
+			Localization::String sSummaryTemp = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED");
+			sSummaryTemp << GET_PLAYER(eFromPlayer).getCivilizationShortDescriptionKey();
+			sSummaryTemp << GetPlayer()->getCivilizationShortDescriptionKey();
+			CvString sSum = sSummaryTemp.toUTF8();
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+			{
+				PlayerTypes e = (PlayerTypes)i;
+				if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isHuman())
+					AddNotification(sMsg, sSum, e, -1, -1);
+			}
+		}
+	}
 
 	// We can't keep Great Person units
 	if(pGiftUnit->IsGreatPerson())
@@ -9913,6 +10150,12 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 		if (iGPInfluence > 0)
 		{
 			iInfluence += iGPInfluence;
+		}
+		if (kFromPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
+		{
+			int iCurrentInf = GetEffectiveFriendshipWithMajor(eFromPlayer);
+			int iTarget = GetPermanentAllyTargetInfluence(eFromPlayer);
+			iInfluence += std::max(0, iTarget - iCurrentInf);
 		}
 	}
 	else
@@ -9965,6 +10208,11 @@ void CvMinorCivAI::ChangeNumGoldGifted(PlayerTypes ePlayer, int iChange)
 /// Major Civ gifted some Gold to this Minor
 void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 {
+	// Permanent ally: no gold gifts from anyone
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
+
 	if(GET_PLAYER(ePlayer).GetTreasury()->GetGold() >= iGold)
 	{
 		int iFriendshipChange = GetFriendshipFromGoldGift(ePlayer, iGold);
@@ -9980,6 +10228,30 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 		// In case we had a Gold Gift quest active, complete it now
 		DoTestActiveQuestsForPlayer(ePlayer, /*bTestComplete*/ true, /*bTestObsolete*/ false, MINOR_CIV_QUEST_GIVE_GOLD);
 		
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Dubai CS UA: only count gold donated to CSes whose UA has donation effect
+		if (MOD_SP_UNIQUE_CITYSTATE) {
+			MinorCivTypes eMinorType = GetMinorCivType();
+			const char* szUAType = GC.getMinorCivInfo(eMinorType)->GetUAType();
+			if (szUAType && szUAType[0]) {
+				CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+				if (pUAEntry) {
+					CvCityStateUAEffectEntry* pAllyEff = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+					CvCityStateUAEffectEntry* pFriendEff = GC.getCityStateUAEffectEntry(pUAEntry->GetFriendEffectID());
+					int iMinorIdx = GetPlayer()->GetID() - MAX_MAJOR_CIVS;
+					GET_PLAYER(ePlayer).ChangeGoldDonatedToMinor(iMinorIdx, iGold);
+					bool bHasDonation = (pAllyEff && pAllyEff->GetGoldDonationInterval() > 0) || (pFriendEff && pFriendEff->GetGoldDonationInterval() > 0);
+					if (bHasDonation)
+					{
+						GET_PLAYER(ePlayer).ChangeTotalGoldDonated(iGold);
+						// Recompute happiness so the gold-donation happiness updates immediately
+						GET_PLAYER(ePlayer).DoUpdateHappiness();
+					}
+				}
+			}
+		}
+#endif
+
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
 		if (MOD_EVENTS_MINORS_INTERACTION) {
 			GAMEEVENTINVOKE_HOOK(GAMEEVENT_PlayerGifted, ePlayer, GetPlayer()->GetID(), iGold, -1, -1, -1);
@@ -10013,6 +10285,10 @@ int CvMinorCivAI::GetFriendshipFromGoldGift(PlayerTypes eMajor, int iGold)
 	// Mod (Policies, etc.)
 	int iFriendshipMod = GET_PLAYER(eMajor).getMinorGoldFriendshipMod();
 	iFriendshipMod += GET_PLAYER(eMajor).GetReligions()->GetCityStateInfluenceModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Genoa: gold-gift influence bonus per sea trade route
+	iFriendshipMod += GET_PLAYER(eMajor).GetCSUAGoldDonationInfluenceModifier();
+#endif
 	if(iFriendshipMod != 0)
 	{
 		iFriendship *= (100 + iFriendshipMod);
@@ -11075,13 +11351,15 @@ CvMinorCivInfo::CvMinorCivInfo() :
 	m_iDefaultPlayerColor(NO_PLAYERCOLOR),
 	m_iArtStyleType(NO_ARTSTYLE),
 	m_iMinorCivTrait(NO_MINOR_CIV_TRAIT_TYPE),
-	m_piFlavorValue(NULL)
+	m_piFlavorValue(NULL),
+	m_pbFreeBuildingClass(NULL)
 {
 }
 //------------------------------------------------------------------------------
 CvMinorCivInfo::~CvMinorCivInfo()
 {
 	SAFE_DELETE_ARRAY(m_piFlavorValue);
+	SAFE_DELETE_ARRAY(m_pbFreeBuildingClass);
 }
 //------------------------------------------------------------------------------
 int CvMinorCivInfo::getDefaultPlayerColor() const
@@ -11172,6 +11450,19 @@ int CvMinorCivInfo::GetMinorCivTrait() const
 {
 	return m_iMinorCivTrait;
 }
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+const char* CvMinorCivInfo::GetUAType() const
+{
+	return m_strUAType.c_str();
+}
+#endif
+//------------------------------------------------------------------------------
+bool CvMinorCivInfo::isFreeBuildingClass(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_pbFreeBuildingClass ? m_pbFreeBuildingClass[i] : false;
+}
 //------------------------------------------------------------------------------
 int CvMinorCivInfo::getFlavorValue(int i) const
 {
@@ -11227,6 +11518,10 @@ bool CvMinorCivInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 
 	szTextVal = kResults.GetText("MinorCivTrait");
 	m_iMinorCivTrait = GC.getInfoTypeForString(szTextVal, true);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_strUAType = kResults.GetText("UAType");
+	LOGFILEMGR.GetLog("CSUA_debug.log", FILogFile::kDontTimeStamp)->Msg("MinorCiv CacheResults: Type=[%s] UAType=[%s]", GetType(), m_strUAType.c_str());
+#endif
 
 	//Arrays
 	const char* szType = GetType();
@@ -11252,6 +11547,10 @@ bool CvMinorCivInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 
 		pResults->Reset();
 	}
+
+	kUtility.PopulateArrayByExistence(m_pbFreeBuildingClass,
+	                                  "BuildingClasses", "MinorCivilization_FreeBuildingClasses",
+	                                  "BuildingClassType", "MinorCivType", szType);
 
 	return true;
 }

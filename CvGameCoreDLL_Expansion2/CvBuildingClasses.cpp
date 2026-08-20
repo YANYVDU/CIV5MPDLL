@@ -45,6 +45,10 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iSpecialistCount(0),
 	m_iSpecialistExtraCulture(0),
 	m_iGreatPeopleRateChange(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
+#endif
 	m_eGreatWorkSlotType(NO_GREAT_WORK_SLOT),
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	m_eGreatWorkYieldType(YIELD_CULTURE),
@@ -94,6 +98,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iHappinessPerXPolicies(0),
 	m_iCityCountUnhappinessMod(0),
 	m_iCorruptionUnhappinessModifier(0),
+	m_iCorruptionUnhappinessChange(0),
 	m_bNoOccupiedUnhappiness(false),
 	m_bNotNeedOccupied(false),
 	m_bAllowSpaceshipLaunch(false),
@@ -645,6 +650,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iHappinessPerXPolicies = kResults.GetInt("HappinessPerXPolicies");
 	m_iCityCountUnhappinessMod = kResults.GetInt("CityCountUnhappinessMod");
 	m_iCorruptionUnhappinessModifier = kResults.GetInt("CorruptionUnhappinessModifier");
+	m_iCorruptionUnhappinessChange = kResults.GetInt("CorruptionUnhappinessChange");
 	m_bNoOccupiedUnhappiness = kResults.GetBool("NoOccupiedUnhappiness");
 	m_bNotNeedOccupied = kResults.GetBool("NotNeedOccupied");
 	m_bAllowSpaceshipLaunch = kResults.GetBool("AllowSpaceshipLaunch");
@@ -853,6 +859,10 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iSpecialistCount = kResults.GetInt("SpecialistCount");
 	m_iSpecialistExtraCulture = kResults.GetInt("SpecialistExtraCulture");
 	m_iGreatPeopleRateChange= kResults.GetInt("GreatPeopleRateChange");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier = kResults.GetInt("MinorCivAlliesThresholdModifier");
+#endif
 
 	szTextVal = kResults.GetText("GreatWorkSlotType");
 	m_eGreatWorkSlotType = (GreatWorkSlotType)GC.getInfoTypeForString(szTextVal, true);
@@ -2130,6 +2140,18 @@ int CvBuildingEntry::GetGreatPeopleRateChange() const
 {
 	return m_iGreatPeopleRateChange;
 }
+//	--------------------------------------------------------------------------
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvBuildingEntry::GetDiplomaticPrestige() const
+{
+	return m_iDiplomaticPrestige;
+}
+
+int CvBuildingEntry::GetMinorCivAlliesThresholdModifier() const
+{
+	return m_iMinorCivAlliesThresholdModifier;
+}
+#endif
 
 /// What GreatWorkType is allowed by this Building
 GreatWorkSlotType CvBuildingEntry::GetGreatWorkSlotType() const
@@ -2746,6 +2768,12 @@ int CvBuildingEntry::GetCorruptionUnhappinessModifier() const
 {
 	return m_iCorruptionUnhappinessModifier;
 }
+
+int CvBuildingEntry::GetCorruptionUnhappinessChange() const
+{
+	return m_iCorruptionUnhappinessChange;
+}
+
 
 /// NoOccupiedUnhappiness
 bool CvBuildingEntry::IsNoOccupiedUnhappiness() const
@@ -6010,6 +6038,20 @@ int CvCityBuildings::GetNumGreatWorks(GreatWorkSlotType eGreatWorkSlot) const
 		}
 	}
 
+	return iRtnValue;
+}
+
+/// Accessor: How many Great Works of a specific class (literature/art/music) present in this city?
+int CvCityBuildings::GetNumGreatWorks(GreatWorkClass eGreatWorkClass) const
+{
+	int iRtnValue = 0;
+	for(std::vector<BuildingGreatWork>::const_iterator it = m_aBuildingGreatWork.begin(); it != m_aBuildingGreatWork.end(); ++it)
+	{
+		if (GC.getGame().GetGameCulture()->GetGreatWorkClass((*it).iGreatWorkIndex) == eGreatWorkClass)
+		{
+			iRtnValue++;
+		}
+	}
 	return iRtnValue;
 }
 

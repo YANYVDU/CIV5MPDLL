@@ -686,6 +686,15 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 				{
 					pDefenderEspionageAI->m_aiTurnLastSpyKilled[m_pPlayer->GetID()] = GC.getGame().getGameTurn();
 					pDefenderEspionageAI->m_aiNumSpiesKilled[m_pPlayer->GetID()]++;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					if (eCityOwner != NO_PLAYER)
+					{
+						CvPlayer& kDefender = GET_PLAYER(eCityOwner);
+						int iSpyKillGainSpyProgress = kDefender.GetSpyKillGainSpyProgressPerKill();
+						if (iSpyKillGainSpyProgress > 0)
+							kDefender.DoCityStateUASpyKill(iSpyKillGainSpyProgress);
+					}
+#endif
 				}
 
 				// level up the defending spy
@@ -1734,6 +1743,15 @@ void CvPlayerEspionage::SetOutcome(uint uiSpyIndex, uint uiSpyResult, bool bAffe
 			if (pDefenderEspionageAI) {
 				pDefenderEspionageAI->m_aiTurnLastSpyKilled[m_pPlayer->GetID()] = GC.getGame().getGameTurn();
 				pDefenderEspionageAI->m_aiNumSpiesKilled[m_pPlayer->GetID()]++;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				if (eCityOwner != NO_PLAYER)
+				{
+					CvPlayer& kDefender = GET_PLAYER(eCityOwner);
+					int iSpyKillGainSpyProgress = kDefender.GetSpyKillGainSpyProgressPerKill();
+					if (iSpyKillGainSpyProgress > 0)
+						kDefender.DoCityStateUASpyKill(iSpyKillGainSpyProgress);
+				}
+#endif
 			}
 
 			CvEspionageAI* pEspionageAI = m_pPlayer->GetEspionageAI();
@@ -2134,6 +2152,11 @@ bool CvPlayerEspionage::CanStageCoup(uint uiSpyIndex)
 
 	CvMinorCivAI* pMinorCivAI = GET_PLAYER(eCityOwner).GetMinorCivAI();
 	PlayerTypes eMinorCivAlly = pMinorCivAI->GetAlly();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (eMinorCivAlly != NO_PLAYER && GET_PLAYER(eMinorCivAlly).IsPermanentAlly(eCityOwner))
+		return false;
+#endif
 
 	if(eMinorCivAlly != NO_PLAYER && eMinorCivAlly != m_pPlayer->GetID())
 	{

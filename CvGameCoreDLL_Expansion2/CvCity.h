@@ -124,7 +124,7 @@ public:
 	void SetIndustrialRouteToCapital(bool bValue);
 	void DoUpdateIndustrialRouteToCapital();
 
-	void SetRouteToCapitalConnected(bool bValue);
+	void SetRouteToCapitalConnected(bool bValue, bool bSkipReligionUpdate = false);
 #if defined(MOD_API_EXTENSIONS)
 	bool IsRouteToCapitalConnected(void) const;
 #else
@@ -240,7 +240,7 @@ public:
 
 	bool IsHasResourceLocal(ResourceTypes eResource, bool bTestVisible) const;
 #if defined(MOD_API_EXTENSIONS) || defined(MOD_TRADE_WONDER_RESOURCE_ROUTES)
-	int GetNumResourceLocal(ResourceTypes eResource, bool bImproved = false);
+	int GetNumResourceLocal(ResourceTypes eResource, bool bImproved = false) const;
 #endif
 	void ChangeNumResourceLocal(ResourceTypes eResource, int iChange);
 
@@ -375,6 +375,7 @@ public:
 	void processImprovement(ImprovementTypes eImprovement, int iChange);
 	void processResource(ResourceTypes eResource, int iChange);
 	void processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, bool bObsolete = false, bool bApplyingAllCitiesBonus = false);
+	void processBuildingObsolete(BuildingTypes eBuilding, bool bObsolete);
 	void processProcess(ProcessTypes eProcess, int iChange);
 	void processSpecialist(SpecialistTypes eSpecialist, int iChange);
 
@@ -514,6 +515,10 @@ public:
 
 	int getGreatPeopleRateModifier() const;
 	void changeGreatPeopleRateModifier(int iChange);
+
+	// Golden Age great person rate modifier, summed across all sources (player instance + traits + city religion beliefs)
+	int GetGoldenAgeGreatPersonRateModifier(GreatPersonTypes eGreatPerson) const;
+	int GetGoldenAgeGreatPersonRateModifierFromSpecialist(SpecialistTypes eSpecialist) const;
 
 	// Culture stuff
 
@@ -677,6 +682,12 @@ public:
 	int GetCuttingBonusModifier() const;
 	void DoCuttingExtraInstantYield(int iBaseYield);
 #endif	
+	int GetGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetGreatPersonPointsFromUA(SpecialistTypes eIndex) const;
+	int GetGreatPersonPointsFromUA_Building(SpecialistTypes eIndex) const;
+	int GetGreatPersonPointsFromUA_GreatWork(SpecialistTypes eIndex) const;
+#endif
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 	void doRelogionInstantYield(ReligionTypes eReligion);
@@ -808,6 +819,11 @@ public:
 
 #ifdef MOD_BUILDINGS_YIELD_FROM_OTHER_YIELD
 	int GetBaseYieldRateFromOtherYield(YieldTypes eYield) const;
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// City-State UA: extra yield granted from a percentage of input base yield for cities with a trade route to an allied/friendly city-state
+	int GetYieldRateFromUCSConversion(YieldTypes eYield) const;
 #endif
 
 	int getBaseYieldRateModifier(YieldTypes eIndex, int iExtra = 0, CvString* toolTipSink = NULL) const;
@@ -1213,6 +1229,9 @@ public:
 	void PurchaseCurrentOrder();
 #endif	
 	void Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectTypes eProjectType, YieldTypes ePurchaseYield);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	void GrantPurchasedBuildingXP(BuildingTypes eBuildingType);
+#endif
 
 	PlayerTypes getLiberationPlayer() const;
 	void liberate();
@@ -1378,6 +1397,12 @@ public:
 	CorruptionLevelTypes GetCorruptionLevel() const;
 	void UpdateCorruption();
 
+	// Guard setters for batch building transfer (CvPlayer::acquireCity) and city init (CvPlayer::initCity).
+	// While set, processBuilding() skips per-building DoUpdateHappiness / player-level UpdateReligion
+	// cascades; one unified update is performed after the batch.
+	void SetUpdatingCorruptionGuard(bool bValue) { m_bUpdatingCorruption = bValue; }
+	void SetUpdatingReligionGuard(bool bValue) { m_bUpdatingReligion = bValue; }
+
 	int CalculateTotalCorruptionScore() const;
 	int CalculateCorruptionScoreFromDistance() const;
 	int CalculateCorruptionScoreFromCoastalBonus() const;
@@ -1394,9 +1419,11 @@ public:
 
 	int GetCorruptionLevelChangeFromBuilding() const;
 	void ChangeCorruptionLevelChangeFromBuilding(int value);
+	void ChangeCorruptionUnhappinessChangeFromBuildings(int value);
 
 	int GetCorruptionScoreModifierFromPolicy() const;
 	int GetCorruptionScoreGlobalChangeFromBuilding() const;
+	int GetCorruptionUnhappinessChangeFromBuildings() const;
 	int GetCorruptionScoreFromLocalHappiness() const;
 	int GetMaxCorruptionLevel() const;
 	bool IsCorruptionLevelReduceByOne() const;
@@ -1751,6 +1778,7 @@ protected:
 
 	int m_iCorruptionScoreChangeFromBuilding = 0;
 	int m_iCorruptionLevelChangeFromBuilding = 0;
+	int m_iCorruptionUnhappinessChangeFromBuildings = 0;
 
 	bool m_bUpdatingReligion = false;
 #endif

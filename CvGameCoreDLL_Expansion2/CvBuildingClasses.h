@@ -154,6 +154,10 @@ public:
 	int GetSpecialistCount() const;
 	int GetSpecialistExtraCulture() const;
 	int GetGreatPeopleRateChange() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const;
+	int GetMinorCivAlliesThresholdModifier() const;
+#endif
 	GreatWorkSlotType GetGreatWorkSlotType() const;
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	YieldTypes GetGreatWorkYieldType() const;
@@ -319,6 +323,7 @@ public:
 	int GetHappinessPerXPolicies() const;
 	int GetCityCountUnhappinessMod() const;
 	int GetCorruptionUnhappinessModifier() const;
+	int GetCorruptionUnhappinessChange() const;
 	bool IsNoOccupiedUnhappiness() const;
 	bool IsNotNeedOccupied() const;
 	bool IsAllowSpaceshipLaunch() const;
@@ -661,6 +666,10 @@ private:
 	int m_iSpecialistCount;
 	int m_iSpecialistExtraCulture;
 	int m_iGreatPeopleRateChange;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
 	GreatWorkSlotType m_eGreatWorkSlotType;
 #if defined(MOD_GLOBAL_GREATWORK_YIELDTYPES)
 	YieldTypes m_eGreatWorkYieldType;
@@ -802,6 +811,7 @@ private:
 	int m_iHappinessPerXPolicies;
 	int m_iCityCountUnhappinessMod;
 	int m_iCorruptionUnhappinessModifier;
+	int m_iCorruptionUnhappinessChange;
 	bool m_bNoOccupiedUnhappiness;
 	bool m_bNotNeedOccupied;
 	bool m_bAllowSpaceshipLaunch;
@@ -1216,6 +1226,7 @@ public:
 	int GetNumGreatWorks(bool bIgnoreYield = true, bool bIncludeArtifact = true, bool bIncludeGreatWork = true) const;
 
 	int GetNumGreatWorks(GreatWorkSlotType eGreatWorkSlot) const;
+	int GetNumGreatWorks(GreatWorkClass eGreatWorkClass) const;
 
 	int GetLandmarksTourismPercent() const;
 	void ChangeLandmarksTourismPercent(int iChange);

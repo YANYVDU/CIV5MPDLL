@@ -42,6 +42,11 @@ create table Trait_GoldenAgeYieldModifiers (
     YieldType text references Yields(Type),
     Yield integer default 0
 );
+create table Trait_GoldenAgeYieldChanges (
+    TraitType text references Traits(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
+);
 alter table Traits add NaturalWonderSubsequentFinderPolicies int default 0;
 alter table Traits add NaturalWonderSubsequentFinderTech int default 0;
 alter table Traits add NaturalWonderFirstFinderPolicies int default 0;
@@ -128,3 +133,13 @@ create table Trait_BuildCostChange (
     BuildType text references Builds(Type),
     Change int default 0
 );
+
+
+alter table Traits add GreatPersonGiftPermanentAlly boolean default 0;
+alter table Traits add CityStateBaseEffectModifier int default 0;
+alter table Traits add WorldCongressTurnModifier int default 0;
+alter table Traits add WorldCongressTechPrereq text default null;
+alter table Resolutions add CivilizationType text default null references Civilizations(Type);
+alter table Traits add ResearchAgreementCountVassalScience boolean default 0;
+alter table Traits add NoSpecialistFood boolean default 0;
+alter table Traits add NoSpecialistUnhappiness boolean default 0;

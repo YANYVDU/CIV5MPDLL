@@ -411,6 +411,11 @@
 				[NEWLINE][ICON_BULLET]City Modifier for the Number of Cities(Policy): {1_Num}%
 			</Text>
 		</Row>
+		<Row Tag="TXT_KEY_PRODMOD_YIELD_POLICY_RELIGION_CITY_NUM">
+			<Text>
+				[NEWLINE][ICON_BULLET]City Modifier per City Following your Religion(Policy): {1_Num}%
+			</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_ATTACKING_CITY_LOST_MOVEMENT">
 			<Text>Your {@1_name} consumed all its [ICON_MOVES] Movements after attacking the enemy city!</Text>
 		</Row>
@@ -608,6 +613,9 @@
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_OTHER_YIELD">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} from other Yield</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_ALLY_CS_UA">
+			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} from Allied CS UA</Text>
 		</Row>
 		<Row Tag="TXT_KEY_CITYVIEW_BASE_YIELD_TT_FROM_TRADE_ROUTE">
 			<Text>[NEWLINE][ICON_BULLET]{1_Num}{2_IconString} from City Connection</Text>
@@ -860,6 +868,9 @@
 		<Row Tag="TXT_KEY_BELIEF_CUTTING_NONUS">
 			<Text>Religion Beliefs bring {1_CityName} extra bonus: {2_BonusStr}.</Text>
 		</Row>
+		<Row Tag="TXT_KEY_SP_CONCERT_TOUR_GOLD">
+			<Text>Your Great Musician concert tour in {1_CityName} earns you +{2_Num}[ICON_GOLD]!</Text>
+		</Row>
 		<Row Tag="TXT_KEY_MPDLL_ERROR_VERSION">
 			<Text>[COLOR_NEGATIVE_TEXT]An error occurred with the MPDLL. If you are using the latest versions, please contact the administrator.[COLOR_NEGATIVE_TEXT]</Text>
 		</Row>
@@ -872,6 +883,98 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_BELIEF_FIRST_CONVERSION_POPULATION">
 			<Text>[COLOR_YELLOW]Due to your belief, {1_CityName} has gained +1[ICON_CITIZEN] Population![ENDCOLOR]</Text>
 		</Row>
-	</Language_en_US>
+		<Replace Tag="TXT_KEY_FRIENDS_CSTATE_TT">
+			<Text>{1_CityStateName:textkey} is your [COLOR_POSITIVE_TEXT]Friend[ENDCOLOR]. To become an Ally, your Influence must exceed the ally threshold of {2_Num}, and be the highest among all civilizations that meet this requirement.</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MERCANTILE_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Mercantile[ENDCOLOR] City-State will provide extra [ICON_HAPPINESS_1] Happiness in your empire, and manufactures special luxury resources which cannot be acquired any other way.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Total [ICON_HAPPINESS_1] Happiness from luxury resources increased by 5%
+				[NEWLINE][ICON_BULLET]Earn 1% treasury interest per turn (max interest = Era x 100 x Game Speed modifier)
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_RELIGIOUS_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Religious[ENDCOLOR] City-State will increase your [ICON_PEACE] Faith, allowing you to empower your religion with new beliefs and units.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET][ICON_PEACE] Faith purchase costs reduced by 5%
+				[NEWLINE][ICON_BULLET]Religion founded by ally gains +10% base pressure
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_NO_UU_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Militaristic[ENDCOLOR] City-State will provide you occasional gifts of advanced military units.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Allied land units gain +1 Experience per turn
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_CULTURED_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Cultured[ENDCOLOR] City-State will provide you gifts of [ICON_CULTURE] Culture, allowing you to obtain Social Policies more quickly.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET][ICON_CULTURE] Culture required for Social Policies reduced by 2%
+				[NEWLINE][ICON_BULLET]Threshold for receiving international immigrants reduced by 2%
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MILITARISTIC_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Militaristic[ENDCOLOR] City-State will provide you occasional gifts of advanced military units.[NEWLINE][NEWLINE]They know the secrets of the [COLOR_POSITIVE_TEXT]{@1_UniqueUnitName}[ENDCOLOR].  If you are their Ally and have researched {@2_PrereqTech}, they will provide that unit as their gift.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Allied land units gain +1 Experience per turn
+			</Text>
+		</Replace>
+		<Replace Tag="TXT_KEY_CITY_STATE_MARITIME_TT">
+			<Text>
+				A befriended [COLOR_POSITIVE_TEXT]Maritime[ENDCOLOR] City-State will provide extra [ICON_FOOD] Food to your [ICON_CAPITAL] Capital.
+				[NEWLINE]Ally Bonus:
+				[NEWLINE][ICON_BULLET]Provides [ICON_FOOD] Food to all cities
+				[NEWLINE][ICON_BULLET]Allied sea trade routes gain +1 [ICON_GOLD] Gold (increases with Era)
+			</Text>
+		</Replace>
+		<Row Tag="TXT_KEY_NOTIFICATION_PERMANENT_ALLY_ESTABLISHED">
+			<Text>{1_Civ} has formed a permanent alliance with {2_Civ}. This City-State will no longer issue quests and all existing quests have been cleared. Gold gifts and other influence-boosting methods will have no effect on this City-State.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_PERMANENT_ALLY_ESTABLISHED">
+			<Text>Permanent alliance with {2_Civ}</Text>
+		</Row>
+
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>{2_Civ} is now your vassal, paying tribute in Science, Culture, Faith and Gold.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_OVERLORD">
+			<Text>Vassal: {2_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_ESTABLISHED_VASSAL">
+			<Text>You have become a vassal of {1_Civ} and must pay them tribute.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_ESTABLISHED_VASSAL">
+			<Text>Vassal of {1_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_OVERLORD">
+			<Text>{2_Civ} is no longer your vassal.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_OVERLORD">
+			<Text>Vassal released: {2_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_RELEASED_VASSAL">
+			<Text>You have been released from vassalage under {1_Civ}.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_RELEASED_VASSAL">
+			<Text>Released from {1_Civ}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GOLD_TAX">
+			<Text>Your vassal {1_Civ} agreed to a deal with {2_Civ}, earning you {3_value}[ICON_GOLD] Gold in vassal tax.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GOLD_TAX">
+			<Text>Vassal deal tax +{2_value}[ICON_GOLD]</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_VASSAL_DEAL_GPT_TAX">
+			<Text>Your vassal {1_Civ} agreed to a deal with {2_Civ}, earning you {3_value}[ICON_GOLD] Gold per turn in vassal tax.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
+			<Text>Vassal deal tax +{2_value}[ICON_GOLD]/turn</Text>
+		</Row>
+</Language_en_US>
 
 </GameData>

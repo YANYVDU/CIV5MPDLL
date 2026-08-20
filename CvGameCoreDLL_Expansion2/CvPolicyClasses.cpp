@@ -25,6 +25,10 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iGridX(0),
 	m_iGridY(0),
 	m_iLevel(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
+#endif
 	m_iPolicyCostModifier(0),
 	m_iCulturePerCity(0),
 	m_iCulturePerWonder(0),
@@ -219,6 +223,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iOriginalCapitalCapturePolicy(0),
 	m_iOriginalCapitalCaptureGreatPerson(0),
 	m_iFreePopulation(0),
+	m_piGreatPersonPoints(nullptr),
 	m_iFreePopulationCapital(0),
 	m_iExtraSpies(0),
 	m_iGreatScientistBeakerPolicyModifier(0),
@@ -239,6 +244,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_piCapitalYieldChange(NULL),
 	m_piCapitalYieldPerPopChange(NULL),
 	m_piYieldPerPopChange(NULL),
+	m_piYieldPerGlobalPop(NULL),
 	m_piCapitalYieldModifier(NULL),
 	m_piGreatWorkYieldChange(NULL),
 	m_piSpecialistExtraYield(NULL),
@@ -278,6 +284,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_piYieldModifierFromActiveSpies(NULL),
 	m_piYieldModifierPerArtifacts(NULL),
 	m_piGreatPersonOutputModifierPerGWs(NULL),
+	m_piImprovementHappinessWhenWorked(nullptr),
 	m_ppiBuildingClassYieldModifiers(NULL),
 	m_ppiBuildingClassYieldChanges(NULL),
 	m_piCityLoveKingDayYieldMod(NULL),
@@ -300,10 +307,13 @@ CvPolicyEntry::~CvPolicyEntry(void)
 	SAFE_DELETE_ARRAY(m_piCapitalYieldChange);
 	SAFE_DELETE_ARRAY(m_piCapitalYieldPerPopChange);
 	SAFE_DELETE_ARRAY(m_piYieldPerPopChange);
+	SAFE_DELETE_ARRAY(m_piYieldPerGlobalPop);
 	SAFE_DELETE_ARRAY(m_piCapitalYieldModifier);
 	SAFE_DELETE_ARRAY(m_piGreatWorkYieldChange);
 	SAFE_DELETE_ARRAY(m_piSpecialistExtraYield);
 	SAFE_DELETE_ARRAY(m_piImprovementCultureChange);
+	SAFE_DELETE_ARRAY(m_piImprovementHappinessWhenWorked);
+	SAFE_DELETE_ARRAY(m_piGreatPersonPoints);
 	SAFE_DELETE_ARRAY(m_pabFreePromotion);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatProductionModifiers);
 	SAFE_DELETE_ARRAY(m_paiUnitCombatFreeExperiences);
@@ -362,6 +372,10 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iCultureCost = kResults.GetInt("CultureCost");
 	m_iGridX = kResults.GetInt("GridX");
 	m_iGridY = kResults.GetInt("GridY");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier = kResults.GetInt("MinorCivAlliesThresholdModifier");
+#endif
 	m_iLevel = kResults.GetInt("Level");
 	m_iPolicyCostModifier = kResults.GetInt("PolicyCostModifier");
 	m_iCulturePerCity = kResults.GetInt("CulturePerCity");
@@ -605,12 +619,15 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 	//Arrays
 	const char* szPolicyType = GetType();
+	//Policy_GreatPersonPoints
+	kUtility.PopulateArrayByValue(m_piGreatPersonPoints, "Specialists", "Policy_GreatPersonPoints", "SpecialistType", "PolicyType", szPolicyType, "Points");
 	kUtility.SetYields(m_piYieldModifier, "Policy_YieldModifiers", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCityYieldChange, "Policy_CityYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCoastalCityYieldChange, "Policy_CoastalCityYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCapitalYieldChange, "Policy_CapitalYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piCapitalYieldPerPopChange, "Policy_CapitalYieldPerPopChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piYieldPerPopChange, "Policy_YieldPerPopChanges", "PolicyType", szPolicyType);
+	kUtility.PopulateArrayByValue(m_piYieldPerGlobalPop, "Yields", "Policy_YieldPerGlobalPop", "YieldType", "PolicyType", szPolicyType, "YieldModifier");
 	kUtility.SetYields(m_piCapitalYieldModifier, "Policy_CapitalYieldModifiers", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piGreatWorkYieldChange, "Policy_GreatWorkYieldChanges", "PolicyType", szPolicyType);
 	kUtility.SetYields(m_piSpecialistExtraYield, "Policy_SpecialistExtraYields", "PolicyType", szPolicyType);
@@ -1020,6 +1037,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	kUtility.PopulateArrayByValue(m_piGreatPersonOutputModifierPerGWs, "GreatPersons", "Policy_GreatPersonOutputModifierPerGWs", "GreatPersonType", "PolicyType", szPolicyType, "Modifier");
 	//ImprovementCultureChanges
 	kUtility.PopulateArrayByValue(m_piImprovementCultureChange, "Improvements", "Policy_ImprovementCultureChanges", "ImprovementType", "PolicyType", szPolicyType, "CultureChange");
+	//ImprovementHappinessWhenWorked
+	kUtility.PopulateArrayByValue(m_piImprovementHappinessWhenWorked, "Improvements", "Policy_ImprovementHappinessWhenWorked", "ImprovementType", "PolicyType", szPolicyType, "Happiness");
 
 	//OrPreReqs
 	{
@@ -1212,6 +1231,30 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 			p.iYield = pResults->GetInt(1);
 			p.ePolicy = (PolicyTypes)GetID();
 			m_vCityNumberCityYieldModifier.push_back(p);
+		}
+
+		pResults->Reset();
+	}
+
+	{
+		m_vYieldPercentPerCityFollowingReligion.clear();
+		std::string sqlKey = "m_vYieldPercentPerCityFollowingReligion";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if(pResults == NULL)
+		{
+			const char* szSQL = "select t2.ID, t1.Percent from Policy_YieldPercentPerCityFollowingReligion t1 left join Yields t2 on t1.YieldType = t2.Type where t1.PolicyType = ?";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while(pResults->Step())
+		{
+			PolicyYieldInfo p;
+			p.eYield = (YieldTypes)pResults->GetInt(0);
+			p.iYield = pResults->GetInt(1);
+			p.ePolicy = (PolicyTypes)GetID();
+			m_vYieldPercentPerCityFollowingReligion.push_back(p);
 		}
 
 		pResults->Reset();
@@ -1450,6 +1493,19 @@ int CvPolicyEntry::GetLevel() const
 {
 	return m_iLevel;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	/// Diplomatic prestige from this policy
+	int CvPolicyEntry::GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+
+	int CvPolicyEntry::GetMinorCivAlliesThresholdModifier() const
+	{
+		return m_iMinorCivAlliesThresholdModifier;
+	}
+#endif
 
 /// Percentage change in cost of subsequent policy purchases
 int CvPolicyEntry::GetPolicyCostModifier() const
@@ -2526,6 +2582,12 @@ int CvPolicyEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
 }
+int CvPolicyEntry::GetGreatPersonPoints(int i) const
+{
+	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piGreatPersonPoints ? m_piGreatPersonPoints[i] : 0;
+}
 
 int CvPolicyEntry::GetGreatScientistBeakerPolicyModifier() const
 {
@@ -2681,6 +2743,13 @@ int CvPolicyEntry::GetYieldPerPopChange(int i) const
 	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piYieldPerPopChange ? m_piYieldPerPopChange[i] : -1;
+}
+
+int CvPolicyEntry::GetYieldPerGlobalPop(int i) const
+{
+	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piYieldPerGlobalPop ? m_piYieldPerGlobalPop[i] : 0;
 }
 
 /// Array of yield changes in Capital (per pop)
@@ -3073,6 +3142,12 @@ int CvPolicyEntry::GetImprovementCultureChanges(int i) const
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piImprovementCultureChange[i];
 }
+int CvPolicyEntry::GetImprovementHappinessWhenWorked(int i) const
+{
+	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piImprovementHappinessWhenWorked ? m_piImprovementHappinessWhenWorked[i] : 0;
+}
 
 /// Free building in each city conquered
 BuildingTypes CvPolicyEntry::GetFreeBuildingOnConquest() const
@@ -3146,6 +3221,11 @@ std::vector<PolicyYieldInfo>& CvPolicyEntry::GetCityNumberCityYieldModifier()
 std::vector<PolicyYieldInfo>& CvPolicyEntry::GetHappinessYieldModifier()
 {
 	return m_vHappinessYieldModifier;
+}
+
+std::vector<PolicyYieldInfo>& CvPolicyEntry::GetYieldPercentPerCityFollowingReligion()
+{
+	return m_vYieldPercentPerCityFollowingReligion;
 }
 
 
@@ -5745,4 +5825,4 @@ int CvPolicyEntry::GetGreatPersonOutputModifierPerGWs(int i) const
 	CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piGreatPersonOutputModifierPerGWs ? m_piGreatPersonOutputModifierPerGWs[i] : 0;
-}
+}

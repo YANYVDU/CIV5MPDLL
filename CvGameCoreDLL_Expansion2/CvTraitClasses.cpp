@@ -27,6 +27,9 @@ CvTraitEntry::CvTraitEntry() :
 	m_iGreatGeneralRateModifier(0),
 	m_iGreatGeneralExtraBonus(0),
 	m_iGreatPersonGiftInfluence(0),
+	m_bGreatPersonGiftPermanentAlly(false),
+	m_bNoSpecialistFood(false),
+	m_bNoSpecialistUnhappiness(false),
 	m_iMaxGlobalBuildingProductionModifier(0),
 	m_iMaxTeamBuildingProductionModifier(0),
 	m_iMaxPlayerBuildingProductionModifier(0),
@@ -35,6 +38,10 @@ CvTraitEntry::CvTraitEntry() :
 	m_iCityStateBonusModifier(0),
 	m_iCityStateFriendshipModifier(0),
 	m_iCityStateCombatModifier(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+	m_iMinorCivAlliesThresholdModifier(0),
+#endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iLandBarbarianConversionExtraUnits(0),
 	m_iSeaBarbarianConversionPercent(0),
@@ -152,6 +159,9 @@ CvTraitEntry::CvTraitEntry() :
 	m_iTradeRouteSeaGoldBonus(0),
 	m_bNewCityAutomaticReligion(false),
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	m_bResearchAgreementCountVassalScience(false),
+#endif
 
 	m_eFreeUnitPrereqTech(NO_TECH),
 	m_eFreeBuilding(NO_BUILDING),
@@ -206,6 +216,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_paiYieldChangeIncomingTradeRoute(NULL),
 	m_paiYieldModifier(NULL),
 	m_paiGoldenAgeYieldModifier(NULL),
+	m_paiGoldenAgeYieldChange(NULL),
 	m_piStrategicResourceQuantityModifier(NULL),
 	m_piResourceQuantityModifiers(NULL),
 	m_piBuildCostChange(NULL),
@@ -252,6 +263,7 @@ CvTraitEntry::~CvTraitEntry()
 	SAFE_DELETE_ARRAY(m_paiYieldChangeIncomingTradeRoute);
 	SAFE_DELETE_ARRAY(m_paiYieldModifier);
 	SAFE_DELETE_ARRAY(m_paiGoldenAgeYieldModifier);
+	SAFE_DELETE_ARRAY(m_paiGoldenAgeYieldChange);
 	SAFE_DELETE_ARRAY(m_piStrategicResourceQuantityModifier);
 	SAFE_DELETE_ARRAY(m_piResourceQuantityModifiers);
 	SAFE_DELETE_ARRAY(m_piBuildCostChange);
@@ -330,6 +342,23 @@ int CvTraitEntry::GetGreatPersonGiftInfluence() const
 	return m_iGreatPersonGiftInfluence;
 }
 
+bool CvTraitEntry::IsGreatPersonGiftPermanentAlly() const
+{
+	return m_bGreatPersonGiftPermanentAlly;
+}
+
+/// Accessor:: Specialists consume no food
+bool CvTraitEntry::IsNoSpecialistFood() const
+{
+	return m_bNoSpecialistFood;
+}
+
+/// Accessor:: Specialists cause no unhappiness
+bool CvTraitEntry::IsNoSpecialistUnhappiness() const
+{
+	return m_bNoSpecialistUnhappiness;
+}
+
 /// Accessor:: Overall production boost
 int CvTraitEntry::GetMaxGlobalBuildingProductionModifier() const
 {
@@ -377,6 +406,19 @@ int CvTraitEntry::GetCityStateCombatModifier() const
 {
 	return m_iCityStateCombatModifier;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//	--------------------------------------------------------------------------
+	int CvTraitEntry::GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+
+	int CvTraitEntry::GetMinorCivAlliesThresholdModifier() const
+	{
+		return m_iMinorCivAlliesThresholdModifier;
+	}
+#endif
 
 /// Accessor:: percent chance a barbarian camp joins this civ
 int CvTraitEntry::GetLandBarbarianConversionPercent() const
@@ -886,6 +928,12 @@ bool CvTraitEntry::IsNewCityAutomaticReligion() const
 	return m_bNewCityAutomaticReligion;
 }
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+bool CvTraitEntry::IsResearchAgreementCountVassalScience() const
+{
+	return m_bResearchAgreementCountVassalScience;
+}
+#endif
 
 /// Accessor: tech that triggers this free unit
 TechTypes CvTraitEntry::GetFreeUnitPrereqTech() const
@@ -1152,6 +1200,11 @@ int CvTraitEntry::GetYieldModifier(int i) const
 int CvTraitEntry::GetGoldenAgeYieldModifier(int i) const
 {
 	return m_paiGoldenAgeYieldModifier ? m_paiGoldenAgeYieldModifier[i] : -1;
+}
+
+int CvTraitEntry::GetGoldenAgeYieldChange(int i) const
+{
+	return m_paiGoldenAgeYieldChange ? m_paiGoldenAgeYieldChange[i] : -1;
 }
 
 /// Accessor:: Additional quantity of strategic resources
@@ -1699,6 +1752,21 @@ int CvTraitEntry::GetShareAllyResearchPercent() const
 	return m_iShareAllyResearchPercent;
 }
 
+int CvTraitEntry::GetCityStateBaseEffectModifier() const
+{
+	return m_iCityStateBaseEffectModifier;
+}
+
+int CvTraitEntry::GetWorldCongressTurnModifier() const
+{
+	return m_iWorldCongressTurnModifier;
+}
+
+int CvTraitEntry::GetWorldCongressTechPrereq() const
+{
+	return m_iWorldCongressTechPrereq;
+}
+
 bool CvTraitEntry::CanPurchaseWonderInGoldenAge() const
 {
 	return m_bCanPurchaseWonderInGoldenAge;
@@ -1734,6 +1802,9 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iGreatGeneralRateModifier				= kResults.GetInt("GreatGeneralRateModifier");
 	m_iGreatGeneralExtraBonus				= kResults.GetInt("GreatGeneralExtraBonus");
 	m_iGreatPersonGiftInfluence				= kResults.GetInt("GreatPersonGiftInfluence");
+	m_bGreatPersonGiftPermanentAlly		    = kResults.GetBool("GreatPersonGiftPermanentAlly");
+	m_bNoSpecialistFood					= kResults.GetBool("NoSpecialistFood");
+	m_bNoSpecialistUnhappiness			= kResults.GetBool("NoSpecialistUnhappiness");
 	m_iMaxGlobalBuildingProductionModifier	= kResults.GetInt("MaxGlobalBuildingProductionModifier");
 	m_iMaxTeamBuildingProductionModifier	= kResults.GetInt("MaxTeamBuildingProductionModifier");
 	m_iMaxPlayerBuildingProductionModifier	= kResults.GetInt("MaxPlayerBuildingProductionModifier");
@@ -1741,6 +1812,10 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iPopulationUnhappinessModifier    	= kResults.GetInt("PopulationUnhappinessModifier");
 	m_iCityStateBonusModifier               = kResults.GetInt("CityStateBonusModifier");
 	m_iCityStateFriendshipModifier          = kResults.GetInt("CityStateFriendshipModifier");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige					= kResults.GetInt("DiplomaticPrestige");
+	m_iMinorCivAlliesThresholdModifier					= kResults.GetInt("MinorCivAlliesThresholdModifier");
+#endif
 	m_iCityStateCombatModifier				= kResults.GetInt("CityStateCombatModifier");
 	m_iLandBarbarianConversionPercent       = kResults.GetInt("LandBarbarianConversionPercent");
 	m_iLandBarbarianConversionExtraUnits    = kResults.GetInt("LandBarbarianConversionExtraUnits");
@@ -1891,6 +1966,9 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iTradeRouteSeaGoldBonus = kResults.GetInt("TradeRouteSeaGoldBonus");
 	m_bNewCityAutomaticReligion = kResults.GetBool("NewCityAutomaticReligion");
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	m_bResearchAgreementCountVassalScience = kResults.GetBool("ResearchAgreementCountVassalScience");
+#endif
 
 #if defined(MOD_TRAITS_OTHER_PREREQS)
 	if (MOD_TRAITS_OTHER_PREREQS) {
@@ -1995,6 +2073,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	kUtility.SetYields(m_paiYieldChangeIncomingTradeRoute, "Trait_YieldChangesIncomingTradeRoute", "TraitType", szTraitType);
 	kUtility.SetYields(m_paiYieldModifier, "Trait_YieldModifiers", "TraitType", szTraitType);
 	kUtility.SetYields(m_paiGoldenAgeYieldModifier, "Trait_GoldenAgeYieldModifiers", "TraitType", szTraitType);
+	kUtility.SetYields(m_paiGoldenAgeYieldChange, "Trait_GoldenAgeYieldChanges", "TraitType", szTraitType);
 
 	const int iNumTerrains = GC.getNumTerrainInfos();
 
@@ -2703,6 +2782,9 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iOthersTradeBonusModifier = kResults.GetInt("OthersTradeBonusModifier");
 	m_iGoldenAgeGrowThresholdModifier = kResults.GetInt("GoldenAgeGrowThresholdModifier");
 	m_iShareAllyResearchPercent = kResults.GetInt("ShareAllyResearchPercent");
+	m_iCityStateBaseEffectModifier = kResults.GetInt("CityStateBaseEffectModifier");
+	m_iWorldCongressTurnModifier = kResults.GetInt("WorldCongressTurnModifier");
+	{ const char* sz = kResults.GetText("WorldCongressTechPrereq"); m_iWorldCongressTechPrereq = sz ? (int)GC.getInfoTypeForString(sz) : -1; }
 	m_bCanPurchaseWonderInGoldenAge = kResults.GetBool("CanPurchaseWonderInGoldenAge");
 	m_bCanDiplomaticMarriage = kResults.GetBool("CanDiplomaticMarriage");
 	m_bWLKDCityNoResearchCost = kResults.GetBool("WLKDCityNoResearchCost");
@@ -2761,6 +2843,9 @@ CvTraitEntry* CvTraitXMLEntries::GetEntry(int index)
 /// Constructor
 CvPlayerTraits::CvPlayerTraits()
 {
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdModifier = 0;
+#endif
 }
 
 /// Destructor
@@ -2814,6 +2899,10 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iCityStateBonusModifier += trait->GetCityStateBonusModifier();
 			m_iCityStateFriendshipModifier += trait->GetCityStateFriendshipModifier();
 			m_iCityStateCombatModifier += trait->GetCityStateCombatModifier();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			m_iDiplomaticPrestige += trait->GetDiplomaticPrestige();
+			m_iMinorCivAlliesThresholdModifier += trait->GetMinorCivAlliesThresholdModifier();
+#endif
 			m_iLandBarbarianConversionPercent += trait->GetLandBarbarianConversionPercent();
 			m_iLandBarbarianConversionExtraUnits += trait->GetLandBarbarianConversionExtraUnits();
 			m_iSeaBarbarianConversionPercent += trait->GetSeaBarbarianConversionPercent();
@@ -2953,9 +3042,25 @@ void CvPlayerTraits::InitPlayerTraits()
 			{
 				m_bTrainedAll = true;
 			}
+			if (trait->IsGreatPersonGiftPermanentAlly())
+			{
+				m_bGreatPersonGiftPermanentAlly = true;
+			}
+			if (trait->IsNoSpecialistFood())
+			{
+				m_bNoSpecialistFood = true;
+			}
+			if (trait->IsNoSpecialistUnhappiness())
+			{
+				m_bNoSpecialistUnhappiness = true;
+			}
 			if (trait->IsNewCityAutomaticReligion())
 			{
 				m_bNewCityAutomaticReligion = true;
+			}
+			if (trait->IsResearchAgreementCountVassalScience())
+			{
+				m_bResearchAgreementCountVassalScience = true;
 			}
 			if (trait->IsCanConquerUC())
 			{
@@ -3122,6 +3227,9 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iOthersTradeBonusModifier = trait->GetOthersTradeBonusModifier();
 			m_iGoldenAgeGrowThresholdModifier = trait->GetGoldenAgeGrowThresholdModifier();
 			m_iShareAllyResearchPercent = trait->GetShareAllyResearchPercent();
+			m_iCityStateBaseEffectModifier = trait->GetCityStateBaseEffectModifier();
+			m_iWorldCongressTurnModifier = trait->GetWorldCongressTurnModifier();
+			m_iWorldCongressTechPrereq = trait->GetWorldCongressTechPrereq();
 			m_bCanPurchaseWonderInGoldenAge = trait->CanPurchaseWonderInGoldenAge();
 			m_bCanDiplomaticMarriage = trait->CanDiplomaticMarriage();
 			m_bWLKDCityNoResearchCost = trait->IsWLKDCityNoResearchCost();
@@ -3140,6 +3248,7 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_iYieldChangeIncomingTradeRoute[iYield] = trait->GetYieldChangeIncomingTradeRoute(iYield);
 				m_iYieldRateModifier[iYield] = trait->GetYieldModifier(iYield);
 				m_iGoldenAgeYieldRateModifier[iYield] = trait->GetGoldenAgeYieldModifier(iYield);
+				m_iGoldenAgeYieldChange[iYield] = trait->GetGoldenAgeYieldChange(iYield);
 
 				for(int iFeatureLoop = 0; iFeatureLoop < GC.getNumFeatureInfos(); iFeatureLoop++)
 				{
@@ -3349,6 +3458,11 @@ void CvPlayerTraits::InitPlayerTraits()
 			}
 		}
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
+		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(m_iMinorCivAlliesThresholdModifier);
+#endif
 }
 
 /// Deallocate memory created in initialize
@@ -3392,6 +3506,9 @@ void CvPlayerTraits::Reset()
 	m_iGreatGeneralRateModifier = 0;
 	m_iGreatGeneralExtraBonus = 0;
 	m_iGreatPersonGiftInfluence = 0;
+	m_bGreatPersonGiftPermanentAlly = false;
+	m_bNoSpecialistFood = false;
+	m_bNoSpecialistUnhappiness = false;
 	m_iLevelExperienceModifier= 0;
 	m_iMaxGlobalBuildingProductionModifier = 0;
 	m_iMaxTeamBuildingProductionModifier = 0;
@@ -3401,6 +3518,12 @@ void CvPlayerTraits::Reset()
 	m_iCityStateBonusModifier = 0;
 	m_iCityStateFriendshipModifier = 0;
 	m_iCityStateCombatModifier = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige = 0;
+	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
+		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
+	m_iMinorCivAlliesThresholdModifier = 0;
+#endif
 	m_iLandBarbarianConversionPercent = 0;
 	m_iLandBarbarianConversionExtraUnits = 0;
 	m_iSeaBarbarianConversionPercent = 0;
@@ -3504,6 +3627,7 @@ void CvPlayerTraits::Reset()
 #endif
 	m_bTrainedAll = false;
 	m_bNewCityAutomaticReligion = false;
+	m_bResearchAgreementCountVassalScience = false;
 	m_bCanConquerUC = false;
 	m_bFightWellDamaged = false;
 	m_bBuyOwnedTiles = false;
@@ -3607,6 +3731,7 @@ void CvPlayerTraits::Reset()
 		m_iYieldChangeIncomingTradeRoute[iYield] = 0;
 		m_iYieldRateModifier[iYield] = 0;
 		m_iGoldenAgeYieldRateModifier[iYield] = 0;
+		m_iGoldenAgeYieldChange[iYield] = 0;
 
 		for(int iImprovement = 0; iImprovement < GC.getNumImprovementInfos(); iImprovement++)
 		{
@@ -4800,6 +4925,10 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iGreatGeneralExtraBonus;
 
 	kStream >> m_iGreatPersonGiftInfluence;
+	MOD_SERIALIZE_READ(162, kStream, m_bGreatPersonGiftPermanentAlly, false);
+	MOD_SERIALIZE_READ(163, kStream, m_bNoSpecialistFood, false);
+	MOD_SERIALIZE_READ(163, kStream, m_bNoSpecialistUnhappiness, false);
+	MOD_SERIALIZE_READ_ARRAY(163, kStream, m_iGoldenAgeYieldChange, int, NUM_YIELD_TYPES, 0);
 
 	kStream >> m_iLevelExperienceModifier;
 	kStream >> m_iMaxGlobalBuildingProductionModifier;
@@ -4810,6 +4939,10 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iCityStateBonusModifier;
 	kStream >> m_iCityStateFriendshipModifier;
 	kStream >> m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_READ(162, kStream, m_iDiplomaticPrestige, 0);
+	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
+#endif
 	kStream >> m_iLandBarbarianConversionPercent;
 	kStream >> m_iLandBarbarianConversionExtraUnits;
 	kStream >> m_iSeaBarbarianConversionPercent;
@@ -5058,6 +5191,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 #endif
 	kStream >> m_bTrainedAll;
 	MOD_SERIALIZE_READ(161, kStream, m_bNewCityAutomaticReligion, false);
+	MOD_SERIALIZE_READ(163, kStream, m_bResearchAgreementCountVassalScience, false);
 	kStream >> m_bCanConquerUC;
 	kStream >> m_bFightWellDamaged;
 	kStream >> m_bBuyOwnedTiles;
@@ -5356,6 +5490,9 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 	kStream >> m_iOthersTradeBonusModifier;
 	kStream >> m_iGoldenAgeGrowThresholdModifier;
 	kStream >> m_iShareAllyResearchPercent;
+	MOD_SERIALIZE_READ(163, kStream, m_iCityStateBaseEffectModifier, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iWorldCongressTurnModifier, 0);
+	MOD_SERIALIZE_READ(163, kStream, m_iWorldCongressTechPrereq, -1);
 	kStream >> m_bCanPurchaseWonderInGoldenAge;
 	kStream >> m_bCanDiplomaticMarriage;
 	kStream >> m_bWLKDCityNoResearchCost;
@@ -5375,6 +5512,10 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iGreatGeneralRateModifier;
 	kStream << m_iGreatGeneralExtraBonus;
 	kStream << m_iGreatPersonGiftInfluence;
+	MOD_SERIALIZE_WRITE(kStream, m_bGreatPersonGiftPermanentAlly);
+	MOD_SERIALIZE_WRITE(kStream, m_bNoSpecialistFood);
+	MOD_SERIALIZE_WRITE(kStream, m_bNoSpecialistUnhappiness);
+	MOD_SERIALIZE_WRITE_ARRAY(kStream, m_iGoldenAgeYieldChange, int, NUM_YIELD_TYPES);
 	kStream << m_iLevelExperienceModifier;
 	kStream << m_iMaxGlobalBuildingProductionModifier;
 	kStream << m_iMaxTeamBuildingProductionModifier;
@@ -5384,6 +5525,10 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iCityStateBonusModifier;
 	kStream << m_iCityStateFriendshipModifier;
 	kStream << m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	MOD_SERIALIZE_WRITE(kStream, m_iDiplomaticPrestige);
+	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
+#endif
 	kStream << m_iLandBarbarianConversionPercent;
 	kStream << m_iLandBarbarianConversionExtraUnits;
 	kStream << m_iSeaBarbarianConversionPercent;
@@ -5488,6 +5633,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 #endif
 	kStream << m_bTrainedAll;
 	MOD_SERIALIZE_WRITE(kStream, m_bNewCityAutomaticReligion);
+	MOD_SERIALIZE_WRITE(kStream, m_bResearchAgreementCountVassalScience);
 	kStream << m_bCanConquerUC;
 	kStream << m_bFightWellDamaged;
 	kStream << m_bBuyOwnedTiles;
@@ -5663,6 +5809,9 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	kStream << m_iOthersTradeBonusModifier;
 	kStream << m_iGoldenAgeGrowThresholdModifier;
 	kStream << m_iShareAllyResearchPercent;
+	MOD_SERIALIZE_WRITE(kStream, m_iCityStateBaseEffectModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iWorldCongressTurnModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iWorldCongressTechPrereq);
 	kStream << m_bCanPurchaseWonderInGoldenAge;
 	kStream << m_bCanDiplomaticMarriage;
 	kStream << m_bWLKDCityNoResearchCost;
@@ -5914,6 +6063,21 @@ int CvPlayerTraits::GetGoldenAgeGrowThresholdModifier() const
 int CvPlayerTraits::GetShareAllyResearchPercent() const
 {
 	return m_iShareAllyResearchPercent;
+}
+
+int CvPlayerTraits::GetCityStateBaseEffectModifier() const
+{
+	return m_iCityStateBaseEffectModifier;
+}
+
+int CvPlayerTraits::GetWorldCongressTurnModifier() const
+{
+	return m_iWorldCongressTurnModifier;
+}
+
+int CvPlayerTraits::GetWorldCongressTechPrereq() const
+{
+	return m_iWorldCongressTechPrereq;
 }
 bool CvPlayerTraits::CanPurchaseWonderInGoldenAge() const
 {

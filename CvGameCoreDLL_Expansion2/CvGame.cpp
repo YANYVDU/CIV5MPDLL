@@ -88,6 +88,10 @@ CvGameInitialItemsOverrides::CvGameInitialItemsOverrides()
 }
 
 //------------------------------------------------------------------------------
+// static member definition for the transient acquireCity suppression counter
+// (declared in CvGame.h; CvGame is a singleton so a static counter matches its lifetime)
+int CvGame::m_iSuppressHappinessUpdate = 0;
+
 CvGame::CvGame() :
 	m_jonRand(false)
 	, m_endTurnTimer()
@@ -106,6 +110,7 @@ CvGame::CvGame() :
 #endif // MOD_API_MP_PLOT_SIGNAL
 	
 {
+	m_iSuppressHappinessUpdate = 0; // reset transient suppression counter (guards against residue across game restarts)
 	m_aiEndTurnMessagesReceived = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);
 	m_aiRankPlayer = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);        // Ordered by rank...
 	m_aiPlayerRank = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);        // Ordered by player ID...
@@ -392,8 +397,89 @@ void CvGame::init(HandicapTypes eHandicap)
 }
 
 //	--------------------------------------------------------------------------------
+// Apply player-selected city states: fill the fixed selections first, then random-fill the rest.
+static void ApplySelectedMinorCivs()
+{
+	int iNumMinors = CvPreGame::numMinorCivs();
+	if(iNumMinors < 0)
+		iNumMinors = CvPreGame::worldInfo().getDefaultMinorCivs();
+	const int iFirstMinor = MAX_MAJOR_CIVS;
+	int iLastMinor = iFirstMinor + iNumMinors;
+	if(iLastMinor > MAX_CIV_PLAYERS)
+		iLastMinor = MAX_CIV_PLAYERS;
+
+	// Feature gate: only apply when the front-end enabled custom city-state selection.
+	int iEnabled = 0;
+	CvPreGame::GetGameOption("GAMEOPTION_SP_CS_ENABLED", iEnabled);
+	if(iEnabled != 1)
+		return; // Not enabled -> keep the vanilla random assignment.
+
+	// Collect the chosen valid city-state types from the front-end GameOptions.
+	std::vector<MinorCivTypes> aChosen;
+	for(int slot = iFirstMinor; slot < iLastMinor; ++slot)
+	{
+		char szBuf[64];
+		sprintf_s(szBuf, 64, "GAMEOPTION_SP_CS_%d", slot);
+		int iValue = -1;
+		CvPreGame::GetGameOption(szBuf, iValue);
+		if(iValue >= 0 && iValue < GC.getNumMinorCivInfos())
+			aChosen.push_back((MinorCivTypes)iValue);
+	}
+	if(aChosen.empty())
+		return; // No selections -> keep the vanilla random assignment.
+
+	// Deduplicate in slot order.
+	std::vector<MinorCivTypes> aUnique;
+	for(size_t i = 0; i < aChosen.size(); ++i)
+	{
+		bool bDup = false;
+		for(size_t j = 0; j < aUnique.size(); ++j)
+		{
+			if(aUnique[j] == aChosen[i]) { bDup = true; break; }
+		}
+		if(!bDup)
+			aUnique.push_back(aChosen[i]);
+	}
+
+	const int iSlots = iLastMinor - iFirstMinor;
+	const int iPool = GC.getNumMinorCivInfos();
+	if(iPool == 0)
+		return;
+
+	std::vector<bool> bUsed(iPool, false);
+	for(size_t i = 0; i < aUnique.size(); ++i)
+		bUsed[aUnique[i]] = true;
+
+	// Fisher-Yates shuffle of the full pool using the persistent (MP-synced) RNG.
+	std::vector<int> iShuffle(iPool);
+	shuffleArray(&iShuffle[0], iPool, GC.getGame().getJonRand());
+
+	int iFill = 0;
+	for(int s = 0; s < iSlots; ++s)
+	{
+		MinorCivTypes mc;
+		if(s < (int)aUnique.size())
+		{
+			mc = aUnique[s]; // Use a user-selected type first.
+		}
+		else
+		{
+			while(iFill < iPool && bUsed[iShuffle[iFill]])
+				++iFill;
+			if(iFill >= iPool)
+				break; // Pool exhausted; leave the remaining slots at their default.
+			mc = (MinorCivTypes)iShuffle[iFill];
+			bUsed[mc] = true;
+			++iFill;
+		}
+		CvPreGame::setMinorCivType((PlayerTypes)(iFirstMinor + s), mc);
+	}
+}
+
+//	--------------------------------------------------------------------------------
 bool CvGame::init2()
 {
+	ApplySelectedMinorCivs();
 	InitPlayers();
 
 	CvGameInitialItemsOverrides kItemOverrides;
@@ -7752,6 +7838,7 @@ void CvGame::removeGreatPersonBornName(const CvString& szName)
 //	--------------------------------------------------------------------------------
 void CvGame::doTurn()
 {
+	AI_PERF_FORMAT("AI-perf.csv", ("CvGame::doTurn, Turn %03d", GC.getGame().getElapsedGameTurns()) );
 #ifndef FINAL_RELEASE
 	char temp[256];
 	sprintf_s(temp, "Turn %i\n", getGameTurn());
@@ -7807,6 +7894,80 @@ void CvGame::doTurn()
 	GetGameReligions()->DoTurn();
 	GetGameTrade()->DoTurn();
 	GetGameLeagues()->DoTurn();
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Resolve all vassal taxes once, before any player's doTurn, so a vassal's
+	// deduction and its overlord's receipt this turn always match (no timing skew).
+	// Run after the league DoTurn above so this turn's newly-enacted or expired
+	// suzerain resolutions are already reflected in the active resolution list.
+	// Process in topological order (deepest vassals first) so that "tax-on-tax"
+	// uses each vassal's already-computed tribute from its own vassals.
+	{
+		std::vector<int> abProcessed(MAX_MAJOR_CIVS, 0);
+		bool bAnyProcessed = true;
+		// Cap passes so a vassal cycle (or a vassal list containing the player
+		// itself) cannot spin this loop forever. In a healthy game every pass
+		// processes at least one player, so the bound is never reached.
+		int iPass = 0;
+		while (bAnyProcessed && iPass < MAX_MAJOR_CIVS)
+		{
+			iPass++;
+			bAnyProcessed = false;
+			for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+			{
+				PlayerTypes ePlayer = (PlayerTypes)iPlayer;
+				CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+				if (!kPlayer.isAlive()) continue;
+				if (abProcessed[iPlayer]) continue;
+
+				bool bAllVassalsDone = true;
+				const std::vector<int>& vVassals = kPlayer.GetVassals();
+				for (size_t iVassal = 0; iVassal < vVassals.size(); iVassal++)
+				{
+					PlayerTypes eVassal = (PlayerTypes)vVassals[iVassal];
+					if (eVassal < 0 || eVassal >= MAX_MAJOR_CIVS) continue;
+					if (!GET_PLAYER(eVassal).isAlive()) continue;
+					if (!abProcessed[eVassal])
+					{
+						bAllVassalsDone = false;
+						break;
+					}
+				}
+
+				if (bAllVassalsDone)
+				{
+					kPlayer.UpdateVassalTaxation();
+					abProcessed[iPlayer] = 1;
+					bAnyProcessed = true;
+				}
+			}
+		}
+
+		// If a vassal cycle left some players unprocessed, tax them directly so
+		// no overlord is silently skipped.
+		for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+		{
+			PlayerTypes ePlayer = (PlayerTypes)iPlayer;
+			CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+			if (!kPlayer.isAlive()) continue;
+			if (abProcessed[iPlayer]) continue;
+			kPlayer.UpdateVassalTaxation();
+		}
+
+		// Clear each player's this-turn lump-sum deal tax only after every
+		// overlord has read its vassals' base. Resetting inside
+		// UpdateVassalTaxation would zero a vassal's lump-sum before its own
+		// overlord (later in topological order) could include it in the base.
+		for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+		{
+			PlayerTypes ePlayer = (PlayerTypes)iPlayer;
+			CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+			if (!kPlayer.isAlive()) continue;
+			kPlayer.ResetGoldFromVassalDeals();
+		}
+	}
+#endif
+
 	GetGameCulture()->DoTurn();
 
 	GC.GetEngineUserInterface()->setCanEndTurn(false);
@@ -11051,6 +11212,31 @@ void CvGame::DoTestConquestVictory()
 							iNumCapitalsControlled += 1;
 						}
 					}
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+					// Overlord counts its vassals' original capitals as its own for domination victory
+					if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(eLoopPlayer).HasAnyVassal())
+					{
+						const std::vector<int>& vecVassals = GET_PLAYER(eLoopPlayer).GetVassals();
+						for (size_t iVassal = 0; iVassal < vecVassals.size(); iVassal++)
+						{
+							PlayerTypes eVassal = (PlayerTypes)vecVassals[iVassal];
+							// Skip vassals on our own team - their capitals are already counted above
+							if (GET_PLAYER(eVassal).isAlive() && GET_PLAYER(eVassal).getTeam() != (TeamTypes)iTeamLoop)
+							{
+								int iVassalCityLoop;
+								CvCity* pVassalCity = NULL;
+								for(pVassalCity = GET_PLAYER(eVassal).firstCity(&iVassalCityLoop); pVassalCity != NULL; pVassalCity = GET_PLAYER(eVassal).nextCity(&iVassalCityLoop))
+								{
+									if (pVassalCity->getOriginalOwner() < MAX_MAJOR_CIVS && pVassalCity->IsOriginalCapital())
+									{
+										iNumCapitalsControlled += 1;
+									}
+								}
+							}
+						}
+					}
+#endif
 				}
 			}
 

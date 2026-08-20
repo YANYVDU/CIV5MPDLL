@@ -1533,7 +1533,11 @@ int CvDealAI::GetCityValue(int iX, int iY, bool bFromMe, PlayerTypes eOtherPlaye
 			CvPlayerAI& theOtherPlayer = GET_PLAYER(eOtherPlayer);
 			if(!GET_TEAM(GetTeam()).isAtWar(theOtherPlayer.getTeam()))
 			{
+#if defined(MOD_GLOBAL_SUZERAIN)
+				if(theOtherPlayer.isHuman())  // human is trying to trick us; vassals are trusted
+#else
 				if(theOtherPlayer.isHuman())  // he is obviously trying to trick us
+#endif
 				{
 					CvCity* pLoopCity;
 					int iCityLoop;

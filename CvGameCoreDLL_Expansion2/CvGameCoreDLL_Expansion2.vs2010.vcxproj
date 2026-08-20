@@ -284,6 +284,7 @@
     <ClCompile Include="CvTechClasses.cpp" />
     <ClCompile Include="CvTradeClasses.cpp" />
     <ClCompile Include="CvTraitClasses.cpp" />
+    <ClCompile Include="CvCityStateUAClasses.cpp" />
     <ClCompile Include="CvTreasury.cpp" />
     <ClCompile Include="CvTypes.cpp" />
     <ClCompile Include="CvUnit.cpp" />
@@ -552,6 +553,7 @@
     <ClInclude Include="CvTechClasses.h" />
     <ClInclude Include="CvTradeClasses.h" />
     <ClInclude Include="CvTraitClasses.h" />
+    <ClInclude Include="CvCityStateUAClasses.h" />
     <ClInclude Include="CvTreasury.h" />
     <ClInclude Include="CvTypes.h" />
     <ClInclude Include="CvUnit.h" />

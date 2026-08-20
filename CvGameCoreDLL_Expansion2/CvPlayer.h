@@ -50,6 +50,7 @@ class CvEventLog;
 #endif
 class CvTreasury;
 class CvPlayerTraits;
+class CvPlayerCityStateUA;
 class CvGameInitialItemsOverrides;
 class CvDiplomacyRequests;
 class CvPlayerEspionage;
@@ -524,6 +525,7 @@ public:
 	int GetExtraHappinessPerXPolicies() const;
 	void ChangeExtraHappinessPerXPolicies(int iChange);
 
+	int GetLuxuryHappinessBaseTotal() const;
 	int GetHappinessFromResources() const;
 	int GetHappinessFromResourceVariety() const;
 	int GetHappinessFromReligion();
@@ -536,6 +538,8 @@ public:
 
 	int GetHappinessFromLuxury(ResourceTypes eResource) const;
 	int GetAdequateLuxuryKindCount(int threshold) const;
+	// City-state UA: count of luxury types currently producing happiness (used by Malacca)
+	int GetHappyLuxuryTypeCount() const;
 	int GetStrengthModifierFromAlly() const;
 
 	int GetUnhappiness() const;
@@ -582,6 +586,9 @@ public:
 	int GetHappinessPerXPopulation() const;
 	void SetHappinessPerXPopulation(int iValue);
 	void ChangeHappinessPerXPopulation(int iChange);
+
+	int GetPolicyYieldPerGlobalPop(YieldTypes eYield) const;
+	void ChangePolicyYieldPerGlobalPop(YieldTypes eYield, int iChange);
 
 	int GetHappinessFromMinorCivs() const;
 	int GetHappinessFromMinor(PlayerTypes eMinor) const;
@@ -971,6 +978,15 @@ public:
 
 	int getWonderProductionModifier() const;
 	void changeWonderProductionModifier(int iChange);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetGoldDonationHappiness() const;
+	int GetTotalGoldDonated() const;
+	void ChangeTotalGoldDonated(int iChange);
+	int GetGoldDonatedToMinor(int iMinor) const;
+	void ChangeGoldDonatedToMinor(int iMinor, int iChange);
+	int GetBornGreatPersonCount(int iGP) const;
+	void ChangeBornGreatPersonCount(int iGP, int iChange);
+#endif
 
 	int getSettlerProductionModifier() const;
 	void changeSettlerProductionModifier(int iChange);
@@ -1132,6 +1148,11 @@ public:
 
 	int getMinorGoldFriendshipMod() const;
 	void changeMinorGoldFriendshipMod(int iChange);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetCSUAGoldDonationInfluenceModifier() const;
+	int GetCSUAYieldPercentModifier(YieldTypes eYield) const;
+#endif
 
 	int GetMinorFriendshipAnchorMod() const;
 	void SetMinorFriendshipAnchorMod(int iValue);
@@ -1616,6 +1637,10 @@ public:
 
 	int getImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2) const;
 	void changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2, int iChange);
+	int getImprovementHappinessFromPolicies(ImprovementTypes eIndex) const;
+	void changeImprovementHappinessFromPolicies(ImprovementTypes eIndex, int iChange);
+	int getGreatPersonPointsFromPolicies(SpecialistTypes eIndex) const;
+	void changeGreatPersonPointsFromPolicies(SpecialistTypes eIndex, int iChange);
 
 	CvUnitCycler& GetUnitCycler() { return m_UnitCycle; };
 
@@ -1742,6 +1767,81 @@ public:
 	void SetLiberatedInfluence(int iValue);
 	void ChangeLiberatedInfluence(int iChange);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetExtraDiplomaticPrestige() const;
+	void SetExtraDiplomaticPrestige(int iValue);
+	void ChangeExtraDiplomaticPrestige(int iChange);
+	int GetDiplomaticPrestige() const;
+	int GetNumCityStateAllies() const;
+	void SetNumCityStateAllies(int iValue);
+	void ChangeNumCityStateAllies(int iChange);
+	int GetDiplomaticOverextensionCount() const;
+	int GetDiplomaticOverextensionDecayPenalty() const;
+	int GetDiplomaticOverextensionRisePenalty() const;
+	int GetDiplomaticOverextensionUnhappinessPercent() const;
+	int GetMinorCivAlliesThresholdModifier() const;
+	void SetMinorCivAlliesThresholdModifier(int iValue);
+	void ChangeMinorCivAlliesThresholdModifier(int iChange);
+	int GetMinorCivAlliesThreshold() const;
+	void RefreshCSAllUAEffects();
+#endif
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
+	int GetCSPolicyCostModifier() const;
+	int GetCSImmigrationRegressandModifier() const;
+	int GetCSLandXPPerTurn() const;
+	int GetCSSeaTradeGoldBonus() const;
+	int GetCSFaithCostModifier() const;
+	int GetCSReligiousPressureModifier() const;
+	int GetCSLuxuryHappinessModifier() const;
+	int GetCSLuxuryHappinessValue() const;
+	int GetCSTreasuryInterestRate() const;
+#endif
+
+	int GetPrestigeExemptAllyCount() const;
+	void SetPrestigeExemptAllyCount(int iValue);
+	void ChangePrestigeExemptAllyCount(int iChange);
+	bool IsPermanentAlly(PlayerTypes eMinor) const;
+	void SetPermanentAlly(PlayerTypes eMinor, bool bValue);
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Vassal suzerain relationship
+	PlayerTypes GetOverlord() const;
+	void SetOverlord(PlayerTypes e);
+	bool IsVassalOf(PlayerTypes e) const;
+	bool IsOverlordOf(PlayerTypes e) const;
+	bool HasAnyVassal() const;
+	const std::vector<int>& GetVassals() const;
+	void AddVassal(PlayerTypes e);
+	void RemoveVassal(PlayerTypes e);
+	void RefreshUCFromVassals();
+	void ClearUCFromVassals();
+	std::tr1::unordered_set<UnitTypes>& GetUUFromVassals();
+	std::tr1::unordered_set<BuildingTypes>& GetUBFromVassals();
+	std::tr1::unordered_set<ImprovementTypes>& GetUIFromVassals();
+	void UpdateVassalTaxation();
+	unsigned long long GetScienceTimes100FromVassals() const;
+	int GetCultureFromVassals() const;
+	int GetFaithFromVassals() const;
+	int GetGoldFromVassals() const;
+	unsigned long long GetScienceTimes100FromOneVassal(PlayerTypes e) const;
+	int GetCultureFromOneVassal(PlayerTypes e) const;
+	int GetFaithFromOneVassal(PlayerTypes e) const;
+	int GetGoldFromOneVassal(PlayerTypes e) const;
+	// Tax paid to our overlord (vassal side)
+	unsigned long long GetScienceTimes100ToOverlord() const;
+	int GetCultureToOverlord() const;
+	int GetFaithToOverlord() const;
+	int GetGoldToOverlord() const;
+	int GetVassalTaxPercentFor(PlayerTypes eVassal) const;
+	int GetGoldFromVassalDeals() const;
+	int GetGoldFromVassalDealsLumpSum() const;
+	void ResetGoldFromVassalDeals();
+	void RecordVassalDealGold(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax);
+	void RecordVassalDealGPT(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax);
+	void RecordVassalDealGPTEnd(PlayerTypes eVassal, int iTax);
+	void NotifyVassalDealTax(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax, bool bPerTurn);
+#endif
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
 	void ChangeExtraUnitPlayerInstances(int iChange);
@@ -1943,6 +2043,14 @@ public:
 
 	CvPlayerPolicies* GetPlayerPolicies() const;
 	CvPlayerTraits* GetPlayerTraits() const;
+	CvPlayerCityStateUA* GetPlayerCityStateUA() const;
+	int GetTotalLuxuryHappinessModifier() const;
+	int GetTotalLuxuryHappinessValue() const;
+	int GetCrossContinentRouteUnhappinessReduction() const;
+	int GetCityStateSpecialistPointRate(SpecialistTypes eSpecialist) const;
+	void DoUnitBornYield(UnitClassTypes eUnitClass);
+	void DoCityStateUASpyKill(int iProgressGained);
+	int GetSpyKillGainSpyProgressPerKill() const;
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
 	CvCitySpecializationAI* GetCitySpecializationAI() const;
@@ -2164,6 +2272,7 @@ public:
 	std::vector<PolicyYieldInfo>& GetTradeRouteCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetCityNumberCityYieldModifier();
 	std::vector<PolicyYieldInfo>& GetHappinessYieldModifier();
+	std::vector<PolicyYieldInfo>& GetYieldPercentPerCityFollowingReligion();
 
 	std::vector<PolicyResourceInfo>& GetCityResourcesFromPolicy();
 	const std::vector<PolicyResourceInfo>& GetCityResourcesFromPolicy() const;
@@ -2569,6 +2678,11 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iUnitFortificationModifier;
 	FAutoVariable<int, CvPlayer> m_iUnitBaseHealModifier;
 	FAutoVariable<int, CvPlayer> m_iWonderProductionModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	FAutoVariable<int, CvPlayer> m_iTotalGoldDonated;
+	std::vector<int> m_paiGoldDonatedToMinor;
+	std::vector<int> m_paiBornGreatPersonCount;
+#endif
 	FAutoVariable<int, CvPlayer> m_iSettlerProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iCapitalSettlerProductionModifier;
 	FAutoVariable<int, CvPlayer> m_iUnitProductionMaintenanceMod;
@@ -2664,6 +2778,16 @@ protected:
 	int m_iResearchTotalCostModifierGoldenAge;
 	int m_iImmigrationRegressandModifier;
 	int m_iLiberatedInfluence;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iExtraDiplomaticPrestige;
+	int m_iCityStateAllyCount;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
+#endif
+	int m_iPrestigeExemptAllyCount;
+	std::vector<int> m_vecPermanentAllies;
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;
 	int m_iWaterTileDamageGlobal;
@@ -2672,6 +2796,29 @@ protected:
 	int m_iLandTileDamageGlobal;
 	int m_iLandTileMovementReduceGlobal;
 	int m_iLandTileTurnDamageGlobal;
+#endif
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Vassal suzerain relationship
+	PlayerTypes m_eOverlord;
+	std::vector<int> m_vecVassals;
+	// UC caches from vassals
+	std::tr1::unordered_set<UnitTypes> m_sUUFromVassals;
+	std::tr1::unordered_set<BuildingTypes> m_sUBFromVassals;
+	std::tr1::unordered_set<ImprovementTypes> m_sUIFromVassals;
+	// Per-turn tax caches from vassals
+	std::tr1::array<unsigned long long, MAX_MAJOR_CIVS> m_aScienceTimes100FromVassals;
+	std::tr1::array<int, MAX_MAJOR_CIVS> m_aCultureFromVassals;
+	std::tr1::array<int, MAX_MAJOR_CIVS> m_aFaithFromVassals;
+	std::tr1::array<int, MAX_MAJOR_CIVS> m_aGoldFromVassals;
+	// Per-turn tax paid to our overlord (vassal side)
+	unsigned long long m_iScienceTimes100ToOverlord;
+	int m_iCultureToOverlord;
+	int m_iFaithToOverlord;
+	int m_iGoldToOverlord;
+	// Vassal deal tax (gold received by our vassals from their own trades)
+	int m_iGoldFromVassalDeals;        // this-turn lump-sum deal tax, reset each turn (not serialized)
+	int m_iGoldPerTurnFromVassalDeals; // current total per-turn deal tax (serialized)
 #endif
 
 #if defined(MOD_TRAITS_CITY_WORKING) || defined(MOD_BUILDINGS_CITY_WORKING) || defined(MOD_POLICIES_CITY_WORKING) || defined(MOD_TECHS_CITY_WORKING)
@@ -2821,6 +2968,9 @@ protected:
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiBuildingClassCount;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiBuildingClassMaking;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiProjectMaking;
+	std::vector<int> m_paiImprovementHappinessFromPolicies;
+	std::vector<int> m_aiGreatPersonPointsFromPolicies;
+	std::vector<int> m_aiYieldPerGlobalPop;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryCount;
 	FAutoVariable<std::vector<int>, CvPlayer> m_paiHurryModifier;
 
@@ -2878,6 +3028,7 @@ protected:
 	std::vector<PolicyYieldInfo> m_vTradeRouteCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vCityNumberCityYieldModifier;
 	std::vector<PolicyYieldInfo> m_vHappinessYieldModifier;
+	std::vector<PolicyYieldInfo> m_vYieldPercentPerCityFollowingReligion;
 
 	std::vector<PolicyResourceInfo> m_vCityResourcesFromPolicy;
 	int m_iGlobalHappinessFromFaithPercent = 0;
@@ -2990,6 +3141,10 @@ protected:
 	CvTreasury* m_pTreasury;
 
 	CvPlayerTraits* m_pTraits;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* m_pCityStateUA;
+	int m_iCityStateUASpyKillProgress;
+#endif
 
 	// human player wanted to end turn processing but hasn't received
 	// the net turn complete message

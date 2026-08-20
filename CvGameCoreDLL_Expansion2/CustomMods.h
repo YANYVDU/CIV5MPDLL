@@ -33,7 +33,7 @@
  ****************************************************************************/
 #define MOD_DLL_GUID {0xcf7d28a8, 0x1684, 0x4420, { 0xaf, 0x45, 0x11, 0x7, 0xc, 0xb, 0x8c, 0x4a }} // {CF7D28A8-1684-4420-AF45-11070C0B8C4A}
 #define MOD_DLL_NAME "CIV5 MPDLL"
-#define MOD_DLL_VERSION_NUMBER ((uint) 162)
+#define MOD_DLL_VERSION_NUMBER ((uint) 164)
 #define MOD_DLL_VERSION_STATUS ""			// a (alpha), b (beta) or blank (released)
 #define MOD_DLL_CUSTOM_BUILD_NAME ""
 
@@ -63,6 +63,9 @@
 // Comment out this line to remove minidumps - see http://forums.civfanatics.com/showthread.php?t=498919
 // If minidumps are enabled, do NOT set GenerateDebugInfo=No (Props -> Config Props -> Linker -> Debugging)
 #define MOD_DEBUG_MINIDUMP
+
+// Perf optimization: use O(n) capital-only pathfinding instead of O(n²) all-pairs for city connections
+#define MOD_PERF_CITY_CONNECTIONS
 
 
 // Comment these lines out to remove the associated code from the DLL,
@@ -230,6 +233,8 @@
 #define MOD_GLOBAL_SEPARATE_GP_COUNTERS             gCustomMods.isGLOBAL_SEPARATE_GP_COUNTERS()
 // Removes free GP (from buildings, policies, traits, etc) from the GP counters (v61)
 #define MOD_GLOBAL_TRULY_FREE_GP                    gCustomMods.isGLOBAL_TRULY_FREE_GP()
+
+#define MOD_GLOBAL_SUZERAIN              gCustomMods.isGLOBAL_SUZERAIN()
 
 // Displays the opinion weight in the tooltip when meeting a leader (v80)
 #define MOD_DIPLOMACY_BY_NUMBERS                    gCustomMods.isDIPLOMACY_BY_NUMBERS()
@@ -974,6 +979,8 @@
 #define MOD_SP_SMART_AI_DEAL MOD_SP_SMART_AI
 
 #define MOD_SP_FASTER_AI	 gCustomMods.isSP_FASTER_AI()
+#define MOD_SP_UNIQUE_CITYSTATE gCustomMods.isSP_UNIQUE_CITYSTATE()
+#define MOD_SP_CITYSTATE_BASIC gCustomMods.isSP_CITYSTATE_BASIC()
 
 #define MOD_TRAITS_SPREAD_RELIGION_AFTER_KILLING gCustomMods.isTRAITS_SPREAD_RELIGION_AFTER_KILLING()
 #define MOD_TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY gCustomMods.isTRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY()
@@ -1538,6 +1545,7 @@ public:
 	MOD_OPT_DECL(GLOBAL_CANNOT_EMBARK);
 	MOD_OPT_DECL(GLOBAL_SEPARATE_GP_COUNTERS);
 	MOD_OPT_DECL(GLOBAL_TRULY_FREE_GP);
+	MOD_OPT_DECL(GLOBAL_SUZERAIN);
 	
 	MOD_OPT_DECL(DIPLOMACY_BY_NUMBERS);
 	MOD_OPT_DECL(DIPLOMACY_TECH_BONUSES);
@@ -1616,6 +1624,7 @@ public:
 	MOD_OPT_DECL(AI_GREAT_PEOPLE_CHOICES);
 	MOD_OPT_DECL(AI_MP_DIPLOMACY);
 	MOD_OPT_DECL(AI_SMART_V3);
+	MOD_OPT_DECL(GLOBAL_AI_PERF_LOGGING);
 
 	MOD_OPT_DECL(EVENTS_TERRAFORMING);
 	MOD_OPT_DECL(EVENTS_TILE_IMPROVEMENTS);
@@ -1816,6 +1825,8 @@ public:
 
 	MOD_OPT_DECL(SP_SMART_AI);
 	MOD_OPT_DECL(SP_FASTER_AI);
+	MOD_OPT_DECL(SP_UNIQUE_CITYSTATE);
+	MOD_OPT_DECL(SP_CITYSTATE_BASIC);
 
 	MOD_OPT_DECL(TRAITS_SPREAD_RELIGION_AFTER_KILLING);
 	MOD_OPT_DECL(TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY);

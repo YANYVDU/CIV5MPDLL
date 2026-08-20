@@ -2261,6 +2261,31 @@ bool CvDeal::AreAllTradeItemsValid()
 }
 #endif
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+//--------------------------------------------------------------------------------
+void CvGameDeals::ApplyVassalDealTax(PlayerTypes eRecipient, PlayerTypes eCounterparty, int iAmount, bool bPerTurn)
+{
+	PlayerTypes eVassalTaxOverlord = GET_PLAYER(eRecipient).GetOverlord();
+	if (eVassalTaxOverlord == NO_PLAYER) return;
+	int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(eRecipient);
+	if (iVassalTaxPercent <= 0) return;
+	int iVassalTax = iAmount * iVassalTaxPercent / 100;
+	if (iVassalTax <= 0) return;
+	if (bPerTurn)
+	{
+		GET_PLAYER(eRecipient).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
+		GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
+		GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPT(eRecipient, eCounterparty, iVassalTax);
+	}
+	else
+	{
+		GET_PLAYER(eRecipient).GetTreasury()->ChangeGold(-iVassalTax);
+		GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGold(iVassalTax);
+		GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGold(eRecipient, eCounterparty, iVassalTax);
+	}
+}
+#endif
+
 #if defined(MOD_AI_MP_DIPLOMACY)
 /// Moves a deal from the proposed list to the active one (returns FALSE if deal is not valid)
 bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, bool bAccepted, bool latest)
@@ -2444,6 +2469,9 @@ void CvGameDeals::FinalizeDealValidAndAccepted(PlayerTypes eFromPlayer, PlayerTy
 			int iGoldAmount = it->m_iData1;
 			GET_PLAYER(eAcceptedFromPlayer).GetTreasury()->ChangeGold(-iGoldAmount);
 			GET_PLAYER(eAcceptedToPlayer).GetTreasury()->ChangeGold(iGoldAmount);
+#if defined(MOD_GLOBAL_SUZERAIN)
+			ApplyVassalDealTax(eAcceptedToPlayer, eAcceptedFromPlayer, iGoldAmount, false);
+#endif
 		}
 		// Gold Per Turn
 		else if(it->m_eItemType == TRADE_ITEM_GOLD_PER_TURN)
@@ -2451,6 +2479,9 @@ void CvGameDeals::FinalizeDealValidAndAccepted(PlayerTypes eFromPlayer, PlayerTy
 			int iGoldPerTurn = it->m_iData1;
 			GET_PLAYER(eAcceptedFromPlayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurn);
 			GET_PLAYER(eAcceptedToPlayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurn);
+#if defined(MOD_GLOBAL_SUZERAIN)
+			ApplyVassalDealTax(eAcceptedToPlayer, eAcceptedFromPlayer, iGoldPerTurn, true);
+#endif
 		}
 		// Resource
 		else if(it->m_eItemType == TRADE_ITEM_RESOURCES)
@@ -2857,6 +2888,9 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 					int iGoldAmount = it->m_iData1;
 					GET_PLAYER(eAcceptedFromPlayer).GetTreasury()->ChangeGold(-iGoldAmount);
 					GET_PLAYER(eAcceptedToPlayer).GetTreasury()->ChangeGold(iGoldAmount);
+#if defined(MOD_GLOBAL_SUZERAIN)
+					ApplyVassalDealTax(eAcceptedToPlayer, eAcceptedFromPlayer, iGoldAmount, false);
+#endif
 				}
 				// Gold Per Turn
 				else if(it->m_eItemType == TRADE_ITEM_GOLD_PER_TURN)
@@ -2864,6 +2898,9 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 					int iGoldPerTurn = it->m_iData1;
 					GET_PLAYER(eAcceptedFromPlayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurn);
 					GET_PLAYER(eAcceptedToPlayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurn);
+#if defined(MOD_GLOBAL_SUZERAIN)
+					ApplyVassalDealTax(eAcceptedToPlayer, eAcceptedFromPlayer, iGoldPerTurn, true);
+#endif
 				}
 				// Resource
 				else if(it->m_eItemType == TRADE_ITEM_RESOURCES)
@@ -3568,6 +3605,24 @@ void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bo
 		int iGoldPerTurn = pItem->m_iData1;
 		fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurn);
 		toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurn);
+#if defined(MOD_GLOBAL_SUZERAIN)
+		// Reverse the vassal deal tax we collected when this GPT deal was made
+		PlayerTypes eVassalTaxOverlord = toPlayer.GetOverlord();
+		if (eVassalTaxOverlord != NO_PLAYER)
+		{
+			int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(eToPlayer);
+			if (iVassalTaxPercent > 0)
+			{
+				int iVassalTax = iGoldPerTurn * iVassalTaxPercent / 100;
+				if (iVassalTax > 0)
+				{
+					toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
+					GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
+					GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPTEnd(eToPlayer, iVassalTax);
+				}
+			}
+		}
+#endif
 
 		pNotifications = GET_PLAYER(eFromPlayer).GetNotifications();
 		if(pNotifications)
@@ -3667,7 +3722,12 @@ void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bo
 			CvTeam& kTeam = GET_TEAM(toPlayer.getTeam());
 			int iToPlayerBeakers = toPlayer.GetResearchAgreementCounter(eFromPlayer);
 			int iFromPlayerBeakers = fromPlayer.GetResearchAgreementCounter(eToPlayer);
+#if defined(MOD_GLOBAL_SUZERAIN)
+			bool bToPlayerCountsVassals = toPlayer.GetPlayerTraits()->IsResearchAgreementCountVassalScience() && toPlayer.HasAnyVassal();
+			int iBeakersBonus = (bToPlayerCountsVassals ? iToPlayerBeakers : min(iToPlayerBeakers, iFromPlayerBeakers)) / GC.getRESEARCH_AGREEMENT_BOOST_DIVISOR();
+#else
 			int iBeakersBonus = min(iToPlayerBeakers, iFromPlayerBeakers) / GC.getRESEARCH_AGREEMENT_BOOST_DIVISOR(); //one (third) of minimum contribution
+#endif
 			iBeakersBonus = (iBeakersBonus * toPlayer.GetMedianTechPercentage()) / 100;
 
 			TechTypes eCurrentTech = toPlayer.GetPlayerTechs()->GetCurrentResearch();
@@ -3887,11 +3947,61 @@ void CvGameDeals::PrepareRenewDeal(CvDeal* pOldDeal, const CvDeal* pNewDeal)
 					{
 						fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurnDelta);
 						toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurnDelta);
+#if defined(MOD_GLOBAL_SUZERAIN)
+						// Adjust vassal deal tax by the GPT delta (toPlayer is recipient here)
+						// Uses the current tax rate, so if the rate changed since the original deal this delta is approximate.
+						PlayerTypes eVassalTaxOverlord = toPlayer.GetOverlord();
+						if (eVassalTaxOverlord != NO_PLAYER)
+						{
+							int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(toPlayer.GetID());
+							if (iVassalTaxPercent > 0)
+							{
+								int iVassalTax = iGoldPerTurnDelta * iVassalTaxPercent / 100;
+								if (iVassalTax > 0)
+								{
+									toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPT(toPlayer.GetID(), fromPlayer.GetID(), iVassalTax);
+								}
+								else if (iVassalTax < 0)
+								{
+									toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPTEnd(toPlayer.GetID(), -iVassalTax);
+								}
+							}
+						}
+#endif
 					}
 					else
 					{
 						toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurnDelta);
 						fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurnDelta);
+#if defined(MOD_GLOBAL_SUZERAIN)
+						// Adjust vassal deal tax by the GPT delta (fromPlayer is recipient here)
+						// Uses the current tax rate, so if the rate changed since the original deal this delta is approximate.
+						PlayerTypes eVassalTaxOverlord = fromPlayer.GetOverlord();
+						if (eVassalTaxOverlord != NO_PLAYER)
+						{
+							int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(fromPlayer.GetID());
+							if (iVassalTaxPercent > 0)
+							{
+								int iVassalTax = iGoldPerTurnDelta * iVassalTaxPercent / 100;
+								if (iVassalTax > 0)
+								{
+									fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPT(fromPlayer.GetID(), toPlayer.GetID(), iVassalTax);
+								}
+								else if (iVassalTax < 0)
+								{
+									fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
+									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPTEnd(fromPlayer.GetID(), -iVassalTax);
+								}
+							}
+						}
+#endif
 					}
 				}
 			}

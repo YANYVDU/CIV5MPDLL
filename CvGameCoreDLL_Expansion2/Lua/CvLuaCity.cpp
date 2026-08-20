@@ -369,6 +369,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(GetTotalGreatPeopleRateModifier);
 	Method(ChangeBaseGreatPeopleRate);
 	Method(GetGreatPeopleRateModifier);
+	Method(GetGoldenAgeGreatPersonRateModifierFromSpecialist);
 
 	Method(GetJONSCultureStored);
 	Method(SetJONSCultureStored);
@@ -611,6 +612,12 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(IsNoAutoAssignSpecialists);
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 	Method(GetGreatPersonPointFromReligion);
+#endif
+	Method(GetGreatPersonPointsFromPolicies);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	Method(GetGreatPersonPointsFromUA);
+	Method(GetGreatPersonPointsFromUA_Building);
+	Method(GetGreatPersonPointsFromUA_GreatWork);
 #endif
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	Method(HasEnableCrops);
@@ -2767,6 +2774,15 @@ int CvLuaCity::lGetGreatPeopleRateModifier(lua_State* L)
 	return BasicLuaMethod(L, &CvCity::getGreatPeopleRateModifier);
 }
 //------------------------------------------------------------------------------
+//int GetGoldenAgeGreatPersonRateModifierFromSpecialist(SpecialistTypes eSpecialist);
+int CvLuaCity::lGetGoldenAgeGreatPersonRateModifierFromSpecialist(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkCity->GetGoldenAgeGreatPersonRateModifierFromSpecialist(eSpecialist));
+	return 1;
+}
+//------------------------------------------------------------------------------
 //int GetJONSCultureStored() const;
 int CvLuaCity::lGetJONSCultureStored(lua_State* L)
 {
@@ -4447,6 +4463,64 @@ int CvLuaCity::lGetGreatPersonPointFromReligion(lua_State* L)
 	if(eSpecialist != NO_SPECIALIST)
 	{
 		lua_pushinteger(L, pkCity->GetGreatPersonPointsFromReligion(GetGreatPersonFromSpecialist(eSpecialist)));
+		return 1;
+	}
+
+	lua_pushinteger(L, 0);
+	return 1;
+}
+#endif
+//------------------------------------------------------------------------------
+int CvLuaCity::lGetGreatPersonPointsFromPolicies(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	if(eSpecialist != NO_SPECIALIST)
+	{
+		lua_pushinteger(L, pkCity->GetGreatPersonPointsFromPolicies(eSpecialist));
+		return 1;
+	}
+
+	lua_pushinteger(L, 0);
+	return 1;
+}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//------------------------------------------------------------------------------
+int CvLuaCity::lGetGreatPersonPointsFromUA(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	if(eSpecialist != NO_SPECIALIST)
+	{
+		lua_pushinteger(L, pkCity->GetGreatPersonPointsFromUA(eSpecialist));
+		return 1;
+	}
+
+	lua_pushinteger(L, 0);
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaCity::lGetGreatPersonPointsFromUA_GreatWork(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	if(eSpecialist != NO_SPECIALIST)
+	{
+		lua_pushinteger(L, pkCity->GetGreatPersonPointsFromUA_GreatWork(eSpecialist));
+		return 1;
+	}
+
+	lua_pushinteger(L, 0);
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaCity::lGetGreatPersonPointsFromUA_Building(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = (SpecialistTypes)lua_tointeger(L, 2);
+	if(eSpecialist != NO_SPECIALIST)
+	{
+		lua_pushinteger(L, pkCity->GetGreatPersonPointsFromUA_Building(eSpecialist));
 		return 1;
 	}
 

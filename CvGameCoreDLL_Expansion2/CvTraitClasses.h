@@ -61,6 +61,7 @@ public:
 	int GetGreatGeneralRateModifier() const;
 	int GetGreatGeneralExtraBonus() const;
 	int GetGreatPersonGiftInfluence() const;
+	bool IsGreatPersonGiftPermanentAlly() const;
 	int GetMaxGlobalBuildingProductionModifier() const;
 	int GetMaxTeamBuildingProductionModifier() const;
 	int GetMaxPlayerBuildingProductionModifier() const;
@@ -69,6 +70,10 @@ public:
 	int GetCityStateBonusModifier() const;
 	int GetCityStateFriendshipModifier() const;
 	int GetCityStateCombatModifier() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const;
+	int GetMinorCivAlliesThresholdModifier() const;
+#endif
 	int GetLandBarbarianConversionPercent() const;
 	int GetLandBarbarianConversionExtraUnits() const;
 	int GetSeaBarbarianConversionPercent() const;
@@ -172,6 +177,9 @@ public:
 	int GetTradeRouteSeaGoldBonus() const;
 	bool IsNewCityAutomaticReligion() const;
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	bool IsResearchAgreementCountVassalScience() const;
+#endif
 
 	TechTypes GetFreeUnitPrereqTech() const;
 	ImprovementTypes GetCombatBonusImprovement() const;
@@ -230,6 +238,7 @@ public:
 	int GetYieldChangeIncomingTradeRoute(int i) const;
 	int GetYieldModifier(int i) const;
 	int GetGoldenAgeYieldModifier(int i) const;
+	int GetGoldenAgeYieldChange(int i) const;
 	int GetStrategicResourceQuantityModifier(int i) const;
 	int GetObsoleteTech() const;
 	int GetPrereqTech() const;
@@ -351,8 +360,13 @@ public:
 	int GetGoldenAgeGrowThresholdModifier() const;
 
 	int GetShareAllyResearchPercent() const;
+	int GetCityStateBaseEffectModifier() const;
+	int GetWorldCongressTurnModifier() const;
+	int GetWorldCongressTechPrereq() const;
 	bool CanPurchaseWonderInGoldenAge() const;
 	bool CanDiplomaticMarriage() const;
+	bool IsNoSpecialistFood() const;
+	bool IsNoSpecialistUnhappiness() const;
 
 	virtual bool CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility);
 
@@ -363,6 +377,9 @@ protected:
 	int m_iGreatGeneralRateModifier;
 	int m_iGreatGeneralExtraBonus;
 	int m_iGreatPersonGiftInfluence;
+	bool m_bGreatPersonGiftPermanentAlly;
+	bool m_bNoSpecialistFood;
+	bool m_bNoSpecialistUnhappiness;
 	int m_iMaxGlobalBuildingProductionModifier;
 	int m_iMaxTeamBuildingProductionModifier;
 	int m_iMaxPlayerBuildingProductionModifier;
@@ -371,6 +388,10 @@ protected:
 	int m_iCityStateBonusModifier;
 	int m_iCityStateFriendshipModifier;
 	int m_iCityStateCombatModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
 	int m_iLandBarbarianConversionPercent;
 	int m_iLandBarbarianConversionExtraUnits;
 	int m_iSeaBarbarianConversionPercent;
@@ -482,6 +503,9 @@ protected:
 	int m_iTradeRouteSeaGoldBonus;
 	bool m_bNewCityAutomaticReligion;
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	bool m_bResearchAgreementCountVassalScience;
+#endif
 
 	TechTypes m_eFreeUnitPrereqTech;
 	ImprovementTypes m_eCombatBonusImprovement;
@@ -546,6 +570,7 @@ protected:
 	int* m_paiYieldChangeIncomingTradeRoute;
 	int* m_paiYieldModifier;
 	int* m_paiGoldenAgeYieldModifier;
+	int* m_paiGoldenAgeYieldChange;
 	int* m_piStrategicResourceQuantityModifier;
 	int* m_piResourceQuantityModifiers;
 	int* m_piBuildCostChange;
@@ -633,6 +658,9 @@ protected:
 	int m_iGoldenAgeGrowThresholdModifier = 0;
 
 	int m_iShareAllyResearchPercent = 0;
+	int m_iCityStateBaseEffectModifier = 0;
+	int m_iWorldCongressTurnModifier = 0;
+	int m_iWorldCongressTechPrereq = -1;
 	bool m_bCanPurchaseWonderInGoldenAge = false;
 	bool m_bCanDiplomaticMarriage = false;
 
@@ -718,6 +746,18 @@ public:
 	int GetGreatPersonGiftInfluence() const
 	{
 		return m_iGreatPersonGiftInfluence;
+	};
+	bool IsGreatPersonGiftPermanentAlly() const
+	{
+		return m_bGreatPersonGiftPermanentAlly;
+	};
+	bool IsNoSpecialistFood() const
+	{
+		return m_bNoSpecialistFood;
+	};
+	bool IsNoSpecialistUnhappiness() const
+	{
+		return m_bNoSpecialistUnhappiness;
 	};
 	int GetLevelExperienceModifier() const
 	{
@@ -1142,6 +1182,10 @@ public:
 	{
 		return m_bNewCityAutomaticReligion;
 	};
+	bool IsResearchAgreementCountVassalScience() const
+	{
+		return m_bResearchAgreementCountVassalScience;
+	};
 	bool IsCanConquerUC() const
 	{
 		return m_bCanConquerUC;
@@ -1300,6 +1344,10 @@ public:
 	int GetGoldenAgeYieldRateModifier(YieldTypes eYield) const
 	{
 		return m_iGoldenAgeYieldRateModifier[(int)eYield];
+	};
+	int GetGoldenAgeYieldChange(YieldTypes eYield) const
+	{
+		return m_iGoldenAgeYieldChange[(int)eYield];
 	};
 	int GetStrategicResourceQuantityModifier(TerrainTypes eTerrain) const
 	{
@@ -1482,6 +1530,9 @@ public:
 	int GetGoldenAgeGrowThresholdModifier() const;
 
 	int GetShareAllyResearchPercent() const;
+	int GetCityStateBaseEffectModifier() const;
+	int GetWorldCongressTurnModifier() const;
+	int GetWorldCongressTechPrereq() const;
 	bool CanPurchaseWonderInGoldenAge() const;
 	bool CanDiplomaticMarriage() const;
 	bool IsWLKDCityNoResearchCost() const;
@@ -1509,6 +1560,9 @@ private:
 	int m_iGreatGeneralRateModifier;
 	int m_iGreatGeneralExtraBonus;
 	int m_iGreatPersonGiftInfluence;
+	bool m_bGreatPersonGiftPermanentAlly;
+	bool m_bNoSpecialistFood;
+	bool m_bNoSpecialistUnhappiness;
 	int m_iLevelExperienceModifier;
 	int m_iMaxGlobalBuildingProductionModifier;
 	int m_iMaxTeamBuildingProductionModifier;
@@ -1517,6 +1571,10 @@ private:
 	int m_iPopulationUnhappinessModifier;
 	int m_iCityStateBonusModifier;
 	int m_iCityStateFriendshipModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+	int m_iMinorCivAlliesThresholdModifier;
+#endif
 	int m_iCityStateCombatModifier;
 	int m_iLandBarbarianConversionPercent;
 	int m_iLandBarbarianConversionExtraUnits;
@@ -1623,6 +1681,7 @@ private:
 	// Saved
 	bool m_bTrainedAll = false;
 	bool m_bNewCityAutomaticReligion = false;
+	bool m_bResearchAgreementCountVassalScience = false;
 	bool m_bCanConquerUC = false;
 	bool m_bFightWellDamaged = false;
 	bool m_bBuyOwnedTiles = false;
@@ -1682,6 +1741,7 @@ private:
 	int m_iYieldChangeIncomingTradeRoute[NUM_YIELD_TYPES];
 	int m_iYieldRateModifier[NUM_YIELD_TYPES];
 	int m_iGoldenAgeYieldRateModifier[NUM_YIELD_TYPES];
+	int m_iGoldenAgeYieldChange[NUM_YIELD_TYPES];
 	int m_iStrategicResourceQuantityModifier[NUM_TERRAIN_TYPES];
 	std::vector<int> m_aiResourceQuantityModifier;
 	std::vector<int> m_aiBuildCostChange;
@@ -1778,6 +1838,9 @@ private:
 	int m_iGoldenAgeGrowThresholdModifier = 0;
 
 	int m_iShareAllyResearchPercent = 0;
+	int m_iCityStateBaseEffectModifier = 0;
+	int m_iWorldCongressTurnModifier = 0;
+	int m_iWorldCongressTechPrereq = -1;
 	bool m_bCanPurchaseWonderInGoldenAge = false;
 	bool m_bCanDiplomaticMarriage = false;
 	bool m_bWLKDCityNoResearchCost = false;

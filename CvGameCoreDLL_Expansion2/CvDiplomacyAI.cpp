@@ -7,8 +7,10 @@
 	------------------------------------------------------------------------------------------------------- */
 
 #include "CvGameCoreDLLPCH.h"
+#include "cvStopWatch.h"
 #include "ICvDLLUserInterface.h"
 #include "CvDiplomacyAI.h"
+#include "CvMinorCivAI.h"
 #include "CvGrandStrategyAI.h"
 #include "CvEconomicAI.h"
 #include "CvMilitaryAI.h"
@@ -2023,7 +2025,8 @@ void CvDiplomacyAI::DoTurn(PlayerTypes eTargetPlayer)
 #if defined(MOD_AI_MP_DIPLOMACY)
 	m_eTargetPlayerType = eTargetPlayerType;
 #endif
-	m_eTargetPlayer = eTargetPlayer;
+	AI_PERF_FORMAT("AI-perf.csv", ("DiplomacyAI DoTurn, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription()) );
+		m_eTargetPlayer = eTargetPlayer;
 	// Military Stuff
 	DoWarDamageDecay();
 	DoUpdateWarDamageLevel();
@@ -13452,8 +13455,8 @@ void CvDiplomacyAI::DoContactMinorCivs()
 							continue;
 
 						// Only care if we'll actually be Allies or better
-						bMediumGiftAllies = iFriendshipWithMinor + iMediumGiftFriendship >= pMinorCivAI->GetAlliesThreshold();
-						bSmallGiftAllies = iFriendshipWithMinor + iSmallGiftFriendship >= pMinorCivAI->GetAlliesThreshold();
+						bMediumGiftAllies = iFriendshipWithMinor + iMediumGiftFriendship >= pMinorCivAI->GetAlliesThresholdForPlayer(GetPlayer()->GetID());
+						bSmallGiftAllies = iFriendshipWithMinor + iSmallGiftFriendship >= pMinorCivAI->GetAlliesThresholdForPlayer(GetPlayer()->GetID());
 
 						// If we can pass them with a small gift, great
 						if(bSmallGiftAllies && iOtherPlayerFriendshipWithMinor - iFriendshipWithMinor < iSmallGiftFriendship)
@@ -21563,6 +21566,13 @@ void CvDiplomacyAI::DoDenouncePlayer(PlayerTypes ePlayer)
 	PlayerTypes eMyPlayer = GetPlayer()->GetID();
 	TeamTypes eMyTeam = GetPlayer()->getTeam();
 	TeamTypes eTheirTeam = GET_PLAYER(ePlayer).getTeam();
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Block denouncement between overlord and vassal
+	CvPlayer& kMyPlayer = *GetPlayer();
+	if (kMyPlayer.IsVassalOf(ePlayer) || kMyPlayer.IsOverlordOf(ePlayer))
+		return;
+#endif
 
 	SetDenouncedPlayer(ePlayer, true);
 

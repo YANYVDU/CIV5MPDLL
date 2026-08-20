@@ -129,6 +129,20 @@ struct CvResolutionEffects
 	int iGlobalWarCasualtiesChanges;
 	bool bEmbargoIdeology;
 #endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bool bPermanentAlly;
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	bool bSubmitSuzerain;
+	int iVassalTaxPercent;
+	bool bVassalTaxScience;
+	bool bVassalTaxCulture;
+	bool bVassalTaxFaith;
+	bool bVassalTaxGold;
+	bool bVassalForcePeace;
+	bool bVassalNoDenounce;
+	bool bVassalGetUC;
+#endif
 };
 
 FDataStream& operator>>(FDataStream&, CvResolutionEffects&);
@@ -1100,6 +1114,7 @@ public:
 	int GetGoldenAgePoints() const;
 	int GetCityStateInfluenceBoost() const;
 	int GetBaseBeakersTurnsToCount() const;
+	int GetDiplomaticPrestige() const;
 	UnitClassTypes GetFreeUnitClass() const;
 
 protected:
@@ -1111,6 +1126,7 @@ protected:
 	int m_iGoldenAgePoints;
 	int m_iCityStateInfluenceBoost;
 	int m_iBaseBeakersTurnsToCount;
+	int m_iDiplomaticPrestige;
 	UnitClassTypes m_eFreeUnitClass;
 
 
@@ -1231,6 +1247,7 @@ public:
 	bool IsAutomaticProposal() const;
 	bool IsUniqueType() const;
 	bool IsNoProposalByPlayer() const;
+	CivilizationTypes GetCivilizationType() const;
 	int GetQuorumPercent() const;
 	int GetLeadersVoteBonusOnFail() const;
 	bool IsDiplomaticVictory() const;
@@ -1263,6 +1280,16 @@ public:
 	int GetGlobalWarCasualtiesChanges() const;
 	bool IsEmbargoIdeology() const;
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	int GetVassalTaxPercent() const;
+	bool IsVassalTaxScience() const;
+	bool IsVassalTaxCulture() const;
+	bool IsVassalTaxFaith() const;
+	bool IsVassalTaxGold() const;
+	bool IsVassalForcePeace() const;
+	bool IsVassalNoDenounce() const;
+	bool IsVassalGetUC() const;
+#endif
 protected:
 	ResolutionDecisionTypes m_eVoterDecision;
 	ResolutionDecisionTypes m_eProposerDecision;
@@ -1270,6 +1297,7 @@ protected:
 	bool m_bAutomaticProposal;
 	bool m_bUniqueType;
 	bool m_bNoProposalByPlayer;
+	CivilizationTypes m_eCivilizationType;
 	int m_iQuorumPercent;
 	int m_iLeadersVoteBonusOnFail;
 	bool m_bDiplomaticVictory;
@@ -1301,6 +1329,16 @@ protected:
 	int m_iGlobalAttackModifier;
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
+#endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	int m_iVassalTaxPercent;
+	bool m_bVassalTaxScience;
+	bool m_bVassalTaxCulture;
+	bool m_bVassalTaxFaith;
+	bool m_bVassalTaxGold;
+	bool m_bVassalForcePeace;
+	bool m_bVassalNoDenounce;
+	bool m_bVassalGetUC;
 #endif
 
 private:

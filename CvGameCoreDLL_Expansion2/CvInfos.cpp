@@ -7023,6 +7023,9 @@ CvEraInfo::CvEraInfo() :
 	m_iDiplpEmphasisLatePolicies(0),
 	m_iTradeRouteFoodBonusTimes100(0),
 	m_iTradeRouteProductionBonusTimes100(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdExtra(0),
+#endif
 	m_iLeaguePercent(0),
 	m_iWarmongerPercent(0),
 	m_bNoGoodies(false),
@@ -7183,6 +7186,14 @@ int CvEraInfo::getTradeRouteProductionBonusTimes100() const
 	return m_iTradeRouteProductionBonusTimes100;
 }
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//------------------------------------------------------------------------------
+	int CvEraInfo::getMinorCivAlliesThresholdExtra() const
+	{
+		return m_iMinorCivAlliesThresholdExtra;
+	}
+#endif
+
 //------------------------------------------------------------------------------
 int CvEraInfo::getLeaguePercent() const
 {
@@ -7316,6 +7327,9 @@ bool CvEraInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUt
 	m_iTradeRouteProductionBonusTimes100 = kResults.GetInt("TradeRouteProductionBonusTimes100");
 	m_iLeaguePercent			= kResults.GetInt("LeaguePercent");
 	m_iWarmongerPercent			= kResults.GetInt("WarmongerPercent");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iMinorCivAlliesThresholdExtra = kResults.GetInt("MinorCivAlliesThresholdExtra");
+#endif
 
 	m_strCityBombardEffectTag	= kResults.GetText("CityBombardEffectTag");
 	m_uiCityBombardEffectTagHash = FString::Hash(m_strCityBombardEffectTag);
