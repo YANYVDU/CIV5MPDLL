@@ -6243,13 +6243,19 @@ void CvMinorCivAI::ChangeFriendshipWithMajorTimes100(PlayerTypes ePlayer, int iC
 	if(iChange != 0)
 	{
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-		// Permanent ally: block other players from increasing influence
-		if (iChange > 0)
+		// Permanent ally: fully lock the permanent ally's influence and block others from raising theirs
+		if (GET_PLAYER(ePlayer).IsPermanentAlly(GetPlayer()->GetID()))
 		{
+			// The permanent ally's influence is fully locked (no raise, no decay or weakening)
+			return;
+		}
+		else if (iChange > 0)
+		{
+			// Other players cannot raise influence on a city-state that has a permanent ally
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
 				PlayerTypes e = (PlayerTypes)i;
-				if (e != ePlayer && GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
+				if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
 					return;
 			}
 		}
@@ -9895,12 +9901,29 @@ void CvMinorCivAI::DoElection()
 		fcn = MakeDelegate(&GC.getGame(), &CvGame::getJonRandNum);
 		PlayerTypes eElectionWinner = wvVotes.ChooseByWeight(&fcn, "Choosing CS election winner by weight");
 
+		// Permanent ally city-states are immune to rigged elections: no influence change, no notification
+		bool bHasPermanentAlly = false;
+		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		{
+			if (GET_PLAYER((PlayerTypes)i).isAlive() && GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			{
+				bHasPermanentAlly = true;
+				break;
+			}
+		}
+
 		for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
 		{
 			PlayerTypes ePlayer = (PlayerTypes)ui;
 
 			if(ePlayer == eElectionWinner)
 			{
+				// Permanent ally city-states are immune to rigged elections
+				if (bHasPermanentAlly)
+				{
+					continue;
+				}
+
 				CvNotifications* pNotifications = GET_PLAYER(ePlayer).GetNotifications();
 				if(pNotifications)
 				{
@@ -10018,6 +10041,26 @@ void CvMinorCivAI::ChangeNumUnitsGifted(PlayerTypes ePlayer, int iChange)
 	SetNumUnitsGifted(ePlayer, GetNumUnitsGifted(ePlayer) + iChange);
 }
 
+// Target influence for a permanent ally: above the current highest holder, plus the ally threshold buffer, with a hard floor
+int CvMinorCivAI::GetPermanentAllyTargetInfluence(PlayerTypes ePlayer)
+{
+	int iCurrentInf = GetEffectiveFriendshipWithMajor(ePlayer);
+	int iAlliesThreshold = GetAlliesThresholdForPlayer(ePlayer);
+	int iHighest = 0;
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes e = (PlayerTypes)i;
+		if (GET_PLAYER(e).isAlive() && e != ePlayer)
+		{
+			int iTheir = GetEffectiveFriendshipWithMajor(e);
+			if (iTheir > iHighest) iHighest = iTheir;
+		}
+	}
+	int iTarget = std::max(iCurrentInf + iAlliesThreshold + 1, iHighest + 1);
+	iTarget = std::max(iTarget, PERMANENT_ALLY_INFLUENCE_FLOOR);
+	return iTarget;
+}
+
 void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUnit, bool bDistanceGift)
 {
 	CvAssertMsg(eFromPlayer >= 0, "eFromPlayer is expected to be non-negative (invalid Index)");
@@ -10104,19 +10147,7 @@ int CvMinorCivAI::GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreat
 		if (kFromPlayer.GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 		{
 			int iCurrentInf = GetEffectiveFriendshipWithMajor(eFromPlayer);
-			int iRequiredInf = GetAlliesThresholdForPlayer(eFromPlayer);
-			int iHighest = 0;
-			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
-			{
-				PlayerTypes e = (PlayerTypes)i;
-				if (GET_PLAYER(e).isAlive() && e != eFromPlayer)
-				{
-					int iTheir = GetEffectiveFriendshipWithMajor(e);
-					if (iTheir > iHighest) iHighest = iTheir;
-				}
-			}
-			int iTarget = std::max(iCurrentInf + iRequiredInf + 1, iHighest + 1);
-			iTarget = std::max(iTarget, 10000);
+			int iTarget = GetPermanentAllyTargetInfluence(eFromPlayer);
 			iInfluence += std::max(0, iTarget - iCurrentInf);
 		}
 	}
