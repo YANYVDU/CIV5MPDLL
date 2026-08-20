@@ -18,6 +18,9 @@
 #define ENABLE_PERMANENT_WAR false
 #define SAFE_ESTIMATE_NUM_QUESTS_PER_PLAYER (5)
 
+// Hard floor for a permanent ally's influence, far above any normal attainable value, so the ally cannot be displaced
+#define PERMANENT_ALLY_INFLUENCE_FLOOR 10000
+
 enum MinorCivStatusTypes
 {
     NO_MINOR_CIV_STATUS_TYPE = -1,
@@ -394,6 +397,7 @@ public:
 	bool IsFriendshipAboveAlliesThresholdForPlayer(PlayerTypes ePlayer, int iFriendship) const;
 	int GetAlliesThreshold() const;
 	int GetAlliesThresholdForPlayer(PlayerTypes ePlayer) const;
+	int GetPermanentAllyTargetInfluence(PlayerTypes ePlayer);
 	void DoSetBonus(PlayerTypes ePlayer, bool bAdd, bool bFriends, bool bAllies, bool bSuppressNotifications = false, bool bPassedBySomeone = false, PlayerTypes eNewAlly = NO_PLAYER);
 
 	void DoIntrusion();

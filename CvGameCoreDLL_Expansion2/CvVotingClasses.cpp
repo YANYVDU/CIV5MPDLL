@@ -1614,26 +1614,23 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		CvMinorCivAI* pMinorAI = GET_PLAYER(eTargetCityState).GetMinorCivAI();
 		if (pMinorAI)
 		{
-			// Set influence above the current highest holder, plus the ally buffer, with a 10000 floor so the permanent ally cannot be displaced
-			int iCurrentInf = pMinorAI->GetEffectiveFriendshipWithMajor(ePlayer);
-			int iRequiredInf = pMinorAI->GetAlliesThresholdForPlayer(ePlayer);
-			int iHighest = 0;
+			// Only the first player to lock the CS becomes the permanent ally (same uniqueness rule as the Great Person gift path)
+			bool bAlreadyPermanentAlly = false;
 			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 			{
-				PlayerTypes e = (PlayerTypes)i;
-				if (GET_PLAYER(e).isAlive() && e != ePlayer)
+				if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(eTargetCityState))
 				{
-					int iTheir = pMinorAI->GetEffectiveFriendshipWithMajor(e);
-					if (iTheir > iHighest) iHighest = iTheir;
+					bAlreadyPermanentAlly = true;
+					break;
 				}
 			}
-			int iTarget = max(iCurrentInf + iRequiredInf + 1, iHighest + 1);
-			iTarget = max(iTarget, 10000);
-			pMinorAI->SetFriendshipWithMajor(ePlayer, iTarget);
-			// Mark as permanent ally to prevent decay and coups
-			GetEffects()->bPermanentAlly = true;
-			if (!pPlayer->IsPermanentAlly(eTargetCityState))
+			if (!bAlreadyPermanentAlly)
 			{
+				// Set influence via the permanent-ally target (above highest holder, ally threshold buffer, hard floor)
+				int iTarget = pMinorAI->GetPermanentAllyTargetInfluence(ePlayer);
+				pMinorAI->SetFriendshipWithMajor(ePlayer, iTarget);
+				// Mark as permanent ally to prevent decay and coups
+				GetEffects()->bPermanentAlly = true;
 				pPlayer->SetPermanentAlly(eTargetCityState, true);
 				pPlayer->ChangePrestigeExemptAllyCount(1);
 
