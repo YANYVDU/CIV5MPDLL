@@ -2981,12 +2981,54 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 		{
 			CvPlayer& kProposer = GET_PLAYER(eProposer);
 			CvPlayer& kTarget = GET_PLAYER(eTarget);
-			// 2x condition: population, cities, and military might must all exceed target
-			if (kProposer.getTotalPopulation() < kTarget.getTotalPopulation() * 2)
+			// 2x condition: population, cities, and military might must all exceed target.
+			// Optionally count the proposer's allied city-states and existing vassals toward the
+			// comparison, each controlled by its own on/off switch and percentage.
+			long long iProposerCities = kProposer.getNumCities();
+			long long iProposerPopulation = kProposer.getTotalPopulation();
+			long long iProposerMilitaryMight = kProposer.GetMilitaryMight();
+
+			// Allied city-states
+			if (pInfo->IsVassalCountPermanentAllyCities() || pInfo->IsVassalCountPermanentAllyPopulation())
+			{
+				for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+				{
+					PlayerTypes eMinor = (PlayerTypes)iMinor;
+					CvPlayer& kMinor = GET_PLAYER(eMinor);
+					if (kMinor.isAlive() && kMinor.isMinorCiv() && kProposer.IsPermanentAlly(eMinor))
+					{
+						if (pInfo->IsVassalCountPermanentAllyCities())
+							iProposerCities += (long long)kMinor.getNumCities() * pInfo->GetVassalPermanentAllyCitiesPercent() / 100;
+						if (pInfo->IsVassalCountPermanentAllyPopulation())
+							iProposerPopulation += (long long)kMinor.getTotalPopulation() * pInfo->GetVassalPermanentAllyPopulationPercent() / 100;
+					}
+				}
+			}
+
+			// Existing vassals
+			if (pInfo->IsVassalCountVassalCities() || pInfo->IsVassalCountVassalPopulation() || pInfo->IsVassalCountVassalMilitaryMight())
+			{
+				const std::vector<int>& vassals = kProposer.GetVassals();
+				for (size_t i = 0; i < vassals.size(); i++)
+				{
+					CvPlayer& kVassal = GET_PLAYER((PlayerTypes)vassals[i]);
+					if (kVassal.isAlive())
+					{
+						if (pInfo->IsVassalCountVassalCities())
+							iProposerCities += (long long)kVassal.getNumCities() * pInfo->GetVassalVassalCitiesPercent() / 100;
+						if (pInfo->IsVassalCountVassalPopulation())
+							iProposerPopulation += (long long)kVassal.getTotalPopulation() * pInfo->GetVassalVassalPopulationPercent() / 100;
+						if (pInfo->IsVassalCountVassalMilitaryMight())
+							iProposerMilitaryMight += (long long)kVassal.GetMilitaryMight() * pInfo->GetVassalVassalMilitaryMightPercent() / 100;
+					}
+				}
+			}
+
+			if (iProposerPopulation < (long long)kTarget.getTotalPopulation() * 2)
 				bValid = false;
-			if (kProposer.getNumCities() < kTarget.getNumCities() * 2)
+			if (iProposerCities < (long long)kTarget.getNumCities() * 2)
 				bValid = false;
-			if (kProposer.GetMilitaryMight() < kTarget.GetMilitaryMight() * 2)
+			if (iProposerMilitaryMight < (long long)kTarget.GetMilitaryMight() * 2)
 				bValid = false;
 			// Target must not already have an overlord
 			if (kTarget.GetOverlord() != NO_PLAYER)
@@ -11339,6 +11381,16 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_bVassalForcePeace = false;
 	m_bVassalNoDenounce = false;
 	m_bVassalGetUC = false;
+	m_bVassalCountPermanentAllyCities = false;
+	m_bVassalCountVassalCities = false;
+	m_bVassalCountPermanentAllyPopulation = false;
+	m_bVassalCountVassalPopulation = false;
+	m_bVassalCountVassalMilitaryMight = false;
+	m_iVassalPermanentAllyCitiesPercent = 0;
+	m_iVassalVassalCitiesPercent = 0;
+	m_iVassalPermanentAllyPopulationPercent = 0;
+	m_iVassalVassalPopulationPercent = 0;
+	m_iVassalVassalMilitaryMightPercent = 0;
 #endif
 }
 
@@ -11402,6 +11454,16 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_bVassalForcePeace = kResults.GetBool("VassalForcePeace");
 	m_bVassalNoDenounce = kResults.GetBool("VassalNoDenounce");
 	m_bVassalGetUC      = kResults.GetBool("VassalGetUC");
+	m_bVassalCountPermanentAllyCities      = kResults.GetBool("VassalCountPermanentAllyCities");
+	m_bVassalCountVassalCities             = kResults.GetBool("VassalCountVassalCities");
+	m_bVassalCountPermanentAllyPopulation  = kResults.GetBool("VassalCountPermanentAllyPopulation");
+	m_bVassalCountVassalPopulation         = kResults.GetBool("VassalCountVassalPopulation");
+	m_bVassalCountVassalMilitaryMight      = kResults.GetBool("VassalCountVassalMilitaryMight");
+	m_iVassalPermanentAllyCitiesPercent     = kResults.GetInt("VassalPermanentAllyCitiesPercent");
+	m_iVassalVassalCitiesPercent            = kResults.GetInt("VassalVassalCitiesPercent");
+	m_iVassalPermanentAllyPopulationPercent = kResults.GetInt("VassalPermanentAllyPopulationPercent");
+	m_iVassalVassalPopulationPercent        = kResults.GetInt("VassalVassalPopulationPercent");
+	m_iVassalVassalMilitaryMightPercent     = kResults.GetInt("VassalVassalMilitaryMightPercent");
 #endif
 	return true;
 }
@@ -11621,6 +11683,46 @@ bool CvResolutionEntry::IsVassalNoDenounce() const
 bool CvResolutionEntry::IsVassalGetUC() const
 {
 	return m_bVassalGetUC;
+}
+bool CvResolutionEntry::IsVassalCountPermanentAllyCities() const
+{
+	return m_bVassalCountPermanentAllyCities;
+}
+bool CvResolutionEntry::IsVassalCountVassalCities() const
+{
+	return m_bVassalCountVassalCities;
+}
+bool CvResolutionEntry::IsVassalCountPermanentAllyPopulation() const
+{
+	return m_bVassalCountPermanentAllyPopulation;
+}
+bool CvResolutionEntry::IsVassalCountVassalPopulation() const
+{
+	return m_bVassalCountVassalPopulation;
+}
+bool CvResolutionEntry::IsVassalCountVassalMilitaryMight() const
+{
+	return m_bVassalCountVassalMilitaryMight;
+}
+int CvResolutionEntry::GetVassalPermanentAllyCitiesPercent() const
+{
+	return m_iVassalPermanentAllyCitiesPercent;
+}
+int CvResolutionEntry::GetVassalVassalCitiesPercent() const
+{
+	return m_iVassalVassalCitiesPercent;
+}
+int CvResolutionEntry::GetVassalPermanentAllyPopulationPercent() const
+{
+	return m_iVassalPermanentAllyPopulationPercent;
+}
+int CvResolutionEntry::GetVassalVassalPopulationPercent() const
+{
+	return m_iVassalVassalPopulationPercent;
+}
+int CvResolutionEntry::GetVassalVassalMilitaryMightPercent() const
+{
+	return m_iVassalVassalMilitaryMightPercent;
 }
 #endif
 
