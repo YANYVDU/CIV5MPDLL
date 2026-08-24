@@ -1098,26 +1098,6 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			BornGreatPersonSpecialistYieldEntry entry = e;
 			entry.m_iYieldMod *= iChange;
 			m_vBornGreatPersonSpecialistYield.push_back(entry);
-
-			// Apply born yield to all cities with existing specialists
-			GreatPersonTypes eGP = GetGreatPersonFromUnitClass((UnitClassTypes)e.m_iUnitClassType);
-			if (eGP != NO_GREATPERSON && m_pPlayer)
-			{
-				int iBornCount = m_pPlayer->GetBornGreatPersonCount(eGP);
-				int iYieldPerSpec = iBornCount * e.m_iYieldMod / 100 * iChange;
-				if (iYieldPerSpec != 0)
-				{
-					int iLoop;
-					for (CvCity* pCity = m_pPlayer->firstCity(&iLoop); pCity != NULL; pCity = m_pPlayer->nextCity(&iLoop))
-					{
-						int iSpecCount = pCity->GetCityCitizens()->GetSpecialistCount((SpecialistTypes)e.m_iSpecialistType);
-						if (iSpecCount > 0)
-						{
-							pCity->ChangeBaseYieldRateFromSpecialists((YieldTypes)e.m_iYieldType, iYieldPerSpec * iSpecCount);
-						}
-					}
-				}
-			}
 		}
 	}
 	{

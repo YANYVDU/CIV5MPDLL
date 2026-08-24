@@ -8678,22 +8678,7 @@ void CvCity::processSpecialist(SpecialistTypes eSpecialist, int iChange)
 	for(iI = 0; iI < NUM_YIELD_TYPES; iI++)
 	{
 		int iSpecialistYield = pkSpecialist->getYieldChange(iI);
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-		if (MOD_SP_UNIQUE_CITYSTATE)
-		{
-			CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
-			if (pUA)
-			{
-				int iBornYield = pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, (YieldTypes)iI);
-				if (iBornYield > 0)
-				{
-					LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("processSpecialist: Specialst=%d Yield=%d BornYield=%d", (int)eSpecialist, iI, iBornYield);
-				}
-				iSpecialistYield += iBornYield;
-			}
-		}
-#endif
-	ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (iSpecialistYield * iChange));
+		ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (iSpecialistYield * iChange));
 
 		//int globalModifier = GET_PLAYER(getOwner()).GetYieldModifierFromSpecialistGlobal(eSpecialist, ((YieldTypes)iI));
 		int LocalModifier = getYieldModifierFromSpecialist(eSpecialist, ((YieldTypes)iI));
@@ -15948,6 +15933,15 @@ int CvCity::getExtraYieldPerSpecialist(YieldTypes eIndex, SpecialistTypes eSpeci
 		}
 	}
 #endif
+	// Born-great-person specialist yield (Zurich CS UA): per-specialist yield derived from
+	// the count of great persons born. Kept dynamic and synced into the city yield through
+	// updateExtraSpecialistYield (delta-based), so it never stacks per turn and self-heals
+	// on load.
+	CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pUA)
+	{
+		iYieldMultiplier += pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, eIndex);
+	}
 	return iYieldMultiplier;
 }
 
@@ -15967,14 +15961,6 @@ int CvCity::getSpecialistYield(YieldTypes eIndex, SpecialistTypes eSpecialist) c
 	}
 	int iRtnValue = pkSpecialistInfo->getYieldChange(eIndex);
 	iRtnValue += getExtraYieldPerSpecialist(eIndex, eSpecialist);
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (MOD_SP_UNIQUE_CITYSTATE)
-	{
-		CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
-		if (pUA)
-			iRtnValue += pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, eIndex);
-	}
-#endif
 	return iRtnValue;
 }
 //	--------------------------------------------------------------------------------

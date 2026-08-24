@@ -4444,41 +4444,10 @@ CvUnit* CvPlayer::initUnit(UnitTypes eUnit, int iX, int iY, UnitAITypes eUnitAI,
 		GreatPersonTypes eGP = GetGreatPersonFromUnitClass(eUC);
 		if (eGP != NO_GREATPERSON)
 		{
-			int iBeforeCount = GetBornGreatPersonCount(eGP);
-			int iVecSize = (int)m_paiBornGreatPersonCount.size();
-
-			// Snapshot old born yields before count changes
-			SpecialistTypes eSpec = (SpecialistTypes)GC.getGreatPersonInfo(eGP)->GetSpecialistType();
-			CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
-			int aiOldYields[NUM_YIELD_TYPES] = {0};
-			if (eSpec != NO_SPECIALIST && pUA)
-				for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
-					aiOldYields[iY] = pUA->GetSpecialistYieldFromBornGreatPerson(eSpec, (YieldTypes)iY);
-
 			ChangeBornGreatPersonCount(eGP, 1);
-			int iAfterCount = GetBornGreatPersonCount(eGP);
-			LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("GreatPersonBorn: Player=%d Unit=%d GP=%d VecSize=%d Before=%d After=%d", GetID(), eUnit, (int)eGP, iVecSize, iBeforeCount, iAfterCount);
-
-			// Apply yield delta to all cities with existing specialists
-			if (eSpec != NO_SPECIALIST && pUA)
-			{
-				int iLoop;
-				for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
-				{
-					int iSpecCount = pLoopCity->GetCityCitizens()->GetSpecialistCount(eSpec);
-					if (iSpecCount <= 0) continue;
-					for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
-					{
-						int iNewYield = pUA->GetSpecialistYieldFromBornGreatPerson(eSpec, (YieldTypes)iY);
-						int iDelta = iNewYield - aiOldYields[iY];
-						if (iDelta != 0)
-						{
-							pLoopCity->ChangeBaseYieldRateFromSpecialists((YieldTypes)iY, iDelta * iSpecCount);
-							LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("CityYieldUpdate: Spec=%d Yield=%d Old=%d New=%d Delta=%d Count=%d", (int)eSpec, iY, aiOldYields[iY], iNewYield, iDelta, iSpecCount);
-						}
-					}
-				}
-			}
+			// Born-yield contribution is dynamic (per-specialist extra yield); re-sync every
+			// city so the newly born great person's yield is reflected immediately.
+			updateExtraSpecialistYield();
 
 	#if defined(MOD_SP_UNIQUE_CITYSTATE)
 		// Valletta UA: grant yield based on influence when a unit of configured class is born
@@ -19378,6 +19347,10 @@ void CvPlayer::RefreshCSAllUAEffects()
 			m_pCityStateUA->ApplyEffect(pUAEntry->GetFriendEffectID(), 1);
 		}
 	}
+
+	// Born-yield contribution is dynamic (per-specialist extra yield). Re-sync all cities so
+	// the rebuilt effect list takes effect idempotently (delta-based, never stacks per turn).
+	updateExtraSpecialistYield();
 }
 #endif
 
