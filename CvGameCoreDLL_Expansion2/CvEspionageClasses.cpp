@@ -8,6 +8,7 @@
 #include "CustomMods.h"
 #include "CvGameCoreDLLPCH.h"
 #include "CvGameCoreDLLUtil.h"
+#include "CvCityStateUAClasses.h"
 #include "ICvDLLUserInterface.h"
 #include "CvGameCoreUtils.h"
 #include "CvDiplomacyAI.h"
@@ -2311,6 +2312,16 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 	{
 		iResultPercentage = 0;
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Sofia: add the coup-success modifier after the base cap so it can exceed 85% (up to a guaranteed 100%)
+	CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+	if (pCSUA && pCSUA->GetCoupChanceModifier() != 0)
+	{
+		iResultPercentage += pCSUA->GetCoupChanceModifier();
+		iResultPercentage = iResultPercentage > 100 ? 100 : (iResultPercentage < 0 ? 0 : iResultPercentage);
+	}
+#endif
 
 	//int iAdjustedAllyInfluenceTimes100 = iAllyInfluence * (100 + m_aSpyList[uiSpyIndex].m_eRank * 100);
 	//int iAdjustedAllyInfluence = iAdjustedAllyInfluenceTimes100 / 100;
