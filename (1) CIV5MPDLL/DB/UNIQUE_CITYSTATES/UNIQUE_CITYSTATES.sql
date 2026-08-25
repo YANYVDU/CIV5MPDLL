@@ -123,6 +123,7 @@ CREATE TABLE CityStateUAEffects (
     GoldenAgeThresholdPerPopulation                 integer DEFAULT 0,
     -- Sofia: coup/espionage spy UA (columns on the effect table, one row per ally/friend effect)
     CoupChanceModifier          integer DEFAULT 0,  -- +% coup success, may exceed the 85% cap (ally 30 / friend 12)
+    CoupFailSpySurvives         boolean DEFAULT 0,  -- failed coup keeps the spy alive (ally only)
     SpyKillChancePerSpy         integer DEFAULT 0   -- +% chance to catch/kill enemy spies per alive spy (ally only)
 );
 

@@ -2338,6 +2338,9 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 /// AttemptCoup - Have a spy try to overthrow a city state. If success, the spy's owner becomes the ally. If failure, the spy dies.
 bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 {
+	// Sofia: whether a failed coup keeps the spy alive (returned to the safe house)
+	bool bCoupSpySurvives = false;
+
 	// if you're not allowed to stage a coup here, the coup fails
 	if(!CanStageCoup(uiSpyIndex))
 	{
@@ -2421,12 +2424,16 @@ bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 		aiNewInfluenceValueTimes100[m_pPlayer->GetID()] = (-10 * 100);
 		bAttemptSuccess = false;
 
-		// kill the spy
-		ExtractSpyFromCity(uiSpyIndex); // move the dead body out so that someone else can move in
+		// kill the spy (Sofia: a surviving spy is returned to the safe house instead)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+		bCoupSpySurvives = (pCSUA && pCSUA->GetCoupFailSpySurvives());
+#endif
+		ExtractSpyFromCity(uiSpyIndex); // move the spy out so that someone else can move in
 #if defined(MOD_API_ESPIONAGE)
-		m_aSpyList[uiSpyIndex].SetSpyState(m_pPlayer->GetID(), uiSpyIndex, SPY_STATE_DEAD); // have to official kill him after the extraction
+		m_aSpyList[uiSpyIndex].SetSpyState(m_pPlayer->GetID(), uiSpyIndex, bCoupSpySurvives ? SPY_STATE_UNASSIGNED : SPY_STATE_DEAD);
 #else
-		m_aSpyList[uiSpyIndex].m_eSpyState = SPY_STATE_DEAD; // have to official kill him after the extraction
+		m_aSpyList[uiSpyIndex].m_eSpyState = bCoupSpySurvives ? SPY_STATE_UNASSIGNED : SPY_STATE_DEAD;
 #endif
 	}
 
@@ -2526,9 +2533,9 @@ bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 		else
 		{
 			eNotification = NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE;
-			strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_S");
+			strSummary = Localization::Lookup(bCoupSpySurvives ? "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED_S" : "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_S");
 			strSummary << pCity->getNameKey();
-			strNotification = Localization::Lookup("TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE");
+			strNotification = Localization::Lookup(bCoupSpySurvives ? "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED" : "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE");
 			strNotification << GetSpyRankName(m_aSpyList[uiSpyIndex].m_eRank);
 #if defined(MOD_BUGFIX_SPY_NAMES)
 			strNotification << m_aSpyList[uiSpyIndex].GetSpyName(m_pPlayer);
