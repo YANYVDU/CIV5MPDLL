@@ -165,6 +165,9 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetNumHumanPlayers);
 	Method(GetNumSequentialHumans);
 	Method(GetGameTurn);
+	Method(IsEconomicAidActive);
+	Method(GetEconomicAidWorldEra);
+	Method(GetEconomicAidRound);
 	Method(SetGameTurn);
 	Method(GetTurnYear);
 	Method(GetGameTurnYear);
@@ -340,6 +343,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(DoControl);
 
 	Method(DoMinorPledgeProtection);
+	Method(DoMinorEconomicAid);
 	Method(DoMinorGoldGift);
 	Method(DoMinorGiftGold);
 	Method(DoMinorGiftTileImprovement);
@@ -887,6 +891,24 @@ int CvLuaGame::lGetNumSequentialHumans(lua_State* L)
 int CvLuaGame::lGetGameTurn(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::getGameTurn);
+}
+//------------------------------------------------------------------------------
+//bool IsEconomicAidActive();
+int CvLuaGame::lIsEconomicAidActive(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::IsEconomicAidActive);
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidWorldEra();
+int CvLuaGame::lGetEconomicAidWorldEra(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::GetEconomicAidWorldEra);
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidRound();
+int CvLuaGame::lGetEconomicAidRound(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::GetEconomicAidRound);
 }
 //------------------------------------------------------------------------------
 //void setGameTurn(int iNewValue);
@@ -2019,6 +2041,21 @@ int CvLuaGame::lDoMinorPledgeProtection(lua_State* L)
 	const int iMinor = lua_tointeger(L, 2);
 	const bool bProtect = lua_toboolean(L, 3);
 	GC.getGame().DoMinorPledgeProtection((PlayerTypes)iMajor, (PlayerTypes)iMinor, bProtect);
+
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void DoMinorEconomicAid(int iMajorCivID, int iMinorCivID, bool bAid);
+// Routed through the FromUIDiploEvent channel for multiplayer synchronization
+int CvLuaGame::lDoMinorEconomicAid(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const bool bAid = lua_toboolean(L, 3);
+
+	// Routed to the city-state's DiplomacyAI (GetPlayer() there is the city-state);
+	// the acting major civ id is carried along as iArg1.
+	GC.getGame().DoFromUIDiploEvent((FromUIDiploEventTypes)(bAid ? FROM_UI_DIPLO_EVENT_HUMAN_JOIN_ECONOMIC_AID : FROM_UI_DIPLO_EVENT_HUMAN_LEAVE_ECONOMIC_AID), (PlayerTypes)iMinor, iMajor, 0);
 
 	return 1;
 }

@@ -108,7 +108,12 @@ CvGame::CvGame() :
 #ifdef MOD_API_MP_PLOT_SIGNAL
 	, m_uiLastMPSignalInvokeTime(0)
 #endif // MOD_API_MP_PLOT_SIGNAL
-	
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	, m_iEconomicAidRound(0)
+	, m_iEconomicAidRoundStartTurn(-1)
+	, m_iEconomicAidWorldEra(1)
+	, m_bEconomicAidActive(false)
+#endif
 {
 	m_iSuppressHappinessUpdate = 0; // reset transient suppression counter (guards against residue across game restarts)
 	m_aiEndTurnMessagesReceived = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);
@@ -4476,6 +4481,83 @@ EraTypes CvGame::getCurrentEra() const
 	return NO_ERA;
 }
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//	--------------------------------------------------------------------------------
+// Economic Aid (Super Power V11): all city-states share a single global round
+void CvGame::DoEconomicAidRoundTurn()
+{
+	if(!MOD_SP_UNIQUE_CITYSTATE)
+		return;
+
+	if(!m_bEconomicAidActive)
+	{
+		// Activate on the opening turn regardless of starting era (ancient / classical / later).
+		// Also activates on the first turn after loading an old save (where getGameTurn() > getStartTurn()).
+		m_bEconomicAidActive = true;
+		StartNewEconomicAidRound();
+		return;
+	}
+
+	int iRoundLength = GC.getECONOMIC_AID_ROUND_LENGTH();
+	int iSpeedMod = GC.getGameSpeedInfo(getGameSpeedType())->getTrainPercent();
+	if(iSpeedMod != 0)
+	{
+		iRoundLength = (iRoundLength * iSpeedMod) / 100;
+	}
+	if(iRoundLength < 1)
+	{
+		iRoundLength = 1;
+	}
+
+	if(getGameTurn() - m_iEconomicAidRoundStartTurn >= iRoundLength)
+	{
+		StartNewEconomicAidRound();
+	}
+}
+
+//	--------------------------------------------------------------------------------
+void CvGame::StartNewEconomicAidRound()
+{
+	m_iEconomicAidRound++;
+	m_iEconomicAidRoundStartTurn = getGameTurn();
+	m_iEconomicAidWorldEra = (int)getCurrentEra() + 1; // era index + 1 => era coefficient (fixed for the whole round)
+
+	// Re-open economic aid for all living city-states (re-founded city-states rejoin from this round)
+	for(int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
+		if(kMinor.isAlive() && kMinor.isMinorCiv())
+		{
+			kMinor.GetMinorCivAI()->SetEconomicAidOpenThisRound(true);
+		}
+	}
+}
+
+//	--------------------------------------------------------------------------------
+bool CvGame::IsEconomicAidActive() const
+{
+	return m_bEconomicAidActive;
+}
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidRound() const
+{
+	return m_iEconomicAidRound;
+}
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidRoundStartTurn() const
+{
+	return m_iEconomicAidRoundStartTurn;
+}
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidWorldEra() const
+{
+	return m_iEconomicAidWorldEra;
+}
+#endif
+
 
 //	--------------------------------------------------------------------------------
 TeamTypes CvGame::getActiveTeam()
@@ -7867,6 +7949,11 @@ void CvGame::doTurn()
 
 	CvBarbarians::BeginTurn();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Advance the shared economic-aid round before per-player / per-city-state turn logic
+	DoEconomicAidRoundTurn();
+#endif
+
 	doUpdateCacheOnTurn();
 
 	DoUpdateCachedWorldReligionTechProgress();
@@ -9946,6 +10033,13 @@ void CvGame::Read(FDataStream& kStream)
 	kStream >> m_iEndTurnMessagesSent;
 	kStream >> m_iElapsedGameTurns;
 	kStream >> m_iStartTurn;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidRound, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidRoundStartTurn, -1);
+	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidWorldEra, 1);
+	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidActive, false);
+#endif
 	kStream >> m_iWinningTurn;
 	kStream >> m_iStartYear;
 	kStream >> m_iEstimateEndTurn;
@@ -10205,6 +10299,13 @@ void CvGame::Write(FDataStream& kStream) const
 	kStream << m_iEndTurnMessagesSent;
 	kStream << m_iElapsedGameTurns;
 	kStream << m_iStartTurn;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11)
+	kStream << m_iEconomicAidRound;
+	kStream << m_iEconomicAidRoundStartTurn;
+	kStream << m_iEconomicAidWorldEra;
+	kStream << m_bEconomicAidActive;
+#endif
 	kStream << m_iWinningTurn;
 	kStream << m_iStartYear;
 	kStream << m_iEstimateEndTurn;

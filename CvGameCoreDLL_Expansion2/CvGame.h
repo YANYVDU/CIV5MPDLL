@@ -146,6 +146,16 @@ public:
 	bool canTrainNukes() const;
 	EraTypes getCurrentEra() const;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - all city-states share a single global round
+	void DoEconomicAidRoundTurn();
+	void StartNewEconomicAidRound();
+	bool IsEconomicAidActive() const;
+	int GetEconomicAidRound() const;
+	int GetEconomicAidRoundStartTurn() const;
+	int GetEconomicAidWorldEra() const;
+#endif
+
 	TeamTypes getActiveTeam();
 	CivilizationTypes getActiveCivilizationType();
 
@@ -696,6 +706,12 @@ protected:
 	int m_iEndTurnMessagesSent;
 	int m_iElapsedGameTurns;
 	int m_iStartTurn;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iEconomicAidRound;
+	int m_iEconomicAidRoundStartTurn;
+	int m_iEconomicAidWorldEra;
+	bool m_bEconomicAidActive;
+#endif
 	int m_iWinningTurn;
 	int m_iStartYear;
 	int m_iEstimateEndTurn;

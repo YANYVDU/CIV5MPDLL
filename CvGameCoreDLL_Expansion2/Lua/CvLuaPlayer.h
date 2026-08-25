@@ -662,6 +662,10 @@ protected:
 	static int lCanMajorProtect(lua_State* L);
 	static int lCanMajorStartProtection(lua_State* L);
 	static int lCanMajorWithdrawProtection(lua_State* L);
+	static int lIsEconomicAidFromMajor(lua_State* L);
+	static int lCanMajorStartEconomicAid(lua_State* L);
+	static int lCanMajorWithdrawEconomicAid(lua_State* L);
+	static int lIsEconomicAidOpenThisRound(lua_State* L);
 	static int lGetTurnLastPledgedProtectionByMajor(lua_State* L);
 	static int lGetTurnLastPledgeBrokenByMajor(lua_State* L);
 	static int lGetMinorCivBullyGoldAmount(lua_State* L);

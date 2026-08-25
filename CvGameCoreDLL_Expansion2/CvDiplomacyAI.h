@@ -138,6 +138,9 @@ public:
 	// Minor Civs
 	void DoUpdateMinorCivApproaches();
 	MinorCivApproachTypes GetBestApproachTowardsMinorCiv(PlayerTypes ePlayer, int& iHighestWeight, bool bLookAtOtherPlayers, bool bLog);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	void DoEconomicAidAI();
+#endif
 
 	MinorCivApproachTypes GetMinorCivApproach(PlayerTypes ePlayer) const;
 	void SetMinorCivApproach(PlayerTypes ePlayer, MinorCivApproachTypes eApproach);

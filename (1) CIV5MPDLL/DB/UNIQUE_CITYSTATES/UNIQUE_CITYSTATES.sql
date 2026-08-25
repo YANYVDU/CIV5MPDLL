@@ -26,6 +26,9 @@ INSERT INTO Defines (Name, Value) VALUES ('CS_MERCANTILE_LUXURY_HAPPINESS_MODIFI
 INSERT INTO Defines (Name, Value) VALUES ('CS_MERCANTILE_TREASURY_INTEREST_RATE', 1);
 INSERT INTO Defines (Name, Value) VALUES ('CS_TREASURY_INTEREST_CAP_MULTIPLIER', 100);
 
+-- Economic Aid (Super Power V11): base length of one global aid round, scaled by game speed
+INSERT INTO Defines (Name, Value) VALUES ('ECONOMIC_AID_ROUND_LENGTH', 20);
+
 
 -- MinorCivAlliesThresholdExtra: per-era ally threshold increase (Rule 8)
 alter table Eras add column MinorCivAlliesThresholdExtra int default 0;

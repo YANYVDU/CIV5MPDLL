@@ -175,6 +175,16 @@ typedef FStaticVector< QuestListForPlayer, MAX_MAJOR_CIVS, false, c_eCiv5Gamepla
 //!  - Should be one instance for each Minor Civ (right now there's one for EVERY Player though)
 //!  - Accessed by any class that needs information relating to Minor Civs
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+// Economic Aid termination reason (Super Power V11)
+enum EconomicAidTerminationReason
+{
+	ECON_AID_TERM_NONE = 0,      // normal / not terminated
+	ECON_AID_TERM_PLAYER_QUIT,   // player quit: ally -20 influence + locked for this round
+	ECON_AID_TERM_WAR,           // player declared war on the city-state: settled as mid-round quit (ally -20 + locked)
+	ECON_AID_TERM_ALLY_PACT,     // city-state joined via ally pact: terminate without penalty, can rejoin this round after peace
+};
+
 class CvMinorCivAI
 {
 public:
@@ -425,6 +435,15 @@ public:
 	int GetTurnLastPledgeBrokenByMajor(PlayerTypes eMajor) const;
 	void SetTurnLastPledgeBrokenByMajor(PlayerTypes eMajor, int iTurn);
 
+	// Economic Aid (Super Power V11)
+	void DoChangeEconomicAidFromMajor(PlayerTypes eMajor, bool bAid, EconomicAidTerminationReason eReason = ECON_AID_TERM_NONE);
+	bool CanMajorStartEconomicAid(PlayerTypes eMajor);
+	bool CanMajorWithdrawEconomicAid(PlayerTypes eMajor);
+	bool CanMajorEconomicAid(PlayerTypes eMajor);
+	bool IsEconomicAidFromMajor(PlayerTypes eMajor) const;
+	bool IsEconomicAidOpenThisRound() const;
+	void SetEconomicAidOpenThisRound(bool bOpen);
+
 	// ************************************
 	// ***** Friendship - with Benefits ***** - slewis: woah
 	// ************************************
@@ -633,6 +652,11 @@ private:
 	bool m_abMajorIntruding[MAX_MAJOR_CIVS];
 	bool m_abEverFriends[MAX_MAJOR_CIVS];
 	bool m_abPledgeToProtect[MAX_MAJOR_CIVS];
+	// Economic Aid (Super Power V11)
+	bool m_abEconomicAidFromMajor[MAX_MAJOR_CIVS];
+	int m_aiTurnLastQuitEconomicAid[MAX_MAJOR_CIVS];
+	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values
+	bool m_bEconomicAidOpenThisRound;
 	bool m_abPermanentWar[REALLY_MAX_TEAMS];
 	bool m_abWaryOfTeam[REALLY_MAX_TEAMS];
 	QuestListForAllPlayers m_QuestsGiven;

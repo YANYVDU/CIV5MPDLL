@@ -1967,8 +1967,13 @@ void CvMinorCivAI::Reset()
 		m_abMajorIntruding[iI] = false;
 		m_abEverFriends[iI] = false;
 		m_abPledgeToProtect[iI] = false;
+		m_abEconomicAidFromMajor[iI] = false;
+		m_aiTurnLastQuitEconomicAid[iI] = -1;
+		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
 		m_aiMajorScratchPad[iI] = 0;
 	}
+
+	m_bEconomicAidOpenThisRound = true;
 
 	for(iI = 0; iI < REALLY_MAX_TEAMS; iI++)
 	{
@@ -2093,6 +2098,14 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	CvAssertMsg(m_QuestsGiven.size() == MAX_MAJOR_CIVS, "Number of entries in minor's quest list does not match MAX_MAJOR_CIVS when read from memory!");
 
 	kStream >> m_bDisableNotifications;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abEconomicAidFromMajor, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS, -1);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
+#endif
 }
 
 /// Serialization write
@@ -2157,6 +2170,14 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	}
 
 	kStream << m_bDisableNotifications;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - CONSTARRAY because Write() is const
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abEconomicAidFromMajor, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
+#endif
 }
 
 /// Pick the minor civ's personality and any special traits (ie. unique unit for Militaristic)
@@ -2395,7 +2416,29 @@ void CvMinorCivAI::DoChangeAliveStatus(bool bAlive)
 			SetFriendshipWithMajor(e, vNewInfluence.at(i));
 		}
 		SetDisableNotifications(false);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Economic Aid: stop all aid immediately on death without quit settlement; the city-state will not open this round
+		for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+		{
+			DoChangeEconomicAidFromMajor((PlayerTypes)i, false, ECON_AID_TERM_NONE);
+		}
+		m_bEconomicAidOpenThisRound = false;
+#endif
 	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	else
+	{
+		// Re-founded city-state: reset all aid history; it reopens from the next global round
+		for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+		{
+			m_abEconomicAidFromMajor[i] = false;
+			m_aiTurnLastQuitEconomicAid[i] = -1;
+			m_aiEconomicAidTerminationReason[i] = (int)ECON_AID_TERM_NONE;
+		}
+		m_bEconomicAidOpenThisRound = false;
+	}
+#endif
 
 	// Apply or Remove any active bonuses
 	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
@@ -6174,6 +6217,30 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 		}
 	}
 #endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11): override the net per-turn influence change.
+	// The identity used is the current one (before this turn's change is applied).
+	if (GC.getGame().IsEconomicAidActive())
+	{
+		bool bAllied = IsAllies(ePlayer);
+		bool bAiding = IsEconomicAidFromMajor(ePlayer);
+		if (bAllied && bAiding)
+		{
+			iChangeThisTurn = 0;      // ally providing aid: maintain, no decay
+		}
+		else if (bAllied && !bAiding)
+		{
+			iChangeThisTurn = -100;   // ally not providing aid: -1 per turn
+		}
+		else if (!bAllied && bAiding)
+		{
+			iChangeThisTurn = 100;    // non-ally providing aid: +1 per turn
+		}
+		// non-ally, not aiding: leave natural decay untouched
+	}
+#endif
+
 	return iChangeThisTurn;
 }
 
@@ -7516,6 +7583,118 @@ bool CvMinorCivAI::IsProtectedByAnyMajor() const
 			return true;
 	return false;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+// =====================================================================================
+// Economic Aid (Super Power V11)
+// =====================================================================================
+void CvMinorCivAI::DoChangeEconomicAidFromMajor(PlayerTypes eMajor, bool bAid, EconomicAidTerminationReason eReason)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+
+	if(bAid == IsEconomicAidFromMajor(eMajor)) return;
+
+	if(bAid)
+	{
+		if(!CanMajorStartEconomicAid(eMajor))
+		{
+			return;
+		}
+	}
+	else
+	{
+		// Player quit or war: settle as mid-round quit (ally: -20 influence + locked for this round)
+		if(eReason == ECON_AID_TERM_PLAYER_QUIT || eReason == ECON_AID_TERM_WAR)
+		{
+			if(IsAllies(eMajor))
+			{
+				ChangeFriendshipWithMajorTimes100(eMajor, /*-20*/ -2000);
+			}
+			m_aiTurnLastQuitEconomicAid[eMajor] = GC.getGame().getGameTurn();
+		}
+		// ECON_AID_TERM_ALLY_PACT: terminate without penalty, no lock (can rejoin this round after peace)
+	}
+
+	m_aiEconomicAidTerminationReason[eMajor] = (int)eReason;
+	m_abEconomicAidFromMajor[eMajor] = bAid;
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
+}
+
+bool CvMinorCivAI::CanMajorEconomicAid(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	if(!GC.getGame().IsEconomicAidActive())
+		return false;
+
+	if(!GetPlayer()->isAlive())
+		return false;
+
+	// If at war with the city-state, may not aid it
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GetPlayer()->getTeam()))
+		return false;
+
+	return true;
+}
+
+bool CvMinorCivAI::CanMajorStartEconomicAid(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	if(!CanMajorEconomicAid(eMajor))
+		return false;
+
+	if(IsEconomicAidFromMajor(eMajor))
+		return false;
+
+	// City-state must have started its economic program this round (re-founded city-states wait for the next round)
+	if(!IsEconomicAidOpenThisRound())
+		return false;
+
+	// Locked for the remainder of this round after quitting (or war termination)
+	int iRoundStartTurn = GC.getGame().GetEconomicAidRoundStartTurn();
+	if(iRoundStartTurn >= 0 && m_aiTurnLastQuitEconomicAid[eMajor] >= iRoundStartTurn)
+		return false;
+
+	return true;
+}
+
+bool CvMinorCivAI::CanMajorWithdrawEconomicAid(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	return IsEconomicAidFromMajor(eMajor);
+}
+
+bool CvMinorCivAI::IsEconomicAidFromMajor(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	return m_abEconomicAidFromMajor[eMajor];
+}
+
+bool CvMinorCivAI::IsEconomicAidOpenThisRound() const
+{
+	return m_bEconomicAidOpenThisRound;
+}
+
+void CvMinorCivAI::SetEconomicAidOpenThisRound(bool bOpen)
+{
+	m_bEconomicAidOpenThisRound = bOpen;
+}
+#endif
 
 int CvMinorCivAI::GetTurnLastPledgedProtectionByMajor(PlayerTypes eMajor) const
 {

@@ -775,6 +775,10 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(CanMajorProtect);
 	Method(CanMajorStartProtection);
 	Method(CanMajorWithdrawProtection);
+	Method(IsEconomicAidFromMajor);
+	Method(CanMajorStartEconomicAid);
+	Method(CanMajorWithdrawEconomicAid);
+	Method(IsEconomicAidOpenThisRound);
 	Method(GetTurnLastPledgedProtectionByMajor);
 	Method(GetTurnLastPledgeBrokenByMajor);
 	Method(GetMinorCivBullyGoldAmount);
@@ -7686,6 +7690,49 @@ int CvLuaPlayer::lCanMajorWithdrawProtection(lua_State* L)
 	PlayerTypes eMajor = (PlayerTypes) lua_tointeger(L, 2);
 
 	const bool bResult = pkPlayer->GetMinorCivAI()->CanMajorWithdrawProtection(eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsEconomicAidFromMajor(PlayerTypes eMajor);
+int CvLuaPlayer::lIsEconomicAidFromMajor(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eMajor = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidFromMajor(eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanMajorStartEconomicAid(PlayerTypes eMajor);
+int CvLuaPlayer::lCanMajorStartEconomicAid(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eMajor = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->CanMajorStartEconomicAid(eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanMajorWithdrawEconomicAid(PlayerTypes eMajor);
+int CvLuaPlayer::lCanMajorWithdrawEconomicAid(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eMajor = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->CanMajorWithdrawEconomicAid(eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsEconomicAidOpenThisRound();
+int CvLuaPlayer::lIsEconomicAidOpenThisRound(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidOpenThisRound();
 	lua_pushboolean(L, bResult);
 	return 1;
 }

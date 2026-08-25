@@ -5563,6 +5563,28 @@ void CvPlayer::doTurnPostDiplomacy()
 	// Gold
 	GetTreasury()->DoGold();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11): per-turn gold transfer from aiding majors to city-states.
+	// Deliberately NOT routed through DoGoldGiftFromMajor so the gold is not counted as a donation
+	// and the influence gain is not affected by donation modifiers.
+	if (!isMinorCiv() && !isBarbarian())
+	{
+		int iAidGold = GC.getGame().GetEconomicAidWorldEra();
+		if (iAidGold > 0)
+		{
+			for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+			{
+				CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
+				if (kMinor.isAlive() && kMinor.isMinorCiv() && kMinor.GetMinorCivAI()->IsEconomicAidFromMajor(GetID()))
+				{
+					GetTreasury()->ChangeGold(-iAidGold);
+					kMinor.GetTreasury()->ChangeGold(iAidGold);
+				}
+			}
+		}
+	}
+#endif
+
 	// Culture
 
 	// Prevent exploits in turn timed MP games - no accumulation of culture if player hasn't picked yet

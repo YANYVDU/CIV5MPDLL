@@ -99,6 +99,9 @@ protected:
 	static int lSetGameTurn(lua_State* L);
 	static int lGetTurnYear(lua_State* L);
 	static int lGetGameTurnYear(lua_State* L);
+	static int lIsEconomicAidActive(lua_State* L);
+	static int lGetEconomicAidWorldEra(lua_State* L);
+	static int lGetEconomicAidRound(lua_State* L);
 	static int lGetTurnString(lua_State* L);
 #if defined(MOD_API_LUA_EXTENSIONS)
 	LUAAPIEXTN(GetDateString, char*, iTurn);
@@ -276,6 +279,7 @@ protected:
 	static int lDoControl(lua_State* L);
 
 	static int lDoMinorPledgeProtection(lua_State* L);
+	static int lDoMinorEconomicAid(lua_State* L);
 	static int lDoMinorGoldGift(lua_State* L); // old name, kept here for backwards compatibility with old Lua
 	static int lDoMinorGiftGold(lua_State* L);
 	static int lDoMinorGiftTileImprovement(lua_State* L);

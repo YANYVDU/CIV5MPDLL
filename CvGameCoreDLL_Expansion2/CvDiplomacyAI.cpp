@@ -3908,7 +3908,67 @@ void CvDiplomacyAI::DoUpdateMinorCivApproaches()
 		}
 	}
 #endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11): AI decides whether to join / leave economic aid for each known city-state
+	DoEconomicAidAI();
+#endif
 }
+
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+/// AI decides whether to join or leave economic aid for each known city-state (per turn).
+/// Rule: join when GPT > X*10; leave (non-ally only) when GPT < X*5 and own influence is too low to be worth it.
+void CvDiplomacyAI::DoEconomicAidAI()
+{
+	if(!MOD_SP_UNIQUE_CITYSTATE)
+		return;
+	if(!GC.getGame().IsEconomicAidActive())
+		return;
+
+	PlayerTypes eMinor;
+	int iX = GC.getGame().GetEconomicAidWorldEra();
+	int iGPT = GetPlayer()->GetTreasury()->CalculateBaseNetGold();
+
+	for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		eMinor = (PlayerTypes) iMinorLoop;
+
+		if(!IsPlayerValid(eMinor))
+			continue;
+
+		CvMinorCivAI* pMinor = GET_PLAYER(eMinor).GetMinorCivAI();
+
+		if(pMinor->IsEconomicAidFromMajor(GetPlayer()->GetID()))
+		{
+			// Already aiding: consider leaving (never leave an ally's aid)
+			if(pMinor->IsAllies(GetPlayer()->GetID()))
+				continue;
+
+			int iMyInfluence = pMinor->GetEffectiveFriendshipWithMajor(GetPlayer()->GetID());
+			int iAllyInfluence = 0;
+			if(pMinor->GetAlly() != NO_PLAYER)
+				iAllyInfluence = pMinor->GetEffectiveFriendshipWithMajor(pMinor->GetAlly());
+			else
+				iAllyInfluence = pMinor->GetAlliesThresholdForPlayer(GetPlayer()->GetID());
+
+			int iThreshold = min(iAllyInfluence / 2, iAllyInfluence - 40);
+			if(iGPT < iX * 5 && iMyInfluence < iThreshold)
+			{
+				pMinor->DoChangeEconomicAidFromMajor(GetPlayer()->GetID(), false, ECON_AID_TERM_PLAYER_QUIT);
+			}
+		}
+		else
+		{
+			// Not aiding: consider joining
+			if(pMinor->CanMajorStartEconomicAid(GetPlayer()->GetID()) && iGPT > iX * 10)
+			{
+				pMinor->DoChangeEconomicAidFromMajor(GetPlayer()->GetID(), true, ECON_AID_TERM_NONE);
+			}
+		}
+	}
+}
+#endif
 
 
 /// What is the best approach to take towards a Minor Civ?  Can also pass in iHighestWeight by reference if you just want to know what the player feels most strongly about without actually caring about WHAT it is
@@ -19844,6 +19904,32 @@ void CvDiplomacyAI::DoFromUIDiploEvent(PlayerTypes eFromPlayer, FromUIDiploEvent
 
 			break;
 		}
+
+	// *********************************************
+	// Economic Aid (Super Power V11): human joins / leaves a city-state's economic aid.
+	// Routed to the city-state's DiplomacyAI (GetPlayer() is the city-state);
+	// the acting major civ id is carried in iArg1.
+	// *********************************************
+	case FROM_UI_DIPLO_EVENT_HUMAN_JOIN_ECONOMIC_AID:
+	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if(MOD_SP_UNIQUE_CITYSTATE && GetPlayer()->isMinorCiv())
+		{
+			GET_PLAYER(eMyPlayer).GetMinorCivAI()->DoChangeEconomicAidFromMajor((PlayerTypes)iArg1, /*bAid*/ true, ECON_AID_TERM_NONE);
+		}
+#endif
+		break;
+	}
+	case FROM_UI_DIPLO_EVENT_HUMAN_LEAVE_ECONOMIC_AID:
+	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if(MOD_SP_UNIQUE_CITYSTATE && GetPlayer()->isMinorCiv())
+		{
+			GET_PLAYER(eMyPlayer).GetMinorCivAI()->DoChangeEconomicAidFromMajor((PlayerTypes)iArg1, /*bAid*/ false, ECON_AID_TERM_PLAYER_QUIT);
+		}
+#endif
+		break;
+	}
 
 	// Should always have a state we're handling
 	default:

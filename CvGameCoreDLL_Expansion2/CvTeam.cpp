@@ -1495,6 +1495,11 @@ void CvTeam::DoDeclareWar(TeamTypes eTeam, bool bDefensivePact, bool bMinorAllyP
 									ChangeNumMinorCivsAttacked(1);
 
 									GET_PLAYER((PlayerTypes) iMinorCivLoop).GetMinorCivAI()->DoTeamDeclaredWarOnMe(GetID());
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+									// Economic Aid: declaring war on a city-state settles the aid as a mid-round quit
+									GET_PLAYER((PlayerTypes) iMinorCivLoop).GetMinorCivAI()->DoChangeEconomicAidFromMajor(getLeaderID(), false, ECON_AID_TERM_WAR);
+#endif
 								}
 							}
 						}
@@ -1571,6 +1576,19 @@ void CvTeam::DoNowAtWarOrPeace(TeamTypes eTeam, bool bWar)
 						GET_TEAM(GET_PLAYER(eMinor).getTeam()).DoDeclareWar(eMinor, false, eTeam, /*bDefensivePact*/ false, /*bMinorAllyPact*/ true);
 #else
 						GET_TEAM(GET_PLAYER(eMinor).getTeam()).DoDeclareWar(eTeam, /*bDefensivePact*/ false, /*bMinorAllyPact*/ true);
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+						// Economic Aid: when a city-state joins via ally pact, terminate the aid of players on the enemy team
+						// without a quit settlement, so they may rejoin this round after peace
+						for (int iMajorOnTarget = 0; iMajorOnTarget < MAX_MAJOR_CIVS; ++iMajorOnTarget)
+						{
+							CvPlayer& kTargetMajor = GET_PLAYER((PlayerTypes)iMajorOnTarget);
+							if (kTargetMajor.isAlive() && kTargetMajor.getTeam() == eTeam)
+							{
+								GET_PLAYER(eMinor).GetMinorCivAI()->DoChangeEconomicAidFromMajor((PlayerTypes)iMajorOnTarget, false, ECON_AID_TERM_ALLY_PACT);
+							}
+						}
 #endif
 
 						// Add to vector for notification sent out
