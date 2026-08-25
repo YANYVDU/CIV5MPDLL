@@ -2988,7 +2988,10 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 			long long iProposerPopulation = kProposer.getTotalPopulation();
 			long long iProposerMilitaryMight = kProposer.GetMilitaryMight();
 
-			// Allied city-states
+			// Allied city-states: accumulate raw stats first, then apply the percentage once so that
+			// per-city-state integer rounding does not silently zero out small contributions.
+			long long iAllyCities = 0;
+			long long iAllyPopulation = 0;
 			if (pInfo->IsVassalCountPermanentAllyCities() || pInfo->IsVassalCountPermanentAllyPopulation())
 			{
 				for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
@@ -2997,15 +3000,20 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 					CvPlayer& kMinor = GET_PLAYER(eMinor);
 					if (kMinor.isAlive() && kMinor.isMinorCiv() && kProposer.IsPermanentAlly(eMinor))
 					{
-						if (pInfo->IsVassalCountPermanentAllyCities())
-							iProposerCities += (long long)kMinor.getNumCities() * pInfo->GetVassalPermanentAllyCitiesPercent() / 100;
-						if (pInfo->IsVassalCountPermanentAllyPopulation())
-							iProposerPopulation += (long long)kMinor.getTotalPopulation() * pInfo->GetVassalPermanentAllyPopulationPercent() / 100;
+						iAllyCities += kMinor.getNumCities();
+						iAllyPopulation += kMinor.getTotalPopulation();
 					}
 				}
+				if (pInfo->IsVassalCountPermanentAllyCities())
+					iProposerCities += iAllyCities * pInfo->GetVassalPermanentAllyCitiesPercent() / 100;
+				if (pInfo->IsVassalCountPermanentAllyPopulation())
+					iProposerPopulation += iAllyPopulation * pInfo->GetVassalPermanentAllyPopulationPercent() / 100;
 			}
 
-			// Existing vassals
+			// Existing vassals: same accumulate-then-apply-percentage pattern as the allied city-states above.
+			long long iVassalCities = 0;
+			long long iVassalPopulation = 0;
+			long long iVassalMilitaryMight = 0;
 			if (pInfo->IsVassalCountVassalCities() || pInfo->IsVassalCountVassalPopulation() || pInfo->IsVassalCountVassalMilitaryMight())
 			{
 				const std::vector<int>& vassals = kProposer.GetVassals();
@@ -3014,14 +3022,17 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 					CvPlayer& kVassal = GET_PLAYER((PlayerTypes)vassals[i]);
 					if (kVassal.isAlive())
 					{
-						if (pInfo->IsVassalCountVassalCities())
-							iProposerCities += (long long)kVassal.getNumCities() * pInfo->GetVassalVassalCitiesPercent() / 100;
-						if (pInfo->IsVassalCountVassalPopulation())
-							iProposerPopulation += (long long)kVassal.getTotalPopulation() * pInfo->GetVassalVassalPopulationPercent() / 100;
-						if (pInfo->IsVassalCountVassalMilitaryMight())
-							iProposerMilitaryMight += (long long)kVassal.GetMilitaryMight() * pInfo->GetVassalVassalMilitaryMightPercent() / 100;
+						iVassalCities += kVassal.getNumCities();
+						iVassalPopulation += kVassal.getTotalPopulation();
+						iVassalMilitaryMight += kVassal.GetMilitaryMight();
 					}
 				}
+				if (pInfo->IsVassalCountVassalCities())
+					iProposerCities += iVassalCities * pInfo->GetVassalVassalCitiesPercent() / 100;
+				if (pInfo->IsVassalCountVassalPopulation())
+					iProposerPopulation += iVassalPopulation * pInfo->GetVassalVassalPopulationPercent() / 100;
+				if (pInfo->IsVassalCountVassalMilitaryMight())
+					iProposerMilitaryMight += iVassalMilitaryMight * pInfo->GetVassalVassalMilitaryMightPercent() / 100;
 			}
 
 			if (iProposerPopulation < (long long)kTarget.getTotalPopulation() * 2)
