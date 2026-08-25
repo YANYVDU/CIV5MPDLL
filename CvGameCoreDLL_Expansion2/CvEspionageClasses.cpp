@@ -556,7 +556,16 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 				iSpyResult = GC.getGame().getJonRandNum(300, "Random roll for the result of a spy mission with a counterspy in the city");
 				int iCounterspyIndex = GET_PLAYER(eCityOwner).GetEspionage()->GetSpyIndexInCity(pCity);
 				iSpyResult += GET_PLAYER(eCityOwner).GetEspionage()->m_aSpyList[iCounterspyIndex].m_eRank * 30;
-				iSpyResult *= (100 + GET_PLAYER(pCity->getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Sofia: each alive spy of the city owner raises the chance to catch/kill enemy spies
+				int iCatchSpiesModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER);
+				CvPlayerCityStateUA* pCatchCSUA = GET_PLAYER(eCityOwner).GetPlayerCityStateUA();
+				if (pCatchCSUA)
+					iCatchSpiesModifier += pCatchCSUA->GetSpyKillChancePerSpy() * GET_PLAYER(eCityOwner).GetEspionage()->GetNumAliveSpies();
+				iSpyResult *= (100 + iCatchSpiesModifier);
+#else
+				iSpyResult *= (100 + GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#endif
 				iSpyResult /= 100;
 				if(iSpyResult < 100)
 				{
@@ -603,7 +612,16 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 			else
 			{
 				iSpyResult = GC.getGame().getJonRandNum(300, "Random roll for the result of a spying mission without a counterspy in the city");
-				iSpyResult *= (100 + GET_PLAYER(pCity->getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Sofia: each alive spy of the city owner raises the chance to catch enemy spies
+				int iCatchSpiesModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER);
+				CvPlayerCityStateUA* pCatchCSUA = GET_PLAYER(eCityOwner).GetPlayerCityStateUA();
+				if (pCatchCSUA)
+					iCatchSpiesModifier += pCatchCSUA->GetSpyKillChancePerSpy() * GET_PLAYER(eCityOwner).GetEspionage()->GetNumAliveSpies();
+				iSpyResult *= (100 + iCatchSpiesModifier);
+#else
+				iSpyResult *= (100 + GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#endif
 				iSpyResult /= 100;
 				if(iSpyResult < 100)
 				{
