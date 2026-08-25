@@ -122,6 +122,7 @@ CREATE TABLE CityStateUAEffects (
     -- Vilnius: Mod-type golden-age threshold change per population (applied before percentage modifiers; negative = lower threshold, -100 = -1 per 1 population)
     GoldenAgeThresholdPerPopulation                 integer DEFAULT 0,
     -- Sofia: coup/espionage spy UA (columns on the effect table, one row per ally/friend effect)
+    CoupChanceModifier          integer DEFAULT 0,  -- +% coup success, may exceed the 85% cap (ally 30 / friend 12)
     SpyKillChancePerSpy         integer DEFAULT 0   -- +% chance to catch/kill enemy spies per alive spy (ally only)
 );
 
