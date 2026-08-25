@@ -15,6 +15,12 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_SPY_EVICTED_FPRBIDDEN_YOU">
 			<Text>Your spy {1_SpyRank}{2_SpyName}fled {3_CityName}, because this city no longer supports action.</Text>
 		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED">
+			<Text>{1_SpyRank} {2_SpyName} failed to stage a coup in {3_CityName}, but escaped the crackdown and returned to your safe house. {4_Adjective} remains the ally of {3_CityName}.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED_S">
+			<Text>{1_CityName} - Coup Failed (Spy Survived)</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NO_ACTION_BUILDING_EMPIRE_RESOURCE">
 			<Text>[NEWLINE]Need domestic ownership{1_FeatureName:textkey}.</Text>
 		</Row>
