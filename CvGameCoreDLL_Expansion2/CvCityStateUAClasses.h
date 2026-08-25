@@ -118,6 +118,7 @@ public:
 	int GetHillsCityRangeBonus() const;
 	// Sofia (SuoFeiYa) spy/coup UA
 	int GetCoupChanceModifier() const;
+	bool GetCoupFailSpySurvives() const;
 	int GetSpyKillChancePerSpy() const;
 	// Vatican (FanDiGang)
 	int GetReligionSpreadSpeedModifier() const;
@@ -228,6 +229,7 @@ private:
 	int m_iHillsCityRangeBonus;
 	// Sofia (spy/coup UA)
 	int m_iCoupChanceModifier;
+	bool m_bCoupFailSpySurvives;
 	int m_iSpyKillChancePerSpy;
 	// Vatican
 	int m_iReligionSpreadSpeedModifier;
@@ -358,6 +360,7 @@ public:
 	// Query accumulated modifier values for each effect type
 	// Sofia (spy/coup UA)
 	int GetCoupChanceModifier() const;
+	bool GetCoupFailSpySurvives() const;
 	int GetSpyKillChancePerSpy() const;
 	// Florence
 	int GetFaithPurchaseGreatPeopleCostRiseModifier() const;
@@ -500,6 +503,7 @@ protected:
 	int m_iHillsCityRangeBonus;
 	// Sofia (spy/coup UA, main-table columns)
 	int m_iCoupChanceModifier;
+	int m_iCoupFailSpySurvives;
 	int m_iSpyKillChancePerSpy;
 	int m_iReligionSpreadSpeedModifier;
 	int m_iLandTradeRouteDistancePerTradeSlot;

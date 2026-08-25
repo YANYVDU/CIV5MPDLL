@@ -47,6 +47,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iHillsMovementModifier(0)
 	, m_iHillsCityRangeBonus(0)
 	, m_iCoupChanceModifier(0)
+	, m_bCoupFailSpySurvives(false)
 	, m_iSpyKillChancePerSpy(0)
 	, m_iReligionSpreadSpeedModifier(0)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
@@ -146,6 +147,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iHillsMovementModifier						= kResults.GetInt("HillsMovementModifier");
 	m_iHillsCityRangeBonus							= kResults.GetInt("HillsCityRangeBonus");
 	m_iCoupChanceModifier							= kResults.GetInt("CoupChanceModifier");
+	m_bCoupFailSpySurvives							= kResults.GetBool("CoupFailSpySurvives");
 	m_iSpyKillChancePerSpy							= kResults.GetInt("SpyKillChancePerSpy");
 
 	m_iReligionSpreadSpeedModifier					= kResults.GetInt("ReligionSpreadSpeedModifier");
@@ -454,6 +456,7 @@ int CvCityStateUAEffectEntry::GetHillsCityDamageReduction() const { return m_iHi
 int CvCityStateUAEffectEntry::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
 int CvCityStateUAEffectEntry::GetHillsCityRangeBonus() const { return m_iHillsCityRangeBonus; }
 int CvCityStateUAEffectEntry::GetCoupChanceModifier() const { return m_iCoupChanceModifier; }
+bool CvCityStateUAEffectEntry::GetCoupFailSpySurvives() const { return m_bCoupFailSpySurvives; }
 int CvCityStateUAEffectEntry::GetSpyKillChancePerSpy() const { return m_iSpyKillChancePerSpy; }
 
 int CvCityStateUAEffectEntry::GetReligionSpreadSpeedModifier() const { return m_iReligionSpreadSpeedModifier; }
@@ -747,6 +750,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iHillsMovementModifier(0)
 	, m_iHillsCityRangeBonus(0)
 	, m_iCoupChanceModifier(0)
+	, m_iCoupFailSpySurvives(0)
 	, m_iSpyKillChancePerSpy(0)
 	, m_iReligionSpreadSpeedModifier(0)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
@@ -828,6 +832,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iHillsMovementModifier = 0;
 	m_iHillsCityRangeBonus = 0;
 	m_iCoupChanceModifier = 0;
+	m_iCoupFailSpySurvives = 0;
 	m_iSpyKillChancePerSpy = 0;
 	m_iReligionSpreadSpeedModifier = 0;
 	m_iLandTradeRouteDistancePerTradeSlot = 0;
@@ -978,6 +983,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iHillsCityRangeBonus							+= pEffect->GetHillsCityRangeBonus() * iChange;
 	// Sofia (spy/coup UA)
 	m_iCoupChanceModifier							+= pEffect->GetCoupChanceModifier() * iChange;
+	m_iCoupFailSpySurvives							+= (pEffect->GetCoupFailSpySurvives() ? iChange : 0);
 	m_iSpyKillChancePerSpy							+= pEffect->GetSpyKillChancePerSpy() * iChange;
 
 	m_iReligionSpreadSpeedModifier					+= pEffect->GetReligionSpreadSpeedModifier() * iChange;
@@ -1185,6 +1191,7 @@ int CvPlayerCityStateUA::GetHillsCityDamageReduction() const { return m_iHillsCi
 int CvPlayerCityStateUA::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
 int CvPlayerCityStateUA::GetHillsCityRangeBonus() const { return m_iHillsCityRangeBonus; }
 int CvPlayerCityStateUA::GetCoupChanceModifier() const { return m_iCoupChanceModifier; }
+bool CvPlayerCityStateUA::GetCoupFailSpySurvives() const { return m_iCoupFailSpySurvives > 0; }
 int CvPlayerCityStateUA::GetSpyKillChancePerSpy() const { return m_iSpyKillChancePerSpy; }
 int CvPlayerCityStateUA::GetReligionSpreadSpeedModifier() const { return m_iReligionSpreadSpeedModifier; }
 int CvPlayerCityStateUA::GetLandTradeRouteDistancePerTradeSlot() const { return m_iLandTradeRouteDistancePerTradeSlot; }
