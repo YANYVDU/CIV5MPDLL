@@ -3520,9 +3520,10 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 			if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).isMinorCiv())
 			{
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-				// Skip CSes already under permanent ally resolution or already permanent allies of the proposer
+				// Skip CSes already under permanent ally resolution or already permanent allies of the proposer.
+				// eDecider can be NO_PLAYER when choices are queried generically, so guard against it.
 				bool bSkip = false;
-				if (GET_PLAYER(eDecider).IsPermanentAlly(e))
+				if (eDecider != NO_PLAYER && GET_PLAYER(eDecider).IsPermanentAlly(e))
 				{
 					bSkip = true;
 				}
