@@ -116,6 +116,8 @@ public:
 	int GetHillsCityDamageReduction() const;
 	int GetHillsMovementModifier() const;
 	int GetHillsCityRangeBonus() const;
+	// Sofia (SuoFeiYa) spy/coup UA
+	int GetSpyKillChancePerSpy() const;
 	// Vatican (FanDiGang)
 	int GetReligionSpreadSpeedModifier() const;
 	// Kyzyl (KeZiLe)
@@ -223,6 +225,8 @@ private:
 	int m_iHillsCityDamageReduction;
 	int m_iHillsMovementModifier;
 	int m_iHillsCityRangeBonus;
+	// Sofia (spy/coup UA)
+	int m_iSpyKillChancePerSpy;
 	// Vatican
 	int m_iReligionSpreadSpeedModifier;
 	// Kyzyl
@@ -350,6 +354,8 @@ public:
 	void ApplyEffect(int iEffectID, int iChange);  // iChange = +1 (apply) or -1 (remove)
 
 	// Query accumulated modifier values for each effect type
+	// Sofia (spy/coup UA)
+	int GetSpyKillChancePerSpy() const;
 	// Florence
 	int GetFaithPurchaseGreatPeopleCostRiseModifier() const;
 	int GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() const;
@@ -489,6 +495,8 @@ protected:
 	int m_iHillsCityDamageReduction;
 	int m_iHillsMovementModifier;
 	int m_iHillsCityRangeBonus;
+	// Sofia (spy/coup UA, main-table columns)
+	int m_iSpyKillChancePerSpy;
 	int m_iReligionSpreadSpeedModifier;
 	int m_iLandTradeRouteDistancePerTradeSlot;
 	int m_iHappinessPerGoldDonated;

@@ -120,7 +120,9 @@ CREATE TABLE CityStateUAEffects (
     -- Antananarivo: diplomatic prestige per city (value = prestige * 100; 10 = 0.1 prestige per city)
     DiplomaticPrestigePerCity                       integer DEFAULT 0,
     -- Vilnius: Mod-type golden-age threshold change per population (applied before percentage modifiers; negative = lower threshold, -100 = -1 per 1 population)
-    GoldenAgeThresholdPerPopulation                 integer DEFAULT 0
+    GoldenAgeThresholdPerPopulation                 integer DEFAULT 0,
+    -- Sofia: coup/espionage spy UA (columns on the effect table, one row per ally/friend effect)
+    SpyKillChancePerSpy         integer DEFAULT 0   -- +% chance to catch/kill enemy spies per alive spy (ally only)
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
