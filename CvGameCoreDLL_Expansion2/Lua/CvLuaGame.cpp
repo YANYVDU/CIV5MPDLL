@@ -168,6 +168,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(IsEconomicAidActive);
 	Method(GetEconomicAidWorldEra);
 	Method(GetEconomicAidRound);
+	Method(GetEconomicAidRoundTurnsLeft);
 	Method(SetGameTurn);
 	Method(GetTurnYear);
 	Method(GetGameTurnYear);
@@ -909,6 +910,12 @@ int CvLuaGame::lGetEconomicAidWorldEra(lua_State* L)
 int CvLuaGame::lGetEconomicAidRound(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::GetEconomicAidRound);
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidRoundTurnsLeft();
+int CvLuaGame::lGetEconomicAidRoundTurnsLeft(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::GetEconomicAidRoundTurnsLeft);
 }
 //------------------------------------------------------------------------------
 //void setGameTurn(int iNewValue);

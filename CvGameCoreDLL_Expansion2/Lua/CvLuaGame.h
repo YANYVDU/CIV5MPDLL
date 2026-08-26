@@ -102,6 +102,7 @@ protected:
 	static int lIsEconomicAidActive(lua_State* L);
 	static int lGetEconomicAidWorldEra(lua_State* L);
 	static int lGetEconomicAidRound(lua_State* L);
+	static int lGetEconomicAidRoundTurnsLeft(lua_State* L);
 	static int lGetTurnString(lua_State* L);
 #if defined(MOD_API_LUA_EXTENSIONS)
 	LUAAPIEXTN(GetDateString, char*, iTurn);

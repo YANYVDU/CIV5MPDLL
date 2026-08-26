@@ -154,6 +154,7 @@ public:
 	int GetEconomicAidRound() const;
 	int GetEconomicAidRoundStartTurn() const;
 	int GetEconomicAidWorldEra() const;
+	int GetEconomicAidRoundTurnsLeft() const;
 #endif
 
 	TeamTypes getActiveTeam();

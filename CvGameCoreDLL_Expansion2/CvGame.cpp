@@ -4556,6 +4556,28 @@ int CvGame::GetEconomicAidWorldEra() const
 {
 	return m_iEconomicAidWorldEra;
 }
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidRoundTurnsLeft() const
+{
+	if(!m_bEconomicAidActive)
+		return 0;
+
+	int iRoundLength = GC.getECONOMIC_AID_ROUND_LENGTH();
+	int iSpeedMod = GC.getGameSpeedInfo(getGameSpeedType())->getTrainPercent();
+	if(iSpeedMod != 0)
+	{
+		iRoundLength = (iRoundLength * iSpeedMod) / 100;
+	}
+	if(iRoundLength < 1)
+	{
+		iRoundLength = 1;
+	}
+
+	int iElapsed = getGameTurn() - m_iEconomicAidRoundStartTurn;
+	int iTurnsLeft = iRoundLength - iElapsed;
+	return iTurnsLeft > 0 ? iTurnsLeft : 0;
+}
 #endif
 
 
