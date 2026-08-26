@@ -3926,6 +3926,11 @@ void CvDiplomacyAI::DoEconomicAidAI()
 	if(!GC.getGame().IsEconomicAidActive())
 		return;
 
+	// Human players decide participation manually via the city-state diplomacy screen;
+	// never let the shadow AI behind a human player join/leave economic aid for them.
+	if(GetPlayer()->isHuman())
+		return;
+
 	PlayerTypes eMinor;
 	int iX = GC.getGame().GetEconomicAidWorldEra();
 	int iGPT = GetPlayer()->GetTreasury()->CalculateBaseNetGold();
