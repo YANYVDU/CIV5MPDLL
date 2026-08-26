@@ -6219,7 +6219,9 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 #endif
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	// Economic Aid (Super Power V11): override the net per-turn influence change.
+	// Economic Aid (Super Power V11): add the aid influence delta on top of all other
+	// per-turn sources (trade routes, below-anchor recovery, bully, decay, etc.) instead of
+	// overriding them, so aid never swallows the other sources.
 	// The identity used is the current one (before this turn's change is applied).
 	if (GC.getGame().IsEconomicAidActive())
 	{
@@ -6227,15 +6229,15 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 		bool bAiding = IsEconomicAidFromMajor(ePlayer);
 		if (bAllied && bAiding)
 		{
-			iChangeThisTurn = 0;      // ally providing aid: maintain, no decay
+			// ally providing aid: 0 from the aid mechanic (keeps other sources intact)
 		}
 		else if (bAllied && !bAiding)
 		{
-			iChangeThisTurn = -100;   // ally not providing aid: -1 per turn
+			iChangeThisTurn += -100;  // ally not providing aid: -1 per turn
 		}
 		else if (!bAllied && bAiding)
 		{
-			iChangeThisTurn = 100;    // non-ally providing aid: +1 per turn
+			iChangeThisTurn += 100;   // non-ally providing aid: +1 per turn
 		}
 		// non-ally, not aiding: leave natural decay untouched
 	}
