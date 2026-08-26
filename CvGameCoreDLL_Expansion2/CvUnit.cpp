@@ -2957,11 +2957,15 @@ void CvUnit::doTurn()
 		}
 	}
 	CvPlot* pPlot = plot();
-	if((GetStayCSInfluencePerTurn() != 0 || GetStayCSExpPerTurn() != 0) && pPlot && GET_PLAYER(pPlot->getOwner()).isMinorCiv() && !GET_TEAM(pPlot->getTeam()).isAtWar(getTeam()))
+	if((GetStayCSInfluencePerTurn() != 0 || GetStayCSExpPerTurn() != 0) && pPlot)
 	{
+		// Guard against plots with no owner: GET_PLAYER(NO_PLAYER) would index out of bounds.
 		PlayerTypes eMinor = pPlot->getOwner();
-		GET_PLAYER(eMinor).GetMinorCivAI()->ChangeFriendshipWithMajor(getOwner(), GetStayCSInfluencePerTurn());
-		iTotalXP += GetStayCSExpPerTurn();
+		if(CvPlayerAI::IsValid(eMinor) && GET_PLAYER(eMinor).isMinorCiv() && !GET_TEAM(pPlot->getTeam()).isAtWar(getTeam()))
+		{
+			GET_PLAYER(eMinor).GetMinorCivAI()->ChangeFriendshipWithMajor(getOwner(), GetStayCSInfluencePerTurn());
+			iTotalXP += GetStayCSExpPerTurn();
+		}
 	}
 	if(!IsCivilianUnit() && pPlot)
 	{
