@@ -1177,6 +1177,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetNumSpies);
 	Method(GetNumUnassignedSpies);
 	Method(GetEspionageSpies);
+	Method(GetEspionageGatheringIntelInfo);
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_ESPIONAGE)
 	Method(EspionageCreateSpy);
 	Method(EspionagePromoteSpy);
@@ -12640,6 +12641,58 @@ int CvLuaPlayer::lGetNumTechsToSteal(lua_State* L)
 	CvAssertMsg(iPlayer >= 0 && iPlayer < MAX_MAJOR_CIVS, "iPlayer out of bounds");
 	PlayerTypes ePlayer = (PlayerTypes)iPlayer;
 	lua_pushinteger(L, pkPlayerEspionage->GetNumTechsToSteal(ePlayer));
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetEspionageGatheringIntelInfo(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	int iSpyIndex = lua_tointeger(L, 2);
+
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	CvCity* pCity = pkPlayerEspionage->GetCityWithSpy(iSpyIndex);
+	if(pCity == NULL)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+
+	SpyGatheringIntelInfo kInfo;
+	pkPlayerEspionage->CalcGatheringIntelPerTurn(pCity, iSpyIndex, &kInfo);
+
+	lua_createtable(L, 0, 0);
+	const int t = lua_gettop(L);
+
+	lua_pushinteger(L, kInfo.iBaseRate);
+	lua_setfield(L, t, "iBaseRate");
+
+	lua_pushinteger(L, kInfo.iCityMod);
+	lua_setfield(L, t, "iCityMod");
+
+	lua_pushinteger(L, kInfo.iPlayerMod);
+	lua_setfield(L, t, "iPlayerMod");
+
+	lua_pushinteger(L, kInfo.iTheirPolicyMod);
+	lua_setfield(L, t, "iTheirPolicyMod");
+
+	lua_pushinteger(L, kInfo.iMyPolicyMod);
+	lua_setfield(L, t, "iMyPolicyMod");
+
+	lua_pushinteger(L, kInfo.iCSUAMod);
+	lua_setfield(L, t, "iCSUAMod");
+
+	lua_pushinteger(L, kInfo.iSpyRank);
+	lua_setfield(L, t, "iSpyRank");
+
+	lua_pushinteger(L, kInfo.iSpyRankMod);
+	lua_setfield(L, t, "iSpyRankMod");
+
+	lua_pushinteger(L, kInfo.iSpeedMod);
+	lua_setfield(L, t, "iSpeedMod");
+
+	lua_pushinteger(L, kInfo.iResult);
+	lua_setfield(L, t, "iResult");
+
 	return 1;
 }
 //------------------------------------------------------------------------------

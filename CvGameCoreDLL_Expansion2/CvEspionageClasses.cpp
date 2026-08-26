@@ -1844,39 +1844,7 @@ int CvPlayerEspionage::CalcPerTurn(int iSpyState, CvCity* pCity, int iSpyIndex)
 	break;
 	case SPY_STATE_GATHERING_INTEL:
 	{
-		if(pCity)
-		{
-			PlayerTypes eCityOwner = pCity->getOwner();
-			int iBaseYieldRate = pCity->getYieldRateTimes100(YIELD_SCIENCE, false);
-			iBaseYieldRate *= GC.getESPIONAGE_GATHERING_INTEL_RATE_BASE_PERCENT();
-			iBaseYieldRate /= 100;
-			iBaseYieldRate *= GC.getGame().getGameSpeedInfo().getSpyRatePercent();
-			iBaseYieldRate /= 100;
-			int iCityEspionageModifier = pCity->GetEspionageModifier();
-			int iPlayerEspionageModifier = GET_PLAYER(eCityOwner).GetEspionageModifier();
-			int iTheirPoliciesEspionageModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_SLOWER_MODIFIER);
-			int iMyPoliciesEspionageModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_FASTER_MODIFIER);
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-			// Sofia: each alive spy speeds up stealing tech by the configured percentage
-			CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
-			if (pCSUA)
-				iMyPoliciesEspionageModifier += pCSUA->GetStealTechSpeedPerSpy() * m_pPlayer->GetEspionage()->GetNumAliveSpies();
-#endif
-			int iFinalModifier = (iBaseYieldRate * (100 + iCityEspionageModifier + iPlayerEspionageModifier + iTheirPoliciesEspionageModifier + iMyPoliciesEspionageModifier)) / 100;
-
-			int iResult = max(iFinalModifier, 1);
-			if(iSpyIndex >= 0)
-			{
-				int iSpyRank = m_aSpyList[iSpyIndex].m_eRank;
-				iSpyRank += m_pPlayer->GetCulture()->GetInfluenceMajorCivSpyRankBonus(eCityOwner);
-				iResult *= 100 + (GC.getESPIONAGE_GATHERING_INTEL_RATE_BY_SPY_RANK_PERCENT() * iSpyRank);
-				iResult /= 100;
-				iResult *= 100 + (GET_PLAYER(m_pPlayer->GetID()).GetEspionageSpeedModifier());
-				iResult /= 100;
-			}
-
-			return iResult;
-		}
+		return CalcGatheringIntelPerTurn(pCity, iSpyIndex, NULL);
 	}
 	break;
 	case SPY_STATE_RIG_ELECTION:
@@ -1913,6 +1881,82 @@ int CvPlayerEspionage::CalcPerTurn(int iSpyState, CvCity* pCity, int iSpyIndex)
 
 	CvAssertMsg(false, "CalcPerTurn cannot handle that iSpyState");
 	return -1;
+}
+
+/// CalcGatheringIntelPerTurn - per-turn steal tech production, also fills the modifier breakdown for UI tooltips
+int CvPlayerEspionage::CalcGatheringIntelPerTurn(CvCity* pCity, int iSpyIndex, SpyGatheringIntelInfo* pkInfo)
+{
+	if(!pCity)
+	{
+		if(pkInfo)
+		{
+			pkInfo->iBaseRate = 0;
+			pkInfo->iCityMod = 0;
+			pkInfo->iPlayerMod = 0;
+			pkInfo->iTheirPolicyMod = 0;
+			pkInfo->iMyPolicyMod = 0;
+			pkInfo->iCSUAMod = 0;
+			pkInfo->iSpyRank = 0;
+			pkInfo->iSpyRankMod = 0;
+			pkInfo->iSpeedMod = 0;
+			pkInfo->iResult = 0;
+		}
+		return 0;
+	}
+
+	PlayerTypes eCityOwner = pCity->getOwner();
+	int iBaseYieldRate = pCity->getYieldRateTimes100(YIELD_SCIENCE, false);
+	iBaseYieldRate *= GC.getESPIONAGE_GATHERING_INTEL_RATE_BASE_PERCENT();
+	iBaseYieldRate /= 100;
+	iBaseYieldRate *= GC.getGame().getGameSpeedInfo().getSpyRatePercent();
+	iBaseYieldRate /= 100;
+	int iCityEspionageModifier = pCity->GetEspionageModifier();
+	int iPlayerEspionageModifier = GET_PLAYER(eCityOwner).GetEspionageModifier();
+	int iTheirPoliciesEspionageModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_SLOWER_MODIFIER);
+	int iMyPoliciesEspionageModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_FASTER_MODIFIER);
+	int iCSUAModifier = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Sofia: each alive spy speeds up stealing tech by the configured percentage
+	CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+	if (pCSUA)
+	{
+		iCSUAModifier = pCSUA->GetStealTechSpeedPerSpy() * m_pPlayer->GetEspionage()->GetNumAliveSpies();
+		iMyPoliciesEspionageModifier += iCSUAModifier;
+	}
+#endif
+	int iFinalModifier = (iBaseYieldRate * (100 + iCityEspionageModifier + iPlayerEspionageModifier + iTheirPoliciesEspionageModifier + iMyPoliciesEspionageModifier)) / 100;
+
+	int iResult = max(iFinalModifier, 1);
+	int iSpyRank = 0;
+	int iSpyRankMod = 0;
+	int iEspionageSpeedModifier = 0;
+	if(iSpyIndex >= 0)
+	{
+		iSpyRank = m_aSpyList[iSpyIndex].m_eRank;
+		iSpyRank += m_pPlayer->GetCulture()->GetInfluenceMajorCivSpyRankBonus(eCityOwner);
+		iSpyRankMod = GC.getESPIONAGE_GATHERING_INTEL_RATE_BY_SPY_RANK_PERCENT() * iSpyRank;
+		iResult *= 100 + iSpyRankMod;
+		iResult /= 100;
+		iEspionageSpeedModifier = GET_PLAYER(m_pPlayer->GetID()).GetEspionageSpeedModifier();
+		iResult *= 100 + iEspionageSpeedModifier;
+		iResult /= 100;
+	}
+
+	if(pkInfo)
+	{
+		pkInfo->iBaseRate = iBaseYieldRate;
+		pkInfo->iCityMod = iCityEspionageModifier;
+		pkInfo->iPlayerMod = iPlayerEspionageModifier;
+		pkInfo->iTheirPolicyMod = iTheirPoliciesEspionageModifier;
+		pkInfo->iMyPolicyMod = iMyPoliciesEspionageModifier - iCSUAModifier;
+		pkInfo->iCSUAMod = iCSUAModifier;
+		pkInfo->iSpyRank = iSpyRank;
+		pkInfo->iSpyRankMod = iSpyRankMod;
+		pkInfo->iSpeedMod = iEspionageSpeedModifier;
+		pkInfo->iResult = iResult;
+	}
+
+	return iResult;
 }
 
 /// CalcRequired - How much the spy is needed to do to accomplish this task

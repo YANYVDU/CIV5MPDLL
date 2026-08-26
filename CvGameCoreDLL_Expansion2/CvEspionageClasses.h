@@ -139,6 +139,21 @@ typedef FStaticVector<int, MAX_MAJOR_CIVS, false, c_eCiv5GameplayDLL> NumTechsTo
 typedef Firaxis::Array<int, MAX_MAJOR_CIVS> MaxTechCost;
 typedef Firaxis::Array<std::vector<HeistLocation>, MAX_MAJOR_CIVS> HeistLocationList;
 
+// Breakdown of the per-turn gathering intel (steal tech) production, exposed to UI tooltips
+struct SpyGatheringIntelInfo
+{
+	int iBaseRate;          // base = city science * rate base percent * game speed spy rate (x100)
+	int iCityMod;           // target city buildings espionage modifier
+	int iPlayerMod;         // target civilization global espionage modifier (e.g. Great Firewall -25)
+	int iTheirPolicyMod;    // target civilization STEAL_TECH_SLOWER policy modifier (negative)
+	int iMyPolicyMod;       // my STEAL_TECH_FASTER policy modifier (city-state UA excluded)
+	int iCSUAMod;           // city-state UA: StealTechSpeedPerSpy * alive spies
+	int iSpyRank;           // effective spy rank (includes culture influence bonus)
+	int iSpyRankMod;        // spy rank percent modifier
+	int iSpeedMod;          // my global espionage speed modifier
+	int iResult;            // final per-turn production
+};
+
 class CvPlayerEspionage
 {
 public:
@@ -179,6 +194,7 @@ public:
 
 	int CalcPerTurn(int iSpyState, CvCity* pCity, int iSpyIndex);
 	int CalcRequired(int iSpyState, CvCity* pCity, int iSpyIndex);
+	int CalcGatheringIntelPerTurn(CvCity* pCity, int iSpyIndex, SpyGatheringIntelInfo* pkInfo = NULL);
 
 	const char* GetSpyRankName(int iRank) const;
 

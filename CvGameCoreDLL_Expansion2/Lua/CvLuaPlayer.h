@@ -1081,6 +1081,7 @@ protected:
 	static int lGetNumSpies(lua_State* L);
 	static int lGetNumUnassignedSpies(lua_State* L);
 	static int lGetEspionageSpies(lua_State* L);
+	static int lGetEspionageGatheringIntelInfo(lua_State* L);
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_ESPIONAGE)
 	LUAAPIEXTN(EspionageCreateSpy, void);
 	LUAAPIEXTN(EspionagePromoteSpy, void, iSpyIndex);
