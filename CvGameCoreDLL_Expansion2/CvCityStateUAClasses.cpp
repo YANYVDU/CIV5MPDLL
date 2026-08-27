@@ -53,6 +53,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iReligionSpreadSpeedModifier(0)
 	, m_iReligiousPressureModifierPerHolyCity(0)
 	, m_bDenounceImmunity(false)
+	, m_piCapitalYieldModifierPerFollowingCity(nullptr)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
 	, m_iHappinessPerGoldDonated(0)
 	, m_iGoldDonationInterval(0)
@@ -93,6 +94,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	SAFE_DELETE_ARRAY(m_piFriendCityStateYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piAllyCityStateYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piPolicyYieldModifiers);
+	SAFE_DELETE_ARRAY(m_piCapitalYieldModifierPerFollowingCity);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piImprovementHappiness);
@@ -158,6 +160,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	// Jerusalem: per holy city owned religious pressure (founder's religion), ally denounce immunity, per following-city capital yield modifier
 	m_iReligiousPressureModifierPerHolyCity			= kResults.GetInt("ReligiousPressureModifierPerHolyCity");
 	m_bDenounceImmunity								= kResults.GetBool("DenounceImmunity");
+	kUtility.PopulateArrayByValue(m_piCapitalYieldModifierPerFollowingCity, "Yields", "CityStateUAEffect_CapitalYieldModifierPerFollowingCity", "YieldType", "EffectType", GetType(), "Modifier");
 
 	m_iLandTradeRouteDistancePerTradeSlot			= kResults.GetInt("LandTradeRouteDistancePerTradeSlot");
 
@@ -473,6 +476,8 @@ int CvCityStateUAEffectEntry::GetReligionSpreadSpeedModifier() const { return m_
 int CvCityStateUAEffectEntry::GetReligiousPressureModifierPerHolyCity() const { return m_iReligiousPressureModifierPerHolyCity; }
 // Jerusalem: ally of this city-state cannot be denounced
 bool CvCityStateUAEffectEntry::IsDenounceImmunity() const { return m_bDenounceImmunity; }
+// Jerusalem / Wittenberg: per following-city capital yield modifier (per YieldType, 100 = +1%)
+int CvCityStateUAEffectEntry::GetCapitalYieldModifierPerFollowingCity(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piCapitalYieldModifierPerFollowingCity ? m_piCapitalYieldModifierPerFollowingCity[i] : 0; }
 
 int CvCityStateUAEffectEntry::GetLandTradeRouteDistancePerTradeSlot() const { return m_iLandTradeRouteDistancePerTradeSlot; }
 
@@ -854,6 +859,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iReligionSpreadSpeedModifier = 0;
 	m_iReligiousPressureModifierPerHolyCity = 0;
 	m_iDenounceImmunityCount = 0;
+	m_aiCapitalYieldModifierPerFollowingCity.assign(NUM_YIELD_TYPES, 0);
 	m_iLandTradeRouteDistancePerTradeSlot = 0;
 	m_iHappinessPerGoldDonated = 0;
 	m_iGoldDonationInterval = 0;
@@ -1010,6 +1016,12 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	// Jerusalem: per holy city religious pressure, ally denounce immunity, per following-city capital yield modifier
 	m_iReligiousPressureModifierPerHolyCity			+= pEffect->GetReligiousPressureModifierPerHolyCity() * iChange;
 	m_iDenounceImmunityCount						+= (pEffect->IsDenounceImmunity() ? iChange : 0);
+	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+	{
+		int iFollowingMod = pEffect->GetCapitalYieldModifierPerFollowingCity(iYield);
+		if (iFollowingMod != 0)
+			m_aiCapitalYieldModifierPerFollowingCity[iYield] += iFollowingMod * iChange;
+	}
 
 	m_iLandTradeRouteDistancePerTradeSlot			+= pEffect->GetLandTradeRouteDistancePerTradeSlot() * iChange;
 
@@ -1220,6 +1232,10 @@ int CvPlayerCityStateUA::GetSpyKillChancePerSpy() const { return m_iSpyKillChanc
 int CvPlayerCityStateUA::GetReligionSpreadSpeedModifier() const { return m_iReligionSpreadSpeedModifier; }
 int CvPlayerCityStateUA::GetReligiousPressureModifierPerHolyCity() const { return m_iReligiousPressureModifierPerHolyCity; }
 bool CvPlayerCityStateUA::IsDenounceImmunity() const { return m_iDenounceImmunityCount > 0; }
+int CvPlayerCityStateUA::GetCapitalYieldModifierPerFollowingCity(YieldTypes eYieldType) const
+{
+	return (eYieldType >= 0 && (int)eYieldType < (int)m_aiCapitalYieldModifierPerFollowingCity.size()) ? m_aiCapitalYieldModifierPerFollowingCity[(int)eYieldType] : 0;
+}
 int CvPlayerCityStateUA::GetLandTradeRouteDistancePerTradeSlot() const { return m_iLandTradeRouteDistancePerTradeSlot; }
 int CvPlayerCityStateUA::GetHappinessPerGoldDonated() const { return m_iHappinessPerGoldDonated; }
 int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }

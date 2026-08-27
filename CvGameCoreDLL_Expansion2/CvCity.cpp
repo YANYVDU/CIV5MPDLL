@@ -13512,6 +13512,20 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
+	//CityState UA (Jerusalem/Wittenberg): per city worldwide following the player's religion, capital gains a yield % modifier
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (isCapital())
+	{
+		iTempMod = owner.GetCSUACapitalYieldModifierPerFollowingCity(eIndex);
+		if (iTempMod != 0)
+		{
+			iModifier += iTempMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+		}
+	}
+#endif
+
 	//Yield Modifier from PerEra
 	iTempMod = GetYieldModifierPerEra(eIndex)*(GET_PLAYER(getOwner()).GetCurrentEra()+1);
 	iModifier += iTempMod;

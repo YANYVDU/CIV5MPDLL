@@ -127,6 +127,8 @@ public:
 	int GetReligiousPressureModifierPerHolyCity() const;
 	// Jerusalem (YeLuSaLeng): player who is the ally of this city-state cannot be denounced
 	bool IsDenounceImmunity() const;
+	// Jerusalem / Wittenberg: per city following the player's religion, capital gains +Modifier% of the yield (per YieldType, 100 = +1%)
+	int GetCapitalYieldModifierPerFollowingCity(int i) const;
 	// Kyzyl (KeZiLe)
 	int GetLandTradeRouteDistancePerTradeSlot() const;
 	// Dubai (DiBai)
@@ -242,6 +244,7 @@ private:
 	// Jerusalem
 	int m_iReligiousPressureModifierPerHolyCity;
 	bool m_bDenounceImmunity;
+	int* m_piCapitalYieldModifierPerFollowingCity;
 	// Kyzyl
 	int m_iLandTradeRouteDistancePerTradeSlot;
 	// Dubai
@@ -424,6 +427,7 @@ public:
 	// Jerusalem
 	int GetReligiousPressureModifierPerHolyCity() const;
 	bool IsDenounceImmunity() const;
+	int GetCapitalYieldModifierPerFollowingCity(YieldTypes eYieldType) const;
 	// Kyzyl
 	int GetLandTradeRouteDistancePerTradeSlot() const;
 	// Dubai
@@ -522,6 +526,7 @@ protected:
 	int m_iReligionSpreadSpeedModifier;
 	int m_iReligiousPressureModifierPerHolyCity;
 	int m_iDenounceImmunityCount;
+	std::vector<int> m_aiCapitalYieldModifierPerFollowingCity;
 	int m_iLandTradeRouteDistancePerTradeSlot;
 	int m_iHappinessPerGoldDonated;
 	int m_iGoldDonationInterval;

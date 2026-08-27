@@ -31737,6 +31737,22 @@ bool CvPlayer::IsDenounceImmunity() const
 }
 
 //	------------------------------------------------------------------------
+// Jerusalem / Wittenberg CS UA: per city worldwide following the player's religion, capital gains +Modifier% of the yield (100 = +1%)
+int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) const
+{
+	if (!m_pCityStateUA) return 0;
+	int iPerCity = m_pCityStateUA->GetCapitalYieldModifierPerFollowingCity(eYield);
+	if (iPerCity == 0) return 0;
+	CvPlayerReligions* pReligions = GetReligions();
+	if (!pReligions->HasCreatedReligion()) return 0;
+	ReligionTypes eReligion = pReligions->GetReligionCreatedByPlayer();
+	if (eReligion == NO_RELIGION) return 0;
+	int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eReligion);
+	return (iCities * iPerCity) / 100;
+}
+#endif
+
+//	------------------------------------------------------------------------
 int CvPlayer::GetCSLuxuryHappinessModifier() const
 {
 	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MERCANTILE) * GC.getCS_MERCANTILE_LUXURY_HAPPINESS_MODIFIER();

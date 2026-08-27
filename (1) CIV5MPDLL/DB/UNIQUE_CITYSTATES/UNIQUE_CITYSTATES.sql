@@ -306,3 +306,11 @@ create table CityStateUAEffect_PolicyYieldModifiers (
     YieldType text references Yields(Type),
     YieldMod integer default 0
 );
+
+-- CityState UA (Jerusalem/Wittenberg): for each city worldwide following the player's religion,
+-- the player's capital gains +Modifier% of YieldType (Modifier=100 => +1% per following city)
+create table CityStateUAEffect_CapitalYieldModifierPerFollowingCity (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    Modifier integer default 0
+);
