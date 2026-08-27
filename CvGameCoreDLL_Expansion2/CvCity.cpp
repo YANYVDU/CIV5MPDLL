@@ -13526,6 +13526,22 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
+	//CityState UA (Vatican): per city worldwide following the player's religion, the holy city of the founded religion gains a yield % modifier.
+	//O(1) holy-city check runs first so non-holy cities skip the full-map following-city scan inside GetCSUAHolyCityYieldModifierPerFollowingCity.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	ReligionTypes eFounded = owner.GetReligions()->GetReligionCreatedByPlayer();
+	if (eFounded != NO_RELIGION && GetCityReligions()->IsHolyCityForReligion(eFounded))
+	{
+		iTempMod = owner.GetCSUAHolyCityYieldModifierPerFollowingCity(eIndex);
+		if (iTempMod != 0)
+		{
+			iModifier += iTempMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+		}
+	}
+#endif
+
 	//Yield Modifier from PerEra
 	iTempMod = GetYieldModifierPerEra(eIndex)*(GET_PLAYER(getOwner()).GetCurrentEra()+1);
 	iModifier += iTempMod;

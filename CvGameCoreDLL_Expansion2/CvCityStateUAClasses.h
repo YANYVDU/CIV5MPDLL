@@ -249,6 +249,7 @@ private:
 	int m_iReligionSpreadSpeedModifier;
 	int m_iPapalRecognitionVotes;
 	int m_iPapalRecognitionAllyVotes;
+	int* m_piHolyCityYieldModifierPerFollowingCity;
 	// Jerusalem
 	int m_iReligiousPressureModifierPerHolyCity;
 	bool m_bDenounceImmunity;
@@ -434,6 +435,7 @@ public:
 	int GetReligionSpreadSpeedModifier() const;
 	int GetPapalRecognitionVotes() const;
 	int GetPapalRecognitionAllyVotes() const;
+	int GetHolyCityYieldModifierPerFollowingCity(YieldTypes eYieldType) const;
 	// Jerusalem
 	int GetReligiousPressureModifierPerHolyCity() const;
 	bool IsDenounceImmunity() const;
@@ -536,6 +538,7 @@ protected:
 	int m_iReligionSpreadSpeedModifier;
 	int m_iPapalRecognitionVotes;
 	int m_iPapalRecognitionAllyVotes;
+	std::vector<int> m_aiHolyCityYieldModifierPerFollowingCity;
 	int m_iReligiousPressureModifierPerHolyCity;
 	int m_iDenounceImmunityCount;
 	std::vector<int> m_aiCapitalYieldModifierPerFollowingCity;

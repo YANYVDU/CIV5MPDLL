@@ -318,3 +318,11 @@ create table CityStateUAEffect_CapitalYieldModifierPerFollowingCity (
     YieldType text references Yields(Type),
     Modifier integer default 0
 );
+
+-- CityState UA (Vatican): for each city worldwide following the player's religion,
+-- the player's religion's holy city gains +Modifier% of YieldType (Modifier=100 => +1% per following city, e.g. YIELD_TOURISM / 100 = +1% tourism per city)
+create table CityStateUAEffect_HolyCityYieldModifierPerFollowingCity (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    Modifier integer default 0
+);
