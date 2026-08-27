@@ -1805,6 +1805,8 @@ public:
 	int GetCapturedHolyCityCount();
 	void RefreshHolyCityCount();
 	bool IsDenounceImmunity() const;
+	// Vatican CS UA: spread speed of the founder's religion (ally +50% / friend +20%)
+	int GetCSUAReligionSpreadSpeedModifier() const;
 	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
 	int GetCSUAPapalRecognitionVotes() const;
 	// Vatican CS UA: Papal Recognition league delegate votes granted to the ally per following civilization (including itself)

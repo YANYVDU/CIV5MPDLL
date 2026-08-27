@@ -2424,6 +2424,15 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 				iPressure = (iPressure * (100 + iCSUAReligiousPressureMod)) / 100;
 			}
 		}
+		// Vatican CS UA: boost spread speed of the founder's religion (ally +50% / friend +20%)
+		{
+			PlayerTypes eFounder = pReligion->m_eFounder;
+			int iSpreadMod = GET_PLAYER(eFounder).GetCSUAReligionSpreadSpeedModifier();
+			if (iSpreadMod > 0)
+			{
+				iPressure = (iPressure * (100 + iSpreadMod)) / 100;
+			}
+		}
 #endif
 
 		if (bConnectedWithTrade && !bWithinDistance)

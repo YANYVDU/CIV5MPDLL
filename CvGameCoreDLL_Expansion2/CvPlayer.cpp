@@ -31755,6 +31755,13 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 }
 
 	//	------------------------------------------------------------------------
+	// Vatican CS UA: religion spread speed modifier (ally +50% / friend +20%)
+	int CvPlayer::GetCSUAReligionSpreadSpeedModifier() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetReligionSpreadSpeedModifier() : 0;
+	}
+
+	//	------------------------------------------------------------------------
 	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
 	int CvPlayer::GetCSUAPapalRecognitionVotes() const
 	{
