@@ -10371,7 +10371,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 		int iNewHeal = it.second;
 		if (eLoopUnit != NO_UNIT && iNewHeal > 0)
 		{
-			ChangeUnitTypePrmoteHealGlobal(eLoopUnit, iNewHeal);
+			ChangeUnitTypePrmoteHealGlobal(eLoopUnit, iNewHeal * iChange);
 		}
 	}
 #endif
@@ -10381,7 +10381,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 		int iExtraMax = it.second;
 		if (eUnitClass != NO_UNITCLASS && iExtraMax != 0)
 		{
-			ChangeEraUnitClassMaxInstances(eUnitClass, iExtraMax);
+			ChangeEraUnitClassMaxInstances(eUnitClass, iExtraMax * iChange);
 		}
 	}
 

@@ -8073,7 +8073,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 				int iGlobalValue = pBuildingInfo->GetSpecialistYieldModifierGlobal(eSpecialist, eYield2);
 				if (iGlobalValue > 0)
 				{
-					GET_PLAYER(getOwner()).ChangeYieldModifierFromSpecialistGlobal(eSpecialist, eYield2, iGlobalValue);
+					GET_PLAYER(getOwner()).ChangeYieldModifierFromSpecialistGlobal(eSpecialist, eYield2, iGlobalValue * iChange);
 					int iLoop = 0;
 					for (CvCity* pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
 					{
@@ -8189,7 +8189,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 				if(iCulture != 0)
 				{
-					ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, iCulture * m_paiNumResourcesLocal[eResource]);
+					ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, iCulture * m_paiNumResourcesLocal[eResource] * iChange);
 				}
 
 				// What about faith?
@@ -8197,7 +8197,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 				if(iFaith != 0)
 				{
-					ChangeBaseYieldRateFromBuildings(YIELD_FAITH, iFaith* m_paiNumResourcesLocal[eResource]);
+					ChangeBaseYieldRateFromBuildings(YIELD_FAITH, iFaith* m_paiNumResourcesLocal[eResource] * iChange);
 				}
 			}
 		}
@@ -8285,7 +8285,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 			if (iBuildingCulture > 0)
 			{
-				ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, owningPlayer.GetPlayerTraits()->GetCultureBuildingYieldChange());
+				ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, owningPlayer.GetPlayerTraits()->GetCultureBuildingYieldChange() * iChange);
 				//iBuildingCulture += owningPlayer.GetPlayerTraits()->GetCultureBuildingYieldChange();
 			}
 
@@ -8334,7 +8334,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 				int iGlobalConversionYield = pBuildingInfo->GetYieldFromYieldGlobal(eYield, eYield2);
 				if (iGlobalConversionYield > 0)
 				{
-					GET_PLAYER(getOwner()).changeYieldFromYieldGlobal(eYield, eYield2, iGlobalConversionYield);
+					GET_PLAYER(getOwner()).changeYieldFromYieldGlobal(eYield, eYield2, iGlobalConversionYield * iChange);
 					int iLoop = 0;
 					for (CvCity* pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
 					{
