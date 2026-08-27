@@ -1805,6 +1805,15 @@ public:
 	int GetCapturedHolyCityCount();
 	void RefreshHolyCityCount();
 	bool IsDenounceImmunity() const;
+	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
+	int GetCSUAPapalRecognitionVotes() const;
+	// Vatican CS UA: Papal Recognition league delegate votes granted to the ally per following civilization (including itself)
+	int GetCSUAPapalRecognitionAllyVotes() const;
+	// Vatican CS UA: per city worldwide following the player's religion, the holy city gains +Modifier% of the yield (100 = +1% per city)
+	int GetCSUAHolyCityYieldModifierPerFollowingCity(YieldTypes eYield) const;
+	// Vatican CS UA: number of major civs (including this player) following the founded religion, cached once per turn in doTurn()
+	int GetCSUAPapalRecognitionFollowerCount();
+	void RefreshPapalRecognitionFollowerCount();
 #endif
 
 	int GetPrestigeExemptAllyCount() const;
@@ -3154,6 +3163,7 @@ protected:
 	CvPlayerCityStateUA* m_pCityStateUA;
 	int m_iCityStateUASpyKillProgress;
 	int m_iCachedHolyCityCount; // Jerusalem CS UA: cached holy-city count, refreshed once per turn in doTurn(); -1 = not computed yet
+	int m_iCachedPapalRecognitionFollowerCount; // Vatican CS UA: cached follower-civ count, refreshed once per turn in doTurn(); -1 = not computed yet
 #endif
 
 	// human player wanted to end turn processing but hasn't received

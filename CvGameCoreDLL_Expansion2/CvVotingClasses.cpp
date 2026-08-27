@@ -3924,6 +3924,12 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 		int iWorldReligionVotes = GetExtraVotesForFollowingReligion(ePlayer);
 		iVotes += iWorldReligionVotes;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Vatican CS UA: Papal Recognition
+		int iPapalRecognitionVotes = GetPapalRecognitionVotes(ePlayer);
+		iVotes += iPapalRecognitionVotes;
+#endif
+
 		// World Ideology
 		int iWorldIdeologyVotes = GetExtraVotesForFollowingIdeology(ePlayer);
 		iVotes += iWorldIdeologyVotes;
@@ -3977,6 +3983,14 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 				sTemp << iWorldReligionVotes;
 				pMember->sVoteSources += sTemp.toUTF8();
 			}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			if (iPapalRecognitionVotes > 0)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_PAPAL_RECOGNITION_VOTES");
+				sTemp << iPapalRecognitionVotes;
+				pMember->sVoteSources += sTemp.toUTF8();
+			}
+#endif
 			if (iWorldIdeologyVotes > 0)
 			{
 				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_WORLD_IDEOLOGY_VOTES");
@@ -4608,6 +4622,46 @@ int CvLeague::GetExtraVotesForFollowingReligion(PlayerTypes ePlayer)
 			}
 		}
 	}
+	return iVotes;
+}
+
+// Vatican CS UA: Papal Recognition league delegate votes.
+// Every major civilization with a majority of its cities following the papal ally's religion gains PapalRecognitionVotes delegates (mainstream),
+// and the papal ally additionally gains PapalRecognitionAllyVotes delegates per civilization following its religion (including itself).
+// Example: if A, B, C, D all have a majority of cities following A's religion and A is the ally (Votes=1, AllyVotes=1), A gets 1 + 4 = 5 votes, B/C/D each get 1.
+int CvLeague::GetPapalRecognitionVotes(PlayerTypes ePlayer)
+{
+	int iVotes = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+	{
+		PlayerTypes ePapalAlly = (PlayerTypes)i;
+		if (!GET_PLAYER(ePapalAlly).isAlive() || GET_PLAYER(ePapalAlly).isMinorCiv())
+			continue;
+
+		int iFollowerVotes = GET_PLAYER(ePapalAlly).GetCSUAPapalRecognitionVotes();
+		int iAllyVotesPerFollower = GET_PLAYER(ePapalAlly).GetCSUAPapalRecognitionAllyVotes();
+		if (iFollowerVotes <= 0 && iAllyVotesPerFollower <= 0)
+			continue;
+
+		ReligionTypes eReligion = GET_PLAYER(ePapalAlly).GetReligions()->GetReligionCreatedByPlayer();
+		if (eReligion == NO_RELIGION)
+			continue;
+
+		if (ePlayer == ePapalAlly)
+		{
+			// The papal ally gets its own mainstream votes only if a majority of its own cities follow the religion,
+			// plus AllyVotes per following civilization (cached follower count, includes itself when it follows)
+			int iOwnMainstreamVotes = GET_PLAYER(ePapalAlly).GetReligions()->HasReligionInMostCities(eReligion) ? iFollowerVotes : 0;
+			iVotes += iOwnMainstreamVotes + iAllyVotesPerFollower * GET_PLAYER(ePapalAlly).GetCSUAPapalRecognitionFollowerCount();
+		}
+		else if (GET_PLAYER(ePlayer).GetReligions()->HasReligionInMostCities(eReligion))
+		{
+			// A recognized civilization gains the mainstream votes
+			iVotes += iFollowerVotes;
+		}
+	}
+#endif
 	return iVotes;
 }
 

@@ -51,6 +51,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iStealTechSpeedPerSpy(0)
 	, m_iSpyKillChancePerSpy(0)
 	, m_iReligionSpreadSpeedModifier(0)
+	, m_iPapalRecognitionVotes(0)
+	, m_iPapalRecognitionAllyVotes(0)
 	, m_iReligiousPressureModifierPerHolyCity(0)
 	, m_bDenounceImmunity(false)
 	, m_piCapitalYieldModifierPerFollowingCity(nullptr)
@@ -157,6 +159,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iSpyKillChancePerSpy							= kResults.GetInt("SpyKillChancePerSpy");
 
 	m_iReligionSpreadSpeedModifier					= kResults.GetInt("ReligionSpreadSpeedModifier");
+	m_iPapalRecognitionVotes						= kResults.GetInt("PapalRecognitionVotes");
+	m_iPapalRecognitionAllyVotes					= kResults.GetInt("PapalRecognitionAllyVotes");
 	// Jerusalem: per holy city owned religious pressure (founder's religion), ally denounce immunity, per following-city capital yield modifier
 	m_iReligiousPressureModifierPerHolyCity			= kResults.GetInt("ReligiousPressureModifierPerHolyCity");
 	m_bDenounceImmunity								= kResults.GetBool("DenounceImmunity");
@@ -471,6 +475,10 @@ int CvCityStateUAEffectEntry::GetStealTechSpeedPerSpy() const { return m_iStealT
 int CvCityStateUAEffectEntry::GetSpyKillChancePerSpy() const { return m_iSpyKillChancePerSpy; }
 
 int CvCityStateUAEffectEntry::GetReligionSpreadSpeedModifier() const { return m_iReligionSpreadSpeedModifier; }
+// Vatican: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
+int CvCityStateUAEffectEntry::GetPapalRecognitionVotes() const { return m_iPapalRecognitionVotes; }
+// Vatican: Papal Recognition league delegate votes granted to the ally per following civilization (including itself)
+int CvCityStateUAEffectEntry::GetPapalRecognitionAllyVotes() const { return m_iPapalRecognitionAllyVotes; }
 
 // Jerusalem: per holy city owned religious pressure (applies to the founder's religion)
 int CvCityStateUAEffectEntry::GetReligiousPressureModifierPerHolyCity() const { return m_iReligiousPressureModifierPerHolyCity; }
@@ -772,6 +780,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iStealTechSpeedPerSpy(0)
 	, m_iSpyKillChancePerSpy(0)
 	, m_iReligionSpreadSpeedModifier(0)
+	, m_iPapalRecognitionVotes(0)
+	, m_iPapalRecognitionAllyVotes(0)
 	, m_iReligiousPressureModifierPerHolyCity(0)
 	, m_iDenounceImmunityCount(0)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
@@ -857,6 +867,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iStealTechSpeedPerSpy = 0;
 	m_iSpyKillChancePerSpy = 0;
 	m_iReligionSpreadSpeedModifier = 0;
+	m_iPapalRecognitionVotes = 0;
+	m_iPapalRecognitionAllyVotes = 0;
 	m_iReligiousPressureModifierPerHolyCity = 0;
 	m_iDenounceImmunityCount = 0;
 	m_aiCapitalYieldModifierPerFollowingCity.assign(NUM_YIELD_TYPES, 0);
@@ -1013,6 +1025,8 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iSpyKillChancePerSpy							+= pEffect->GetSpyKillChancePerSpy() * iChange;
 
 	m_iReligionSpreadSpeedModifier					+= pEffect->GetReligionSpreadSpeedModifier() * iChange;
+	m_iPapalRecognitionVotes						+= pEffect->GetPapalRecognitionVotes() * iChange;
+	m_iPapalRecognitionAllyVotes					+= pEffect->GetPapalRecognitionAllyVotes() * iChange;
 	// Jerusalem: per holy city religious pressure, ally denounce immunity, per following-city capital yield modifier
 	m_iReligiousPressureModifierPerHolyCity			+= pEffect->GetReligiousPressureModifierPerHolyCity() * iChange;
 	m_iDenounceImmunityCount						+= (pEffect->IsDenounceImmunity() ? iChange : 0);
@@ -1230,6 +1244,8 @@ bool CvPlayerCityStateUA::GetCoupFailSpySurvives() const { return m_iCoupFailSpy
 int CvPlayerCityStateUA::GetStealTechSpeedPerSpy() const { return m_iStealTechSpeedPerSpy; }
 int CvPlayerCityStateUA::GetSpyKillChancePerSpy() const { return m_iSpyKillChancePerSpy; }
 int CvPlayerCityStateUA::GetReligionSpreadSpeedModifier() const { return m_iReligionSpreadSpeedModifier; }
+int CvPlayerCityStateUA::GetPapalRecognitionVotes() const { return m_iPapalRecognitionVotes; }
+int CvPlayerCityStateUA::GetPapalRecognitionAllyVotes() const { return m_iPapalRecognitionAllyVotes; }
 int CvPlayerCityStateUA::GetReligiousPressureModifierPerHolyCity() const { return m_iReligiousPressureModifierPerHolyCity; }
 bool CvPlayerCityStateUA::IsDenounceImmunity() const { return m_iDenounceImmunityCount > 0; }
 int CvPlayerCityStateUA::GetCapitalYieldModifierPerFollowingCity(YieldTypes eYieldType) const

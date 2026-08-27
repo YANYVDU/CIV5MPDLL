@@ -1248,6 +1248,7 @@ void CvPlayer::uninit()
 	m_iMinorCivAlliesThresholdModifier = 0;
 	m_iCityStateUASpyKillProgress = 0;
 	m_iCachedHolyCityCount = -1;
+	m_iCachedPapalRecognitionFollowerCount = -1;
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
@@ -5354,6 +5355,8 @@ void CvPlayer::doTurn()
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Jerusalem CS UA: refresh the cached holy-city count once per turn
 	RefreshHolyCityCount();
+	// Vatican CS UA: refresh the cached papal-recognition follower count once per turn
+	RefreshPapalRecognitionFollowerCount();
 #endif
 
 	AI_doTurnPre();
@@ -31750,6 +31753,67 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eReligion);
 	return (iCities * iPerCity) / 100;
 }
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
+	int CvPlayer::GetCSUAPapalRecognitionVotes() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetPapalRecognitionVotes() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: Papal Recognition league delegate votes granted to the ally per following civilization (including itself)
+	int CvPlayer::GetCSUAPapalRecognitionAllyVotes() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetPapalRecognitionAllyVotes() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: per city worldwide following the player's religion, the holy city gains +Modifier% of the yield (100 = +1% per city)
+	int CvPlayer::GetCSUAHolyCityYieldModifierPerFollowingCity(YieldTypes eYield) const
+	{
+		if (!m_pCityStateUA) return 0;
+		int iPerCity = m_pCityStateUA->GetHolyCityYieldModifierPerFollowingCity(eYield);
+		if (iPerCity == 0) return 0;
+		CvPlayerReligions* pReligions = GetReligions();
+		if (!pReligions->HasCreatedReligion()) return 0;
+		ReligionTypes eReligion = pReligions->GetReligionCreatedByPlayer();
+		if (eReligion == NO_RELIGION) return 0;
+		int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eReligion);
+		return (iCities * iPerCity) / 100;
+	}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: number of major civilizations (including this player) whose majority of cities
+	// follow the religion founded by this player. Cached once per turn in doTurn() like Jerusalem's
+	// holy-city count (lazy fallback: -1 triggers a recompute on first access).
+	int CvPlayer::GetCSUAPapalRecognitionFollowerCount()
+	{
+		if (m_iCachedPapalRecognitionFollowerCount < 0)
+			RefreshPapalRecognitionFollowerCount();
+		return m_iCachedPapalRecognitionFollowerCount;
+	}
+
+	//	------------------------------------------------------------------------
+	void CvPlayer::RefreshPapalRecognitionFollowerCount()
+	{
+		m_iCachedPapalRecognitionFollowerCount = 0;
+		if (GetCSUAPapalRecognitionVotes() <= 0 && GetCSUAPapalRecognitionAllyVotes() <= 0)
+			return; // not a papal ally: no followers to count
+		ReligionTypes eReligion = GetReligions()->GetReligionCreatedByPlayer();
+		if (eReligion == NO_RELIGION)
+			return;
+		int iCount = 0;
+		for (int j = 0; j < MAX_MAJOR_CIVS; j++)
+		{
+			PlayerTypes eCiv = (PlayerTypes)j;
+			if (!GET_PLAYER(eCiv).isAlive() || GET_PLAYER(eCiv).isMinorCiv())
+				continue;
+			if (GET_PLAYER(eCiv).GetReligions()->HasReligionInMostCities(eReligion))
+				iCount++;
+		}
+		m_iCachedPapalRecognitionFollowerCount = iCount;
+	}
 #endif
 
 //	------------------------------------------------------------------------

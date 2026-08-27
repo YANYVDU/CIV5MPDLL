@@ -95,6 +95,10 @@ CREATE TABLE CityStateUAEffects (
     HillsCityRangeBonus                             integer DEFAULT 0,
     -- Vatican City: religion spread speed
     ReligionSpreadSpeedModifier                     integer DEFAULT 0,
+    -- Vatican City: Papal Recognition - league delegate votes granted to each civilization with a majority of cities following the ally's religion (mainstream votes, 1 = +1 vote)
+    PapalRecognitionVotes                           integer DEFAULT 0,
+    -- Vatican City: Papal Recognition - league delegate votes granted to the ally per following civilization (including itself, 1 = +1 vote per follower)
+    PapalRecognitionAllyVotes                       integer DEFAULT 0,
     -- Jerusalem: +X% religious pressure of the founder's religion per holy city owned by the ally/friend
     ReligiousPressureModifierPerHolyCity            integer DEFAULT 0,
     -- Jerusalem: player who is the ally of this city-state cannot be denounced

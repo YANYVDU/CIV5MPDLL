@@ -123,6 +123,12 @@ public:
 	int GetSpyKillChancePerSpy() const;
 	// Vatican (FanDiGang)
 	int GetReligionSpreadSpeedModifier() const;
+	// Vatican: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
+	int GetPapalRecognitionVotes() const;
+	// Vatican: Papal Recognition league delegate votes granted to the ally per following civilization (including itself)
+	int GetPapalRecognitionAllyVotes() const;
+	// Vatican: per following city, the holy city gains +Modifier% of the yield (per YieldType, 100 = +1%)
+	int GetHolyCityYieldModifierPerFollowingCity(int i) const;
 	// Jerusalem (YeLuSaLeng): +X% religious pressure per holy city owned by the player (applies to the founder's religion)
 	int GetReligiousPressureModifierPerHolyCity() const;
 	// Jerusalem (YeLuSaLeng): player who is the ally of this city-state cannot be denounced
@@ -241,6 +247,8 @@ private:
 	int m_iSpyKillChancePerSpy;
 	// Vatican
 	int m_iReligionSpreadSpeedModifier;
+	int m_iPapalRecognitionVotes;
+	int m_iPapalRecognitionAllyVotes;
 	// Jerusalem
 	int m_iReligiousPressureModifierPerHolyCity;
 	bool m_bDenounceImmunity;
@@ -424,6 +432,8 @@ public:
 	int GetHillsCityRangeBonus() const;
 	// Vatican
 	int GetReligionSpreadSpeedModifier() const;
+	int GetPapalRecognitionVotes() const;
+	int GetPapalRecognitionAllyVotes() const;
 	// Jerusalem
 	int GetReligiousPressureModifierPerHolyCity() const;
 	bool IsDenounceImmunity() const;
@@ -524,6 +534,8 @@ protected:
 	int m_iStealTechSpeedPerSpy;
 	int m_iSpyKillChancePerSpy;
 	int m_iReligionSpreadSpeedModifier;
+	int m_iPapalRecognitionVotes;
+	int m_iPapalRecognitionAllyVotes;
 	int m_iReligiousPressureModifierPerHolyCity;
 	int m_iDenounceImmunityCount;
 	std::vector<int> m_aiCapitalYieldModifierPerFollowingCity;

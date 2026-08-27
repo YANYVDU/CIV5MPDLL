@@ -588,6 +588,8 @@ public:
 	int GetWorldWonderYieldChange(YieldTypes eYield);
 	bool IsNoTrainingNuclearWeapons();
 	int GetExtraVotesForFollowingReligion(PlayerTypes ePlayer);
+	// Vatican CS UA: Papal Recognition league delegate votes (1 = +1 vote per recognizing civilization)
+	int GetPapalRecognitionVotes(PlayerTypes ePlayer);
 	int GetCityTourismModifier(const CvCity* pCity);
 	int GetReligionSpreadStrengthModifier(ReligionTypes eReligion);
 	int GetExtraVotesForFollowingIdeology(PlayerTypes ePlayer);
