@@ -5567,7 +5567,9 @@ void CvPlayer::doTurnPostDiplomacy()
 	// Economic Aid (Super Power V11): per-turn gold transfer from aiding majors to city-states.
 	// Deliberately NOT routed through DoGoldGiftFromMajor so the gold is not counted as a donation
 	// and the influence gain is not affected by donation modifiers.
-	if (!isMinorCiv() && !isBarbarian())
+	// Runtime check: skip entirely when the SP_UNIQUE_CITYSTATE option is disabled (covers
+	// pre-existing aid relations carried over from older save games).
+	if (GC.getGame().IsEconomicAidActive() && !isMinorCiv() && !isBarbarian())
 	{
 		int iAidGold = GC.getGame().GetEconomicAidWorldEra();
 		if (iAidGold > 0)

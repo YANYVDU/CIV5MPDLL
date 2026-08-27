@@ -4536,7 +4536,10 @@ void CvGame::StartNewEconomicAidRound()
 //	--------------------------------------------------------------------------------
 bool CvGame::IsEconomicAidActive() const
 {
-	return m_bEconomicAidActive;
+	// Also respect the runtime CustomModOptions switch (SP_UNIQUE_CITYSTATE) so that
+	// disabling the option disables economic aid entirely, even for save games that
+	// had it activated before (m_bEconomicAidActive is read back from the save).
+	return m_bEconomicAidActive && MOD_SP_UNIQUE_CITYSTATE;
 }
 
 //	--------------------------------------------------------------------------------
