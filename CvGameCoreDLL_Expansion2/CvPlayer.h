@@ -1804,6 +1804,7 @@ public:
 	int GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) const;
 	int GetCapturedHolyCityCount();
 	void RefreshHolyCityCount();
+	bool IsDenounceImmunity() const;
 #endif
 
 	int GetPrestigeExemptAllyCount() const;

@@ -31730,6 +31730,13 @@ int CvPlayer::GetCSUAReligiousPressureModifier()
 }
 
 //	------------------------------------------------------------------------
+// Jerusalem CS UA: player who is the ally of a DenounceImmunity city-state cannot be denounced
+bool CvPlayer::IsDenounceImmunity() const
+{
+	return m_pCityStateUA && m_pCityStateUA->IsDenounceImmunity();
+}
+
+//	------------------------------------------------------------------------
 int CvPlayer::GetCSLuxuryHappinessModifier() const
 {
 	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MERCANTILE) * GC.getCS_MERCANTILE_LUXURY_HAPPINESS_MODIFIER();

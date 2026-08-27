@@ -97,6 +97,8 @@ CREATE TABLE CityStateUAEffects (
     ReligionSpreadSpeedModifier                     integer DEFAULT 0,
     -- Jerusalem: +X% religious pressure of the founder's religion per holy city owned by the ally/friend
     ReligiousPressureModifierPerHolyCity            integer DEFAULT 0,
+    -- Jerusalem: player who is the ally of this city-state cannot be denounced
+    DenounceImmunity                                boolean DEFAULT 0,
     -- Kyzyl: trade route cap -> trade route distance
     LandTradeRouteDistancePerTradeSlot              integer DEFAULT 0,
     -- Dubai: donation counting

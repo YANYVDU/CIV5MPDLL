@@ -52,6 +52,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iSpyKillChancePerSpy(0)
 	, m_iReligionSpreadSpeedModifier(0)
 	, m_iReligiousPressureModifierPerHolyCity(0)
+	, m_bDenounceImmunity(false)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
 	, m_iHappinessPerGoldDonated(0)
 	, m_iGoldDonationInterval(0)
@@ -156,6 +157,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iReligionSpreadSpeedModifier					= kResults.GetInt("ReligionSpreadSpeedModifier");
 	// Jerusalem: per holy city owned religious pressure (founder's religion), ally denounce immunity, per following-city capital yield modifier
 	m_iReligiousPressureModifierPerHolyCity			= kResults.GetInt("ReligiousPressureModifierPerHolyCity");
+	m_bDenounceImmunity								= kResults.GetBool("DenounceImmunity");
 
 	m_iLandTradeRouteDistancePerTradeSlot			= kResults.GetInt("LandTradeRouteDistancePerTradeSlot");
 
@@ -469,6 +471,8 @@ int CvCityStateUAEffectEntry::GetReligionSpreadSpeedModifier() const { return m_
 
 // Jerusalem: per holy city owned religious pressure (applies to the founder's religion)
 int CvCityStateUAEffectEntry::GetReligiousPressureModifierPerHolyCity() const { return m_iReligiousPressureModifierPerHolyCity; }
+// Jerusalem: ally of this city-state cannot be denounced
+bool CvCityStateUAEffectEntry::IsDenounceImmunity() const { return m_bDenounceImmunity; }
 
 int CvCityStateUAEffectEntry::GetLandTradeRouteDistancePerTradeSlot() const { return m_iLandTradeRouteDistancePerTradeSlot; }
 
@@ -764,6 +768,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iSpyKillChancePerSpy(0)
 	, m_iReligionSpreadSpeedModifier(0)
 	, m_iReligiousPressureModifierPerHolyCity(0)
+	, m_iDenounceImmunityCount(0)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
 	, m_iHappinessPerGoldDonated(0)
 	, m_iGoldDonationInterval(0)
@@ -848,6 +853,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iSpyKillChancePerSpy = 0;
 	m_iReligionSpreadSpeedModifier = 0;
 	m_iReligiousPressureModifierPerHolyCity = 0;
+	m_iDenounceImmunityCount = 0;
 	m_iLandTradeRouteDistancePerTradeSlot = 0;
 	m_iHappinessPerGoldDonated = 0;
 	m_iGoldDonationInterval = 0;
@@ -1003,6 +1009,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iReligionSpreadSpeedModifier					+= pEffect->GetReligionSpreadSpeedModifier() * iChange;
 	// Jerusalem: per holy city religious pressure, ally denounce immunity, per following-city capital yield modifier
 	m_iReligiousPressureModifierPerHolyCity			+= pEffect->GetReligiousPressureModifierPerHolyCity() * iChange;
+	m_iDenounceImmunityCount						+= (pEffect->IsDenounceImmunity() ? iChange : 0);
 
 	m_iLandTradeRouteDistancePerTradeSlot			+= pEffect->GetLandTradeRouteDistancePerTradeSlot() * iChange;
 
@@ -1212,6 +1219,7 @@ int CvPlayerCityStateUA::GetStealTechSpeedPerSpy() const { return m_iStealTechSp
 int CvPlayerCityStateUA::GetSpyKillChancePerSpy() const { return m_iSpyKillChancePerSpy; }
 int CvPlayerCityStateUA::GetReligionSpreadSpeedModifier() const { return m_iReligionSpreadSpeedModifier; }
 int CvPlayerCityStateUA::GetReligiousPressureModifierPerHolyCity() const { return m_iReligiousPressureModifierPerHolyCity; }
+bool CvPlayerCityStateUA::IsDenounceImmunity() const { return m_iDenounceImmunityCount > 0; }
 int CvPlayerCityStateUA::GetLandTradeRouteDistancePerTradeSlot() const { return m_iLandTradeRouteDistancePerTradeSlot; }
 int CvPlayerCityStateUA::GetHappinessPerGoldDonated() const { return m_iHappinessPerGoldDonated; }
 int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }

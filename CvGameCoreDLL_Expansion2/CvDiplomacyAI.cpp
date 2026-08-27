@@ -21665,6 +21665,12 @@ void CvDiplomacyAI::DoDenouncePlayer(PlayerTypes ePlayer)
 		return;
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Jerusalem CS UA: a player who is the ally of a DenounceImmunity city-state cannot be denounced
+	if (GET_PLAYER(ePlayer).IsDenounceImmunity())
+		return;
+#endif
+
 	SetDenouncedPlayer(ePlayer, true);
 
 	SetDenouncedPlayerCounter(ePlayer, 0);
