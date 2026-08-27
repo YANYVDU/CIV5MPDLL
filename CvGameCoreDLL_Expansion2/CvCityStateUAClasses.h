@@ -123,6 +123,8 @@ public:
 	int GetSpyKillChancePerSpy() const;
 	// Vatican (FanDiGang)
 	int GetReligionSpreadSpeedModifier() const;
+	// Jerusalem (YeLuSaLeng): +X% religious pressure per holy city owned by the player (applies to the founder's religion)
+	int GetReligiousPressureModifierPerHolyCity() const;
 	// Kyzyl (KeZiLe)
 	int GetLandTradeRouteDistancePerTradeSlot() const;
 	// Dubai (DiBai)
@@ -235,6 +237,8 @@ private:
 	int m_iSpyKillChancePerSpy;
 	// Vatican
 	int m_iReligionSpreadSpeedModifier;
+	// Jerusalem
+	int m_iReligiousPressureModifierPerHolyCity;
 	// Kyzyl
 	int m_iLandTradeRouteDistancePerTradeSlot;
 	// Dubai
@@ -414,6 +418,8 @@ public:
 	int GetHillsCityRangeBonus() const;
 	// Vatican
 	int GetReligionSpreadSpeedModifier() const;
+	// Jerusalem
+	int GetReligiousPressureModifierPerHolyCity() const;
 	// Kyzyl
 	int GetLandTradeRouteDistancePerTradeSlot() const;
 	// Dubai
@@ -510,6 +516,7 @@ protected:
 	int m_iStealTechSpeedPerSpy;
 	int m_iSpyKillChancePerSpy;
 	int m_iReligionSpreadSpeedModifier;
+	int m_iReligiousPressureModifierPerHolyCity;
 	int m_iLandTradeRouteDistancePerTradeSlot;
 	int m_iHappinessPerGoldDonated;
 	int m_iGoldDonationInterval;

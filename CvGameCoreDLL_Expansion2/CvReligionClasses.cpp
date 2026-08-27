@@ -2414,6 +2414,18 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 		}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Jerusalem CS UA: boost pressure of the founder's religion per holy city owned by the founder
+		{
+			PlayerTypes eFounder = pReligion->m_eFounder;
+			int iCSUAReligiousPressureMod = GET_PLAYER(eFounder).GetCSUAReligiousPressureModifier();
+			if (iCSUAReligiousPressureMod > 0)
+			{
+				iPressure = (iPressure * (100 + iCSUAReligiousPressureMod)) / 100;
+			}
+		}
+#endif
+
 		if (bConnectedWithTrade && !bWithinDistance)
 		{
 			if (!bIncrementTRInfluencing)

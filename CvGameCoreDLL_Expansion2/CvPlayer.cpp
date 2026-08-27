@@ -1247,6 +1247,7 @@ void CvPlayer::uninit()
 	m_iCityStateAllyCount = 0;
 	m_iMinorCivAlliesThresholdModifier = 0;
 	m_iCityStateUASpyKillProgress = 0;
+	m_iCachedHolyCityCount = -1;
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
@@ -5349,6 +5350,11 @@ void CvPlayer::doTurn()
 	CvAssertMsg(isAlive(), "isAlive is expected to be true");
 
 	doUpdateCacheOnTurn();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Jerusalem CS UA: refresh the cached holy-city count once per turn
+	RefreshHolyCityCount();
+#endif
 
 	AI_doTurnPre();
 
@@ -31686,6 +31692,41 @@ int CvPlayer::GetCSFaithCostModifier() const
 int CvPlayer::GetCSReligiousPressureModifier() const
 {
 	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_RELIGIOUS) * GC.getCS_RELIGIOUS_PRESSURE_MODIFIER();
+}
+
+//	------------------------------------------------------------------------
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvPlayer::GetCapturedHolyCityCount()
+{
+	if (m_iCachedHolyCityCount < 0)
+		RefreshHolyCityCount();
+	return m_iCachedHolyCityCount;
+}
+
+//	------------------------------------------------------------------------
+// Jerusalem CS UA: recompute the cached count of holy cities owned by the player (called once per turn in doTurn())
+void CvPlayer::RefreshHolyCityCount()
+{
+	int iCount = 0;
+	int iLoop = 0;
+	for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	{
+		if (pLoopCity->GetCityReligions()->IsHolyCityAnyReligion())
+			iCount++;
+	}
+	m_iCachedHolyCityCount = iCount;
+}
+
+//	------------------------------------------------------------------------
+// Jerusalem CS UA: religious pressure bonus for the founder's religion per holy city owned
+int CvPlayer::GetCSUAReligiousPressureModifier()
+{
+	if (!m_pCityStateUA) return 0;
+	int iPerHolyCity = m_pCityStateUA->GetReligiousPressureModifierPerHolyCity();
+	if (iPerHolyCity == 0) return 0;
+	int iHolyCityCount = GetCapturedHolyCityCount();
+	if (iHolyCityCount == 0) return 0;
+	return iPerHolyCity * iHolyCityCount;
 }
 
 //	------------------------------------------------------------------------

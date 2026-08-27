@@ -1798,6 +1798,14 @@ public:
 	int GetCSTreasuryInterestRate() const;
 #endif
 
+	// Jerusalem CS UA: per holy city religious pressure / per following-city capital yield / denounce immunity
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetCSUAReligiousPressureModifier();
+	int GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) const;
+	int GetCapturedHolyCityCount();
+	void RefreshHolyCityCount();
+#endif
+
 	int GetPrestigeExemptAllyCount() const;
 	void SetPrestigeExemptAllyCount(int iValue);
 	void ChangePrestigeExemptAllyCount(int iChange);
@@ -3144,6 +3152,7 @@ protected:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	CvPlayerCityStateUA* m_pCityStateUA;
 	int m_iCityStateUASpyKillProgress;
+	int m_iCachedHolyCityCount; // Jerusalem CS UA: cached holy-city count, refreshed once per turn in doTurn(); -1 = not computed yet
 #endif
 
 	// human player wanted to end turn processing but hasn't received
