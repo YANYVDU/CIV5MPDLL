@@ -136,7 +136,9 @@ CREATE TABLE CityStateUAEffects (
     CoupChanceModifier          integer DEFAULT 0,  -- +% coup success, may exceed the 85% cap (ally 30 / friend 12)
     CoupFailSpySurvives         boolean DEFAULT 0,  -- failed coup keeps the spy alive (ally only)
     StealTechSpeedPerSpy        integer DEFAULT 0,  -- +% steal-tech speed per alive spy (ally only)
-    SpyKillChancePerSpy         integer DEFAULT 0   -- +% chance to catch/kill enemy spies per alive spy (ally only)
+    SpyKillChancePerSpy         integer DEFAULT 0,  -- +% chance to catch/kill enemy spies per alive spy (ally only)
+    -- Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
+    HappinessPerFollowingCity   integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

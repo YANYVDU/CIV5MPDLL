@@ -13893,6 +13893,15 @@ int CvPlayer::GetHappinessFromReligion()
 			float iHappinessPerFollowingCity = pReligion->m_Beliefs.GetHappinessPerFollowingCity();
 			iHappinessFromReligion += (int)((float)pReligions->GetNumCitiesFollowing(eFoundedReligion) * iHappinessPerFollowingCity);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
+			int iCSHappinessPerCity = GetCSUAHappinessPerFollowingCity();
+			if (iCSHappinessPerCity > 0)
+			{
+				iHappinessFromReligion += (pReligions->GetNumCitiesFollowing(eFoundedReligion) * iCSHappinessPerCity) / 100;
+			}
+#endif
+
 			int iHappinessPerXPeacefulForeignFollowers = pReligion->m_Beliefs.GetHappinessPerXPeacefulForeignFollowers();
 			if (iHappinessPerXPeacefulForeignFollowers > 0)
 			{
@@ -31820,6 +31829,13 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 				iCount++;
 		}
 		m_iCachedPapalRecognitionFollowerCount = iCount;
+	}
+
+	//	------------------------------------------------------------------------
+	// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
+	int CvPlayer::GetCSUAHappinessPerFollowingCity() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetHappinessPerFollowingCity() : 0;
 	}
 #endif
 

@@ -83,6 +83,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iDiplomaticPrestigePerCity(0)
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_piImprovementHappiness(nullptr)
+	, m_iHappinessPerFollowingCity(0)
 {
 }
 
@@ -243,6 +244,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
 	kUtility.PopulateArrayByValue(m_piImprovementHappiness, "Improvements", "CityStateUAEffect_ImprovementHappiness", "ImprovementType", "EffectType", GetType(), "Happiness");
+	//Gangtok
+	m_iHappinessPerFollowingCity = kResults.GetInt("HappinessPerFollowingCity");
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -588,6 +591,8 @@ int CvCityStateUAEffectEntry::GetImprovementHappiness(int i) const
 	return m_piImprovementHappiness[i];
 }
 
+int CvCityStateUAEffectEntry::GetHappinessPerFollowingCity() const { return m_iHappinessPerFollowingCity; }
+
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
 	CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds");
@@ -813,6 +818,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_iImprovementYieldModifierCount(0)
 	, m_iImprovementHappinessCount(0)
+	, m_iHappinessPerFollowingCity(0)
 {
 }
 
@@ -904,6 +910,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iImprovementYieldModifierCount = 0;
 	m_iImprovementHappinessCount = 0;
 	m_aiImprovementHappiness.assign(GC.getNumImprovementInfos(), 0);
+	m_iHappinessPerFollowingCity = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1142,6 +1149,8 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_iImprovementHappinessCount += iChange;
 		}
 	}
+	//Gangtok
+	m_iHappinessPerFollowingCity += pEffect->GetHappinessPerFollowingCity() * iChange;
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -1441,3 +1450,4 @@ int CvPlayerCityStateUA::GetGreatPersonOneShotModifier(UnitClassTypes eUnitClass
 int CvPlayerCityStateUA::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }
 const std::vector<PurchasedBuildingXPEntry>& CvPlayerCityStateUA::GetPurchasedBuildingXPEntries() const { return m_vPurchasedBuildingXP; }
 const std::vector<UnitBornYieldEntry>& CvPlayerCityStateUA::GetUnitBornYieldEntries() const { return m_vUnitBornYield; }
+int CvPlayerCityStateUA::GetHappinessPerFollowingCity() const { return m_iHappinessPerFollowingCity; }

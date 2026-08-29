@@ -1816,6 +1816,8 @@ public:
 	// Vatican CS UA: number of major civs (including this player) following the founded religion, cached once per turn in doTurn()
 	int GetCSUAPapalRecognitionFollowerCount();
 	void RefreshPapalRecognitionFollowerCount();
+	// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
+	int GetCSUAHappinessPerFollowingCity() const;
 #endif
 
 	int GetPrestigeExemptAllyCount() const;

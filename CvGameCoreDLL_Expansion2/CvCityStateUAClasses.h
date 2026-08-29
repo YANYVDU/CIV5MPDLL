@@ -191,6 +191,8 @@ public:
 	int GetImprovementYieldModifiers(int i, int j) const;
 	// Zanzibar: each worked plot holding the specified improvement grants flat local happiness
 	int GetImprovementHappiness(int i) const;
+	// Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
+	int GetHappinessPerFollowingCity() const;
 
 private:
 	// Florence
@@ -302,6 +304,8 @@ private:
 	int** m_ppiImprovementYieldModifiers;
 	// Zanzibar
 	int* m_piImprovementHappiness;
+	// Gangtok
+	int m_iHappinessPerFollowingCity;
 };
 
 //======================================================================================================
@@ -490,6 +494,8 @@ public:
 	// Zanzibar
 	int GetImprovementHappiness(ImprovementTypes eImprovement) const;
 	bool HasImprovementHappiness() const;
+	// Gangtok
+	int GetHappinessPerFollowingCity() const;
 
 	void Reset();
 
@@ -589,6 +595,8 @@ protected:
 	// Zanzibar
 	std::vector<int> m_aiImprovementHappiness;
 	int m_iImprovementHappinessCount;
+	// Gangtok
+	int m_iHappinessPerFollowingCity;
 };
 
 #endif // CVCITYSTATEUACLASSES_H
