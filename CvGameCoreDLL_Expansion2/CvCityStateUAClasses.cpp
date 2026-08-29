@@ -84,6 +84,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_piImprovementHappiness(nullptr)
 	, m_iHappinessPerFollowingCity(0)
+	, m_iFaithInfluencePurchaseCostDivisor(0)
+	, m_iFaithInfluencePurchasePerTurnLimit(0)
 {
 }
 
@@ -246,6 +248,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	kUtility.PopulateArrayByValue(m_piImprovementHappiness, "Improvements", "CityStateUAEffect_ImprovementHappiness", "ImprovementType", "EffectType", GetType(), "Happiness");
 	//Gangtok
 	m_iHappinessPerFollowingCity = kResults.GetInt("HappinessPerFollowingCity");
+	m_iFaithInfluencePurchaseCostDivisor = kResults.GetInt("FaithInfluencePurchaseCostDivisor");
+	m_iFaithInfluencePurchasePerTurnLimit = kResults.GetInt("FaithInfluencePurchasePerTurnLimit");
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -592,6 +596,8 @@ int CvCityStateUAEffectEntry::GetImprovementHappiness(int i) const
 }
 
 int CvCityStateUAEffectEntry::GetHappinessPerFollowingCity() const { return m_iHappinessPerFollowingCity; }
+int CvCityStateUAEffectEntry::GetFaithInfluencePurchaseCostDivisor() const { return m_iFaithInfluencePurchaseCostDivisor; }
+int CvCityStateUAEffectEntry::GetFaithInfluencePurchasePerTurnLimit() const { return m_iFaithInfluencePurchasePerTurnLimit; }
 
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
@@ -819,6 +825,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iImprovementYieldModifierCount(0)
 	, m_iImprovementHappinessCount(0)
 	, m_iHappinessPerFollowingCity(0)
+	, m_iFaithInfluencePurchaseCostDivisor(0)
+	, m_iFaithInfluencePurchasePerTurnLimit(0)
 {
 }
 
@@ -911,6 +919,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iImprovementHappinessCount = 0;
 	m_aiImprovementHappiness.assign(GC.getNumImprovementInfos(), 0);
 	m_iHappinessPerFollowingCity = 0;
+	m_iFaithInfluencePurchaseCostDivisor = 0;
+	m_iFaithInfluencePurchasePerTurnLimit = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1151,6 +1161,8 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	}
 	//Gangtok
 	m_iHappinessPerFollowingCity += pEffect->GetHappinessPerFollowingCity() * iChange;
+	m_iFaithInfluencePurchaseCostDivisor += pEffect->GetFaithInfluencePurchaseCostDivisor() * iChange;
+	m_iFaithInfluencePurchasePerTurnLimit += pEffect->GetFaithInfluencePurchasePerTurnLimit() * iChange;
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -1451,3 +1463,6 @@ int CvPlayerCityStateUA::GetEnemyCityNoHealBesiegeCount() const { return m_iEnem
 const std::vector<PurchasedBuildingXPEntry>& CvPlayerCityStateUA::GetPurchasedBuildingXPEntries() const { return m_vPurchasedBuildingXP; }
 const std::vector<UnitBornYieldEntry>& CvPlayerCityStateUA::GetUnitBornYieldEntries() const { return m_vUnitBornYield; }
 int CvPlayerCityStateUA::GetHappinessPerFollowingCity() const { return m_iHappinessPerFollowingCity; }
+int CvPlayerCityStateUA::GetFaithInfluencePurchaseCostDivisor() const { return m_iFaithInfluencePurchaseCostDivisor; }
+int CvPlayerCityStateUA::GetFaithInfluencePurchasePerTurnLimit() const { return m_iFaithInfluencePurchasePerTurnLimit; }
+bool CvPlayerCityStateUA::HasFaithInfluencePurchase() const { return m_iFaithInfluencePurchaseCostDivisor > 0; }

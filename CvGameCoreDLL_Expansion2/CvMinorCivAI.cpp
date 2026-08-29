@@ -10443,6 +10443,40 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
 }
 
+/// Gangtok CS UA: buy influence with faith at (gold price / divisor) faith; limited per turn globally
+void CvMinorCivAI::DoFaithGiftFromMajor(PlayerTypes eMajor, int iEquivalentGold)
+{
+	// Permanent ally: no faith gifts from anyone
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+
+	// Gangtok CS UA: only players with an active faith-influence-purchase effect (e.g. Gangtok ally) may do this
+	int iCostDivisor = kMajor.GetCSUAFaithInfluencePurchaseCostDivisor();
+	if (iCostDivisor <= 0)
+		return;
+	if (kMajor.GetCSUAFaithInfluencePurchaseRemaining() <= 0)
+		return;
+
+	int iFaithCost = iEquivalentGold / iCostDivisor;
+	if (iFaithCost <= 0)
+		return;
+	if (kMajor.GetFaith() < iFaithCost)
+		return;
+
+	int iFriendshipChange = GetFriendshipFromGoldGift(eMajor, iEquivalentGold);
+	if (iFriendshipChange <= 0)
+		return;
+
+	kMajor.ChangeFaith(-iFaithCost);
+	kMajor.ChangeCSUAFaithInfluencePurchaseUsed(1);
+	ChangeFriendshipWithMajor(eMajor, iFriendshipChange);
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+}
+
 /// How many friendship points gained from a gift of Gold
 int CvMinorCivAI::GetFriendshipFromGoldGift(PlayerTypes eMajor, int iGold)
 {

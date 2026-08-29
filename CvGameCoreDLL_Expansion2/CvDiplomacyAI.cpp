@@ -13709,6 +13709,9 @@ void CvDiplomacyAI::DoContactMinorCivs()
 	}
 
 	int iGoldReserve = GetPlayer()->GetTreasury()->GetGold();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int iFaithReserve = GetPlayer()->GetFaith(); // Gangtok CS UA: faith-gift fallback never spends more than half of turn-start faith (mirrors the gold rule)
+#endif
 
 	// Do we want to buyout a minor?
 	if(veMinorsToBuyout.size() > 0)
@@ -13778,6 +13781,35 @@ void CvDiplomacyAI::DoContactMinorCivs()
 			// Can't afford gift yet, so start saving
 			else
 			{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Gangtok CS UA: when we want to gift gold but can't afford any tier, buy influence with faith instead
+				// (faith price = gold price / divisor, once per turn globally)
+				if (MOD_SP_UNIQUE_CITYSTATE && sGift.iGoldAmount == 0)
+				{
+					int iFaithDivisor = GetPlayer()->GetCSUAFaithInfluencePurchaseCostDivisor();
+					if (iFaithDivisor > 0 && GetPlayer()->GetCSUAFaithInfluencePurchaseRemaining() > 0)
+					{
+						int iFaith = GetPlayer()->GetFaith();
+						int iFaithGiftGold = 0;
+						if (sGift.bQuickBoost && iFaith >= iSmallGift / iFaithDivisor)
+							iFaithGiftGold = iSmallGift;
+						else if (iFaith >= iLargeGift / iFaithDivisor)
+							iFaithGiftGold = iLargeGift;
+						else if (iFaith >= iMediumGift / iFaithDivisor)
+							iFaithGiftGold = iMediumGift;
+
+						// Don't let a single gift cost more than half of our turn-start faith
+						if (iFaithGiftGold > 0 && (iFaithGiftGold / iFaithDivisor) <= (iFaithReserve / 2))
+						{
+							GET_PLAYER(sGift.eMinor).GetMinorCivAI()->DoFaithGiftFromMajor(GetPlayer()->GetID(), iFaithGiftGold);
+							LogMinorCivGiftGold(sGift.eMinor, iOldFriendship, iFaithGiftGold, /*bSaving*/ false, sGift.bQuickBoost, sGift.eMajorRival);
+							if (GetPlayer()->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT))
+								GetPlayer()->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT);
+							continue;
+						}
+					}
+				}
+#endif
 				if(!GetPlayer()->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT))
 				{
 					int iAmountToSaveFor = iMediumGift;

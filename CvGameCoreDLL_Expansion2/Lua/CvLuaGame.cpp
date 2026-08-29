@@ -347,6 +347,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(DoMinorEconomicAid);
 	Method(DoMinorGoldGift);
 	Method(DoMinorGiftGold);
+	Method(DoMinorFaithGift);
 	Method(DoMinorGiftTileImprovement);
 	Method(DoMinorBullyGold);
 	Method(DoMinorBullyUnit);
@@ -2078,6 +2079,16 @@ int CvLuaGame::lDoMinorGoldGift(lua_State* L)
 int CvLuaGame::lDoMinorGiftGold(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::DoMinorGiftGold);
+}
+//------------------------------------------------------------------------------
+//void DoMinorFaithGift(int iMinorCivID, int iEquivalentGold);
+// Gangtok CS UA: buy influence at this city-state with faith (gold price / divisor faith)
+int CvLuaGame::lDoMinorFaithGift(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iEquivalentGold = lua_tointeger(L, 2);
+	GC.getGame().DoMinorFaithGift((PlayerTypes)iMinor, iEquivalentGold);
+	return 0;
 }
 //------------------------------------------------------------------------------
 //void DoMinorGiftTileImprovement(int iMajorCivID, int iMinorCivID, iPlotX, iPlotY);

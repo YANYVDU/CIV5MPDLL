@@ -571,6 +571,7 @@ public:
 	void ChangeNumGoldGifted(PlayerTypes ePlayer, int iChange);
 
 	void DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold);
+	void DoFaithGiftFromMajor(PlayerTypes eMajor, int iEquivalentGold);
 	int GetFriendshipFromGoldGift(PlayerTypes eMajor, int iGold);
 
 	bool CanMajorGiftTileImprovement(PlayerTypes eMajor);

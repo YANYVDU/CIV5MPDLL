@@ -638,6 +638,8 @@ protected:
 	static int lGetTurnsSinceThreatenedByBarbarians(lua_State* L); // DEPRECATED, use lGetTurnsSinceThreatenedAnnouncement instead
 	static int lGetTurnsSinceThreatenedAnnouncement(lua_State* L);
 	static int lGetFriendshipFromGoldGift(lua_State* L);
+	static int lGetCSUAFaithInfluencePurchaseRemaining(lua_State* L);
+	static int lGetCSUAFaithInfluencePurchaseCostDivisor(lua_State* L);
 	static int lGetMinorCivFavoriteMajor(lua_State* L);
 	static int lGetMinorCivScienceFriendshipBonus(lua_State* L);
 	static int lGetMinorCivCultureFriendshipBonus(lua_State* L); // DEPRECATED

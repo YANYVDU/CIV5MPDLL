@@ -11170,6 +11170,21 @@ void CvGame::DoMinorGiftGold(PlayerTypes eMinor, int iNumGold)
 }
 
 //	--------------------------------------------------------------------------------
+// Gangtok CS UA: buy influence at ANY city-state with faith at (gold price / divisor) faith.
+// Executed locally for the active player (single-player focused; intentionally no network message).
+void CvGame::DoMinorFaithGift(PlayerTypes eMinor, int iEquivalentGold)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		GET_PLAYER(eMinor).GetMinorCivAI()->DoFaithGiftFromMajor(eMajor, iEquivalentGold);
+	}
+}
+
+//	--------------------------------------------------------------------------------
 /// Do the action of a major gifting a tile improvement to a minor's plot, to improve its resource
 void CvGame::DoMinorGiftTileImprovement(PlayerTypes eMajor, PlayerTypes eMinor, int iPlotX, int iPlotY)
 {

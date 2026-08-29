@@ -752,6 +752,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetFriendshipFromGoldGift);
 	Method(GetFriendshipNeededForNextLevel);
 	Method(GetMinorCivFavoriteMajor);
+	Method(GetCSUAFaithInfluencePurchaseRemaining);
+	Method(GetCSUAFaithInfluencePurchaseCostDivisor);
 	Method(GetMinorCivScienceFriendshipBonus);
 	Method(GetMinorCivCultureFriendshipBonus); // DEPRECATED
 	Method(GetMinorCivCurrentCultureFlatBonus);
@@ -7506,6 +7508,20 @@ int CvLuaPlayer::lGetFriendshipFromGoldGift(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+int CvLuaPlayer::lGetCSUAFaithInfluencePurchaseRemaining(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAFaithInfluencePurchaseRemaining());
+	return 1;
+}
+
+int CvLuaPlayer::lGetCSUAFaithInfluencePurchaseCostDivisor(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAFaithInfluencePurchaseCostDivisor());
+	return 1;
+}
+
 int CvLuaPlayer::lGetMinorCivFavoriteMajor(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);

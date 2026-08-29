@@ -576,6 +576,7 @@ public:
 
 	void DoMinorPledgeProtection(PlayerTypes eMajor, PlayerTypes eMinor, bool bProtect, bool bPledgeNowBroken = false);
 	void DoMinorGiftGold(PlayerTypes eMinor, int iNumGold);
+	void DoMinorFaithGift(PlayerTypes eMinor, int iEquivalentGold);
 	void DoMinorGiftTileImprovement(PlayerTypes eMajor, PlayerTypes eMinor, int iPlotX, int iPlotY);
 	void DoMinorBullyGold(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor);

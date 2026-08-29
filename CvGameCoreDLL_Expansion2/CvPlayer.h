@@ -1818,6 +1818,14 @@ public:
 	void RefreshPapalRecognitionFollowerCount();
 	// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
 	int GetCSUAHappinessPerFollowingCity() const;
+	// Gangtok CS UA: buy influence at ANY city-state with faith (gold price / divisor faith; divisor > 0 enables the feature)
+	int GetCSUAFaithInfluencePurchaseCostDivisor() const;
+	// Gangtok CS UA: how many faith influence purchases the ally may make per turn (globally)
+	int GetCSUAFaithInfluencePurchasePerTurnLimit() const;
+	// Gangtok CS UA: faith influence purchases already made this turn (reset in doTurn())
+	int GetCSUAFaithInfluencePurchaseUsed() const;
+	int GetCSUAFaithInfluencePurchaseRemaining() const;
+	void ChangeCSUAFaithInfluencePurchaseUsed(int iChange);
 #endif
 
 	int GetPrestigeExemptAllyCount() const;
@@ -3168,6 +3176,7 @@ protected:
 	int m_iCityStateUASpyKillProgress;
 	int m_iCachedHolyCityCount; // Jerusalem CS UA: cached holy-city count, refreshed once per turn in doTurn(); -1 = not computed yet
 	int m_iCachedPapalRecognitionFollowerCount; // Vatican CS UA: cached follower-civ count, refreshed once per turn in doTurn(); -1 = not computed yet
+	int m_iCSUAFaithInfluencePurchaseUsed; // Gangtok CS UA: faith influence purchases made this turn (reset each turn in doTurn())
 #endif
 
 	// human player wanted to end turn processing but hasn't received

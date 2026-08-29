@@ -138,7 +138,12 @@ CREATE TABLE CityStateUAEffects (
     StealTechSpeedPerSpy        integer DEFAULT 0,  -- +% steal-tech speed per alive spy (ally only)
     SpyKillChancePerSpy         integer DEFAULT 0,  -- +% chance to catch/kill enemy spies per alive spy (ally only)
     -- Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
-    HappinessPerFollowingCity   integer DEFAULT 0
+    HappinessPerFollowingCity   integer DEFAULT 0,
+    -- Gangtok: ally may buy influence at ANY city-state with faith, at (gold price / divisor) faith
+    -- (divisor > 0 also enables the feature; 4 = 1/4 of the gold price)
+    FaithInfluencePurchaseCostDivisor  integer DEFAULT 0,
+    -- Gangtok: how many faith influence purchases the ally may make per turn (1 = once per turn, globally)
+    FaithInfluencePurchasePerTurnLimit integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

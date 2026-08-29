@@ -193,6 +193,10 @@ public:
 	int GetImprovementHappiness(int i) const;
 	// Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
 	int GetHappinessPerFollowingCity() const;
+	// Gangtok: buy influence at any city-state with faith at (gold price / divisor) faith (divisor > 0 enables the feature)
+	int GetFaithInfluencePurchaseCostDivisor() const;
+	// Gangtok: how many faith influence purchases the ally may make per turn (globally)
+	int GetFaithInfluencePurchasePerTurnLimit() const;
 
 private:
 	// Florence
@@ -306,6 +310,8 @@ private:
 	int* m_piImprovementHappiness;
 	// Gangtok
 	int m_iHappinessPerFollowingCity;
+	int m_iFaithInfluencePurchaseCostDivisor;
+	int m_iFaithInfluencePurchasePerTurnLimit;
 };
 
 //======================================================================================================
@@ -496,6 +502,9 @@ public:
 	bool HasImprovementHappiness() const;
 	// Gangtok
 	int GetHappinessPerFollowingCity() const;
+	int GetFaithInfluencePurchaseCostDivisor() const;
+	int GetFaithInfluencePurchasePerTurnLimit() const;
+	bool HasFaithInfluencePurchase() const;
 
 	void Reset();
 
@@ -597,6 +606,8 @@ protected:
 	int m_iImprovementHappinessCount;
 	// Gangtok
 	int m_iHappinessPerFollowingCity;
+	int m_iFaithInfluencePurchaseCostDivisor;
+	int m_iFaithInfluencePurchasePerTurnLimit;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

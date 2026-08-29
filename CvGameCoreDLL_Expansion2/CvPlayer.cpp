@@ -1249,6 +1249,7 @@ void CvPlayer::uninit()
 	m_iCityStateUASpyKillProgress = 0;
 	m_iCachedHolyCityCount = -1;
 	m_iCachedPapalRecognitionFollowerCount = -1;
+	m_iCSUAFaithInfluencePurchaseUsed = 0;
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
@@ -5357,6 +5358,8 @@ void CvPlayer::doTurn()
 	RefreshHolyCityCount();
 	// Vatican CS UA: refresh the cached papal-recognition follower count once per turn
 	RefreshPapalRecognitionFollowerCount();
+	// Gangtok CS UA: faith influence purchases are once per turn (global) - reset the counter
+	m_iCSUAFaithInfluencePurchaseUsed = 0;
 #endif
 
 	AI_doTurnPre();
@@ -31836,6 +31839,38 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	int CvPlayer::GetCSUAHappinessPerFollowingCity() const
 	{
 		return m_pCityStateUA ? m_pCityStateUA->GetHappinessPerFollowingCity() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Gangtok CS UA: buy influence at ANY city-state with faith (gold price / divisor faith; divisor > 0 enables the feature)
+	int CvPlayer::GetCSUAFaithInfluencePurchaseCostDivisor() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetFaithInfluencePurchaseCostDivisor() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Gangtok CS UA: how many faith influence purchases the ally may make per turn (globally)
+	int CvPlayer::GetCSUAFaithInfluencePurchasePerTurnLimit() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetFaithInfluencePurchasePerTurnLimit() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	int CvPlayer::GetCSUAFaithInfluencePurchaseUsed() const
+	{
+		return m_iCSUAFaithInfluencePurchaseUsed;
+	}
+
+	int CvPlayer::GetCSUAFaithInfluencePurchaseRemaining() const
+	{
+		int iLimit = GetCSUAFaithInfluencePurchasePerTurnLimit();
+		if (iLimit <= 0) return 0;
+		return max(0, iLimit - m_iCSUAFaithInfluencePurchaseUsed);
+	}
+
+	void CvPlayer::ChangeCSUAFaithInfluencePurchaseUsed(int iChange)
+	{
+		m_iCSUAFaithInfluencePurchaseUsed = max(0, m_iCSUAFaithInfluencePurchaseUsed + iChange);
 	}
 #endif
 
