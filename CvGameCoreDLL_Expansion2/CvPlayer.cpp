@@ -13896,15 +13896,6 @@ int CvPlayer::GetHappinessFromReligion()
 			float iHappinessPerFollowingCity = pReligion->m_Beliefs.GetHappinessPerFollowingCity();
 			iHappinessFromReligion += (int)((float)pReligions->GetNumCitiesFollowing(eFoundedReligion) * iHappinessPerFollowingCity);
 
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-			// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
-			int iCSHappinessPerCity = GetCSUAHappinessPerFollowingCity();
-			if (iCSHappinessPerCity > 0)
-			{
-				iHappinessFromReligion += (pReligions->GetNumCitiesFollowing(eFoundedReligion) * iCSHappinessPerCity) / 100;
-			}
-#endif
-
 			int iHappinessPerXPeacefulForeignFollowers = pReligion->m_Beliefs.GetHappinessPerXPeacefulForeignFollowers();
 			if (iHappinessPerXPeacefulForeignFollowers > 0)
 			{
@@ -15045,6 +15036,19 @@ int CvPlayer::GetHappinessFromMinorCivs() const
 		eMinor = (PlayerTypes) iMinorLoop;
 		iHappiness += GetHappinessFromMinor(eMinor);
 	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Gangtok CS UA: per city worldwide following the player's religion, global happiness
+	// (100 = +1 happiness per city). Counted here so it shows up under "from City-States".
+	ReligionTypes eFoundedReligion = GC.getGame().GetGameReligions()->GetFounderBenefitsReligion(GetID());
+	if (eFoundedReligion != NO_RELIGION)
+	{
+		int iCSHappinessPerCity = GetCSUAHappinessPerFollowingCity();
+		if (iCSHappinessPerCity > 0)
+		{
+			iHappiness += (GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eFoundedReligion) * iCSHappinessPerCity) / 100;
+		}
+	}
+#endif
 	return iHappiness;
 }
 
@@ -19396,6 +19400,15 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// Born-yield contribution is dynamic (per-specialist extra yield). Re-sync all cities so
 	// the rebuilt effect list takes effect idempotently (delta-based, never stacks per turn).
 	updateExtraSpecialistYield();
+
+	// Refresh the cached per-turn spy rates (m_aiRate in CvCityEspionage). It is only
+	// recomputed by UpdateSpies/UpdateCity, so without this Sofia's steal-tech speed bonus
+	// (and changes in alive spy count) would not affect the actual gathering progress or the
+	// turns-left display until a policy/building/espionage-speed change happens.
+	if (GetEspionage())
+	{
+		GetEspionage()->UpdateSpies();
+	}
 }
 #endif
 
