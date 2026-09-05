@@ -106,6 +106,7 @@ void CvLuaPlayer::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetNumGoldenAges);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetConscriptCount);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetMinorCivUniqueUnit);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChangeMinorCivFriendshipWithMajor);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetPersonalityType);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetOption);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetPlayable);

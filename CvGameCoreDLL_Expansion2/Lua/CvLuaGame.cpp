@@ -73,13 +73,18 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetVictoryValid);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetName);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetPlotExtraYield);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lSetPlotName);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetPlotName);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lRemovePlotName);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAllPlotNames);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetCombatWarned);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetAdvisorRecommenderCity);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetAdvisorRecommenderTech);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetMinimumFaithNextPantheon);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetHolyCity);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetFounder);
-	
+	REGIST_STATIC_FUNCTION(CvLuaGame::lEnhanceReligion);
+
 #if defined(MOD_NUCLEAR_WINTER_FOR_SP)
 	REGIST_STATIC_FUNCTION(CvLuaGame::lChangeNuclearWinterProcess);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lChangeNuclearWinterNaturalReduction);
