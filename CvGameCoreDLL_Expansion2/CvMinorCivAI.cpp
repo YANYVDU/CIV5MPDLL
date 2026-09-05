@@ -1968,6 +1968,7 @@ void CvMinorCivAI::Reset()
 		m_abEverFriends[iI] = false;
 		m_abPledgeToProtect[iI] = false;
 		m_abEconomicAidFromMajor[iI] = false;
+		m_abEconomicAidAutoRenew[iI] = false;
 		m_aiTurnLastQuitEconomicAid[iI] = -1;
 		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
 		m_aiMajorScratchPad[iI] = 0;
@@ -2102,6 +2103,7 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Economic Aid (Super Power V11) - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abEconomicAidFromMajor, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abEconomicAidAutoRenew, bool, MAX_MAJOR_CIVS, false);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS, -1);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
@@ -2174,6 +2176,7 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Economic Aid (Super Power V11) - CONSTARRAY because Write() is const
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abEconomicAidFromMajor, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abEconomicAidAutoRenew, bool, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
@@ -7695,6 +7698,26 @@ bool CvMinorCivAI::IsEconomicAidOpenThisRound() const
 void CvMinorCivAI::SetEconomicAidOpenThisRound(bool bOpen)
 {
 	m_bEconomicAidOpenThisRound = bOpen;
+}
+
+bool CvMinorCivAI::IsEconomicAidAutoRenew(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abEconomicAidAutoRenew[eMajor];
+}
+
+void CvMinorCivAI::SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	if(m_abEconomicAidAutoRenew[eMajor] != bRenew)
+	{
+		m_abEconomicAidAutoRenew[eMajor] = bRenew;
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
 }
 #endif
 

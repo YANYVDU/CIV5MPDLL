@@ -782,6 +782,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(CanMajorStartEconomicAid);
 	Method(CanMajorWithdrawEconomicAid);
 	Method(IsEconomicAidOpenThisRound);
+	Method(IsEconomicAidAutoRenew);
+	Method(SetEconomicAidAutoRenew);
 	Method(GetTurnLastPledgedProtectionByMajor);
 	Method(GetTurnLastPledgeBrokenByMajor);
 	Method(GetMinorCivBullyGoldAmount);
@@ -7753,6 +7755,28 @@ int CvLuaPlayer::lIsEconomicAidOpenThisRound(lua_State* L)
 	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidOpenThisRound();
 	lua_pushboolean(L, bResult);
 	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsEconomicAidAutoRenew(PlayerTypes eMajor);
+int CvLuaPlayer::lIsEconomicAidAutoRenew(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 1);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidAutoRenew((PlayerTypes)eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew);
+int CvLuaPlayer::lSetEconomicAidAutoRenew(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 1);
+	const bool bRenew = lua_toboolean(L, 2);
+
+	pkPlayer->GetMinorCivAI()->SetEconomicAidAutoRenew((PlayerTypes)eMajor, bRenew);
+	return 0;
 }
 //------------------------------------------------------------------------------
 //int GetTurnLastPledgedProtectionByMajor(PlayerTypes eMajor);

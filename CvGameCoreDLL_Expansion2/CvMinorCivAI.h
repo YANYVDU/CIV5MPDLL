@@ -443,6 +443,8 @@ public:
 	bool IsEconomicAidFromMajor(PlayerTypes eMajor) const;
 	bool IsEconomicAidOpenThisRound() const;
 	void SetEconomicAidOpenThisRound(bool bOpen);
+	bool IsEconomicAidAutoRenew(PlayerTypes eMajor) const;
+	void SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew);
 
 	// ************************************
 	// ***** Friendship - with Benefits ***** - slewis: woah
@@ -655,6 +657,7 @@ private:
 	bool m_abPledgeToProtect[MAX_MAJOR_CIVS];
 	// Economic Aid (Super Power V11)
 	bool m_abEconomicAidFromMajor[MAX_MAJOR_CIVS];
+	bool m_abEconomicAidAutoRenew[MAX_MAJOR_CIVS];
 	int m_aiTurnLastQuitEconomicAid[MAX_MAJOR_CIVS];
 	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values
 	bool m_bEconomicAidOpenThisRound;

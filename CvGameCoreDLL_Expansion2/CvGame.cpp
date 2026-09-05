@@ -4531,6 +4531,26 @@ void CvGame::StartNewEconomicAidRound()
 			kMinor.GetMinorCivAI()->SetEconomicAidOpenThisRound(true);
 		}
 	}
+
+	// Auto-renew: majors that opted in rejoin the aid program automatically each round.
+	// DoChangeEconomicAidFromMajor internally skips city-states that are locked this round,
+	// at war, not open, or already receiving this major's aid, so no extra checks needed here.
+	for(int iMajor = 0; iMajor < MAX_MAJOR_CIVS; iMajor++)
+	{
+		if(!GET_PLAYER((PlayerTypes)iMajor).isAlive())
+			continue;
+		for(int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+		{
+			CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
+			if(!(kMinor.isAlive() && kMinor.isMinorCiv()))
+				continue;
+			CvMinorCivAI* pMinor = kMinor.GetMinorCivAI();
+			if(pMinor->IsEconomicAidAutoRenew((PlayerTypes)iMajor))
+			{
+				pMinor->DoChangeEconomicAidFromMajor((PlayerTypes)iMajor, true, ECON_AID_TERM_NONE);
+			}
+		}
+	}
 }
 
 //	--------------------------------------------------------------------------------
