@@ -207,6 +207,12 @@ public:
 	int GetGreatPersonRateModifierPerGreatWork() const;
 	// Kathmandu: the first gold donation each turn refunds a % of the amount as faith to the ally
 	int GetFaithRefundPerDonationPercent() const;
+	// Geneva: diplomatic prestige per major civilization whose majority religion is the ally-led religion
+	int GetDiplomaticPrestigePerMajorityCiv() const;
+	// Geneva: per-turn influence with each met city-state, one unit per FollowingCityDivisor following cities (x100)
+	int GetInfluencePerTurnPerFollowCityMod() const;
+	// Geneva: how many cities following the ally-led religion produce one per-turn influence unit
+	int GetFollowingCityDivisor() const;
 
 private:
 	// Florence
@@ -330,6 +336,10 @@ private:
 	int m_iGreatPersonRateModifierPerGreatWork;
 	// Kathmandu
 	int m_iFaithRefundPerDonationPercent;
+	// Geneva
+	int m_iDiplomaticPrestigePerMajorityCiv;
+	int m_iInfluencePerTurnPerFollowCityMod;
+	int m_iFollowingCityDivisor;
 };
 
 //======================================================================================================
@@ -531,6 +541,10 @@ public:
 	int GetGreatPersonRateModifierPerGreatWork() const;
 	// Kathmandu
 	int GetFaithRefundPerDonationPercent() const;
+	// Geneva
+	int GetDiplomaticPrestigePerMajorityCiv() const;
+	int GetInfluencePerTurnPerFollowCityMod() const;
+	int GetFollowingCityDivisor() const;
 
 	void Reset();
 
@@ -642,6 +656,10 @@ protected:
 	int m_iGreatPersonRateModifierPerGreatWork;
 	// Kathmandu
 	int m_iFaithRefundPerDonationPercent;
+	// Geneva
+	int m_iDiplomaticPrestigePerMajorityCiv;
+	int m_iInfluencePerTurnPerFollowCityMod;
+	int m_iFollowingCityDivisor;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

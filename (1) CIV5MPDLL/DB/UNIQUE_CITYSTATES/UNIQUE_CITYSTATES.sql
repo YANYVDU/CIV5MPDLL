@@ -153,7 +153,16 @@ CREATE TABLE CityStateUAEffects (
     -- La Venta: +X% great-person rate per masterpiece/artifact the ally owns
     GreatPersonRateModifierPerGreatWork integer DEFAULT 0,
     -- Kathmandu: the first gold donation each turn refunds this % of the amount as faith to the ally
-    FaithRefundPerDonationPercent integer DEFAULT 0
+    FaithRefundPerDonationPercent integer DEFAULT 0,
+    -- Geneva: diplomatic prestige per major civilization whose majority religion is the ally-led religion
+    -- (value = prestige * 100 per civ; 50 = +1 prestige per 2 civs, integer division gives "per 2 civs +1")
+    DiplomaticPrestigePerMajorityCiv integer DEFAULT 0,
+    -- Geneva: per-turn influence with each met city-state, one unit per FollowingCityDivisor following cities
+    -- (value = influence * 100; 100 = +1 influence per unit). Returned via GetFriendshipChangePerTurnTimes100,
+    -- so it drives both the real DoFriendship settlement and the Lua influence-trend UI from the same source.
+    InfluencePerTurnPerFollowCityMod integer DEFAULT 0,
+    -- Geneva: how many cities following the ally-led religion produce one influence unit (3 = one per 3 cities)
+    FollowingCityDivisor integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

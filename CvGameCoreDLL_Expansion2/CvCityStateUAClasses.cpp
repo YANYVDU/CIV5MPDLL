@@ -91,6 +91,9 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_bFaithPantheonPurchase(false)
 	, m_iGreatPersonRateModifierPerGreatWork(0)
 	, m_iFaithRefundPerDonationPercent(0)
+	, m_iDiplomaticPrestigePerMajorityCiv(0)
+	, m_iInfluencePerTurnPerFollowCityMod(0)
+	, m_iFollowingCityDivisor(0)
 {
 }
 
@@ -260,6 +263,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_bFaithPantheonPurchase = kResults.GetBool("FaithPantheonPurchase");
 	m_iGreatPersonRateModifierPerGreatWork = kResults.GetInt("GreatPersonRateModifierPerGreatWork");
 	m_iFaithRefundPerDonationPercent = kResults.GetInt("FaithRefundPerDonationPercent");
+	m_iDiplomaticPrestigePerMajorityCiv = kResults.GetInt("DiplomaticPrestigePerMajorityCiv");
+	m_iInfluencePerTurnPerFollowCityMod = kResults.GetInt("InfluencePerTurnPerFollowCityMod");
+	m_iFollowingCityDivisor = kResults.GetInt("FollowingCityDivisor");
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -613,6 +619,9 @@ int CvCityStateUAEffectEntry::GetInquisitorRetentionPercent() const { return m_i
 bool CvCityStateUAEffectEntry::GetFaithPantheonPurchase() const { return m_bFaithPantheonPurchase; }
 int CvCityStateUAEffectEntry::GetGreatPersonRateModifierPerGreatWork() const { return m_iGreatPersonRateModifierPerGreatWork; }
 int CvCityStateUAEffectEntry::GetFaithRefundPerDonationPercent() const { return m_iFaithRefundPerDonationPercent; }
+int CvCityStateUAEffectEntry::GetDiplomaticPrestigePerMajorityCiv() const { return m_iDiplomaticPrestigePerMajorityCiv; }
+int CvCityStateUAEffectEntry::GetInfluencePerTurnPerFollowCityMod() const { return m_iInfluencePerTurnPerFollowCityMod; }
+int CvCityStateUAEffectEntry::GetFollowingCityDivisor() const { return m_iFollowingCityDivisor; }
 
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
@@ -847,6 +856,9 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iFaithPantheonPurchaseCount(0)
 	, m_iGreatPersonRateModifierPerGreatWork(0)
 	, m_iFaithRefundPerDonationPercent(0)
+	, m_iDiplomaticPrestigePerMajorityCiv(0)
+	, m_iInfluencePerTurnPerFollowCityMod(0)
+	, m_iFollowingCityDivisor(0)
 {
 }
 
@@ -946,6 +958,9 @@ void CvPlayerCityStateUA::Reset()
 	m_iFaithPantheonPurchaseCount = 0;
 	m_iGreatPersonRateModifierPerGreatWork = 0;
 	m_iFaithRefundPerDonationPercent = 0;
+	m_iDiplomaticPrestigePerMajorityCiv = 0;
+	m_iInfluencePerTurnPerFollowCityMod = 0;
+	m_iFollowingCityDivisor = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1193,6 +1208,9 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iFaithPantheonPurchaseCount += (pEffect->GetFaithPantheonPurchase() ? iChange : 0);
 	m_iGreatPersonRateModifierPerGreatWork += pEffect->GetGreatPersonRateModifierPerGreatWork() * iChange;
 	m_iFaithRefundPerDonationPercent += pEffect->GetFaithRefundPerDonationPercent() * iChange;
+	m_iDiplomaticPrestigePerMajorityCiv += pEffect->GetDiplomaticPrestigePerMajorityCiv() * iChange;
+	m_iInfluencePerTurnPerFollowCityMod += pEffect->GetInfluencePerTurnPerFollowCityMod() * iChange;
+	m_iFollowingCityDivisor += pEffect->GetFollowingCityDivisor() * iChange;
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -1500,4 +1518,7 @@ bool CvPlayerCityStateUA::AnyFaithBeliefPurchase() const { return m_iFaithBelief
 bool CvPlayerCityStateUA::AnyFaithPantheonPurchase() const { return m_iFaithPantheonPurchaseCount > 0; }
 int CvPlayerCityStateUA::GetGreatPersonRateModifierPerGreatWork() const { return m_iGreatPersonRateModifierPerGreatWork; }
 int CvPlayerCityStateUA::GetFaithRefundPerDonationPercent() const { return m_iFaithRefundPerDonationPercent; }
+int CvPlayerCityStateUA::GetDiplomaticPrestigePerMajorityCiv() const { return m_iDiplomaticPrestigePerMajorityCiv; }
+int CvPlayerCityStateUA::GetInfluencePerTurnPerFollowCityMod() const { return m_iInfluencePerTurnPerFollowCityMod; }
+int CvPlayerCityStateUA::GetFollowingCityDivisor() const { return m_iFollowingCityDivisor; }
 int CvPlayerCityStateUA::GetInquisitorRetentionPercent() const { return m_iInquisitorRetentionPercent; }

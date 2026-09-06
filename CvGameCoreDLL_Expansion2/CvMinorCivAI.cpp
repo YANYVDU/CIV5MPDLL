@@ -6260,6 +6260,29 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 		}
 		// non-ally, not aiding: leave natural decay untouched
 	}
+
+	// Geneva CS UA: per-turn influence with each met city-state while the player is the
+	// ally of this city-state (scaled by following cities, one unit per FollowingCityDivisor).
+	// Returned here so the bonus drives both the real DoFriendship settlement and the Lua
+	// influence-trend UI (player:GetFriendshipChangePerTurnTimes100()) from the same source.
+	if (IsHasMetPlayer(ePlayer))
+	{
+		CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+		if (pCSUA)
+		{
+			int iPerTurnMod = pCSUA->GetInfluencePerTurnPerFollowCityMod();
+			int iDivisor = pCSUA->GetFollowingCityDivisor();
+			if (iPerTurnMod > 0 && iDivisor > 0)
+			{
+				ReligionTypes eMyReligion = kPlayer.GetReligions()->GetReligionCreatedByPlayer();
+				if (eMyReligion != NO_RELIGION)
+				{
+					int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eMyReligion);
+					iChangeThisTurn += (iCities / iDivisor) * iPerTurnMod; // both Times100
+				}
+			}
+		}
+	}
 #endif
 
 	return iChangeThisTurn;

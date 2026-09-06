@@ -31585,6 +31585,25 @@ int CvPlayer::GetDiplomaticPrestige() const
 		int iPerCity = pUA->GetDiplomaticPrestigePerCity();
 		if (iPerCity > 0)
 			iResult += (getNumCities() * iPerCity) / 100;
+
+		// Geneva CS UA: "World Recognition" - +1 diplomatic prestige per 2 major civilizations
+		// whose majority religion is the religion the ally leads (counting the ally itself).
+		int iPerMajorityCiv = pUA->GetDiplomaticPrestigePerMajorityCiv();
+		if (iPerMajorityCiv > 0)
+		{
+			ReligionTypes eMyReligion = GetReligions()->GetReligionCreatedByPlayer();
+			if (eMyReligion != NO_RELIGION)
+			{
+				int iCount = 0;
+				for (int j = 0; j < MAX_MAJOR_CIVS; j++)
+				{
+					CvPlayer& kCiv = GET_PLAYER((PlayerTypes)j);
+					if (kCiv.isAlive() && !kCiv.isMinorCiv() && kCiv.GetReligions()->HasReligionInMostCities(eMyReligion))
+						iCount++;
+				}
+				iResult += (iCount * iPerMajorityCiv) / 100;
+			}
+		}
 	}
 #endif
 
