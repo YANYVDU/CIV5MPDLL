@@ -143,7 +143,11 @@ CREATE TABLE CityStateUAEffects (
     -- (divisor > 0 also enables the feature; 4 = 1/4 of the gold price)
     FaithInfluencePurchaseCostDivisor  integer DEFAULT 0,
     -- Gangtok: how many faith influence purchases the ally may make per turn (1 = once per turn, globally)
-    FaithInfluencePurchasePerTurnLimit integer DEFAULT 0
+    FaithInfluencePurchasePerTurnLimit integer DEFAULT 0,
+    -- Wittenberg: ally may buy a self-chosen belief and add it to the ally-led religion (once per major)
+    FaithBeliefPurchase boolean DEFAULT 0,
+    -- Wittenberg: when this religion is cleansed from a city-state city by an inquisitor/great prophet, keep this % of the followers
+    InquisitorRetentionPercent integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

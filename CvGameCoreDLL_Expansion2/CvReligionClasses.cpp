@@ -3986,6 +3986,14 @@ void CvCityReligions::AddProphetSpread(ReligionTypes eReligion, int iPressure, P
 		{
 			const CvReligion *pReligion = GC.getGame().GetGameReligions()->GetReligion(it->m_eReligion, NO_PLAYER);
 			int iPressureRetention = pReligion->m_Beliefs.GetInquisitorPressureRetention();  // Normally 0
+			// CSUA (e.g. Wittenberg): the ally-led religion keeps followers when cleansed,
+			// stacking with any belief-provided retention, capped at 90% total
+			if (pReligion->m_eFounder != NO_PLAYER)
+			{
+				const int iCSUARetention = GET_PLAYER(pReligion->m_eFounder).GetCSUAInquisitorRetentionPercent();
+				iPressureRetention += iCSUARetention;
+				iPressureRetention = min(iPressureRetention, 90);
+			}
 			if (iPressureRetention > 0)
 			{
 				ePressureRetainedReligion = it->m_eReligion;
@@ -4098,6 +4106,14 @@ void CvCityReligions::SimulateProphetSpread(ReligionTypes eReligion, int iPressu
 		{
 			const CvReligion *pReligion = GC.getGame().GetGameReligions()->GetReligion(it->m_eReligion, NO_PLAYER);
 			int iPressureRetention = pReligion->m_Beliefs.GetInquisitorPressureRetention();  // Normally 0
+			// CSUA (e.g. Wittenberg): the ally-led religion keeps followers when cleansed,
+			// stacking with any belief-provided retention, capped at 90% total
+			if (pReligion->m_eFounder != NO_PLAYER)
+			{
+				const int iCSUARetention = GET_PLAYER(pReligion->m_eFounder).GetCSUAInquisitorRetentionPercent();
+				iPressureRetention += iCSUARetention;
+				iPressureRetention = min(iPressureRetention, 90);
+			}
 			if (iPressureRetention > 0)
 			{
 				ePressureRetainedReligion = it->m_eReligion;
@@ -4327,6 +4343,14 @@ void CvCityReligions::RemoveOtherReligions(ReligionTypes eReligion, PlayerTypes 
 		{
 			const CvReligion *pReligion = GC.getGame().GetGameReligions()->GetReligion(eLoopReligion, NO_PLAYER);
 			iPressureRetained = pReligion->m_Beliefs.GetInquisitorPressureRetention();  // Normally 0
+			// CSUA (e.g. Wittenberg): the ally-led religion keeps followers when cleansed,
+			// stacking with any belief-provided retention, capped at 90% total
+			if (pReligion->m_eFounder != NO_PLAYER)
+			{
+				const int iCSUARetention = GET_PLAYER(pReligion->m_eFounder).GetCSUAInquisitorRetentionPercent();
+				iPressureRetained += iCSUARetention;
+				iPressureRetained = min(iPressureRetained, 90);
+			}
 		}
 
 		if (eLoopReligion == NO_RELIGION || eLoopReligion == eReligion || iPressureRetained > 0)

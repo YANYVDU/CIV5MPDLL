@@ -1826,6 +1826,12 @@ public:
 	int GetCSUAFaithInfluencePurchaseUsed() const;
 	int GetCSUAFaithInfluencePurchaseRemaining() const;
 	void ChangeCSUAFaithInfluencePurchaseUsed(int iChange);
+	// Wittenberg CS UA: ally may spend faith to add one belief to the city-state's religion
+	bool GetCSUAAnyFaithBeliefPurchase() const;
+	// Wittenberg CS UA: keep this % of the followers when an inquisitor clears the city-state's religion
+	int GetCSUAInquisitorRetentionPercent() const;
+	// Wittenberg CS UA: does this city-state's own UA grant the faith-belief-purchase ability?
+	bool HasCSUABeliefPurchaseUA() const;
 #endif
 
 	int GetPrestigeExemptAllyCount() const;

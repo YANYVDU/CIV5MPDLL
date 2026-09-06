@@ -31885,6 +31885,36 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	{
 		m_iCSUAFaithInfluencePurchaseUsed = max(0, m_iCSUAFaithInfluencePurchaseUsed + iChange);
 	}
+
+	//	------------------------------------------------------------------------
+	// Wittenberg CS UA: ally may spend faith to add one belief to the city-state's religion
+	bool CvPlayer::GetCSUAAnyFaithBeliefPurchase() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->AnyFaithBeliefPurchase() : false;
+	}
+
+	//	------------------------------------------------------------------------
+	// Wittenberg CS UA: keep this % of the followers when an inquisitor clears the city-state's religion
+	int CvPlayer::GetCSUAInquisitorRetentionPercent() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetInquisitorRetentionPercent() : 0;
+	}
+
+	// Wittenberg CS UA: does this city-state's own UA grant the faith-belief-purchase ability?
+	bool CvPlayer::HasCSUABeliefPurchaseUA() const
+	{
+		if (!isMinorCiv()) return false;
+		CvMinorCivAI* pMinorAI = GetMinorCivAI();
+		if (!pMinorAI) return false;
+		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+		if (!pkMinorCivInfo) return false;
+		const char* szUAType = pkMinorCivInfo->GetUAType();
+		if (!szUAType || szUAType[0] == '\0') return false;
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		if (!pUAEntry) return false;
+		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+		return pEffect && pEffect->GetFaithBeliefPurchase();
+	}
 #endif
 
 //	------------------------------------------------------------------------

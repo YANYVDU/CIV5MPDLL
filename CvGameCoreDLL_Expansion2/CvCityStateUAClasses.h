@@ -197,6 +197,10 @@ public:
 	int GetFaithInfluencePurchaseCostDivisor() const;
 	// Gangtok: how many faith influence purchases the ally may make per turn (globally)
 	int GetFaithInfluencePurchasePerTurnLimit() const;
+	// Wittenberg: the ally may spend faith to add one belief to the city-state's religion (true = enabled)
+	bool GetFaithBeliefPurchase() const;
+	// Wittenberg: keep this % of the followers when an inquisitor clears the city-state's religion
+	int GetInquisitorRetentionPercent() const;
 
 private:
 	// Florence
@@ -312,6 +316,9 @@ private:
 	int m_iHappinessPerFollowingCity;
 	int m_iFaithInfluencePurchaseCostDivisor;
 	int m_iFaithInfluencePurchasePerTurnLimit;
+	// Wittenberg
+	bool m_bFaithBeliefPurchase;
+	int m_iInquisitorRetentionPercent;
 };
 
 //======================================================================================================
@@ -505,6 +512,9 @@ public:
 	int GetFaithInfluencePurchaseCostDivisor() const;
 	int GetFaithInfluencePurchasePerTurnLimit() const;
 	bool HasFaithInfluencePurchase() const;
+	// Wittenberg
+	bool AnyFaithBeliefPurchase() const;
+	int GetInquisitorRetentionPercent() const;
 
 	void Reset();
 
@@ -608,6 +618,9 @@ protected:
 	int m_iHappinessPerFollowingCity;
 	int m_iFaithInfluencePurchaseCostDivisor;
 	int m_iFaithInfluencePurchasePerTurnLimit;
+	// Wittenberg
+	int m_iFaithBeliefPurchaseCount;
+	int m_iInquisitorRetentionPercent;
 };
 
 #endif // CVCITYSTATEUACLASSES_H
