@@ -398,6 +398,18 @@ void CvGameReligions::SpreadReligionToOneCity(CvCity* pCity)
 				int iPressure = GetAdjacentCityReligiousPressure (eMajorityReligion, pLoopCity, pCity, iNumTradeRoutes, false);
 				if (iPressure > 0)
 				{
+					// Global setting: the religion led by the owner of the receiving city (pCity)
+					// exerts extra pressure on that city. E.g. the religion player A founded spreads
+					// +33% more pressure on player A's other cities (default 33, SP_RELIGION_PRESSURE_SELF_FOUNDER_MOD).
+					CvPlayer& kCityOwner = GET_PLAYER(pCity->getOwner());
+					if (kCityOwner.GetReligions()->GetReligionCreatedByPlayer() == eMajorityReligion)
+					{
+						int iSelfFounderMod = gCustomMods.getOption("SP_RELIGION_PRESSURE_SELF_FOUNDER_MOD", 33);
+						if (iSelfFounderMod > 0)
+						{
+							iPressure = iPressure * (100 + iSelfFounderMod) / 100;
+						}
+					}
 					pCity->GetCityReligions()->AddReligiousPressure(FOLLOWER_CHANGE_ADJACENT_PRESSURE, eMajorityReligion, iPressure);
 					if (iNumTradeRoutes != 0)
 					{
