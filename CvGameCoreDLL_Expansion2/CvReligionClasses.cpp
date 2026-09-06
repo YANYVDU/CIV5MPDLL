@@ -6028,13 +6028,28 @@ void CvReligionAI::DoFaithPurchases()
 #endif
 		if (eProphetType != NO_UNIT && ChooseProphetConversionCity(true/*bOnlyBetterThanEnhancingReligion*/) && m_pPlayer->GetReligions()->GetNumProphetsSpawned(false) <= 5)
 		{
-			BuyGreatPerson(eProphetType);
-
-			if(GC.getLogging())
+			// Prefer a cheap Inquisitor to reclaim our cities whenever our religion still holds
+			// residual pressure; a Great Prophet is only needed when our faith has been completely
+			// wiped out, since an Inquisitor cannot restore pressure from zero.
+			if(MOD_SP_SMART_AI && HasReclaimableHereticCities(eReligion))
 			{
-				strLogMsg += ", Saving for Prophet, ";
-				strLogMsg += GC.getUnitInfo(eProphetType)->GetDescription();
-			}				
+				BuyInquisitor(eReligion);
+
+				if(GC.getLogging())
+				{
+					strLogMsg += ", Saving for Inquisitor, Reclaiming Our Cities";
+				}
+			}
+			else
+			{
+				BuyGreatPerson(eProphetType);
+
+				if(GC.getLogging())
+				{
+					strLogMsg += ", Saving for Prophet, ";
+					strLogMsg += GC.getUnitInfo(eProphetType)->GetDescription();
+				}
+			}
 		}
 
 		// Besides prophets, first priority is to convert all our non-puppet cities
@@ -6173,6 +6188,30 @@ void CvReligionAI::BuyMissionary(ReligionTypes eReligion)
 }
 
 /// Pick the right city to purchase an inquisitor in
+/// Is there a city of ours where our religion still holds residual pressure
+/// but another religion currently has the majority? Such cities can be
+/// reclaimed cheaply with an Inquisitor instead of a Great Prophet.
+bool CvReligionAI::HasReclaimableHereticCities(ReligionTypes eReligion) const
+{
+	int iLoop;
+	CvCity* pLoopCity;
+	for(pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if(pLoopCity->GetCityReligions()->GetNumFollowers(eReligion) <= 0)
+		{
+			continue;
+		}
+
+		ReligionTypes eMajority = pLoopCity->GetCityReligions()->GetReligiousMajority();
+		if(eMajority != eReligion && eMajority > RELIGION_PANTHEON)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void CvReligionAI::BuyInquisitor(ReligionTypes eReligion)
 {
 	CvPlayer &kPlayer = GET_PLAYER(m_pPlayer->GetID());

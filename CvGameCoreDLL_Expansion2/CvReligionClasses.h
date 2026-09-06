@@ -601,6 +601,7 @@ public:
 
 private:
 	void DoFaithPurchases();
+	bool HasReclaimableHereticCities(ReligionTypes eReligion) const;
 	void BuyMissionary(ReligionTypes eReligion);
 	void BuyInquisitor(ReligionTypes eReligion);
 	void BuyGreatPerson(UnitTypes eUnit);
