@@ -9,6 +9,7 @@ ALTER TABLE Resolutions ADD COLUMN 'GlobalAttackModifier' integer default 0;
 ALTER TABLE Resolutions ADD COLUMN 'GlobalWarCasualtiesChanges' integer default 0;
 -- Vassal/Suzerain submission resolution columns (all default 0 for reuse)
 ALTER TABLE Resolutions ADD COLUMN 'VassalTaxPercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalTechDiscount' INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalTaxScience' BOOLEAN DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalTaxCulture' BOOLEAN DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalTaxFaith'   BOOLEAN DEFAULT 0;
@@ -27,3 +28,9 @@ ALTER TABLE Resolutions ADD COLUMN 'VassalVassalCitiesPercent'            INTEGE
 ALTER TABLE Resolutions ADD COLUMN 'VassalPermanentAllyPopulationPercent' INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalVassalPopulationPercent'        INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalVassalMilitaryMightPercent'     INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalDemandCityPopulationPercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalDemandGoldPercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalDemandGoldPerTurnPercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalDemandLuxuryResourcePercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalDemandStrategicResourcePercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalDemandCooldownTurns' INTEGER DEFAULT 0;
