@@ -99,6 +99,9 @@ public:
 	int m_iNumFirstConversions;
 	char m_szCustomName[128];
 	CvReligionBeliefs m_Beliefs;
+	// CSUA-purchased beliefs (e.g. Wittenberg). Kept separate so the normal enhance/reformation
+	// paths stay available; the religion engine treats these as extra beliefs.
+	std::vector<BeliefTypes> m_vExtraBeliefs;
 };
 
 FDataStream& operator>>(FDataStream&, CvReligion&);
@@ -184,6 +187,10 @@ public:
 	void EnhanceReligion(PlayerTypes ePlayer, ReligionTypes eReligion, BeliefTypes eBelief1, BeliefTypes eBelief2);
 #endif
 	void AddReformationBelief(PlayerTypes ePlayer, ReligionTypes eReligion, BeliefTypes eBelief1);
+	// CSUA: add a faith-purchased belief (e.g. Wittenberg) to a religion. Unlike the normal founding,
+	// enhancing and reforming paths, this may add an extra enhancer/reformation belief without
+	// consuming the religion's normal enhance/reform slot.
+	bool AddBeliefToReligion(PlayerTypes ePlayer, ReligionTypes eReligion, BeliefTypes eBelief);
 	void SetHolyCity(ReligionTypes eReligion, CvCity* pkHolyCity);
 	void SetFounder(ReligionTypes eReligion, PlayerTypes eFounder);
 	void UpdateAllCitiesThisReligion(ReligionTypes eReligion);
@@ -601,6 +608,8 @@ public:
 
 private:
 	void DoFaithPurchases();
+	bool DoCityStateFaithBeliefPurchase();
+	BeliefTypes ChooseCSUABelief(PlayerTypes ePlayer, ReligionTypes eReligion);
 	bool HasReclaimableHereticCities(ReligionTypes eReligion) const;
 	void BuyMissionary(ReligionTypes eReligion);
 	void BuyInquisitor(ReligionTypes eReligion);

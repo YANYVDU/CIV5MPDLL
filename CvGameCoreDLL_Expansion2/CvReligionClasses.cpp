@@ -187,6 +187,8 @@ FDataStream& operator>>(FDataStream& loadFrom, CvReligion& writeTo)
 
 	MOD_SERIALIZE_READ(161, loadFrom, writeTo.m_iNumFirstConversions, 0);
 
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_vExtraBeliefs, std::vector<BeliefTypes>());
+
 	writeTo.m_Beliefs.Read(loadFrom);
 
 	return loadFrom;
@@ -210,6 +212,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvReligion& readFrom)
 	saveTo << readFrom.m_szCustomName;
 
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iNumFirstConversions);
+
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_vExtraBeliefs);
 
 	readFrom.m_Beliefs.Write(saveTo);
 
@@ -1630,6 +1634,61 @@ void CvGameReligions::AddReformationBelief(PlayerTypes ePlayer, ReligionTypes eR
 	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
 }
 
+/// CSUA: add a faith-purchased belief (e.g. Wittenberg) to a religion as an extra belief.
+/// Unlike normal founding/enhancing/reforming, this does not consume the religion's
+/// enhance/reform slot, so extra enhancer/reformation beliefs can coexist with the normal ones.
+bool CvGameReligions::AddBeliefToReligion(PlayerTypes ePlayer, ReligionTypes eReligion, BeliefTypes eBelief)
+{
+	if(eBelief == NO_BELIEF || ePlayer == NO_PLAYER)
+	{
+		OutputDebugString("CSUA AddBeliefToReligion: FAIL bad args\n");
+		return false;
+	}
+
+	bool bFoundIt = false;
+	ReligionList::iterator it;
+	for(it = m_CurrentReligions.begin(); it != m_CurrentReligions.end(); it++)
+	{
+		if(it->m_eReligion == eReligion)
+		{
+			bFoundIt = true;
+			break;
+		}
+	}
+	if(!bFoundIt)
+	{
+		OutputDebugString("CSUA AddBeliefToReligion: FAIL religion not found\n");
+		return false;
+	}
+
+	// Refuse to duplicate a belief the religion already owns (AddBelief does not deduplicate).
+	if(it->m_Beliefs.HasBelief(eBelief))
+	{
+		OutputDebugString("CSUA AddBeliefToReligion: FAIL belief already owned\n");
+		return false;
+	}
+
+	CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+
+	it->m_Beliefs.AddBelief(eBelief, ePlayer);
+	it->m_vExtraBeliefs.push_back(eBelief);
+
+#if defined(MOD_TRAITS_OTHER_PREREQS)
+	if (MOD_TRAITS_OTHER_PREREQS) {
+		// Update our traits (some may have become obsolete)
+		kPlayer.GetPlayerTraits()->Reset();
+		kPlayer.GetPlayerTraits()->InitPlayerTraits();
+		kPlayer.recomputePolicyCostModifier();
+	}
+#endif
+
+	// Update game systems
+	UpdateAllCitiesThisReligion(eReligion);
+	kPlayer.UpdateReligion();
+
+	return true;
+}
+
 /// Move the Holy City for a religion (useful for scenario scripting)
 void CvGameReligions::SetHolyCity(ReligionTypes eReligion, CvCity* pkHolyCity)
 {
@@ -1957,6 +2016,19 @@ bool CvGameReligions::HasAddedReformationBelief(PlayerTypes ePlayer) const
 			for(int iI = 0; iI < pMyReligion->m_Beliefs.GetNumBeliefs(); iI++)
 			{
 				const BeliefTypes eBelief = pMyReligion->m_Beliefs.GetBelief(iI);
+				// Skip beliefs added through the CSUA faith-purchase path (e.g. Wittenberg) so the
+				// religion can still be reformed through the normal policy path.
+				bool bIsExtra = false;
+				for(size_t iJ = 0; iJ < pMyReligion->m_vExtraBeliefs.size(); iJ++)
+				{
+					if(pMyReligion->m_vExtraBeliefs[iJ] == eBelief)
+					{
+						bIsExtra = true;
+						break;
+					}
+				}
+				if(bIsExtra)
+					continue;
 				CvBeliefEntry* pEntry = pkBeliefs->GetEntry((int)eBelief);
 				if (pEntry && pEntry->IsReformationBelief())
 				{
@@ -6098,6 +6170,16 @@ void CvReligionAI::DoFaithPurchases()
 			}
 		}
 
+		// CSUA (Wittenberg): buy a belief for the religion we lead from an ally city-state's ability.
+		// Placed before reformation buildings so the extra belief is secured once core faith needs are met.
+		else if(DoCityStateFaithBeliefPurchase())
+		{
+			if(GC.getLogging())
+			{
+				strLogMsg += ", CSUA Belief Purchase";
+			}
+		}
+
 		// Try to build other buildings with Faith if we took that belief
 		else if (CanBuyNonFaithBuilding())
 		{
@@ -6185,6 +6267,117 @@ void CvReligionAI::DoFaithPurchases()
 			GC.getGame().GetGameReligions()->LogReligionMessage(strLogMsg);
 		}
 	}
+}
+
+/// Use an ally city-state's belief-purchase ability (Wittenberg UA). Returns true if a belief was bought.
+bool CvReligionAI::DoCityStateFaithBeliefPurchase()
+{
+	// We must lead a religion to add the belief to.
+	ReligionTypes eReligion = m_pPlayer->GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		return false;
+	}
+
+	// Scan all city-states for one that grants the ability, is our ally and hasn't been used by us yet.
+	for(int iMinor = 0; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iMinor;
+		CvPlayer& kMinor = GET_PLAYER(eMinor);
+		if(!kMinor.isMinorCiv() || !kMinor.isAlive())
+		{
+			continue;
+		}
+		if(!kMinor.HasCSUABeliefPurchaseUA())
+		{
+			continue;
+		}
+		CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+		if(pMinorAI == NULL || !pMinorAI->IsAllies(m_pPlayer->GetID()))
+		{
+			continue;
+		}
+		if(pMinorAI->IsFaithBeliefPurchasedByMajor(m_pPlayer->GetID()))
+		{
+			continue;
+		}
+
+		// Faith cost = base option value scaled by game speed, then by the AI difficulty discount.
+		int iCost = gCustomMods.getOption("SP_FAITH_BELIEF_PURCHASE_COST", 2500);
+		iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+		if(!m_pPlayer->isHuman() && !m_pPlayer->IsAITeammateOfHuman())
+		{
+			iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+		}
+		if(iCost <= 0 || m_pPlayer->GetFaith() < iCost)
+		{
+			continue;
+		}
+
+		// Pick a belief that breaks type limits (may hold a slot another religion already took),
+		// excluding only the ones this religion already has.
+		BeliefTypes eBelief = ChooseCSUABelief(m_pPlayer->GetID(), eReligion);
+		if(eBelief == NO_BELIEF)
+		{
+			continue;
+		}
+
+		if(pMinorAI->DoCityStateFaithBeliefPurchase(m_pPlayer->GetID(), eBelief))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/// Choose the best belief for a CSUA belief purchase (breaks type limits).
+/// Weights: reformation x1.8, enhancer & founder x1.5, others at base score.
+BeliefTypes CvReligionAI::ChooseCSUABelief(PlayerTypes ePlayer, ReligionTypes eReligion)
+{
+	CvGameReligions* pGameReligions = GC.getGame().GetGameReligions();
+	CvWeightedVector<BeliefTypes, SAFE_ESTIMATE_NUM_BELIEFS, true> beliefChoices;
+
+	const CvReligion* pReligion = pGameReligions->GetReligion(eReligion, ePlayer);
+	CvBeliefXMLEntries* pkBeliefs = GC.GetGameBeliefs();
+	const int iNumBeliefs = pkBeliefs->GetNumBeliefs();
+	for(int iI = 0; iI < iNumBeliefs; iI++)
+	{
+		const BeliefTypes eBelief(static_cast<BeliefTypes>(iI));
+		CvBeliefEntry* pEntry = pkBeliefs->GetEntry(eBelief);
+		if(pEntry == NULL)
+		{
+			continue;
+		}
+		// Only exclude beliefs this religion already has; beliefs held by other religions are allowed.
+		if(pReligion && pReligion->m_Beliefs.HasBelief(eBelief))
+		{
+			continue;
+		}
+
+		int iScore = ScoreBelief(pEntry);
+		if(iScore <= 0)
+		{
+			continue;
+		}
+		if(pEntry->IsReformationBelief())
+		{
+			iScore = iScore * 18 / 10;
+		}
+		else if(pEntry->IsEnhancerBelief() || pEntry->IsFounderBelief())
+		{
+			iScore = iScore * 15 / 10;
+		}
+		beliefChoices.push_back(eBelief, iScore);
+	}
+
+	beliefChoices.SortItems();
+	int iNumChoices = MIN(beliefChoices.size(), 3);
+	RandomNumberDelegate fcn = MakeDelegate(&GC.getGame(), &CvGame::getJonRandNum);
+	BeliefTypes rtnValue = beliefChoices.ChooseFromTopChoices(iNumChoices, &fcn, "Choosing CSUA belief from Top Choices");
+	LogBeliefChoices(beliefChoices, rtnValue);
+
+	return rtnValue;
 }
 
 /// Pick the right city to purchase a missionary in

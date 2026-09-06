@@ -1971,6 +1971,7 @@ void CvMinorCivAI::Reset()
 		m_abEconomicAidAutoRenew[iI] = false;
 		m_aiTurnLastQuitEconomicAid[iI] = -1;
 		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
+		m_abFaithBeliefPurchasedByMajor[iI] = false;
 		m_aiMajorScratchPad[iI] = 0;
 	}
 
@@ -2107,6 +2108,8 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS, -1);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
+	// Wittenberg CS UA - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS, false);
 #endif
 }
 
@@ -2180,6 +2183,7 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS);
 #endif
 }
 
@@ -7718,6 +7722,147 @@ void CvMinorCivAI::SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew)
 		m_abEconomicAidAutoRenew[eMajor] = bRenew;
 		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
 	}
+}
+
+bool CvMinorCivAI::IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abFaithBeliefPurchasedByMajor[eMajor];
+}
+
+void CvMinorCivAI::SetFaithBeliefPurchasedByMajor(PlayerTypes eMajor, bool bPurchased)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	if(m_abFaithBeliefPurchasedByMajor[eMajor] != bPurchased)
+	{
+		m_abFaithBeliefPurchasedByMajor[eMajor] = bPurchased;
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+}
+
+/// Wittenberg CS UA: the ally spends faith to add one belief to the religion the ally leads.
+bool CvMinorCivAI::DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief)
+{
+	CvString szDbg;
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS || eBelief == NO_BELIEF)
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL bad args\n");
+		return false;
+	}
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+	CvPlayer& kMinor = GET_PLAYER(GetPlayer()->GetID());
+
+	if(!kMinor.isAlive())
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL minor not alive\n");
+		return false;
+	}
+
+	// Only the ally of this city-state may purchase.
+	if(!IsAllies(eMajor))
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL not ally\n");
+		return false;
+	}
+
+	// The city-state must grant the faith-purchase ability (Wittenberg UA).
+	if(!kMinor.HasCSUABeliefPurchaseUA())
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL no belief-purchase UA\n");
+		return false;
+	}
+
+	// One purchase per major.
+	if(IsFaithBeliefPurchasedByMajor(eMajor))
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL already purchased\n");
+		return false;
+	}
+
+	// The religion to augment is the one the major leads.
+	ReligionTypes eReligion = kMajor.GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL no religion created\n");
+		return false;
+	}
+
+	// Faith cost = base option value scaled by game speed (FaithPercent).
+	int iCost = gCustomMods.getOption("SP_FAITH_BELIEF_PURCHASE_COST", 2500);
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	// AI difficulty discount (mirrors the construct discount applied to AI faith-building purchases).
+	if(!kMajor.isHuman() && !kMajor.IsAITeammateOfHuman())
+	{
+		iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+	}
+	if(iCost <= 0)
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL cost <= 0\n");
+		return false;
+	}
+	if(kMajor.GetFaith() < iCost)
+	{
+		szDbg.Format("CSUA BeliefPurchase: FAIL faith %d < cost %d\n", kMajor.GetFaith(), iCost);
+		OutputDebugString(szDbg);
+		return false;
+	}
+
+	if(!GC.getGame().GetGameReligions()->AddBeliefToReligion(eMajor, eReligion, eBelief))
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL AddBeliefToReligion\n");
+		return false;
+	}
+
+	kMajor.ChangeFaith(-iCost);
+	SetFaithBeliefPurchasedByMajor(eMajor, true);
+
+	// Notification (reformation-belief icon) so the ally knows the belief was added.
+	CvString szBeliefName = "";
+	CvBeliefEntry* pBelief = GC.GetGameBeliefs()->GetEntry(eBelief);
+	if(pBelief)
+	{
+		szBeliefName = Localization::Lookup(pBelief->getShortDescription()).toUTF8();
+	}
+
+	CvString szReligionName = "";
+	CvReligionEntry* pReligionInfo = GC.getReligionInfo(eReligion);
+	if(pReligionInfo)
+	{
+		szReligionName = Localization::Lookup(pReligionInfo->GetDescriptionKey()).toUTF8();
+	}
+
+	if(CvNotifications* pNotifications = kMajor.GetNotifications())
+	{
+		Localization::String localizedText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED");
+		localizedText << szBeliefName << szReligionName;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED_S");
+		pNotifications->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, localizedText.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
+	}
+
+	// Broadcast to all human players so an AI ally's belief purchase is visible.
+	for(int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kLoop = GET_PLAYER((PlayerTypes)iPlayer);
+		if(!kLoop.isHuman() || !kLoop.isAlive())
+		{
+			continue;
+		}
+		if(CvNotifications* pNotify = kLoop.GetNotifications())
+		{
+			Localization::String broadcastText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED_BROADCAST");
+			broadcastText << kMajor.getNameKey() << szReligionName << szBeliefName;
+			Localization::String broadcastSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED_S");
+			pNotify->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, broadcastText.toUTF8(), broadcastSummary.toUTF8(), -1, -1, -1);
+		}
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
 }
 #endif
 

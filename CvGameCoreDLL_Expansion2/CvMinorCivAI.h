@@ -445,6 +445,10 @@ public:
 	void SetEconomicAidOpenThisRound(bool bOpen);
 	bool IsEconomicAidAutoRenew(PlayerTypes eMajor) const;
 	void SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew);
+	// Wittenberg CS UA: faith-purchase a belief into this city-state's religion (one per major)
+	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
+	bool IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const;
+	void SetFaithBeliefPurchasedByMajor(PlayerTypes eMajor, bool bPurchased);
 
 	// ************************************
 	// ***** Friendship - with Benefits ***** - slewis: woah
@@ -659,6 +663,8 @@ private:
 	bool m_abEconomicAidFromMajor[MAX_MAJOR_CIVS];
 	bool m_abEconomicAidAutoRenew[MAX_MAJOR_CIVS];
 	int m_aiTurnLastQuitEconomicAid[MAX_MAJOR_CIVS];
+	// Wittenberg CS UA: whether each major has already faith-purchased a belief for this city-state's religion
+	bool m_abFaithBeliefPurchasedByMajor[MAX_MAJOR_CIVS];
 	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values
 	bool m_bEconomicAidOpenThisRound;
 	bool m_abPermanentWar[REALLY_MAX_TEAMS];

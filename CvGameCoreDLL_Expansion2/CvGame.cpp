@@ -11205,6 +11205,66 @@ void CvGame::DoMinorFaithGift(PlayerTypes eMinor, int iEquivalentGold)
 }
 
 //	--------------------------------------------------------------------------------
+// Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion.
+// Executed locally for the active player (single-player focused; intentionally no network message).
+bool CvGame::DoCityStateFaithBeliefPurchase(PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithBeliefPurchase(eMajor, eBelief);
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+// Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available).
+int CvGame::GetCityStateFaithBeliefPurchaseCost(PlayerTypes eMinor)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return 0;
+
+	CvPlayer& kMinor = GET_PLAYER(eMinor);
+	CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+	if(!pMinorAI || !kMinor.isAlive())
+		return 0;
+	if(!pMinorAI->IsAllies(eMajor))
+		return 0;
+	// The ability comes from the city-state's own UA (Wittenberg), aggregated onto the ally.
+	if(!kMinor.HasCSUABeliefPurchaseUA())
+		return 0;
+	if(pMinorAI->IsFaithBeliefPurchasedByMajor(eMajor))
+		return 0;
+	// The religion to augment is the one the major leads.
+	if(GET_PLAYER(eMajor).GetReligions()->GetReligionCreatedByPlayer() <= RELIGION_PANTHEON)
+		return 0;
+
+	int iCost = gCustomMods.getOption("SP_FAITH_BELIEF_PURCHASE_COST", 2500);
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	return iCost;
+}
+
+//	--------------------------------------------------------------------------------
+// Wittenberg CS UA: has the active player already faith-purchased a belief at this city-state?
+bool CvGame::IsCityStateFaithBeliefPurchased(PlayerTypes eMinor)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	return GET_PLAYER(eMinor).GetMinorCivAI()->IsFaithBeliefPurchasedByMajor(eMajor);
+}
+
+//	--------------------------------------------------------------------------------
 /// Do the action of a major gifting a tile improvement to a minor's plot, to improve its resource
 void CvGame::DoMinorGiftTileImprovement(PlayerTypes eMajor, PlayerTypes eMinor, int iPlotX, int iPlotY)
 {

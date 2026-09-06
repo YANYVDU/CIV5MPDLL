@@ -577,6 +577,12 @@ public:
 	void DoMinorPledgeProtection(PlayerTypes eMajor, PlayerTypes eMinor, bool bProtect, bool bPledgeNowBroken = false);
 	void DoMinorGiftGold(PlayerTypes eMinor, int iNumGold);
 	void DoMinorFaithGift(PlayerTypes eMinor, int iEquivalentGold);
+	// Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion
+	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMinor, BeliefTypes eBelief);
+	// Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available)
+	int GetCityStateFaithBeliefPurchaseCost(PlayerTypes eMinor);
+	// Wittenberg CS UA: has the active player already faith-purchased a belief at this city-state?
+	bool IsCityStateFaithBeliefPurchased(PlayerTypes eMinor);
 	void DoMinorGiftTileImprovement(PlayerTypes eMajor, PlayerTypes eMinor, int iPlotX, int iPlotY);
 	void DoMinorBullyGold(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor);

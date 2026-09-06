@@ -353,6 +353,9 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(DoMinorGoldGift);
 	Method(DoMinorGiftGold);
 	Method(DoMinorFaithGift);
+	Method(GetCityStateFaithBeliefPurchaseCost);
+	Method(IsCityStateFaithBeliefPurchased);
+	Method(DoCityStateFaithBeliefPurchase);
 	Method(DoMinorGiftTileImprovement);
 	Method(DoMinorBullyGold);
 	Method(DoMinorBullyUnit);
@@ -2094,6 +2097,34 @@ int CvLuaGame::lDoMinorFaithGift(lua_State* L)
 	const int iEquivalentGold = lua_tointeger(L, 2);
 	GC.getGame().DoMinorFaithGift((PlayerTypes)iMinor, iEquivalentGold);
 	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetCityStateFaithBeliefPurchaseCost(int iMinorCivID);
+// Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available)
+int CvLuaGame::lGetCityStateFaithBeliefPurchaseCost(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	lua_pushinteger(L, GC.getGame().GetCityStateFaithBeliefPurchaseCost((PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsCityStateFaithBeliefPurchased(int iMinorCivID);
+// Wittenberg CS UA: has the active player already faith-purchased a belief at this city-state?
+int CvLuaGame::lIsCityStateFaithBeliefPurchased(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	lua_pushboolean(L, GC.getGame().IsCityStateFaithBeliefPurchased((PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoCityStateFaithBeliefPurchase(int iMinorCivID, int iBelief);
+// Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion
+int CvLuaGame::lDoCityStateFaithBeliefPurchase(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iBelief = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithBeliefPurchase((PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
 }
 //------------------------------------------------------------------------------
 //void DoMinorGiftTileImprovement(int iMajorCivID, int iMinorCivID, iPlotX, iPlotY);
