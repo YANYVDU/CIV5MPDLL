@@ -609,7 +609,11 @@ public:
 private:
 	void DoFaithPurchases();
 	bool DoCityStateFaithBeliefPurchase();
+	// La Venta CS UA: buy an idle pantheon belief; bHighPriority only buys the first 3 purchases,
+	// otherwise only purchases beyond 3 (kept as the lowest-priority faith spend).
+	bool DoCityStateFaithPantheonPurchase(bool bHighPriority);
 	BeliefTypes ChooseCSUABelief(PlayerTypes ePlayer, ReligionTypes eReligion);
+	BeliefTypes ChooseCSUAPantheonBelief(ReligionTypes eReligion);
 	bool HasReclaimableHereticCities(ReligionTypes eReligion) const;
 	void BuyMissionary(ReligionTypes eReligion);
 	void BuyInquisitor(ReligionTypes eReligion);

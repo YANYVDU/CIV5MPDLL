@@ -287,6 +287,8 @@ protected:
 	static int lGetCityStateFaithBeliefPurchaseCost(lua_State* L);
 	static int lIsCityStateFaithBeliefPurchased(lua_State* L);
 	static int lDoCityStateFaithBeliefPurchase(lua_State* L);
+	static int lGetCityStateFaithPantheonPurchaseCost(lua_State* L);
+	static int lDoCityStateFaithPantheonPurchase(lua_State* L);
 	static int lDoMinorGiftTileImprovement(lua_State* L);
 	static int lDoMinorBullyGold(lua_State* L);
 	static int lDoMinorBullyUnit(lua_State* L);

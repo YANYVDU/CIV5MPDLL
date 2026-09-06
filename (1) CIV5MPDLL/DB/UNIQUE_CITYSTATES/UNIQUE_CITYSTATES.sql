@@ -147,7 +147,11 @@ CREATE TABLE CityStateUAEffects (
     -- Wittenberg: ally may buy a self-chosen belief and add it to the ally-led religion (once per major)
     FaithBeliefPurchase boolean DEFAULT 0,
     -- Wittenberg: when this religion is cleansed from a city-state city by an inquisitor/great prophet, keep this % of the followers
-    InquisitorRetentionPercent integer DEFAULT 0
+    InquisitorRetentionPercent integer DEFAULT 0,
+    -- La Venta: ally may buy an idle pantheon belief and add it to the ally-led religion (price doubles per purchase)
+    FaithPantheonPurchase boolean DEFAULT 0,
+    -- La Venta: +X% great-person rate per masterpiece/artifact the ally owns
+    GreatPersonRateModifierPerGreatWork integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

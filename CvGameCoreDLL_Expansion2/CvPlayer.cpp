@@ -31915,6 +31915,49 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
 		return pEffect && pEffect->GetFaithBeliefPurchase();
 	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: +X% great-person rate per masterpiece/artifact the player owns
+	int CvPlayer::GetCSUAGreatPersonRateModifierPerGreatWork() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetGreatPersonRateModifierPerGreatWork() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: total great-person rate modifier from every masterpiece/artifact the player owns
+	int CvPlayer::GetCSUAGreatPersonRateModifierFromGreatWorks() const
+	{
+		const int iPerGreatWork = GetCSUAGreatPersonRateModifierPerGreatWork();
+		if (iPerGreatWork != 0)
+		{
+			return iPerGreatWork * GetCulture()->GetNumGreatWorks(false);
+		}
+		return 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: ally may spend faith to add an idle pantheon belief to the religion the ally leads
+	bool CvPlayer::GetCSUAAnyFaithPantheonPurchase() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->AnyFaithPantheonPurchase() : false;
+	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: does this city-state's own UA grant the faith-pantheon-purchase ability?
+	bool CvPlayer::HasCSUAFaithPantheonPurchaseUA() const
+	{
+		if (!isMinorCiv()) return false;
+		CvMinorCivAI* pMinorAI = GetMinorCivAI();
+		if (!pMinorAI) return false;
+		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+		if (!pkMinorCivInfo) return false;
+		const char* szUAType = pkMinorCivInfo->GetUAType();
+		if (!szUAType || szUAType[0] == '\0') return false;
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		if (!pUAEntry) return false;
+		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+		return pEffect && pEffect->GetFaithPantheonPurchase();
+	}
 #endif
 
 //	------------------------------------------------------------------------

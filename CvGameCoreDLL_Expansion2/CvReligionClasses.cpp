@@ -6180,6 +6180,16 @@ void CvReligionAI::DoFaithPurchases()
 			}
 		}
 
+		// CSUA (La Venta): buy an idle pantheon belief from an ally city-state's ability.
+		// High priority for the first three purchases, right behind the Wittenberg belief purchase.
+		else if(DoCityStateFaithPantheonPurchase(true))
+		{
+			if(GC.getLogging())
+			{
+				strLogMsg += ", CSUA Pantheon Purchase";
+			}
+		}
+
 		// Try to build other buildings with Faith if we took that belief
 		else if (CanBuyNonFaithBuilding())
 		{
@@ -6250,6 +6260,15 @@ void CvReligionAI::DoFaithPurchases()
 			if(GC.getLogging())
 			{
 				strLogMsg += ", Saving for Missionary, Need to Convert Cities of Religion Starters";
+			}
+		}
+
+		// CSUA (La Venta): pantheon purchases beyond the first three are the lowest-priority faith spend.
+		else if(DoCityStateFaithPantheonPurchase(false))
+		{
+			if(GC.getLogging())
+			{
+				strLogMsg += ", CSUA Pantheon Purchase (Low Priority)";
 			}
 		}
 
@@ -6329,6 +6348,123 @@ bool CvReligionAI::DoCityStateFaithBeliefPurchase()
 	}
 
 	return false;
+}
+
+/// Use an ally city-state's faith-pantheon-purchase ability (La Venta UA).
+/// bHighPriority only buys the first three purchases per ally; otherwise it only buys
+/// purchases beyond three so the (very expensive) later purchases never crowd out other faith uses.
+bool CvReligionAI::DoCityStateFaithPantheonPurchase(bool bHighPriority)
+{
+	// We must lead a religion to add the pantheon to.
+	ReligionTypes eReligion = m_pPlayer->GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		return false;
+	}
+
+	// Scan all city-states for one that grants the ability and is our ally.
+	for(int iMinor = 0; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iMinor;
+		CvPlayer& kMinor = GET_PLAYER(eMinor);
+		if(!kMinor.isMinorCiv() || !kMinor.isAlive())
+		{
+			continue;
+		}
+		if(!kMinor.HasCSUAFaithPantheonPurchaseUA())
+		{
+			continue;
+		}
+		CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+		if(pMinorAI == NULL || !pMinorAI->IsAllies(m_pPlayer->GetID()))
+		{
+			continue;
+		}
+
+		// Per-ally purchase count gates the priority: high priority buys the 1st..3rd,
+		// low priority only the 4th and beyond.
+		int iCount = pMinorAI->GetFaithPantheonPurchaseCount(m_pPlayer->GetID());
+		if(bHighPriority ? (iCount >= 3) : (iCount < 3))
+		{
+			continue;
+		}
+
+		// Faith cost = base option value doubled per purchase, scaled by game speed,
+		// then by the AI difficulty discount.
+		int iCost = pMinorAI->GetCityStateFaithPantheonPurchaseCost(m_pPlayer->GetID());
+		if(iCost <= 0)
+		{
+			continue;
+		}
+		if(!m_pPlayer->isHuman() && !m_pPlayer->IsAITeammateOfHuman())
+		{
+			iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+		}
+		if(m_pPlayer->GetFaith() < iCost)
+		{
+			continue;
+		}
+
+		// Pick an idle pantheon belief (pantheon type not claimed by any religion),
+		// excluding only the ones this religion already has.
+		BeliefTypes eBelief = ChooseCSUAPantheonBelief(eReligion);
+		if(eBelief == NO_BELIEF)
+		{
+			continue;
+		}
+
+		if(pMinorAI->DoCityStateFaithPantheonPurchase(m_pPlayer->GetID(), eBelief))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/// Choose the best idle pantheon belief for a CSUA pantheon purchase (breaks type limits).
+BeliefTypes CvReligionAI::ChooseCSUAPantheonBelief(ReligionTypes eReligion)
+{
+	CvGameReligions* pGameReligions = GC.getGame().GetGameReligions();
+	CvWeightedVector<BeliefTypes, SAFE_ESTIMATE_NUM_BELIEFS, true> beliefChoices;
+
+	const CvReligion* pReligion = pGameReligions->GetReligion(eReligion, m_pPlayer->GetID());
+	CvBeliefXMLEntries* pkBeliefs = GC.GetGameBeliefs();
+	const int iNumBeliefs = pkBeliefs->GetNumBeliefs();
+	for(int iI = 0; iI < iNumBeliefs; iI++)
+	{
+		const BeliefTypes eBelief(static_cast<BeliefTypes>(iI));
+		CvBeliefEntry* pEntry = pkBeliefs->GetEntry(eBelief);
+		if(pEntry == NULL || !pEntry->IsPantheonBelief())
+		{
+			continue;
+		}
+		// Only idle pantheon beliefs: not yet claimed by any religion.
+		if(pGameReligions->IsInSomeReligion(eBelief))
+		{
+			continue;
+		}
+		// Exclude beliefs this religion already has.
+		if(pReligion && pReligion->m_Beliefs.HasBelief(eBelief))
+		{
+			continue;
+		}
+
+		int iScore = ScoreBelief(pEntry);
+		if(iScore <= 0)
+		{
+			continue;
+		}
+		beliefChoices.push_back(eBelief, iScore);
+	}
+
+	beliefChoices.SortItems();
+	int iNumChoices = MIN(beliefChoices.size(), 3);
+	RandomNumberDelegate fcn = MakeDelegate(&GC.getGame(), &CvGame::getJonRandNum);
+	BeliefTypes rtnValue = beliefChoices.ChooseFromTopChoices(iNumChoices, &fcn, "Choosing CSUA pantheon belief from Top Choices");
+	LogBeliefChoices(beliefChoices, rtnValue);
+
+	return rtnValue;
 }
 
 /// Choose the best belief for a CSUA belief purchase (breaks type limits).

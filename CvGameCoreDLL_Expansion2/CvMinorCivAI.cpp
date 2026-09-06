@@ -1972,6 +1972,7 @@ void CvMinorCivAI::Reset()
 		m_aiTurnLastQuitEconomicAid[iI] = -1;
 		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
 		m_abFaithBeliefPurchasedByMajor[iI] = false;
+		m_aiFaithPantheonPurchaseCount[iI] = 0;
 		m_aiMajorScratchPad[iI] = 0;
 	}
 
@@ -2110,6 +2111,8 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
 	// Wittenberg CS UA - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS, false);
+	// La Venta CS UA - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS, 0);
 #endif
 }
 
@@ -2184,6 +2187,7 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS);
 #endif
 }
 
@@ -7863,6 +7867,225 @@ bool CvMinorCivAI::DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefType
 
 	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
 	return true;
+}
+
+/// La Venta CS UA: faith cost for the given major to purchase an idle pantheon belief (0 = not available).
+int CvMinorCivAI::GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return 0;
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+	CvPlayer& kMinor = GET_PLAYER(m_pPlayer->GetID());
+
+	if(!kMinor.isAlive())
+		return 0;
+	// Only the ally of this city-state may purchase.
+	if(!IsAllies(eMajor))
+		return 0;
+	// The ability comes from the city-state's own UA (La Venta), aggregated onto the ally.
+	if(!kMinor.HasCSUAFaithPantheonPurchaseUA())
+		return 0;
+	// The religion to augment is the one the major leads.
+	if(kMajor.GetReligions()->GetReligionCreatedByPlayer() <= RELIGION_PANTHEON)
+		return 0;
+
+	// Faith cost = base option value doubled per prior purchase, scaled by game speed (FaithPercent).
+	int iCost = gCustomMods.getOption("SP_PANTHEON_BELIEF_PURCHASE_BASE_COST", 500);
+	for(int i = 0; i < m_aiFaithPantheonPurchaseCount[eMajor]; i++)
+	{
+		if(iCost > INT_MAX / 2)
+		{
+			iCost = INT_MAX;
+			break;
+		}
+		iCost *= 2;
+	}
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	return iCost;
+}
+
+/// La Venta CS UA: the ally spends faith to add one idle pantheon belief to the religion the ally leads.
+bool CvMinorCivAI::DoCityStateFaithPantheonPurchase(PlayerTypes eMajor, BeliefTypes eBelief)
+{
+	CvString szDbg;
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS || eBelief == NO_BELIEF)
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL bad args\n");
+		return false;
+	}
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+	CvPlayer& kMinor = GET_PLAYER(GetPlayer()->GetID());
+
+	if(!kMinor.isAlive())
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL minor not alive\n");
+		return false;
+	}
+
+	// Only the ally of this city-state may purchase.
+	if(!IsAllies(eMajor))
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL not ally\n");
+		return false;
+	}
+
+	// The city-state must grant the faith-pantheon-purchase ability (La Venta UA).
+	if(!kMinor.HasCSUAFaithPantheonPurchaseUA())
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL no pantheon-purchase UA\n");
+		return false;
+	}
+
+	// The religion to augment is the one the major leads.
+	ReligionTypes eReligion = kMajor.GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL no religion created\n");
+		return false;
+	}
+
+	// Faith cost = base option value doubled per prior purchase, scaled by game speed,
+	// then by the AI difficulty discount (mirrors the construct discount on AI faith purchases).
+	int iCost = gCustomMods.getOption("SP_PANTHEON_BELIEF_PURCHASE_BASE_COST", 500);
+	for(int i = 0; i < m_aiFaithPantheonPurchaseCount[eMajor]; i++)
+	{
+		if(iCost > INT_MAX / 2)
+		{
+			iCost = INT_MAX;
+			break;
+		}
+		iCost *= 2;
+	}
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	if(!kMajor.isHuman() && !kMajor.IsAITeammateOfHuman())
+	{
+		iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+	}
+	if(iCost <= 0)
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL cost <= 0\n");
+		return false;
+	}
+	if(kMajor.GetFaith() < iCost)
+	{
+		szDbg.Format("CSUA PantheonPurchase: FAIL faith %d < cost %d\n", kMajor.GetFaith(), iCost);
+		OutputDebugString(szDbg);
+		return false;
+	}
+
+	// Only idle pantheon beliefs may be purchased: a pantheon belief not yet claimed by any religion.
+	CvBeliefEntry* pBelief = GC.GetGameBeliefs()->GetEntry(eBelief);
+	if(pBelief == NULL || !pBelief->IsPantheonBelief())
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL not a pantheon belief\n");
+		return false;
+	}
+	if(GC.getGame().GetGameReligions()->IsInSomeReligion(eBelief))
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL pantheon belief already in a religion\n");
+		return false;
+	}
+
+	if(!GC.getGame().GetGameReligions()->AddBeliefToReligion(eMajor, eReligion, eBelief))
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL AddBeliefToReligion\n");
+		return false;
+	}
+
+	kMajor.ChangeFaith(-iCost);
+	ChangeFaithPantheonPurchaseCount(eMajor, 1);
+
+	// Influence reward: after each purchase, the ally gains (excess happiness / 2) influence
+	// with every city-state it has met (including this one). No influence when happiness is negative.
+	int iInfluence = kMajor.GetExcessHappiness() / 2;
+	if(iInfluence > 0)
+	{
+		TeamTypes eMajorTeam = kMajor.getTeam();
+		for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+		{
+			CvPlayer& kMetMinor = GET_PLAYER((PlayerTypes)iMinorLoop);
+			if(!kMetMinor.isAlive() || !kMetMinor.isMinorCiv())
+			{
+				continue;
+			}
+			if(GET_TEAM(kMetMinor.getTeam()).isHasMet(eMajorTeam))
+			{
+				kMetMinor.GetMinorCivAI()->ChangeFriendshipWithMajor(eMajor, iInfluence);
+			}
+		}
+	}
+
+	// Notification (pantheon-belief icon) so the ally knows the belief was added.
+	CvString szBeliefName = "";
+	CvBeliefEntry* pBeliefInfo = GC.GetGameBeliefs()->GetEntry(eBelief);
+	if(pBeliefInfo)
+	{
+		szBeliefName = Localization::Lookup(pBeliefInfo->getShortDescription()).toUTF8();
+	}
+
+	CvString szReligionName = "";
+	CvReligionEntry* pReligionInfo = GC.getReligionInfo(eReligion);
+	if(pReligionInfo)
+	{
+		szReligionName = Localization::Lookup(pReligionInfo->GetDescriptionKey()).toUTF8();
+	}
+
+	if(CvNotifications* pNotifications = kMajor.GetNotifications())
+	{
+		Localization::String localizedText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED");
+		localizedText << szBeliefName << szReligionName;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED_S");
+		pNotifications->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, localizedText.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
+	}
+
+	// Broadcast to all human players so an AI ally's pantheon purchase is visible.
+	for(int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kLoop = GET_PLAYER((PlayerTypes)iPlayer);
+		if(!kLoop.isHuman() || !kLoop.isAlive())
+		{
+			continue;
+		}
+		if(CvNotifications* pNotify = kLoop.GetNotifications())
+		{
+			Localization::String broadcastText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED_BROADCAST");
+			broadcastText << kMajor.getNameKey() << szReligionName << szBeliefName;
+			Localization::String broadcastSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED_S");
+			pNotify->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, broadcastText.toUTF8(), broadcastSummary.toUTF8(), -1, -1, -1);
+		}
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
+
+/// La Venta CS UA: how many times the given major has already faith-purchased an idle pantheon belief.
+int CvMinorCivAI::GetFaithPantheonPurchaseCount(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return 0;
+	return m_aiFaithPantheonPurchaseCount[eMajor];
+}
+
+void CvMinorCivAI::SetFaithPantheonPurchaseCount(PlayerTypes eMajor, int iCount)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	if(m_aiFaithPantheonPurchaseCount[eMajor] != iCount)
+	{
+		m_aiFaithPantheonPurchaseCount[eMajor] = iCount;
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+}
+
+void CvMinorCivAI::ChangeFaithPantheonPurchaseCount(PlayerTypes eMajor, int iDelta)
+{
+	SetFaithPantheonPurchaseCount(eMajor, GetFaithPantheonPurchaseCount(eMajor) + iDelta);
 }
 #endif
 

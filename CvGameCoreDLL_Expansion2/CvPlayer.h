@@ -1832,6 +1832,14 @@ public:
 	int GetCSUAInquisitorRetentionPercent() const;
 	// Wittenberg CS UA: does this city-state's own UA grant the faith-belief-purchase ability?
 	bool HasCSUABeliefPurchaseUA() const;
+	// La Venta CS UA: +X% great-person rate per masterpiece/artifact the player owns
+	int GetCSUAGreatPersonRateModifierPerGreatWork() const;
+	// La Venta CS UA: total great-person rate modifier from every masterpiece/artifact the player owns
+	int GetCSUAGreatPersonRateModifierFromGreatWorks() const;
+	// La Venta CS UA: ally may spend faith to add an idle pantheon belief to the religion the ally leads
+	bool GetCSUAAnyFaithPantheonPurchase() const;
+	// La Venta CS UA: does this city-state's own UA grant the faith-pantheon-purchase ability?
+	bool HasCSUAFaithPantheonPurchaseUA() const;
 #endif
 
 	int GetPrestigeExemptAllyCount() const;

@@ -583,6 +583,10 @@ public:
 	int GetCityStateFaithBeliefPurchaseCost(PlayerTypes eMinor);
 	// Wittenberg CS UA: has the active player already faith-purchased a belief at this city-state?
 	bool IsCityStateFaithBeliefPurchased(PlayerTypes eMinor);
+	// La Venta CS UA: faith-purchase an idle pantheon belief for the active player into this city-state's religion
+	bool DoCityStateFaithPantheonPurchase(PlayerTypes eMinor, BeliefTypes eBelief);
+	// La Venta CS UA: faith cost for the active player to purchase an idle pantheon belief at this city-state (0 = not available)
+	int GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMinor);
 	void DoMinorGiftTileImprovement(PlayerTypes eMajor, PlayerTypes eMinor, int iPlotX, int iPlotY);
 	void DoMinorBullyGold(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor);

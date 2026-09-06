@@ -10373,7 +10373,19 @@ void CvCity::changeBaseGreatPeopleRate(int iChange)
 int CvCity::getGreatPeopleRateModifier() const
 {
 	VALIDATE_OBJECT
-	return m_iGreatPeopleRateModifier;
+	int iModifier = m_iGreatPeopleRateModifier;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// La Venta CS UA: +X% great-person rate per masterpiece/artifact the player owns (global count, all cities).
+	// Kept here (not in getTotalGreatPeopleRateModifier) so it also shows up in the great-person progress UI
+	// and AI city/population scoring, which read this city-level modifier directly.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		iModifier += GET_PLAYER(getOwner()).GetCSUAGreatPersonRateModifierFromGreatWorks();
+	}
+#endif
+
+	return iModifier;
 }
 
 

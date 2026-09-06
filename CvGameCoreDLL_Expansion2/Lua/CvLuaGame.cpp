@@ -356,6 +356,8 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetCityStateFaithBeliefPurchaseCost);
 	Method(IsCityStateFaithBeliefPurchased);
 	Method(DoCityStateFaithBeliefPurchase);
+	Method(GetCityStateFaithPantheonPurchaseCost);
+	Method(DoCityStateFaithPantheonPurchase);
 	Method(DoMinorGiftTileImprovement);
 	Method(DoMinorBullyGold);
 	Method(DoMinorBullyUnit);
@@ -2127,6 +2129,25 @@ int CvLuaGame::lDoCityStateFaithBeliefPurchase(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//int GetCityStateFaithPantheonPurchaseCost(int iMinorCivID);
+// La Venta CS UA: faith cost for the active player to purchase an idle pantheon belief at this city-state (0 = not available)
+int CvLuaGame::lGetCityStateFaithPantheonPurchaseCost(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	lua_pushinteger(L, GC.getGame().GetCityStateFaithPantheonPurchaseCost((PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoCityStateFaithPantheonPurchase(int iMinorCivID, int iBelief);
+// La Venta CS UA: faith-purchase an idle pantheon belief for the active player into this city-state's religion
+int CvLuaGame::lDoCityStateFaithPantheonPurchase(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iBelief = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithPantheonPurchase((PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
+}
+//------------------------------------------------------------------------------
 //void DoMinorGiftTileImprovement(int iMajorCivID, int iMinorCivID, iPlotX, iPlotY);
 int CvLuaGame::lDoMinorGiftTileImprovement(lua_State* L)
 {
@@ -2741,12 +2762,17 @@ int CvLuaGame::lGetBeliefsInReligion(lua_State* L)
 	const int t = lua_gettop(L);
 	int idx = 1;
 
-	CvReligionBeliefs beliefs = GC.getGame().GetGameReligions()->GetReligion(eReligion, NO_PLAYER)->m_Beliefs;
-	for(int iI = 0; iI < beliefs.GetNumBeliefs(); iI++)
+	// A religion slot that has not been founded yet returns NULL; yield an empty table instead of crashing.
+	const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion, NO_PLAYER);
+	if(pReligion != NULL)
 	{
-		const BeliefTypes eBelief = beliefs.GetBelief(iI);
-		lua_pushinteger(L, eBelief);
-		lua_rawseti(L, t, idx++);
+		CvReligionBeliefs beliefs = pReligion->m_Beliefs;
+		for(int iI = 0; iI < beliefs.GetNumBeliefs(); iI++)
+		{
+			const BeliefTypes eBelief = beliefs.GetBelief(iI);
+			lua_pushinteger(L, eBelief);
+			lua_rawseti(L, t, idx++);
+		}
 	}
 
 	return 1;

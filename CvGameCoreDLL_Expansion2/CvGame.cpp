@@ -11265,6 +11265,35 @@ bool CvGame::IsCityStateFaithBeliefPurchased(PlayerTypes eMinor)
 }
 
 //	--------------------------------------------------------------------------------
+// La Venta CS UA: faith cost for the active player to purchase an idle pantheon belief at this city-state (0 = not available).
+int CvGame::GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMinor)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return 0;
+
+	return GET_PLAYER(eMinor).GetMinorCivAI()->GetCityStateFaithPantheonPurchaseCost(eMajor);
+}
+
+//	--------------------------------------------------------------------------------
+// La Venta CS UA: faith-purchase an idle pantheon belief for the active player into this city-state's religion
+bool CvGame::DoCityStateFaithPantheonPurchase(PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithPantheonPurchase(eMajor, eBelief);
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
 /// Do the action of a major gifting a tile improvement to a minor's plot, to improve its resource
 void CvGame::DoMinorGiftTileImprovement(PlayerTypes eMajor, PlayerTypes eMinor, int iPlotX, int iPlotY)
 {

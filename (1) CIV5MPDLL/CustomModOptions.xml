@@ -1197,6 +1197,8 @@
 
     <!-- Wittenberg: base faith cost of the CSUA self-chosen belief purchase, scaled by the game speed FaithPercent -->
     <Row Class="5" Name="SP_FAITH_BELIEF_PURCHASE_COST" Value="2500"/>
+    <!-- La Venta: base faith cost of the CSUA idle pantheon belief purchase, doubled per purchase, scaled by FaithPercent -->
+    <Row Class="5" Name="SP_PANTHEON_BELIEF_PURCHASE_BASE_COST" Value="500"/>
 
     <Row Class="6" Name="TRAITS_SPREAD_RELIGION_AFTER_KILLING" Value="0"/>
     <Row Class="6" Name="TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY" Value="0"/>
