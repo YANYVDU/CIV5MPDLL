@@ -440,6 +440,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCrossContinentRouteUnhappinessReduction);
 	Method(GetCityStateSpecialistPointRate);
 	Method(GetCSUAGreatPersonRateModifierFromGreatWorks);
+	Method(GetCSUAFaithRefundPerDonationPercent);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
 	Method(GetHappinessFromNaturalWonders);
@@ -3562,6 +3563,15 @@ int CvLuaPlayer::lGetCSUAGreatPersonRateModifierFromGreatWorks(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	lua_pushinteger(L, pkPlayer->GetCSUAGreatPersonRateModifierFromGreatWorks());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUAFaithRefundPerDonationPercent() const;
+int CvLuaPlayer::lGetCSUAFaithRefundPerDonationPercent(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAFaithRefundPerDonationPercent());
 	return 1;
 }
 

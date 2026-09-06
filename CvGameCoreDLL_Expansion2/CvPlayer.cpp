@@ -31958,6 +31958,47 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
 		return pEffect && pEffect->GetFaithPantheonPurchase();
 	}
+
+	//	------------------------------------------------------------------------
+	// Kathmandu CS UA: the first gold donation to the city-state each turn refunds this % of the amount as faith
+	int CvPlayer::GetCSUAFaithRefundPerDonationPercent() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetFaithRefundPerDonationPercent() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// CSUA: does any city-state whose UA this player has activated (ally/friend effect) grant the given effect id?
+	bool CvPlayer::HasCSUAEffect(int eEffect) const
+	{
+		if (eEffect < 0)
+			return false;
+
+		for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+		{
+			PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
+			if (!GET_PLAYER(eMinor).isAlive() || !GET_PLAYER(eMinor).isMinorCiv())
+				continue;
+
+			CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+			CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+			if (!pkMinorCivInfo)
+				continue;
+
+			const char* szUAType = pkMinorCivInfo->GetUAType();
+			if (!szUAType || szUAType[0] == '\0')
+				continue;
+
+			CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+			if (!pUAEntry)
+				continue;
+
+			if (pMinorAI->IsAllies(GetID()) && pUAEntry->GetAllyEffectID() == eEffect)
+				return true;
+			if (pMinorAI->IsFriends(GetID()) && pUAEntry->GetFriendEffectID() == eEffect)
+				return true;
+		}
+		return false;
+	}
 #endif
 
 //	------------------------------------------------------------------------

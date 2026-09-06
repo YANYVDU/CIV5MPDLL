@@ -3547,6 +3547,13 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 	{
 		return false;
 	}
+	// CSUA special building: requires the player to have activated the prereq effect (e.g. Kathmandu ally UA)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pkBuildingInfo->GetPrereqEffect() >= 0 && !kPlayer.HasCSUAEffect(pkBuildingInfo->GetPrereqEffect()))
+	{
+		return false;
+	}
+#endif
 	// Holy city requirement
 	if (pkBuildingInfo->IsRequiresHolyCity() && !GetCityReligions()->IsHolyCityAnyReligion())
 	{

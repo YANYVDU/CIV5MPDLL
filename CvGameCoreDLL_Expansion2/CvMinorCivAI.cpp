@@ -1972,6 +1972,7 @@ void CvMinorCivAI::Reset()
 		m_aiTurnLastQuitEconomicAid[iI] = -1;
 		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
 		m_abFaithBeliefPurchasedByMajor[iI] = false;
+		m_abFaithRefundUsedThisTurn[iI] = false;
 		m_aiFaithPantheonPurchaseCount[iI] = 0;
 		m_aiMajorScratchPad[iI] = 0;
 	}
@@ -2111,6 +2112,8 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
 	// Wittenberg CS UA - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS, false);
+	// Kathmandu CS UA - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS, false);
 	// La Venta CS UA - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS, 0);
 #endif
@@ -2187,6 +2190,7 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS);
 #endif
 }
@@ -2362,6 +2366,10 @@ void CvMinorCivAI::DoTurn()
 	if(GetPlayer()->isMinorCiv())
 	{
 		DoTurnStatus();
+
+		// Kathmandu CS UA: reset the first-donation faith refund flag for all majors each turn
+		for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+			m_abFaithRefundUsedThisTurn[iI] = false;
 
 #if defined(MOD_CONFIG_GAME_IN_XML)
 		m_pPlayer->GetDiplomacyAI()->DoCounters();
@@ -7748,6 +7756,22 @@ void CvMinorCivAI::SetFaithBeliefPurchasedByMajor(PlayerTypes eMajor, bool bPurc
 	}
 }
 
+bool CvMinorCivAI::GetFaithRefundUsedThisTurn(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abFaithRefundUsedThisTurn[eMajor];
+}
+
+void CvMinorCivAI::SetFaithRefundUsedThisTurn(PlayerTypes eMajor, bool bUsed)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	m_abFaithRefundUsedThisTurn[eMajor] = bUsed;
+}
+
 /// Wittenberg CS UA: the ally spends faith to add one belief to the religion the ally leads.
 bool CvMinorCivAI::DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief)
 {
@@ -10792,9 +10816,22 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 			GET_PLAYER(ePlayer).GetTreasury()->LogExpenditure(GetPlayer()->GetMinorCivAI()->GetNamesListAsString(0), iGold,4);
 
 		GET_PLAYER(ePlayer).GetTreasury()->ChangeGold(-iGold);
-		
+
 		ChangeNumGoldGifted(ePlayer, iGold);
-		
+
+		// Kathmandu CS UA: the first gold donation each turn refunds a % of the amount as faith
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE && !m_abFaithRefundUsedThisTurn[ePlayer])
+		{
+			const int iRefundPercent = GET_PLAYER(ePlayer).GetCSUAFaithRefundPerDonationPercent();
+			if (iRefundPercent > 0)
+			{
+				GET_PLAYER(ePlayer).ChangeFaith((iGold * iRefundPercent) / 100);
+				m_abFaithRefundUsedThisTurn[ePlayer] = true;
+			}
+		}
+#endif
+
 		ChangeFriendshipWithMajor(ePlayer, iFriendshipChange);
 
 		// In case we had a Gold Gift quest active, complete it now

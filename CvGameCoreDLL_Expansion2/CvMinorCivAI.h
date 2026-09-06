@@ -449,6 +449,9 @@ public:
 	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
 	bool IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const;
 	void SetFaithBeliefPurchasedByMajor(PlayerTypes eMajor, bool bPurchased);
+	// Kathmandu CS UA: whether each major has already claimed this turn's first-donation faith refund
+	bool GetFaithRefundUsedThisTurn(PlayerTypes eMajor) const;
+	void SetFaithRefundUsedThisTurn(PlayerTypes eMajor, bool bUsed);
 	// La Venta CS UA: faith-purchase an idle pantheon belief into this city-state's religion (price doubles per purchase, per major)
 	bool DoCityStateFaithPantheonPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
 	int GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMajor) const;
@@ -671,6 +674,8 @@ private:
 	int m_aiTurnLastQuitEconomicAid[MAX_MAJOR_CIVS];
 	// Wittenberg CS UA: whether each major has already faith-purchased a belief for this city-state's religion
 	bool m_abFaithBeliefPurchasedByMajor[MAX_MAJOR_CIVS];
+	// Kathmandu CS UA: whether each major has already claimed this turn's first-donation faith refund
+	bool m_abFaithRefundUsedThisTurn[MAX_MAJOR_CIVS];
 	// La Venta CS UA: how many times each major has faith-purchased an idle pantheon belief (drives the doubling price)
 	int m_aiFaithPantheonPurchaseCount[MAX_MAJOR_CIVS];
 	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values

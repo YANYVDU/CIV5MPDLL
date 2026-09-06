@@ -145,6 +145,8 @@ public:
 	int GetGoldMaintenance() const;
 	int GetReplacementBuildingClass() const;
 	int GetPrereqAndTech() const;
+	// CSUA: building requires the player to have activated this city-state UA effect (e.g. Kathmandu ally UA)
+	int GetPrereqEffect() const;
 	int GetTechNoPrereqClasses() const;
 	int GetPolicyBranchType() const;
 	int GetPolicyNeededType() const;
@@ -657,6 +659,8 @@ private:
 	int m_iGoldMaintenance;
 	int m_iReplacementBuildingClass;
 	int m_iPrereqAndTech;
+	// CSUA: prereq city-state UA effect (effect id, -1 = none)
+	int m_iPrereqEffect;
 	int m_iTechNoPrereqClasses;
 	int m_iPolicyBranchType;
 	int m_iPolicyNeededType;

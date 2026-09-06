@@ -329,6 +329,7 @@ protected:
 	static int lGetCrossContinentRouteUnhappinessReduction(lua_State* L);
 	static int lGetCityStateSpecialistPointRate(lua_State* L);
 	static int lGetCSUAGreatPersonRateModifierFromGreatWorks(lua_State* L);
+	static int lGetCSUAFaithRefundPerDonationPercent(lua_State* L);
 	static int lGetExtraHappinessPerLuxury(lua_State* L);
 	static int lGetHappinessFromReligion(lua_State* L);
 	static int lGetHappinessFromNaturalWonders(lua_State* L);

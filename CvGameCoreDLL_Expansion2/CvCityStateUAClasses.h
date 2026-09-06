@@ -205,6 +205,8 @@ public:
 	bool GetFaithPantheonPurchase() const;
 	// La Venta: +X% great-person rate per masterpiece/artifact the ally owns
 	int GetGreatPersonRateModifierPerGreatWork() const;
+	// Kathmandu: the first gold donation each turn refunds a % of the amount as faith to the ally
+	int GetFaithRefundPerDonationPercent() const;
 
 private:
 	// Florence
@@ -326,6 +328,8 @@ private:
 	// La Venta
 	bool m_bFaithPantheonPurchase;
 	int m_iGreatPersonRateModifierPerGreatWork;
+	// Kathmandu
+	int m_iFaithRefundPerDonationPercent;
 };
 
 //======================================================================================================
@@ -525,6 +529,8 @@ public:
 	// La Venta
 	bool AnyFaithPantheonPurchase() const;
 	int GetGreatPersonRateModifierPerGreatWork() const;
+	// Kathmandu
+	int GetFaithRefundPerDonationPercent() const;
 
 	void Reset();
 
@@ -634,6 +640,8 @@ protected:
 	// La Venta
 	int m_iFaithPantheonPurchaseCount;
 	int m_iGreatPersonRateModifierPerGreatWork;
+	// Kathmandu
+	int m_iFaithRefundPerDonationPercent;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

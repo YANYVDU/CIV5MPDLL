@@ -151,7 +151,9 @@ CREATE TABLE CityStateUAEffects (
     -- La Venta: ally may buy an idle pantheon belief and add it to the ally-led religion (price doubles per purchase)
     FaithPantheonPurchase boolean DEFAULT 0,
     -- La Venta: +X% great-person rate per masterpiece/artifact the ally owns
-    GreatPersonRateModifierPerGreatWork integer DEFAULT 0
+    GreatPersonRateModifierPerGreatWork integer DEFAULT 0,
+    -- Kathmandu: the first gold donation each turn refunds this % of the amount as faith to the ally
+    FaithRefundPerDonationPercent integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
@@ -167,6 +169,10 @@ CREATE TABLE CityStateUAs (
 
 -- MinorCivilizations reference UAType directly (no mapping table needed)
 alter table MinorCivilizations add column UAType text default null references CityStateUAs(Type);
+
+-- Kathmandu CS UA: special buildings (e.g. Everest Camp) declare a prereq effect id that gates construction
+-- (must run before any mod XML inserts rows into Buildings with this column)
+ALTER TABLE Buildings ADD 'PrereqEffect' TEXT DEFAULT NULL;
 -- CityState UA: adds per-turn Great Person Points (per SpecialistType) to all cities
 create table CityStateUAEffect_GreatPersonPoints (
     EffectType text references CityStateUAEffects(Type),

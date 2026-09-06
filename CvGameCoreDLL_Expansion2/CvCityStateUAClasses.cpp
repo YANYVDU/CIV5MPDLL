@@ -90,6 +90,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iInquisitorRetentionPercent(0)
 	, m_bFaithPantheonPurchase(false)
 	, m_iGreatPersonRateModifierPerGreatWork(0)
+	, m_iFaithRefundPerDonationPercent(0)
 {
 }
 
@@ -258,6 +259,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iInquisitorRetentionPercent = kResults.GetInt("InquisitorRetentionPercent");
 	m_bFaithPantheonPurchase = kResults.GetBool("FaithPantheonPurchase");
 	m_iGreatPersonRateModifierPerGreatWork = kResults.GetInt("GreatPersonRateModifierPerGreatWork");
+	m_iFaithRefundPerDonationPercent = kResults.GetInt("FaithRefundPerDonationPercent");
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -610,6 +612,7 @@ bool CvCityStateUAEffectEntry::GetFaithBeliefPurchase() const { return m_bFaithB
 int CvCityStateUAEffectEntry::GetInquisitorRetentionPercent() const { return m_iInquisitorRetentionPercent; }
 bool CvCityStateUAEffectEntry::GetFaithPantheonPurchase() const { return m_bFaithPantheonPurchase; }
 int CvCityStateUAEffectEntry::GetGreatPersonRateModifierPerGreatWork() const { return m_iGreatPersonRateModifierPerGreatWork; }
+int CvCityStateUAEffectEntry::GetFaithRefundPerDonationPercent() const { return m_iFaithRefundPerDonationPercent; }
 
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
@@ -843,6 +846,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iInquisitorRetentionPercent(0)
 	, m_iFaithPantheonPurchaseCount(0)
 	, m_iGreatPersonRateModifierPerGreatWork(0)
+	, m_iFaithRefundPerDonationPercent(0)
 {
 }
 
@@ -941,6 +945,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iInquisitorRetentionPercent = 0;
 	m_iFaithPantheonPurchaseCount = 0;
 	m_iGreatPersonRateModifierPerGreatWork = 0;
+	m_iFaithRefundPerDonationPercent = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1187,6 +1192,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iInquisitorRetentionPercent += pEffect->GetInquisitorRetentionPercent() * iChange;
 	m_iFaithPantheonPurchaseCount += (pEffect->GetFaithPantheonPurchase() ? iChange : 0);
 	m_iGreatPersonRateModifierPerGreatWork += pEffect->GetGreatPersonRateModifierPerGreatWork() * iChange;
+	m_iFaithRefundPerDonationPercent += pEffect->GetFaithRefundPerDonationPercent() * iChange;
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -1493,4 +1499,5 @@ bool CvPlayerCityStateUA::HasFaithInfluencePurchase() const { return m_iFaithInf
 bool CvPlayerCityStateUA::AnyFaithBeliefPurchase() const { return m_iFaithBeliefPurchaseCount > 0; }
 bool CvPlayerCityStateUA::AnyFaithPantheonPurchase() const { return m_iFaithPantheonPurchaseCount > 0; }
 int CvPlayerCityStateUA::GetGreatPersonRateModifierPerGreatWork() const { return m_iGreatPersonRateModifierPerGreatWork; }
+int CvPlayerCityStateUA::GetFaithRefundPerDonationPercent() const { return m_iFaithRefundPerDonationPercent; }
 int CvPlayerCityStateUA::GetInquisitorRetentionPercent() const { return m_iInquisitorRetentionPercent; }

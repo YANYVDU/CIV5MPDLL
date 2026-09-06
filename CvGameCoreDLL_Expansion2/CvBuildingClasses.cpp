@@ -36,6 +36,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iGoldMaintenance(0),
 	m_iReplacementBuildingClass(NO_BUILDINGCLASS),
 	m_iPrereqAndTech(NO_TECH),
+	m_iPrereqEffect(-1),
 	m_iTechNoPrereqClasses(NO_TECH),
 	m_iPolicyBranchType(NO_POLICY_BRANCH_TYPE),
 	m_iPolicyNeededType(NO_POLICY),
@@ -841,6 +842,9 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 
 	szTextVal = kResults.GetText("PrereqTech");
 	m_iPrereqAndTech = GC.getInfoTypeForString(szTextVal, true);
+
+	szTextVal = kResults.GetText("PrereqEffect");
+	m_iPrereqEffect = GC.getInfoTypeForString(szTextVal, true);
 
 	szTextVal = kResults.GetText("TechNoPrereqClasses");
 	m_iTechNoPrereqClasses = GC.getInfoTypeForString(szTextVal, true);
@@ -2087,6 +2091,12 @@ int CvBuildingEntry::GetReplacementBuildingClass() const
 int CvBuildingEntry::GetPrereqAndTech() const
 {
 	return m_iPrereqAndTech;
+}
+
+/// City-state UA effect required to construct this building (CSUA special buildings)
+int CvBuildingEntry::GetPrereqEffect() const
+{
+	return m_iPrereqEffect;
 }
 
 int CvBuildingEntry::GetTechNoPrereqClasses() const

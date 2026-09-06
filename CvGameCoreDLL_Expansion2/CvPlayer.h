@@ -1840,6 +1840,10 @@ public:
 	bool GetCSUAAnyFaithPantheonPurchase() const;
 	// La Venta CS UA: does this city-state's own UA grant the faith-pantheon-purchase ability?
 	bool HasCSUAFaithPantheonPurchaseUA() const;
+	// Kathmandu CS UA: the first gold donation each turn refunds this % of the amount as faith
+	int GetCSUAFaithRefundPerDonationPercent() const;
+	// CSUA: does any city-state UA this player has activated (as ally or friend) grant the given effect id?
+	bool HasCSUAEffect(int eEffect) const;
 #endif
 
 	int GetPrestigeExemptAllyCount() const;
