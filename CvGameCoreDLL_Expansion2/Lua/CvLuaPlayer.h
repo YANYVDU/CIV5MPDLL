@@ -1088,6 +1088,10 @@ protected:
 	static int lGetEspionageCityStatus(lua_State* L);
 	static int lGetNumSpies(lua_State* L);
 	static int lGetNumUnassignedSpies(lua_State* L);
+	static int lGetSpyPoints(lua_State* L);
+	static int lGetSpyPointsThreshold(lua_State* L);
+	static int lGetSpyPointsCreated(lua_State* L);
+	static int lGetSpyPointsPerTurn(lua_State* L);
 	static int lGetEspionageSpies(lua_State* L);
 	static int lGetEspionageGatheringIntelInfo(lua_State* L);
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_ESPIONAGE)

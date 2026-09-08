@@ -124,6 +124,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iGlobalEspionageModifier(0),
 	m_iGlobalEspionageSpeedModifier(0),
 	m_iExtraSpies(0),
+	m_iSpyPoints(0),
 	m_iSpyRankChange(0),
 	m_iTradeRouteRecipientBonus(0),
 	m_iTradeRouteTargetBonus(0),
@@ -700,6 +701,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iGlobalEspionageModifier = kResults.GetInt("GlobalEspionageModifier");
 	m_iGlobalEspionageSpeedModifier = kResults.GetInt("GlobalEspionageSpeedModifier");
 	m_iExtraSpies = kResults.GetInt("ExtraSpies");
+	m_iSpyPoints = kResults.GetInt("SpyPoints");
 	m_iSpyRankChange = kResults.GetInt("SpyRankChange");
 	m_iTradeRouteRecipientBonus = kResults.GetInt("TradeRouteRecipientBonus");
 	m_iTradeRouteTargetBonus = kResults.GetInt("TradeRouteTargetBonus");
@@ -2934,6 +2936,12 @@ int CvBuildingEntry::GetGlobalEspionageSpeedModifier() const
 int CvBuildingEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
+}
+
+/// Spy points this building provides per turn
+int CvBuildingEntry::GetSpyPoints() const
+{
+	return m_iSpyPoints;
 }
 
 /// Increase in rank of all starting spies
@@ -5385,6 +5393,12 @@ void CvCityBuildings::SetNumRealBuildingTimed(BuildingTypes eIndex, int iNewValu
 		pPlayer->GetTreasury()->ChangeBaseBuildingGoldMaintenance(buildingEntry->GetGoldMaintenance() * iChangeNumRealBuilding);
 	}
 
+	// Spy points per turn contribution
+	if (buildingEntry->GetSpyPoints() != 0)
+	{
+		pPlayer->ChangeSpyPointsPerTurn(buildingEntry->GetSpyPoints() * iChangeNumRealBuilding);
+	}
+
 #if !defined(NO_ACHIEVEMENTS)
 	// Achievement for Temples
 	const char *szBuildingTypeC = buildingEntry->GetType();
@@ -5604,6 +5618,10 @@ void CvCityBuildings::SetNumFreeBuilding(BuildingTypes eIndex, int iNewValue)
 		m_pCity->processBuilding(eIndex, iChangeNumFreeBuilding, true);
 
 		CvBuildingEntry* buildingEntry = GC.getBuildingInfo(eIndex);
+		if(buildingEntry->GetSpyPoints() != 0)
+		{
+			GET_PLAYER(m_pCity->getOwner()).ChangeSpyPointsPerTurn(buildingEntry->GetSpyPoints() * iChangeNumFreeBuilding);
+		}
 		if(buildingEntry->IsCityWall())
 		{
 			auto_ptr<ICvPlot1> pDllPlot(new CvDllPlot(m_pCity->plot()));

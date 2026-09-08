@@ -607,6 +607,14 @@ public:
 	int GetStartingSpyRank() const;
 	void ChangeStartingSpyRank(int iChange);
 	int GetSpyLevelUpWhenRiggingCount() const;
+	int GetSpyPoints(bool bTotal = false) const;
+	int GetSpyPointsThreshold() const;
+	int GetSpyPointsCreated() const;
+	int GetSpyPointsPerTurn() const;
+	void ChangeSpyPoints(int iChange);
+	int getSpyPointsThresholdModifier() const;
+	void changeSpyPointsThresholdModifier(int iChange);
+	void ChangeSpyPointsPerTurn(int iChange);
 	// END Espionage
 
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
@@ -2609,6 +2617,11 @@ protected:
 	int m_iEspionageModifier;
 	int m_iEspionageSpeedModifier;
 	int m_iSpyStartingRank;
+	int m_iSpyPoints;
+	int m_iSpyPointsTotal;
+	int m_iSpyPointsThresholdModifier;
+	int m_iSpyPointsCreated;
+	mutable int m_iSpyPointsPerTurn;
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
 	int m_iConversionModifier;
 #endif

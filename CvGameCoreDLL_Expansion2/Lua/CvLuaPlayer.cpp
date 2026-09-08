@@ -1185,6 +1185,10 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetEspionageCityStatus);
 	Method(GetNumSpies);
 	Method(GetNumUnassignedSpies);
+	Method(GetSpyPoints);
+	Method(GetSpyPointsThreshold);
+	Method(GetSpyPointsCreated);
+	Method(GetSpyPointsPerTurn);
 	Method(GetEspionageSpies);
 	Method(GetEspionageGatheringIntelInfo);
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_ESPIONAGE)
@@ -12451,6 +12455,42 @@ int CvLuaPlayer::lGetNumSpies(lua_State* L)
 	const int lNumSpies = (pkPlayerEspionage != NULL)? pkPlayerEspionage->GetNumSpies() : 0;
 
 	lua_pushinteger(L, lNumSpies);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPoints(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPoints());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPointsThreshold(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPointsThreshold());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPointsCreated(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPointsCreated());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPointsPerTurn(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPointsPerTurn());
 	return 1;
 }
 

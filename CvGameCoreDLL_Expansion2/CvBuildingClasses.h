@@ -351,6 +351,7 @@ public:
 	int GetGlobalEspionageModifier() const;
 	int GetGlobalEspionageSpeedModifier() const;
 	int GetExtraSpies() const;
+	int GetSpyPoints() const;
 	int GetSpyRankChange() const;
 	int GetTradeRouteRecipientBonus() const;
 	int GetTradeRouteTargetBonus() const;
@@ -843,6 +844,7 @@ private:
 	int m_iGlobalEspionageModifier;
 	int m_iGlobalEspionageSpeedModifier;
 	int m_iExtraSpies;
+	int m_iSpyPoints;
 	int m_iSpyRankChange;
 	int m_iInstantSpyRankChange;
 

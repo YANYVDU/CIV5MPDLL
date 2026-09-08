@@ -111,6 +111,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iExtraSupplyPerPopulation(0),
 #endif
 	m_iExtraSpies(0),
+	m_iSpyPoints(0),
 	m_iUnresearchedTechBonusFromKills(0),
 	m_iExtraFoundedCityTerritoryClaimRange(0),
 	m_iFreeSocialPoliciesPerEra(0),
@@ -737,6 +738,12 @@ int CvTraitEntry::GetExtraSupplyPerPopulation() const
 int CvTraitEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
+}
+
+/// Accessor: spy points provided per turn
+int CvTraitEntry::GetSpyPoints() const
+{
+	return m_iSpyPoints;
 }
 
 /// Accessor: modifier for beaker bonus towards unresearched tech upon killing unit from that tech
@@ -1879,6 +1886,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	}
 #endif
 	m_iExtraSpies							= kResults.GetInt("ExtraSpies");
+	m_iSpyPoints							= kResults.GetInt("SpyPoints");
 	m_iUnresearchedTechBonusFromKills		= kResults.GetInt("UnresearchedTechBonusFromKills");
 	m_iExtraFoundedCityTerritoryClaimRange  = kResults.GetInt("ExtraFoundedCityTerritoryClaimRange");
 	m_iFreeSocialPoliciesPerEra				= kResults.GetInt("FreeSocialPoliciesPerEra");
@@ -2961,6 +2969,7 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iExtraSupplyPerPopulation += trait->GetExtraSupplyPerPopulation();
 #endif
 			m_iExtraSpies += trait->GetExtraSpies();
+			m_iSpyPoints += trait->GetSpyPoints();
 			m_iUnresearchedTechBonusFromKills += trait->GetUnresearchedTechBonusFromKills();
 			m_iExtraFoundedCityTerritoryClaimRange += trait->GetExtraFoundedCityTerritoryClaimRange();
 			m_iFreeSocialPoliciesPerEra += trait->GetFreeSocialPoliciesPerEra();
@@ -3582,6 +3591,7 @@ void CvPlayerTraits::Reset()
 	m_iExtraSupplyPerPopulation = 0;
 #endif
 	m_iExtraSpies = 0;
+	m_iSpyPoints = 0;
 	m_iUnresearchedTechBonusFromKills = 0;
 	m_iExtraFoundedCityTerritoryClaimRange = 0;
 	m_iFreeSocialPoliciesPerEra = 0;
@@ -5049,6 +5059,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 #endif
 
 	kStream >> m_iExtraSpies;
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPoints, 0);
 
 	kStream >> m_iUnresearchedTechBonusFromKills;
 
@@ -5587,6 +5598,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	MOD_SERIALIZE_WRITE(kStream, m_iExtraSupplyPerPopulation);
 #endif
 	kStream << m_iExtraSpies;
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPoints);
 	kStream << m_iUnresearchedTechBonusFromKills;
 	kStream << m_iExtraFoundedCityTerritoryClaimRange;
 	kStream << m_iFreeSocialPoliciesPerEra;

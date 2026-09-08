@@ -142,6 +142,7 @@ public:
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 	int GetGoldenAgeModifier() const;
 	int GetExtraSpies() const;
+	int GetSpyPoints() const;
 	bool IsGreatPersonPointsCapital() const;
 	bool IsGreatPersonPointsPerCity() const;
 	bool IsGreatPersonPointsHolyCity() const;
@@ -230,6 +231,7 @@ protected:
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 	int m_iGoldenAgeModifier;
 	int m_iExtraSpies;
+	int m_iSpyPoints;
 	bool m_bGreatPersonPointsCapital;
 	bool m_bGreatPersonPointsPerCity;
 	bool m_bGreatPersonPointsHolyCity;

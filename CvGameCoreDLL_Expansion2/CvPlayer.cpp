@@ -217,6 +217,11 @@ CvPlayer::CvPlayer() :
 	, m_iAttackBonusTurns("CvPlayer::m_iAttackBonusTurns", m_syncArchive)
 	, m_iCultureBonusTurns(0)
 	, m_iTourismBonusTurns(0)
+	, m_iSpyPoints(0)
+	, m_iSpyPointsTotal(0)
+	, m_iSpyPointsThresholdModifier(0)
+	, m_iSpyPointsCreated(0)
+	, m_iSpyPointsPerTurn(0)
 	, m_iGoldenAgeProgressMeter("CvPlayer::m_iGoldenAgeProgressMeter", m_syncArchive, true)
 	, m_iGoldenAgeMeterMod("CvPlayer::m_iGoldenAgeMeterMod", m_syncArchive)
 	, m_iGoldenAgeUnitCombatModifier("CvPlayer::m_iGoldenAgeUnitCombatModifier", m_syncArchive)
@@ -773,6 +778,7 @@ void CvPlayer::init(PlayerTypes eID)
 
 		CvAssert(m_pTraits);
 		m_pTraits->InitPlayerTraits();
+		ChangeSpyPointsPerTurn(GetPlayerTraits()->GetSpyPoints());
 		GetBuilderTaskingAI()->UpdateKeepFeatures(this);
 
 		// Special handling for the Polynesian trait's overriding of embarked unit graphics
@@ -1247,6 +1253,11 @@ void CvPlayer::uninit()
 	m_iCityStateAllyCount = 0;
 	m_iMinorCivAlliesThresholdModifier = 0;
 	m_iCityStateUASpyKillProgress = 0;
+	m_iSpyPoints = 0;
+	m_iSpyPointsTotal = 0;
+	m_iSpyPointsThresholdModifier = 0;
+	m_iSpyPointsCreated = 0;
+	m_iSpyPointsPerTurn = 0;
 	m_iCachedHolyCityCount = -1;
 	m_iCachedPapalRecognitionFollowerCount = -1;
 	m_iCSUAFaithInfluencePurchaseUsed = 0;
@@ -5682,6 +5693,9 @@ void CvPlayer::doTurnPostDiplomacy()
 	doResearch();
 
 	GetEspionage()->DoTurn();
+
+	// Spy points from buildings/policies/beliefs/traits (Great General style)
+	ChangeSpyPoints(GetSpyPointsPerTurn());
 
 	// Faith
 	CvGameReligions* pGameReligions = kGame.GetGameReligions();
@@ -15135,6 +15149,77 @@ void CvPlayer::ChangeStartingSpyRank(int iChange)
 	m_iSpyStartingRank = (m_iSpyStartingRank + iChange);
 }
 
+//	--------------------------------------------------------------------------------
+/// Current accumulated spy points. If bTotal is true, returns the all-time total instead.
+int CvPlayer::GetSpyPoints(bool bTotal) const
+{
+	return bTotal ? m_iSpyPointsTotal : m_iSpyPoints;
+}
+
+//	--------------------------------------------------------------------------------
+/// Spy points needed to earn the next spy. Grows with each spy earned (Great General style).
+int CvPlayer::GetSpyPointsThreshold() const
+{
+	return GC.getSPY_POINTS_THRESHOLD_BASE() * max(0, getSpyPointsThresholdModifier() + 100) / 100;
+}
+
+//	--------------------------------------------------------------------------------
+/// Number of spies earned through the spy points system so far.
+int CvPlayer::GetSpyPointsCreated() const
+{
+	return m_iSpyPointsCreated;
+}
+
+//	--------------------------------------------------------------------------------
+/// Spy points earned per turn from all sources (buildings, policies, beliefs, traits).
+/// Maintained incrementally on change events; loaded from and written to the save file.
+int CvPlayer::GetSpyPointsPerTurn() const
+{
+	return m_iSpyPointsPerTurn;
+}
+
+//	--------------------------------------------------------------------------------
+/// Adjust the cached spy points earned per turn on change events.
+void CvPlayer::ChangeSpyPointsPerTurn(int iChange)
+{
+	m_iSpyPointsPerTurn += iChange;
+}
+
+//	--------------------------------------------------------------------------------
+/// Add (or remove) spy points. When the threshold is reached, a spy is granted and the threshold grows.
+void CvPlayer::ChangeSpyPoints(int iChange)
+{
+	if (GC.getGame().isOption(GAMEOPTION_NO_ESPIONAGE))
+		return;
+
+	m_iSpyPoints += iChange;
+	if (iChange > 0)
+		m_iSpyPointsTotal += iChange;
+
+	while (m_iSpyPoints >= GetSpyPointsThreshold() && GetSpyPointsThreshold() > 0)
+	{
+		CvPlayerEspionage* pEspionage = GetEspionage();
+		if (!pEspionage)
+			break;
+		pEspionage->CreateSpy();
+		m_iSpyPoints -= GetSpyPointsThreshold();
+		m_iSpyPointsCreated++;
+		changeSpyPointsThresholdModifier(GC.getSPY_POINTS_THRESHOLD_INCREASE() * ((m_iSpyPointsCreated / 10) + 1));
+	}
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::getSpyPointsThresholdModifier() const
+{
+	return m_iSpyPointsThresholdModifier;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::changeSpyPointsThresholdModifier(int iChange)
+{
+	m_iSpyPointsThresholdModifier = (m_iSpyPointsThresholdModifier + iChange);
+}
+
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
 //	--------------------------------------------------------------------------------
 /// Get the global modifier on the conversion progress rate
@@ -22163,8 +22248,10 @@ void CvPlayer::setLeaderType(LeaderHeadTypes eNewLeader)
 		setPersonalityType(eNewLeader);
 	
 		// Update the player's traits (Leader_Traits)
+		int iOldSpyPoints = GetPlayerTraits()->GetSpyPoints();
 		GetPlayerTraits()->Reset();
 		GetPlayerTraits()->InitPlayerTraits();
+		ChangeSpyPointsPerTurn(GetPlayerTraits()->GetSpyPoints() - iOldSpyPoints);
 		recomputePolicyCostModifier();
 		
 		if (!isHuman()) {
@@ -27915,8 +28002,10 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 #if defined(MOD_TRAITS_OTHER_PREREQS)
 	if (MOD_TRAITS_OTHER_PREREQS) {
 		// Update our traits (some may have become obsolete)
+		int iOldSpyPoints = GetPlayerTraits()->GetSpyPoints();
 		GetPlayerTraits()->Reset();
 		GetPlayerTraits()->InitPlayerTraits();
+		ChangeSpyPointsPerTurn(GetPlayerTraits()->GetSpyPoints() - iOldSpyPoints);
 		recomputePolicyCostModifier();
 	}
 #endif
@@ -27954,6 +28043,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changePolicyModifiers(POLICYMOD_CULTURAL_PLUNDER_MULTIPLIER, pPolicy->GetCulturalPlunderMultiplier() * iChange);
 	changePolicyModifiers(POLICYMOD_STEAL_TECH_SLOWER_MODIFIER, pPolicy->GetStealTechSlowerModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_CATCH_SPIES_MODIFIER, pPolicy->GetCatchSpiesModifier() * iChange);
+	ChangeSpyPointsPerTurn(pPolicy->GetSpyPoints() * iChange);
 	changePolicyModifiers(POLICYMOD_GREAT_ADMIRAL_RATE, pPolicy->GetGreatAdmiralRateModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_GREAT_WRITER_RATE, pPolicy->GetGreatWriterRateModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_GREAT_ARTIST_RATE, pPolicy->GetGreatArtistRateModifier() * iChange);
@@ -29536,6 +29626,11 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
 	MOD_SERIALIZE_READ(163, kStream, m_iCityStateUASpyKillProgress, 0);
 #endif
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPoints, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsTotal, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsThresholdModifier, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsCreated, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsPerTurn, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iPrestigeExemptAllyCount, 0);
 	{
 		int iCount = 0;
@@ -30401,6 +30496,11 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateUASpyKillProgress);
 #endif
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPoints);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsTotal);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsThresholdModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsCreated);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsPerTurn);
 	MOD_SERIALIZE_WRITE(kStream, m_iPrestigeExemptAllyCount);
 	{
 		int iCount = (int)m_vecPermanentAllies.size();
@@ -33604,6 +33704,12 @@ void CvPlayer::processBelief(BeliefTypes eBelief, int iChange, bool bFirst)
 	if(iGoldenAgeModifier != 0)
 	{
 		changeGoldenAgeModifier(iGoldenAgeModifier * iChange);
+	}
+
+	int iSpyPoints = belief->GetSpyPoints();
+	if(iSpyPoints != 0)
+	{
+		ChangeSpyPointsPerTurn(iSpyPoints * iChange);
 	}
 
 	PromotionTypes eFounderPromotion = (PromotionTypes)belief->GetFounderFreePromotion();
