@@ -1971,6 +1971,7 @@ void CvMinorCivAI::Reset()
 		m_abEconomicAidAutoRenew[iI] = false;
 		m_aiTurnLastQuitEconomicAid[iI] = -1;
 		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
+		m_aiEconomicAidPoints[iI] = 0;
 		m_abFaithBeliefPurchasedByMajor[iI] = false;
 		m_abFaithRefundUsedThisTurn[iI] = false;
 		m_aiFaithPantheonPurchaseCount[iI] = 0;
@@ -2109,6 +2110,7 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abEconomicAidAutoRenew, bool, MAX_MAJOR_CIVS, false);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS, -1);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS, 0);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidPoints, int, MAX_MAJOR_CIVS, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
 	// Wittenberg CS UA - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS, false);
@@ -2188,6 +2190,7 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abEconomicAidAutoRenew, bool, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidPoints, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS);
@@ -6080,6 +6083,13 @@ void CvMinorCivAI::DoFriendship()
 				DoFriendshipChangeEffects(ePlayer, iOldFriendship, iNewFriendship);
 			}
 
+			// Economic Aid points (Super Power V11): +1 per turn while this major is providing aid.
+			// Kept in sync with the aid influence delta computed above; runtime check keeps old saves safe.
+			if (GC.getGame().IsEconomicAidActive() && IsEconomicAidFromMajor(ePlayer))
+			{
+				m_aiEconomicAidPoints[ePlayer]++;
+			}
+
 			// Notification for status changes
 			if(GetPlayer()->isAlive() && IsHasMetPlayer(ePlayer))
 			{
@@ -7756,6 +7766,26 @@ void CvMinorCivAI::SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew)
 	{
 		m_abEconomicAidAutoRenew[eMajor] = bRenew;
 		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+}
+
+int CvMinorCivAI::GetEconomicAidPoints(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return 0;
+	return m_aiEconomicAidPoints[eMajor];
+}
+
+void CvMinorCivAI::ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	m_aiEconomicAidPoints[eMajor] += iDelta;
+	if(m_aiEconomicAidPoints[eMajor] < 0)
+	{
+		m_aiEconomicAidPoints[eMajor] = 0;
 	}
 }
 

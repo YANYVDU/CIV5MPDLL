@@ -445,6 +445,9 @@ public:
 	void SetEconomicAidOpenThisRound(bool bOpen);
 	bool IsEconomicAidAutoRenew(PlayerTypes eMajor) const;
 	void SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew);
+	// Economic Aid points (Super Power V11): per-major accumulated aid points on this city-state
+	int GetEconomicAidPoints(PlayerTypes eMajor) const;
+	void ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta);
 	// Wittenberg CS UA: faith-purchase a belief into this city-state's religion (one per major)
 	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
 	bool IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const;
@@ -679,6 +682,7 @@ private:
 	// La Venta CS UA: how many times each major has faith-purchased an idle pantheon belief (drives the doubling price)
 	int m_aiFaithPantheonPurchaseCount[MAX_MAJOR_CIVS];
 	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values
+	int m_aiEconomicAidPoints[MAX_MAJOR_CIVS]; // per-major accumulated aid points on this city-state
 	bool m_bEconomicAidOpenThisRound;
 	bool m_abPermanentWar[REALLY_MAX_TEAMS];
 	bool m_abWaryOfTeam[REALLY_MAX_TEAMS];
