@@ -47,6 +47,10 @@ CvEspionageSpy::CvEspionageSpy()
 #if defined(MOD_API_ESPIONAGE)
 	, m_bPassive(false)
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	, m_bHasStolenTech(false)
+	, m_bHasKilledSpy(false)
+	, m_bHasCoupSuccess(false)
 {
 }
 
@@ -115,6 +119,10 @@ FDataStream& operator>>(FDataStream& loadFrom, CvEspionageSpy& writeTo)
 #if defined(MOD_API_ESPIONAGE)
 	MOD_SERIALIZE_READ(23, loadFrom, writeTo.m_bPassive, false);
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bHasStolenTech, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bHasKilledSpy, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bHasCoupSuccess, false);
 
 	return loadFrom;
 }
@@ -141,6 +149,10 @@ FDataStream& operator<<(FDataStream& saveTo, const CvEspionageSpy& readFrom)
 #if defined(MOD_API_ESPIONAGE)
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bPassive);
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bHasStolenTech);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bHasKilledSpy);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bHasCoupSuccess);
 
 	return saveTo;
 }
@@ -568,6 +580,12 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 				iSpyResult *= (100 + GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
 #endif
 				iSpyResult /= 100;
+				// Master Spy abilities (H counter-intel / G escape) adjust the detection roll
+				iSpyResult += GET_PLAYER(eCityOwner).GetEspionage()->GetNumMasterSpyCounterIntel() * 10;
+				if(m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+				{
+					iSpyResult -= 100;
+				}
 				if(iSpyResult < 100)
 				{
 #if defined(MOD_EVENTS_ESPIONAGE)
@@ -624,6 +642,12 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 				iSpyResult *= (100 + GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
 #endif
 				iSpyResult /= 100;
+				// Master Spy abilities (H counter-intel / G escape) adjust the detection roll
+				iSpyResult += GET_PLAYER(eCityOwner).GetEspionage()->GetNumMasterSpyCounterIntel() * 10;
+				if(m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+				{
+					iSpyResult -= 100;
+				}
 				if(iSpyResult < 100)
 				{
 #if defined(MOD_EVENTS_ESPIONAGE)
@@ -723,6 +747,8 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 					CvAssertMsg(iDefendingSpy >= 0, "No defending spy. This is ok if debugging and killing a spy without having a defending spy present, but should not occur when playing the game normally.");
 					if(iDefendingSpy >= 0)
 					{
+						// Master Spy promotion: this spy has killed an enemy spy
+						pDefendingPlayerEspionage->m_aSpyList[iDefendingSpy].m_bHasKilledSpy = true;
 						pDefendingPlayerEspionage->LevelUpSpy(iDefendingSpy);
 					}
 				}
@@ -821,6 +847,9 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 					gDLL->UnlockAchievement(ACHIEVEMENT_XP1_12);
 				}
 #endif
+
+				// Master Spy promotion: this spy has stolen a tech
+				m_aSpyList[uiSpyIndex].m_bHasStolenTech = true;
 
 				LevelUpSpy(uiSpyIndex);
 
@@ -1674,6 +1703,16 @@ void CvPlayerEspionage::LevelUpSpy(uint uiSpyIndex)
 	if(m_aSpyList[uiSpyIndex].m_eRank < NUM_SPY_RANKS - 1 && m_aSpyList[uiSpyIndex].m_eSpyState != SPY_STATE_DEAD)
 #endif
 	{
+		// Master Spy (rank 2 -> 3) requires all three promotion conditions, no other path
+		if (m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_SPECIAL_AGENT)
+		{
+			const CvEspionageSpy& spy = m_aSpyList[uiSpyIndex];
+			if(!(spy.m_bHasStolenTech && spy.m_bHasKilledSpy && spy.m_bHasCoupSuccess))
+			{
+				return;
+			}
+		}
+
 		CvSpyRank eOriginalRank = m_aSpyList[uiSpyIndex].m_eRank;
 
 		// announce promotion through notification
@@ -2036,6 +2075,9 @@ const char* CvPlayerEspionage::GetSpyRankName(int iRank) const
 	case SPY_RANK_SPECIAL_AGENT:
 		return "TXT_KEY_SPY_RANK_2";
 		break;
+	case SPY_RANK_MASTER_SPY:
+		return "TXT_KEY_SPY_RANK_3";
+		break;
 	}
 
 	return "";
@@ -2290,9 +2332,25 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 		bNoAllySpy = true;
 	}
 
+	// Master Spy defence: a Master Spy guarding the ally's city-state makes enemy coups always fail
+	if(eAllyPlayer != m_pPlayer->GetID() && pCityEspionage->m_aiSpyAssignment[eAllyPlayer] != -1)
+	{
+		int iAllySpyIndex = pCityEspionage->m_aiSpyAssignment[eAllyPlayer];
+		const CvEspionageSpy& kAllySpy = GET_PLAYER(eAllyPlayer).GetEspionage()->m_aSpyList[iAllySpyIndex];
+		if(kAllySpy.m_eRank == SPY_RANK_MASTER_SPY && kAllySpy.m_eSpyState == SPY_STATE_COUNTER_INTEL)
+		{
+			return 0;
+		}
+	}
+
 	int iAllyInfluence = pMinorCivAI->GetEffectiveFriendshipWithMajorTimes100(eAllyPlayer);
 	int iMyInfluence = pMinorCivAI->GetEffectiveFriendshipWithMajorTimes100(m_pPlayer->GetID());
 	int iDeltaInfluence = iAllyInfluence - iMyInfluence;
+	if(m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+	{
+		// Master Spy coup: the attacker's influence deficit is halved
+		iDeltaInfluence /= 2;
+	}
 
 	//float fNobodyBonus = 0.5;
 	//float fMultiplyConstant = 3.0f;
@@ -2466,6 +2524,10 @@ bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 		}
 
 		bAttemptSuccess = true;
+
+		// Master Spy promotion: this spy has succeeded a coup, then level up
+		m_aSpyList[uiSpyIndex].m_bHasCoupSuccess = true;
+		LevelUpSpy(uiSpyIndex);
 	}
 	else
 	{
@@ -2915,6 +2977,43 @@ bool CvPlayerEspionage::IsMyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncl
 bool CvPlayerEspionage::IsOtherDiplomatVisitingMe(PlayerTypes ePlayer)
 {
 	return GET_PLAYER(ePlayer).GetEspionage()->IsMyDiplomatVisitingThem(m_pPlayer->GetID());
+}
+
+/// GetNumMasterSpyCounterIntel - How many of our Master Spies are currently on counter-intel duty?
+int CvPlayerEspionage::GetNumMasterSpyCounterIntel() const
+{
+	int iCount = 0;
+	for(uint ui = 0; ui < m_aSpyList.size(); ui++)
+	{
+		if(m_aSpyList[ui].m_eRank == SPY_RANK_MASTER_SPY && m_aSpyList[ui].m_eSpyState == SPY_STATE_COUNTER_INTEL)
+		{
+			iCount++;
+		}
+	}
+	return iCount;
+}
+
+/// HasMasterSpyDiplomatVisitingThem - Is one of our Master Spies a diplomat stationed in ePlayer's capital?
+bool CvPlayerEspionage::HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling)
+{
+	if(!IsMyDiplomatVisitingThem(ePlayer, bIncludeTravelling))
+	{
+		return false;
+	}
+
+	CvCity* pTheirCapital = GET_PLAYER(ePlayer).getCapitalCity();
+	if (!pTheirCapital)
+	{
+		return false;
+	}
+
+	int iSpyIndex = GetSpyIndexInCity(pTheirCapital);
+	if (iSpyIndex < 0)
+	{
+		return false;
+	}
+
+	return m_aSpyList[iSpyIndex].m_eRank == SPY_RANK_MASTER_SPY;
 }
 
 /// AddMessage - This function is called by another player's PlayerEspionage class. It records the spy activity to be played back at the beginning

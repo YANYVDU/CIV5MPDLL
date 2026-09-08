@@ -21,6 +21,7 @@ enum CvSpyRank
     SPY_RANK_RECRUIT,
     SPY_RANK_AGENT,
     SPY_RANK_SPECIAL_AGENT,
+    SPY_RANK_MASTER_SPY,
     NUM_SPY_RANKS
 };
 
@@ -92,6 +93,10 @@ public:
 #if defined(MOD_API_ESPIONAGE)
 	bool m_bPassive;
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	bool m_bHasStolenTech;
+	bool m_bHasKilledSpy;
+	bool m_bHasCoupSuccess;
 };
 
 FDataStream& operator>>(FDataStream&, CvEspionageSpy&);
@@ -225,6 +230,9 @@ public:
 
 	bool IsMyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
 	bool IsOtherDiplomatVisitingMe(PlayerTypes ePlayer);
+	// Master Spy helpers
+	int GetNumMasterSpyCounterIntel() const;
+	bool HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
 
 	void AddSpyMessage(int iCityX, int iCityY, PlayerTypes ePlayer, int iSpyResult, TechTypes eStolenTech);
 	void ProcessSpyMessages(void);
