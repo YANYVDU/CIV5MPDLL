@@ -10590,6 +10590,11 @@ void CvMinorCivAI::DoElection()
 				}
 				PlayerTypes eEspionagePlayer = (PlayerTypes)ui;
 				int iChange = GC.getESPIONAGE_INFLUENCE_GAINED_FOR_RIGGED_ELECTION();
+				if(apSpy[ui] != NULL && apSpy[ui]->m_eRank == SPY_RANK_MASTER_SPY)
+				{
+					// Master Spy diplomacy: rigging an election grants +50 influence instead of +20
+					iChange = 50;
+				}
 				iChange = (iChange*(100 + GET_PLAYER(eEspionagePlayer).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_RIGGING_ELECTION_INFLUENCE_MODIFIER))) / 100;
 				ChangeFriendshipWithMajor(ePlayer, iChange, false);
 

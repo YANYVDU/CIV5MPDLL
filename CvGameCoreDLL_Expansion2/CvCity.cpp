@@ -24624,6 +24624,7 @@ int CvCity::CalculateTotalCorruptionScore() const
 	// Score Modifier
 	int modifier = 100;
 	modifier += CalculateCorruptionScoreModifierFromSpy();
+	modifier += CalculateCorruptionScoreModifierFromMasterSpy();
 	modifier += CalculateCorruptionScoreModifierFromTrait();
 	modifier += owner.GetCorruptionScoreModifierFromPolicy();
 	modifier = std::max(0, modifier);
@@ -24725,6 +24726,19 @@ int CvCity::CalculateCorruptionScoreModifierFromSpy() const
 		return -67;
 	}
 	return -100;
+}
+
+int CvCity::CalculateCorruptionScoreModifierFromMasterSpy() const
+{
+	CvPlayerAI& owner = GET_PLAYER(getOwner());
+	auto* espionage = owner.GetEspionage();
+	if (espionage == nullptr)
+	{
+		return 0;
+	}
+
+	// -5% corruption modifier for every Master Spy currently on counter-intel duty
+	return -5 * espionage->GetNumMasterSpyCounterIntel();
 }
 
 int CvCity::CalculateCorruptionScoreModifierFromTrait()  const

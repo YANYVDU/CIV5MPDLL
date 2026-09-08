@@ -1410,6 +1410,7 @@ public:
 	int CalculateCorruptionScoreFromReligion() const;
 	int CalculateCorruptionScoreFromTrait() const;
 	int CalculateCorruptionScoreModifierFromSpy() const;
+	int CalculateCorruptionScoreModifierFromMasterSpy() const;
 	int CalculateCorruptionScoreModifierFromTrait() const;
 
 	CvCorruptionLevel* DecideCorruptionLevelForNormalCity(const int score) const;

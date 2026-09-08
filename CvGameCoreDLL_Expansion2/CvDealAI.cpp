@@ -2398,6 +2398,14 @@ int CvDealAI::GetVoteCommitmentValue(bool bFromMe, PlayerTypes eOtherPlayer, int
 				iValue += 100000;
 			}
 		}
+
+		// Master Spy diplomacy: if eOtherPlayer's Master Spy diplomat is stationed in our capital,
+		// they earn a steep discount (-80%) on the price we demand for our votes
+		if (eOtherPlayer != NO_PLAYER &&
+			GET_PLAYER(eOtherPlayer).GetEspionage()->HasMasterSpyDiplomatVisitingThem(GetPlayer()->GetID()))
+		{
+			iValue = (iValue * 20) / 100;
+		}
 	}
 	// Giving their votes to us - Higher value for voting on things we like
 	else
