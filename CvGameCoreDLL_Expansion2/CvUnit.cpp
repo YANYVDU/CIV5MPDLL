@@ -19688,6 +19688,20 @@ int CvUnit::GetCombatModifierFromBuilding() const
 	{
         iModifier += pCity->GetDomainEnemyCombatModifier(eDomain);
         iModifier += GET_PLAYER(eCityOwner).GetDomainEnemyCombatModifierGlobal(eDomain);
+
+        // SP: City-State palace - enemy units inside CS borders lose combat based on CS treasury gold
+        int iPerGold = 0;
+        for (int iB = 0; iB < GC.getNumBuildingInfos(); iB++)
+        {
+            if (pCity->GetCityBuildings()->GetNumBuilding((BuildingTypes)iB) > 0)
+                iPerGold += GC.getBuildingInfo((BuildingTypes)iB)->GetDomainEnemyCombatModifierPerGold(eDomain);
+        }
+        if (iPerGold != 0)
+        {
+            int iGold = GET_PLAYER(eCityOwner).GetTreasury()->GetGold();
+            if (iGold > 0)
+                iModifier += iPerGold * (iGold / 100);
+        }
     }
 
     else if (eUnitTeam == eCityTeam) {
