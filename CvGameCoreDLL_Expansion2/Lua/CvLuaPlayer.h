@@ -1081,6 +1081,7 @@ protected:
 	static int lGetDealValue(lua_State* L);
 	static int lGetDealMyValue(lua_State* L);
 	static int lGetDealTheyreValue(lua_State* L);
+	static int lGetDiplomatTradeAdvice(lua_State* L);
 
 	static int lMayNotAnnex(lua_State* L);
 
@@ -1112,6 +1113,7 @@ protected:
 	static int lGetCoupChanceOfSuccess(lua_State* L);
 	static int lIsMyDiplomatVisitingThem(lua_State* L);
 	static int lIsOtherDiplomatVisitingMe(lua_State* L);
+	static int lGetSpyRankVisitingThem(lua_State* L);
 	// end Espionage Methods
 
 	// International Trade

@@ -230,6 +230,7 @@ public:
 
 	bool IsMyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
 	bool IsOtherDiplomatVisitingMe(PlayerTypes ePlayer);
+	int GetSpyRankVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
 	// Master Spy helpers
 	int GetNumMasterSpyCounterIntel() const;
 	bool HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);

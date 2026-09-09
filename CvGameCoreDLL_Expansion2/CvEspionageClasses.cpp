@@ -2979,6 +2979,29 @@ bool CvPlayerEspionage::IsOtherDiplomatVisitingMe(PlayerTypes ePlayer)
 	return GET_PLAYER(ePlayer).GetEspionage()->IsMyDiplomatVisitingThem(m_pPlayer->GetID());
 }
 
+/// GetSpyRankVisitingThem - The rank of our spy stationed as a diplomat in ePlayer's capital, or -1 if none
+int CvPlayerEspionage::GetSpyRankVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling)
+{
+	if(!IsMyDiplomatVisitingThem(ePlayer, bIncludeTravelling))
+	{
+		return -1;
+	}
+
+	CvCity* pTheirCapital = GET_PLAYER(ePlayer).getCapitalCity();
+	if(!pTheirCapital)
+	{
+		return -1;
+	}
+
+	int iSpyIndex = GetSpyIndexInCity(pTheirCapital);
+	if(iSpyIndex < 0)
+	{
+		return -1;
+	}
+
+	return m_aSpyList[iSpyIndex].m_eRank;
+}
+
 /// GetNumMasterSpyCounterIntel - How many of our Master Spies are currently on counter-intel duty?
 int CvPlayerEspionage::GetNumMasterSpyCounterIntel() const
 {

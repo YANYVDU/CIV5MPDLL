@@ -1180,6 +1180,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetDealValue);
 	Method(GetDealMyValue);
 	Method(GetDealTheyreValue);
+	Method(GetDiplomatTradeAdvice);
 	Method(MayNotAnnex);
 
 	Method(GetEspionageCityStatus);
@@ -1209,6 +1210,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCoupChanceOfSuccess);
 	Method(IsMyDiplomatVisitingThem);
 	Method(IsOtherDiplomatVisitingMe);
+	Method(GetSpyRankVisitingThem);
 
 	Method(GetTradeRouteRange);
 	Method(GetInternationalTradeRoutePlotToolTip);
@@ -12318,6 +12320,53 @@ int CvLuaPlayer::lGetDealTheyreValue(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+// Returns the AI's evaluation of a deal, exposed to the "咨询外交官" (Consult Diplomat)
+// trade-screen feature. Must be called on the AI player that the human is dealing with.
+// Returns a table:
+//   iTotalValueToMe         - net value of the deal to the AI (positive = AI gains)
+//   iValueImOffering        - total value of what the AI is giving away
+//   iValueTheyreOffering    - total value of what the AI is receiving
+//   iAmountOverWeWillRequest - upper accept threshold: AI accepts while iTotalValueToMe <= this
+//   iAmountUnderWeWillOffer  - lower accept threshold: AI accepts while iTotalValueToMe >= this
+//   bCantMatchOffer          - true if the AI currently wants more than we can give
+int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvDeal* pkDeal = CvLuaDeal::GetInstance(L, 2);
+
+	int iTotalValueToMe = 0;
+	int iValueImOffering = 0;
+	int iValueTheyreOffering = 0;
+	int iAmountOverWeWillRequest = 0;
+	int iAmountUnderWeWillOffer = 0;
+	bool bCantMatchOffer = false;
+
+	if (pkDeal)
+	{
+		PlayerTypes eOtherPlayer = pkDeal->GetOtherPlayer(pkThisPlayer->GetID());
+		pkThisPlayer->GetDealAI()->IsDealWithHumanAcceptable(pkDeal, eOtherPlayer,
+			/*Passed by reference*/ iTotalValueToMe, iValueImOffering, iValueTheyreOffering,
+			iAmountOverWeWillRequest, iAmountUnderWeWillOffer, bCantMatchOffer);
+	}
+
+	lua_createtable(L, 0, 6);
+	lua_pushinteger(L, iTotalValueToMe);
+	lua_setfield(L, -2, "iTotalValueToMe");
+	lua_pushinteger(L, iValueImOffering);
+	lua_setfield(L, -2, "iValueImOffering");
+	lua_pushinteger(L, iValueTheyreOffering);
+	lua_setfield(L, -2, "iValueTheyreOffering");
+	lua_pushinteger(L, iAmountOverWeWillRequest);
+	lua_setfield(L, -2, "iAmountOverWeWillRequest");
+	lua_pushinteger(L, iAmountUnderWeWillOffer);
+	lua_setfield(L, -2, "iAmountUnderWeWillOffer");
+	lua_pushboolean(L, bCantMatchOffer);
+	lua_setfield(L, -2, "bCantMatchOffer");
+
+	return 1;
+}
+
+//------------------------------------------------------------------------------
 int CvLuaPlayer::lMayNotAnnex(lua_State* L)
 {
 	CvPlayerAI* pkThisPlayer = GetInstance(L);
@@ -12928,6 +12977,26 @@ int CvLuaPlayer::lIsOtherDiplomatVisitingMe(lua_State* L)
 	lua_pushboolean(L, bValue);
 	return 1;
 }
+//------------------------------------------------------------------------------
+// Returns the rank of our spy that is stationed as a diplomat in ePlayer's capital,
+// or -1 if we have no diplomat stationed there. Used to gate the "咨询外交官" feature.
+int CvLuaPlayer::lGetSpyRankVisitingThem(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
+	bool bIncludeTravelling = lua_toboolean(L, 3);
+
+	int iRank = -1;
+	if (pkPlayerEspionage)
+	{
+		iRank = pkPlayerEspionage->GetSpyRankVisitingThem(eOtherPlayer, bIncludeTravelling);
+	}
+
+	lua_pushinteger(L, iRank);
+	return 1;
+}
+
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetTradeRouteRange(lua_State* L)
 {
