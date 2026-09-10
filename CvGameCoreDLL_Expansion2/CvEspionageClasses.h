@@ -234,6 +234,17 @@ public:
 	// Master Spy helpers
 	int GetNumMasterSpyCounterIntel() const;
 	bool HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
+	// Diplomacy Bargain: using a stationed diplomat to boost the value of our GPT during this turn's AI valuation
+	bool HasDiplomacyBargainBuff(PlayerTypes eTargetPlayer) const;
+	int  GetDiplomacyBargainCooldown(PlayerTypes eTargetPlayer) const;
+	int  GetDiplomacyBargainChance(PlayerTypes eTargetPlayer);
+	int  TryDiplomacyBargain(PlayerTypes eTargetPlayer);
+	void ClearDiplomacyBargainBuff(PlayerTypes eTargetPlayer);
+	// Diplomacy Bargain dishonesty punishment: remember a deal struck while our bargaining buff was active on eTargetPlayer,
+	// and demote the diplomat stationed there if we later cheat on that deal (dishonesty counter).
+	void MarkDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer);
+	bool HasDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer) const;
+	bool DemoteDiplomatToRecruit(PlayerTypes eTargetPlayer);
 
 	void AddSpyMessage(int iCityX, int iCityY, PlayerTypes ePlayer, int iSpyResult, TechTypes eStolenTech);
 	void ProcessSpyMessages(void);
@@ -259,6 +270,10 @@ public:
 	HeistLocationList m_aHeistLocations;
 	std::vector<SpyNotificationMessage> m_aSpyNotificationMessages; // cleared every turn after displayed for the player
 	std::vector<IntrigueNotificationMessage> m_aIntrigueNotificationMessages; // cleared only between games
+	// Diplomacy Bargain: per-target-player cooldown turns (0 = ready) and the game turn the buff was activated (-1 = inactive)
+	int m_aiDiplomacyBargainCooldown[MAX_MAJOR_CIVS];
+	int m_aiDiplomacyBargainBuffTurn[MAX_MAJOR_CIVS];
+	bool m_abDiplomacyBargainDeal[MAX_MAJOR_CIVS]; // a deal was struck while our bargaining buff was active on this target
 
 private:
 	CvPlayer* m_pPlayer;

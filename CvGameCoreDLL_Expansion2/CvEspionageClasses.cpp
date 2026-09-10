@@ -231,6 +231,9 @@ void CvPlayerEspionage::Reset()
 	{
 		m_aiMaxTechCost[ui] = -1;
 		m_aHeistLocations[ui].clear();
+		m_aiDiplomacyBargainCooldown[ui] = 0;
+		m_aiDiplomacyBargainBuffTurn[ui] = -1;
+		m_abDiplomacyBargainDeal[ui] = false;
 	}
 }
 
@@ -244,6 +247,18 @@ void CvPlayerEspionage::DoTurn()
 	for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
 	{
 		m_aHeistLocations[ui].clear();
+
+		// Diplomacy Bargain cooldown ticks down at the start of each of our turns.
+		if(m_aiDiplomacyBargainCooldown[ui] > 0)
+		{
+			m_aiDiplomacyBargainCooldown[ui]--;
+		}
+
+		// A Diplomacy Bargain buff only lasts for the current turn. Clear it once a new turn begins.
+		if(m_aiDiplomacyBargainBuffTurn[ui] != -1 && m_aiDiplomacyBargainBuffTurn[ui] < GC.getGame().getGameTurn())
+		{
+			m_aiDiplomacyBargainBuffTurn[ui] = -1;
+		}
 	}
 
 	for(uint uiSpy = 0; uiSpy < m_aSpyList.size(); uiSpy++)
@@ -3002,6 +3017,171 @@ int CvPlayerEspionage::GetSpyRankVisitingThem(PlayerTypes ePlayer, bool bInclude
 	return m_aSpyList[iSpyIndex].m_eRank;
 }
 
+/// HasDiplomacyBargainBuff - Has our diplomat triggered a Diplomacy Bargain buff against eTargetPlayer for this turn?
+bool CvPlayerEspionage::HasDiplomacyBargainBuff(PlayerTypes eTargetPlayer) const
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return false;
+	}
+	return m_aiDiplomacyBargainBuffTurn[eTargetPlayer] == GC.getGame().getGameTurn();
+}
+
+/// GetDiplomacyBargainCooldown - Remaining cooldown turns before our diplomat can attempt a Diplomacy Bargain against eTargetPlayer
+int CvPlayerEspionage::GetDiplomacyBargainCooldown(PlayerTypes eTargetPlayer) const
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return 0;
+	}
+	return m_aiDiplomacyBargainCooldown[eTargetPlayer];
+}
+
+/// GetDiplomacyBargainChance - Success chance (0-100) of a Diplomacy Bargain against eTargetPlayer, or -1 if no diplomat is stationed
+int CvPlayerEspionage::GetDiplomacyBargainChance(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return -1;
+	}
+
+	int iRank = GetSpyRankVisitingThem(eTargetPlayer, false);
+	if(iRank < 0)
+	{
+		return -1;
+	}
+
+	switch(iRank)
+	{
+	case SPY_RANK_RECRUIT:
+		return 15;
+	case SPY_RANK_AGENT:
+		return 30;
+	case SPY_RANK_SPECIAL_AGENT:
+		return 45;
+	case SPY_RANK_MASTER_SPY:
+		return 60;
+	default:
+		return 15;
+	}
+}
+
+/// TryDiplomacyBargain - Attempt a Diplomacy Bargain using our diplomat stationed in eTargetPlayer's capital.
+/// Returns: >0 = buff activated (value = duration in turns), 0 = attempt failed (cooldown started), -1 = on cooldown, -2 = no diplomat
+int CvPlayerEspionage::TryDiplomacyBargain(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return -2;
+	}
+
+	if(m_aiDiplomacyBargainCooldown[eTargetPlayer] > 0)
+	{
+		return -1;
+	}
+
+	int iRank = GetSpyRankVisitingThem(eTargetPlayer, false);
+	if(iRank < 0)
+	{
+		return -2;
+	}
+
+	// Success chance and cooldown per spy rank (Recruit / Agent / Special Agent / Master Spy)
+	int iChance;
+	int iCooldown;
+	switch(iRank)
+	{
+	case SPY_RANK_RECRUIT:
+		iChance = 15; iCooldown = 20; break;
+	case SPY_RANK_AGENT:
+		iChance = 30; iCooldown = 18; break;
+	case SPY_RANK_SPECIAL_AGENT:
+		iChance = 45; iCooldown = 16; break;
+	case SPY_RANK_MASTER_SPY:
+		iChance = 60; iCooldown = 14; break;
+	default:
+		iChance = 15; iCooldown = 20; break;
+	}
+
+	// Cooldown starts regardless of the outcome.
+	m_aiDiplomacyBargainCooldown[eTargetPlayer] = iCooldown;
+
+	if(GC.getGame().getJonRandNum(100, "Diplomacy Bargain") < iChance)
+	{
+		m_aiDiplomacyBargainBuffTurn[eTargetPlayer] = GC.getGame().getGameTurn();
+		return 1;
+	}
+
+	return 0;
+}
+
+/// ClearDiplomacyBargainBuff - Remove the active Diplomacy Bargain buff against eTargetPlayer (used when a trade succeeds)
+void CvPlayerEspionage::ClearDiplomacyBargainBuff(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return;
+	}
+	m_aiDiplomacyBargainBuffTurn[eTargetPlayer] = -1;
+}
+
+/// MarkDiplomacyBargainOnDeal - Remember that a deal was struck while our bargaining buff was active on eTargetPlayer.
+/// Used by the dishonesty punishment to decide whether the stationed diplomat should be demoted.
+void CvPlayerEspionage::MarkDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return;
+	}
+	m_abDiplomacyBargainDeal[eTargetPlayer] = true;
+}
+
+/// HasDiplomacyBargainOnDeal - Did a deal get struck while our bargaining buff was active on eTargetPlayer?
+bool CvPlayerEspionage::HasDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer) const
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return false;
+	}
+	return m_abDiplomacyBargainDeal[eTargetPlayer];
+}
+
+/// DemoteDiplomatToRecruit - Demote the diplomat stationed in eTargetPlayer's capital to a level-1 recruit
+/// (dishonesty punishment). Returns true if a diplomat was actually demoted.
+bool CvPlayerEspionage::DemoteDiplomatToRecruit(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return false;
+	}
+	if(!IsMyDiplomatVisitingThem(eTargetPlayer, false))
+	{
+		return false;
+	}
+	CvCity* pTheirCapital = GET_PLAYER(eTargetPlayer).getCapitalCity();
+	if(!pTheirCapital)
+	{
+		return false;
+	}
+	int iSpyIndex = GetSpyIndexInCity(pTheirCapital);
+	if(iSpyIndex < 0)
+	{
+		return false;
+	}
+	if(m_aSpyList[iSpyIndex].m_eRank == SPY_RANK_RECRUIT)
+	{
+		return false;
+	}
+	m_aSpyList[iSpyIndex].m_eRank = SPY_RANK_RECRUIT;
+	// A freshly demoted spy loses the espionage achievements that a Master Spy had earned.
+	m_aSpyList[iSpyIndex].m_bHasStolenTech = false;
+	m_aSpyList[iSpyIndex].m_bHasKilledSpy = false;
+	m_aSpyList[iSpyIndex].m_bHasCoupSuccess = false;
+	// Consume the recorded bargain-boosted deal so this punishment fires only once.
+	m_abDiplomacyBargainDeal[eTargetPlayer] = false;
+	return true;
+}
+
 /// GetNumMasterSpyCounterIntel - How many of our Master Spies are currently on counter-intel duty?
 int CvPlayerEspionage::GetNumMasterSpyCounterIntel() const
 {
@@ -4547,6 +4727,14 @@ FDataStream& operator>>(FDataStream& loadFrom, CvPlayerEspionage& writeTo)
 		writeTo.m_aIntrigueNotificationMessages.push_back(kMessage);
 	}
 
+	// Diplomacy Bargain state (added in build 164)
+	for(int ui = 0; ui < MAX_MAJOR_CIVS; ui++)
+	{
+		MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_aiDiplomacyBargainCooldown[ui], 0);
+		MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_aiDiplomacyBargainBuffTurn[ui], -1);
+		MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_abDiplomacyBargainDeal[ui], false);
+	}
+
 	return loadFrom;
 }
 
@@ -4628,6 +4816,14 @@ FDataStream& operator<<(FDataStream& saveTo, const CvPlayerEspionage& readFrom)
 		saveTo << readFrom.m_aIntrigueNotificationMessages[ui].m_iCityY;
 		saveTo << readFrom.m_aIntrigueNotificationMessages[ui].m_strSpyName;
 		saveTo << readFrom.m_aIntrigueNotificationMessages[ui].m_bShared;
+	}
+
+	// Diplomacy Bargain state
+	for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
+	{
+		saveTo << readFrom.m_aiDiplomacyBargainCooldown[ui];
+		saveTo << readFrom.m_aiDiplomacyBargainBuffTurn[ui];
+		saveTo << readFrom.m_abDiplomacyBargainDeal[ui];
 	}
 
 	return saveTo;

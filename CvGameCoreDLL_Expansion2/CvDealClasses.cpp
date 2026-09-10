@@ -3496,6 +3496,22 @@ void CvGameDeals::DoCancelDealsBetweenPlayers(PlayerTypes eFromPlayer, PlayerTyp
 						pNotifications->Add(NOTIFICATION_DEAL_EXPIRED_GPT, strMessage.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
 					}
 				}
+
+				// Diplomacy Bargain dishonesty punishment: if the human cheated on a deal that was struck while their
+				// diplomat had a successful bargaining buff on us, demote that diplomat to a level-1 recruit.
+				CvPlayerEspionage* pAttackEspionage = pAttackPlayer.GetEspionage();
+				if(pAttackEspionage && pAttackEspionage->HasDiplomacyBargainOnDeal(eDefensePlayer)
+				        && pAttackEspionage->DemoteDiplomatToRecruit(eDefensePlayer))
+				{
+					CvNotifications *pDemoteNotifications = pAttackPlayer.GetNotifications();
+					if(pDemoteNotifications)
+					{
+						Localization::String strDemote = Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_DEMOTED");
+						strDemote << pDefensePlayer.getName();
+						Localization::String strDemoteSum = Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_DEMOTED_SHORT");
+						pDemoteNotifications->Add(NOTIFICATION_DEAL_EXPIRED_GPT, strDemote.toUTF8(), strDemoteSum.toUTF8(), -1, -1, -1);
+					}
+				}
 			}
 		}
 	}

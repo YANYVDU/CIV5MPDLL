@@ -1211,6 +1211,10 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(IsMyDiplomatVisitingThem);
 	Method(IsOtherDiplomatVisitingMe);
 	Method(GetSpyRankVisitingThem);
+	Method(HasDiplomacyBargainBuff);
+	Method(GetDiplomacyBargainCooldown);
+	Method(GetDiplomacyBargainChance);
+	Method(TryDiplomacyBargain);
 
 	Method(GetTradeRouteRange);
 	Method(GetInternationalTradeRoutePlotToolTip);
@@ -12320,7 +12324,7 @@ int CvLuaPlayer::lGetDealTheyreValue(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
-// Returns the AI's evaluation of a deal, exposed to the "咨询外交官" (Consult Diplomat)
+// Returns the AI's evaluation of a deal, exposed to the "Consult Diplomat"
 // trade-screen feature. Must be called on the AI player that the human is dealing with.
 // Returns a table:
 //   iTotalValueToMe         - net value of the deal to the AI (positive = AI gains)
@@ -12979,7 +12983,7 @@ int CvLuaPlayer::lIsOtherDiplomatVisitingMe(lua_State* L)
 }
 //------------------------------------------------------------------------------
 // Returns the rank of our spy that is stationed as a diplomat in ePlayer's capital,
-// or -1 if we have no diplomat stationed there. Used to gate the "咨询外交官" feature.
+// or -1 if we have no diplomat stationed there. Used to gate the "Consult Diplomat" feature.
 int CvLuaPlayer::lGetSpyRankVisitingThem(lua_State* L)
 {
 	CvPlayerAI* pkThisPlayer = GetInstance(L);
@@ -12994,6 +12998,74 @@ int CvLuaPlayer::lGetSpyRankVisitingThem(lua_State* L)
 	}
 
 	lua_pushinteger(L, iRank);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lHasDiplomacyBargainBuff(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	bool bHasBuff = false;
+	if (pkPlayerEspionage)
+	{
+		bHasBuff = pkPlayerEspionage->HasDiplomacyBargainBuff(eTargetPlayer);
+	}
+
+	lua_pushboolean(L, bHasBuff);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomacyBargainCooldown(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	int iCooldown = 0;
+	if (pkPlayerEspionage)
+	{
+		iCooldown = pkPlayerEspionage->GetDiplomacyBargainCooldown(eTargetPlayer);
+	}
+
+	lua_pushinteger(L, iCooldown);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomacyBargainChance(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	int iChance = -1;
+	if (pkPlayerEspionage)
+	{
+		iChance = pkPlayerEspionage->GetDiplomacyBargainChance(eTargetPlayer);
+	}
+
+	lua_pushinteger(L, iChance);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lTryDiplomacyBargain(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	int iResult = -2;
+	if (pkPlayerEspionage)
+	{
+		iResult = pkPlayerEspionage->TryDiplomacyBargain(eTargetPlayer);
+	}
+
+	lua_pushinteger(L, iResult);
 	return 1;
 }
 

@@ -242,6 +242,18 @@ DealOfferResponseTypes CvDealAI::DoHumanOfferDealToThisAI(CvDeal* pDeal)
 /// Deal has been accepted
 void CvDealAI::DoAcceptedDeal(PlayerTypes eFromPlayer, const CvDeal& kDeal, int iDealValueToMe, int iValueImOffering, int iValueTheyreOffering)
 {
+	// Diplomacy Bargain: if this trade was struck while the human's diplomat had a successful bargaining buff on us,
+	// remember it (for the dishonesty demotion punishment), then consume the buff for this turn.
+	if(GET_PLAYER(eFromPlayer).GetEspionage() && GET_PLAYER(eFromPlayer).isHuman())
+	{
+		CvPlayerEspionage* pEspionage = GET_PLAYER(eFromPlayer).GetEspionage();
+		if(pEspionage->HasDiplomacyBargainBuff(GetPlayer()->GetID()))
+		{
+			pEspionage->MarkDiplomacyBargainOnDeal(GetPlayer()->GetID());
+		}
+		pEspionage->ClearDiplomacyBargainBuff(GetPlayer()->GetID());
+	}
+
 	int iDealType = -1;
 	if(m_pPlayer->GetDiplomacyAI()->GetDealToRenew(&iDealType))
 	{
@@ -934,7 +946,17 @@ int CvDealAI::GetTradeItemValue(TradeableItems eItem, bool bFromMe, PlayerTypes 
 	if(eItem == TRADE_ITEM_GOLD)
 		iItemValue = GetGoldForForValueExchange(/*Gold Amount*/ iData1, /*bNumGoldFromValue*/ false, bFromMe, eOtherPlayer, bUseEvenValue, /*bRoundUp*/ false);
 	else if(eItem == TRADE_ITEM_GOLD_PER_TURN)
+	{
 		iItemValue = GetGPTforForValueExchange(/*Gold Per Turn Amount*/ iData1, /*bNumGPTFromValue*/ false, iDuration, bFromMe, eOtherPlayer, bUseEvenValue, /*bRoundUp*/ false);
+
+		// Diplomacy Bargain: when the other player (human) gives us GPT and their diplomat has a successful
+		// negotiation buff active this turn, AI values that incoming GPT 20% higher.
+		if(!bFromMe && GET_PLAYER(eOtherPlayer).GetEspionage()->HasDiplomacyBargainBuff(GetPlayer()->GetID()))
+		{
+			iItemValue *= 120;
+			iItemValue /= 100;
+		}
+	}
 	else if(eItem == TRADE_ITEM_RESOURCES)
 		iItemValue = GetResourceValue(/*ResourceType*/ (ResourceTypes) iData1, /*Quantity*/ iData2, iDuration, bFromMe, eOtherPlayer);
 	else if(eItem == TRADE_ITEM_CITIES)
