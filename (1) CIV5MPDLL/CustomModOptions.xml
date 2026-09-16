@@ -1194,6 +1194,7 @@
     <Row Class="6" Name="SP_FASTER_AI" Value="0"/>
     <Row Class="6" Name="SP_UNIQUE_CITYSTATE" Value="0"/>
     <Row Class="6" Name="SP_CITYSTATE_BASIC" Value="0"/>
+    <Row Class="6" Name="LUXURY_ERA_DECAY" Value="0"/>
 
     <!-- Wittenberg: base faith cost of the CSUA self-chosen belief purchase, scaled by the game speed FaithPercent -->
     <Row Class="5" Name="SP_FAITH_BELIEF_PURCHASE_COST" Value="2500"/>

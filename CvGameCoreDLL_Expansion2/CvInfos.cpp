@@ -4582,6 +4582,7 @@ CvResourceInfo::CvResourceInfo() :
 	m_iHappiness(0),
 	m_iWonderProductionMod(0),
 	m_eWonderProductionModObsoleteEra(NO_ERA),
+	m_eHappinessDecayEra(NO_ERA),
 	m_iMinAreaSize(0),
 	m_iMinLatitude(0),
 	m_iMaxLatitude(0),
@@ -4695,6 +4696,11 @@ int CvResourceInfo::getWonderProductionMod() const
 EraTypes CvResourceInfo::getWonderProductionModObsoleteEra() const
 {
 	return m_eWonderProductionModObsoleteEra;
+}
+//------------------------------------------------------------------------------
+EraTypes CvResourceInfo::getHappinessDecayEra() const
+{
+	return m_eHappinessDecayEra;
 }
 //------------------------------------------------------------------------------
 int CvResourceInfo::getMinAreaSize() const
@@ -4943,6 +4949,9 @@ bool CvResourceInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 
 	const char* szEraType = kResults.GetText("WonderProductionModObsoleteEra");
 	m_eWonderProductionModObsoleteEra = (EraTypes)GC.getInfoTypeForString(szEraType, true);
+
+	const char* szHappinessDecayEra = kResults.GetText("HappinessDecayEra");
+	m_eHappinessDecayEra = (EraTypes)GC.getInfoTypeForString(szHappinessDecayEra, true);
 
 	m_iMinAreaSize = kResults.GetInt("MinAreaSize");
 	m_iMinLatitude = kResults.GetInt("MinLatitude");

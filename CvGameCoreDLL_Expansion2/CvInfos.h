@@ -1395,6 +1395,7 @@ public:
 	int getHappiness() const;
 	int getWonderProductionMod() const;
 	EraTypes getWonderProductionModObsoleteEra() const;
+	EraTypes getHappinessDecayEra() const;
 	int getMinAreaSize() const;
 	int getMinLatitude() const;
 	int getMaxLatitude() const;
@@ -1511,6 +1512,7 @@ protected:
 	CivilizationTypes m_eRequiredCivilization;
 	ResourceUsageTypes m_eResourceUsage;
 	EraTypes m_eWonderProductionModObsoleteEra;
+	EraTypes m_eHappinessDecayEra;
 
 	CvString m_strIconString;
 	CvString m_strArtDefineTag;

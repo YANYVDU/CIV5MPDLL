@@ -145,6 +145,7 @@ public:
 
 	bool canTrainNukes() const;
 	EraTypes getCurrentEra() const;
+	EraTypes getCurrentEraCached() const;
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Economic Aid (Super Power V11) - all city-states share a single global round
@@ -724,6 +725,8 @@ protected:
 	int m_iEconomicAidWorldEra;
 	bool m_bEconomicAidActive;
 #endif
+	mutable EraTypes m_eCurrentEraCache;
+	mutable int m_iCurrentEraCacheTurn;
 	int m_iWinningTurn;
 	int m_iStartYear;
 	int m_iEstimateEndTurn;

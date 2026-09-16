@@ -14010,6 +14010,16 @@ int CvPlayer::GetHappinessFromLuxury(ResourceTypes eResource) const
 	{
 		int iBaseHappiness = pkResourceInfo->getHappiness();
 
+		// Luxury era decay: once the world era passes the resource's decay era, each excess era lowers happiness by 1 (floor 1)
+		if (MOD_LUXURY_ERA_DECAY)
+		{
+			EraTypes eDecayEra = pkResourceInfo->getHappinessDecayEra();
+			if (eDecayEra != NO_ERA && GC.getGame().getCurrentEraCached() > eDecayEra)
+			{
+				iBaseHappiness = std::max(1, iBaseHappiness - (GC.getGame().getCurrentEraCached() - eDecayEra));
+			}
+		}
+
 		if (GC.getGame().GetGameLeagues()->IsLuxuryHappinessBanned(GetID(), eResource))
 		{
 			iBaseHappiness = 0;

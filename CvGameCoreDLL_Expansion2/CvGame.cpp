@@ -114,6 +114,8 @@ CvGame::CvGame() :
 	, m_iEconomicAidWorldEra(1)
 	, m_bEconomicAidActive(false)
 #endif
+	, m_eCurrentEraCache(NO_ERA)
+	, m_iCurrentEraCacheTurn(-1)
 {
 	m_iSuppressHappinessUpdate = 0; // reset transient suppression counter (guards against residue across game restarts)
 	m_aiEndTurnMessagesReceived = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);
@@ -4479,6 +4481,18 @@ EraTypes CvGame::getCurrentEra() const
 	}
 
 	return NO_ERA;
+}
+
+//------------------------------------------------------------------------------
+// Cached world era (average of all alive teams). Recomputed once per game turn.
+EraTypes CvGame::getCurrentEraCached() const
+{
+	if (m_iCurrentEraCacheTurn != getGameTurn())
+	{
+		m_eCurrentEraCache = getCurrentEra();
+		m_iCurrentEraCacheTurn = getGameTurn();
+	}
+	return m_eCurrentEraCache;
 }
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
