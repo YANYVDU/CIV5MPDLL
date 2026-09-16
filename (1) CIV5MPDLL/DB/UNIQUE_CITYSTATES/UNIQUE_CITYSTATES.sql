@@ -356,3 +356,20 @@ create table CityStateUAEffect_HolyCityYieldModifierPerFollowingCity (
     YieldType text references Yields(Type),
     Modifier integer default 0
 );
+
+-- CityState UA (Sydney): each immigrant received grants a yield percentage modifier per YieldType
+-- (Modifier=100 => +1% per immigrant received, e.g. YIELD_CULTURE / 400 = +4% culture per immigrant)
+create table CityStateUAEffect_ImmigrantYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    Modifier integer default 0
+);
+
+-- CityState UA (Sydney): each immigrant received grants cash equal to CashPercent% of the treasury,
+-- capped at CashCapBase x (current era + 1) x game-speed culture percent / 100
+-- (e.g. CashPercent=1 / CashCapBase=100 => +1% of treasury, cap = 100 x era x speed)
+create table CityStateUAEffect_ImmigrantCashReward (
+    EffectType text references CityStateUAEffects(Type),
+    CashPercent integer default 0,
+    CashCapBase integer default 0
+);

@@ -1417,6 +1417,10 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetImmigrationRate);
 	Method(GetImmigrationInRateFromPolicy);
 	Method(GetImmigrationOutRateFromPolicy);
+	Method(GetTotalImmigrantsReceived);
+	Method(ChangeTotalImmigrantsReceived);
+	Method(GetTotalImmigrantsEmigrated);
+	Method(ChangeTotalImmigrantsEmigrated);
 #endif
 
 	Method(GetScienceTimes100FromFriendsTable);
@@ -13704,6 +13708,10 @@ LUAAPIIMPL(Player, IsCanEstablishArmee)
 LUAAPIIMPL(Player, GetImmigrationCounter)
 LUAAPIIMPL(Player, ChangeImmigrationCounter)
 LUAAPIIMPL(Player, SetImmigrationCounter)
+LUAAPIIMPL(Player, GetTotalImmigrantsReceived)
+LUAAPIIMPL(Player, ChangeTotalImmigrantsReceived)
+LUAAPIIMPL(Player, GetTotalImmigrantsEmigrated)
+LUAAPIIMPL(Player, ChangeTotalImmigrantsEmigrated)
 int CvLuaPlayer::lGetImmigrationRate(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);

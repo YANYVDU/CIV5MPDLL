@@ -213,6 +213,12 @@ public:
 	int GetInfluencePerTurnPerFollowCityMod() const;
 	// Geneva: how many cities following the ally-led religion produce one per-turn influence unit
 	int GetFollowingCityDivisor() const;
+	// Sydney: per immigrant received, a yield % modifier per YieldType (Modifier=100 => +1%)
+	int GetImmigrantYieldModifier(int i) const;
+	bool HasImmigrantYieldModifiers() const;
+	// Sydney: each immigrant received grants cash (CashPercent% of treasury, capped by CashCapBase x era x game speed)
+	int GetImmigrantCashPercent() const;
+	int GetImmigrantCashCapBase() const;
 
 private:
 	// Florence
@@ -340,6 +346,10 @@ private:
 	int m_iDiplomaticPrestigePerMajorityCiv;
 	int m_iInfluencePerTurnPerFollowCityMod;
 	int m_iFollowingCityDivisor;
+	// Sydney
+	int* m_piImmigrantYieldModifiers;
+	int m_iImmigrantCashPercent;
+	int m_iImmigrantCashCapBase;
 };
 
 //======================================================================================================
@@ -545,6 +555,11 @@ public:
 	int GetDiplomaticPrestigePerMajorityCiv() const;
 	int GetInfluencePerTurnPerFollowCityMod() const;
 	int GetFollowingCityDivisor() const;
+	// Sydney
+	int GetImmigrantYieldModifier(YieldTypes eYield) const;
+	bool HasImmigrantYieldModifiers() const;
+	int GetImmigrantCashPercent() const;
+	int GetImmigrantCashCapBase() const;
 
 	void Reset();
 
@@ -660,6 +675,10 @@ protected:
 	int m_iDiplomaticPrestigePerMajorityCiv;
 	int m_iInfluencePerTurnPerFollowCityMod;
 	int m_iFollowingCityDivisor;
+	// Sydney
+	std::vector<int> m_aiImmigrantYieldModifiers;
+	int m_iImmigrantCashPercent;
+	int m_iImmigrantCashCapBase;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

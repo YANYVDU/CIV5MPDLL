@@ -1160,6 +1160,7 @@ public:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetCSUAGoldDonationInfluenceModifier() const;
 	int GetCSUAYieldPercentModifier(YieldTypes eYield) const;
+	int GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const;
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;
@@ -2456,6 +2457,10 @@ public:
 	void ChangeImmigrationCounter(int iIndex, int iChange);
 	void SetImmigrationCounter(int iIndex, int iValue);
 	int GetImmigrationRate(PlayerTypes eTargetPlayer) const;
+	int GetTotalImmigrantsReceived() const;
+	void ChangeTotalImmigrantsReceived(int iChange);
+	int GetTotalImmigrantsEmigrated() const;
+	void ChangeTotalImmigrantsEmigrated(int iChange);
 #endif
 	int GetNegateWarmongerTurn(int iIndex) const;
 	void SetNegateWarmongerTurn(int iIndex, int iValue);
@@ -3291,6 +3296,8 @@ protected:
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	std::vector<int> m_aiImmigrationCounter;
+	int m_iTotalImmigrantsReceived = 0;
+	int m_iTotalImmigrantsEmigrated = 0;
 #endif
 	std::vector<int> m_aiNegateWarmongerTurn;
 

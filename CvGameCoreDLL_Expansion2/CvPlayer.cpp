@@ -408,6 +408,10 @@ CvPlayer::CvPlayer() :
 	, m_iResearchTotalCostModifier(0)
 	, m_iResearchTotalCostModifierGoldenAge(0)
 	, m_iImmigrationRegressandModifier(0)
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	, m_iTotalImmigrantsReceived(0)
+	, m_iTotalImmigrantsEmigrated(0)
+#endif
 	, m_iLiberatedInfluence(0)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	, m_iExtraDiplomaticPrestige(0)
@@ -1247,6 +1251,10 @@ void CvPlayer::uninit()
 	m_iResearchTotalCostModifier = 0;
 	m_iResearchTotalCostModifierGoldenAge = 0;
 	m_iImmigrationRegressandModifier = 0;
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	m_iTotalImmigrantsReceived = 0;
+	m_iTotalImmigrantsEmigrated = 0;
+#endif
 	m_iLiberatedInfluence = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iExtraDiplomaticPrestige = 0;
@@ -18157,6 +18165,20 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 #endif
 	return iMod / 100;
 }
+int CvPlayer::GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const
+{
+	if (!m_pCityStateUA) return 0;
+	const int iPerImmigrant = m_pCityStateUA->GetImmigrantYieldModifier(eYield);
+	if (iPerImmigrant != 0)
+	{
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+		return iPerImmigrant * m_iTotalImmigrantsReceived / 100;
+#else
+		return 0;
+#endif
+	}
+	return 0;
+}
 int CvPlayer::GetTotalGoldDonated() const
 {
 	return m_iTotalGoldDonated;
@@ -19142,6 +19164,45 @@ int CvPlayer::GetImmigrationRate(PlayerTypes eTargetPlayer) const
 	iRtnValue /= 100;
 
 	return iRtnValue;
+}
+int CvPlayer::GetTotalImmigrantsReceived() const
+{
+	VALIDATE_OBJECT
+	return m_iTotalImmigrantsReceived;
+}
+void CvPlayer::ChangeTotalImmigrantsReceived(int iChange)
+{
+	VALIDATE_OBJECT
+	m_iTotalImmigrantsReceived += iChange;
+
+	// Sydney CS UA: each immigrant received grants cash (a % of the treasury, capped by era and game speed)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (iChange > 0 && m_pCityStateUA)
+	{
+		const int iCashPercent = m_pCityStateUA->GetImmigrantCashPercent();
+		if (iCashPercent > 0)
+		{
+			int iReward = GetTreasury()->GetGold() * iCashPercent / 100;
+			const int iCapBase = m_pCityStateUA->GetImmigrantCashCapBase();
+			if (iCapBase > 0)
+			{
+				const int iCap = iCapBase * (GetCurrentEra() + 1) * GC.getGame().getGameSpeedInfo().getCulturePercent() / 100;
+				if (iReward > iCap) iReward = iCap;
+			}
+			GetTreasury()->ChangeGold(iReward);
+		}
+	}
+#endif
+}
+int CvPlayer::GetTotalImmigrantsEmigrated() const
+{
+	VALIDATE_OBJECT
+	return m_iTotalImmigrantsEmigrated;
+}
+void CvPlayer::ChangeTotalImmigrantsEmigrated(int iChange)
+{
+	VALIDATE_OBJECT
+	m_iTotalImmigrantsEmigrated += iChange;
 }
 #endif
 
@@ -30196,6 +30257,8 @@ void CvPlayer::Read(FDataStream& kStream)
 #endif
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream >> m_aiImmigrationCounter;
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsReceived, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsEmigrated, 0);
 #endif
 	kStream >> m_aiNegateWarmongerTurn;
 
@@ -30952,6 +31015,8 @@ void CvPlayer::Write(FDataStream& kStream) const
 #endif
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream << m_aiImmigrationCounter;
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsReceived);
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsEmigrated);
 #endif
 	kStream << m_aiNegateWarmongerTurn;
 

@@ -1323,6 +1323,10 @@ protected:
 	LUAAPIEXTN(GetImmigrationRate, int, eTargetPlayer);
 	LUAAPIEXTN(GetImmigrationInRateFromPolicy, int);
 	LUAAPIEXTN(GetImmigrationOutRateFromPolicy, int);
+	LUAAPIEXTN(GetTotalImmigrantsReceived, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsReceived, void, iChange);
+	LUAAPIEXTN(GetTotalImmigrantsEmigrated, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsEmigrated, void, iChange);
 #endif
 
 	LUAAPIEXTN(GetScienceTimes100FromFriendsTable);

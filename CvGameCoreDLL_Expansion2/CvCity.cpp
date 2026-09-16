@@ -13531,6 +13531,17 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
+	//CityState UA (Sydney): per immigrant received, a yield % modifier (per YieldType, applied per city for the tooltip)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	iTempMod = owner.GetCSUAImmigrantYieldModifierFromImmigrants(eIndex);
+	if (iTempMod != 0)
+	{
+		iModifier += iTempMod;
+		if (toolTipSink)
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+	}
+#endif
+
 	//CityState UA (Jerusalem/Wittenberg): per city worldwide following the player's religion, capital gains a yield % modifier
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (isCapital())

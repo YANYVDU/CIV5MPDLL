@@ -94,6 +94,9 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iDiplomaticPrestigePerMajorityCiv(0)
 	, m_iInfluencePerTurnPerFollowCityMod(0)
 	, m_iFollowingCityDivisor(0)
+	, m_piImmigrantYieldModifiers(nullptr)
+	, m_iImmigrantCashPercent(0)
+	, m_iImmigrantCashCapBase(0)
 {
 }
 
@@ -113,6 +116,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piImprovementHappiness);
+	SAFE_DELETE_ARRAY(m_piImmigrantYieldModifiers);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -266,6 +270,10 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iDiplomaticPrestigePerMajorityCiv = kResults.GetInt("DiplomaticPrestigePerMajorityCiv");
 	m_iInfluencePerTurnPerFollowCityMod = kResults.GetInt("InfluencePerTurnPerFollowCityMod");
 	m_iFollowingCityDivisor = kResults.GetInt("FollowingCityDivisor");
+	// Sydney: per immigrant received yield % modifier per YieldType (Modifier=100 => +1%); cash reward per immigrant
+	kUtility.PopulateArrayByValue(m_piImmigrantYieldModifiers, "Yields", "CityStateUAEffect_ImmigrantYieldModifiers", "YieldType", "EffectType", GetType(), "Modifier");
+	m_iImmigrantCashPercent = kResults.GetInt("ImmigrantCashPercent");
+	m_iImmigrantCashCapBase = kResults.GetInt("ImmigrantCashCapBase");
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -622,6 +630,11 @@ int CvCityStateUAEffectEntry::GetFaithRefundPerDonationPercent() const { return 
 int CvCityStateUAEffectEntry::GetDiplomaticPrestigePerMajorityCiv() const { return m_iDiplomaticPrestigePerMajorityCiv; }
 int CvCityStateUAEffectEntry::GetInfluencePerTurnPerFollowCityMod() const { return m_iInfluencePerTurnPerFollowCityMod; }
 int CvCityStateUAEffectEntry::GetFollowingCityDivisor() const { return m_iFollowingCityDivisor; }
+// Sydney: per immigrant received yield % modifier (per YieldType, 100 = +1%)
+int CvCityStateUAEffectEntry::GetImmigrantYieldModifier(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piImmigrantYieldModifiers ? m_piImmigrantYieldModifiers[i] : 0; }
+bool CvCityStateUAEffectEntry::HasImmigrantYieldModifiers() const { return m_piImmigrantYieldModifiers != NULL; }
+int CvCityStateUAEffectEntry::GetImmigrantCashPercent() const { return m_iImmigrantCashPercent; }
+int CvCityStateUAEffectEntry::GetImmigrantCashCapBase() const { return m_iImmigrantCashCapBase; }
 
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
@@ -859,6 +872,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iDiplomaticPrestigePerMajorityCiv(0)
 	, m_iInfluencePerTurnPerFollowCityMod(0)
 	, m_iFollowingCityDivisor(0)
+	, m_iImmigrantCashPercent(0)
+	, m_iImmigrantCashCapBase(0)
 {
 }
 
@@ -961,6 +976,9 @@ void CvPlayerCityStateUA::Reset()
 	m_iDiplomaticPrestigePerMajorityCiv = 0;
 	m_iInfluencePerTurnPerFollowCityMod = 0;
 	m_iFollowingCityDivisor = 0;
+	m_aiImmigrantYieldModifiers.assign(NUM_YIELD_TYPES, 0);
+	m_iImmigrantCashPercent = 0;
+	m_iImmigrantCashCapBase = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1211,6 +1229,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iDiplomaticPrestigePerMajorityCiv += pEffect->GetDiplomaticPrestigePerMajorityCiv() * iChange;
 	m_iInfluencePerTurnPerFollowCityMod += pEffect->GetInfluencePerTurnPerFollowCityMod() * iChange;
 	m_iFollowingCityDivisor += pEffect->GetFollowingCityDivisor() * iChange;
+	// Sydney: per immigrant received yield % modifiers (per YieldType); cash reward per immigrant
+	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
+	{
+		int iImmigrantMod = pEffect->GetImmigrantYieldModifier(iYield);
+		if (iImmigrantMod != 0)
+			m_aiImmigrantYieldModifiers[iYield] += iImmigrantMod * iChange;
+	}
+	m_iImmigrantCashPercent += pEffect->GetImmigrantCashPercent() * iChange;
+	m_iImmigrantCashCapBase += pEffect->GetImmigrantCashCapBase() * iChange;
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -1521,4 +1548,17 @@ int CvPlayerCityStateUA::GetFaithRefundPerDonationPercent() const { return m_iFa
 int CvPlayerCityStateUA::GetDiplomaticPrestigePerMajorityCiv() const { return m_iDiplomaticPrestigePerMajorityCiv; }
 int CvPlayerCityStateUA::GetInfluencePerTurnPerFollowCityMod() const { return m_iInfluencePerTurnPerFollowCityMod; }
 int CvPlayerCityStateUA::GetFollowingCityDivisor() const { return m_iFollowingCityDivisor; }
+// Sydney: per immigrant received yield % modifier (per YieldType, 100 = +1%)
+int CvPlayerCityStateUA::GetImmigrantYieldModifier(YieldTypes eYield) const
+{
+	return (eYield >= 0 && (int)eYield < (int)m_aiImmigrantYieldModifiers.size()) ? m_aiImmigrantYieldModifiers[(int)eYield] : 0;
+}
+bool CvPlayerCityStateUA::HasImmigrantYieldModifiers() const
+{
+	for (size_t i = 0; i < m_aiImmigrantYieldModifiers.size(); i++)
+		if (m_aiImmigrantYieldModifiers[i] != 0) return true;
+	return false;
+}
+int CvPlayerCityStateUA::GetImmigrantCashPercent() const { return m_iImmigrantCashPercent; }
+int CvPlayerCityStateUA::GetImmigrantCashCapBase() const { return m_iImmigrantCashCapBase; }
 int CvPlayerCityStateUA::GetInquisitorRetentionPercent() const { return m_iInquisitorRetentionPercent; }
