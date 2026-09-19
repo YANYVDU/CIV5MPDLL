@@ -783,6 +783,10 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(SetCanDoImmigration);
 	Method(CanImmigrantIn);
 	Method(CanImmigrantOut);
+	Method(GetTotalImmigrantsReceived);
+	Method(ChangeTotalImmigrantsReceived);
+	Method(GetTotalImmigrantsEmigrated);
+	Method(ChangeTotalImmigrantsEmigrated);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	Method(GetScale);
@@ -5359,6 +5363,10 @@ LUAAPIIMPL(City, IsCanDoImmigration)
 LUAAPIIMPL(City, SetCanDoImmigration)
 LUAAPIIMPL(City, CanImmigrantIn)
 LUAAPIIMPL(City, CanImmigrantOut)
+LUAAPIIMPL(City, GetTotalImmigrantsReceived)
+LUAAPIIMPL(City, ChangeTotalImmigrantsReceived)
+LUAAPIIMPL(City, GetTotalImmigrantsEmigrated)
+LUAAPIIMPL(City, ChangeTotalImmigrantsEmigrated)
 #endif
 
 #ifdef MOD_GLOBAL_CITY_SCALES

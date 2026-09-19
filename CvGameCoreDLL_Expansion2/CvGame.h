@@ -468,6 +468,8 @@ public:
 	int getJonRandNumVA(int iNum, const char* pszLog, ...);
 	int getAsyncRandNum(int iNum, const char* pszLog);
 
+	int GetImmigrationRegressand() const;
+
 
 	uint randCore(const CvSeeder& extraSeed) const;
 	uint urandLimitExclusive(uint limit, const CvSeeder& extraSeed) const;

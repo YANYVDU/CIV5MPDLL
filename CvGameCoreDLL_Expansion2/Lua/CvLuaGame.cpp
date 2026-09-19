@@ -3470,23 +3470,7 @@ int CvLuaGame::lGetHappinessFromHandicap(lua_State* L)
 //------------------------------------------------------------------------------
 int CvLuaGame::lGetImmigrationRegressand(lua_State* L)
 {
-    int iRtnValue = 0;
-    if(!GC.getGame().isOption(GAMEOPTION_SP_IMMIGRATION_OFF))
-    {
-        iRtnValue = GC.getIMMIGRATION_BASE_RATE() * GC.getGame().getGameSpeedInfo().getCulturePercent();
-        PlayerTypes eActivePlayer = GC.getGame().getActivePlayer();
-        if(eActivePlayer != NO_PLAYER)
-        {
-            CvPlayer& kActivePlayer = GET_PLAYER(eActivePlayer);
-            int iModifier = kActivePlayer.GetImmigrationRegressandModifier();
-            iRtnValue = iRtnValue * (100 + iModifier) / 100;
-        }
-        
-        iRtnValue /= 100;
-        
-        if(iRtnValue < 0) iRtnValue = 0;
-    }
-    lua_pushinteger(L, iRtnValue);
+    lua_pushinteger(L, GC.getGame().GetImmigrationRegressand());
     return 1;
 }
 //------------------------------------------------------------------------------

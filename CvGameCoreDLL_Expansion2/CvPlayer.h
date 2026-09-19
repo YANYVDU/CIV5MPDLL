@@ -2461,6 +2461,8 @@ public:
 	void ChangeTotalImmigrantsReceived(int iChange);
 	int GetTotalImmigrantsEmigrated() const;
 	void ChangeTotalImmigrantsEmigrated(int iChange);
+	void DoInternationalImmigration();
+	bool DoImmigration(PlayerTypes eOutPlayer, PlayerTypes eInPlayer);
 #endif
 	int GetNegateWarmongerTurn(int iIndex) const;
 	void SetNegateWarmongerTurn(int iIndex, int iValue);

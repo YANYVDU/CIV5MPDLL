@@ -1374,6 +1374,10 @@ public:
 	bool CanImmigrantOut() const;
 	bool CanAllScaleImmigrantIn() const;
 	void ChangeNumAllScaleImmigrantIn(int iChange);
+	int GetTotalImmigrantsReceived() const;
+	void ChangeTotalImmigrantsReceived(int iChange);
+	int GetTotalImmigrantsEmigrated() const;
+	void ChangeTotalImmigrantsEmigrated(int iChange);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	CityScaleTypes GetScale() const { return m_eCityScale; }
@@ -1768,6 +1772,8 @@ protected:
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	bool m_bCanDoImmigration = true;
 	int m_iNumAllScaleImmigrantIn = 0;
+	int m_iTotalImmigrantsReceived = 0;
+	int m_iTotalImmigrantsEmigrated = 0;
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	CityScaleTypes m_eCityScale = NO_CITY_SCALE;

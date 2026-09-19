@@ -5483,6 +5483,14 @@ void CvPlayer::doTurn()
 	}
 #endif
 
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	// International immigration: driven in C++ sync simulation (was Lua PlayerDoTurn handler)
+	if (MOD_INTERNATIONAL_IMMIGRATION_FOR_SP && isHuman())
+	{
+		DoInternationalImmigration();
+	}
+#endif
+
 	ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
 	if(pkScriptSystem)
 	{
@@ -19203,6 +19211,139 @@ void CvPlayer::ChangeTotalImmigrantsEmigrated(int iChange)
 {
 	VALIDATE_OBJECT
 	m_iTotalImmigrantsEmigrated += iChange;
+}
+
+// International immigration main loop, per human player turn.
+// Mirrors the former Lua InternationalImmigration(TargetPlayerID) handler.
+void CvPlayer::DoInternationalImmigration()
+{
+	if (GC.getGame().isOption(GAMEOPTION_SP_IMMIGRATION_OFF)) return;
+
+	const int iRegressand = GC.getGame().GetImmigrationRegressand();
+	for (int iOther = 0; iOther < MAX_MAJOR_CIVS; ++iOther)
+	{
+		PlayerTypes eOther = (PlayerTypes)iOther;
+		if (eOther == GetID()) continue;
+
+		CvPlayer& kOther = GET_PLAYER(eOther);
+		if (!kOther.isAlive() || !kOther.isMajorCiv()) continue;
+
+		int iCounter = kOther.GetImmigrationCounter(GetID());
+		if (iCounter <= 0 || iCounter >= iRegressand * 2)
+		{
+			kOther.SetImmigrationCounter(GetID(), iRegressand);
+		}
+
+		iCounter = kOther.GetImmigrationCounter(GetID()) + kOther.GetImmigrationRate(GetID());
+		if (iCounter < 0) iCounter = 0;
+		else if (iCounter > iRegressand * 2) iCounter = iRegressand * 2;
+		kOther.SetImmigrationCounter(GetID(), iCounter);
+
+		PlayerTypes eOut = NO_PLAYER, eIn = NO_PLAYER;
+		if (iCounter == 0)
+		{
+			eOut = GetID();
+			eIn = eOther;
+		}
+		else if (iCounter == iRegressand * 2)
+		{
+			eOut = eOther;
+			eIn = GetID();
+		}
+
+		if (eOut != NO_PLAYER && eIn != NO_PLAYER)
+		{
+			if (DoImmigration(eOut, eIn))
+			{
+				kOther.SetImmigrationCounter(GetID(), iRegressand);
+			}
+			else
+			{
+				kOther.ChangeImmigrationCounter(GetID(), (iCounter == 0) ? 1 : -1);
+			}
+		}
+	}
+}
+
+// Execute one immigration transfer.
+// Mirrors the former Lua DoInternationalImmigration(OutPlayer, InPlayer).
+bool CvPlayer::DoImmigration(PlayerTypes eOutPlayer, PlayerTypes eInPlayer)
+{
+	CvPlayer& kOutPlayer = GET_PLAYER(eOutPlayer);
+	CvPlayer& kInPlayer = GET_PLAYER(eInPlayer);
+
+	if (kOutPlayer.getNumCities() < 1 || kInPlayer.getNumCities() < 1) return false;
+
+	std::vector<int> vOutCityIDs;
+	std::vector<int> vInCityIDs;
+	CvCity* pLoopCity = NULL;
+	int iLoop = 0;
+
+	for (pLoopCity = kOutPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kOutPlayer.nextCity(&iLoop))
+	{
+		if (pLoopCity->CanImmigrantOut()) vOutCityIDs.push_back(pLoopCity->GetID());
+	}
+	iLoop = 0;
+	for (pLoopCity = kInPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kInPlayer.nextCity(&iLoop))
+	{
+		if (pLoopCity->CanImmigrantIn()) vInCityIDs.push_back(pLoopCity->GetID());
+	}
+
+	if (vOutCityIDs.empty() || vInCityIDs.empty()) return false;
+
+	// Immigrant leaves
+	int iRand = GC.getGame().getJonRandNum((int)vOutCityIDs.size(), "Immigration choose out city");
+	CvCity* pOutCity = kOutPlayer.getCity(vOutCityIDs[iRand]);
+	if (pOutCity == NULL) return false;
+	pOutCity->changePopulation(-1, true);
+	pOutCity->SetCanDoImmigration(false);
+
+	if (kOutPlayer.isHuman())
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_LEFT_CITY");
+		strText << pOutCity->getName().c_str();
+		Localization::String strHeading = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_LEFT_CITY_SHORT");
+		kOutPlayer.AddNotification(NOTIFICATION_STARVING, strText.toUTF8(), strHeading.toUTF8(), pOutCity->plot(), -1, -1);
+	}
+
+	// AI boosts culture output to counter the population loss
+	if (pOutCity->getPopulation() > 15 && !kOutPlayer.isHuman())
+	{
+		pOutCity->GetCityCitizens()->SetFocusType(CITY_AI_FOCUS_TYPE_CULTURE);
+	}
+
+	// Immigrant arrives
+	iRand = GC.getGame().getJonRandNum((int)vInCityIDs.size(), "Immigration choose in city");
+	CvCity* pInCity = kInPlayer.getCity(vInCityIDs[iRand]);
+	if (pInCity == NULL) return false;
+	pInCity->changePopulation(1, true);
+	pInCity->SetCanDoImmigration(false);
+
+	if (kInPlayer.isHuman())
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_REACHED_CITY");
+		strText << pInCity->getName().c_str();
+		Localization::String strHeading = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_REACHED_CITY_SHORT");
+		kInPlayer.AddNotification(NOTIFICATION_CITY_GROWTH, strText.toUTF8(), strHeading.toUTF8(), pInCity->plot(), -1, -1);
+	}
+
+	// Player-level counters (Sydney CS UA depends on the received count)
+	kInPlayer.ChangeTotalImmigrantsReceived(1);
+	kOutPlayer.ChangeTotalImmigrantsEmigrated(1);
+
+	// City-level counters
+	pInCity->ChangeTotalImmigrantsReceived(1);
+	pOutCity->ChangeTotalImmigrantsEmigrated(1);
+
+	// Notify Lua mods of the immigration event
+#if defined(MOD_EVENTS_INTERNATIONAL_IMMIGRATION)
+	if (MOD_EVENTS_INTERNATIONAL_IMMIGRATION)
+	{
+		GAMEEVENTINVOKE_HOOK(GAMEEVENT_InternationalImmigration, eInPlayer, eOutPlayer, pInCity->GetID(), pOutCity->GetID());
+	}
+#endif
+
+	return true;
 }
 #endif
 

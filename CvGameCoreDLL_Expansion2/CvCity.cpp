@@ -1645,6 +1645,8 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	m_bCanDoImmigration = true;
 	m_iNumAllScaleImmigrantIn = 0;
+	m_iTotalImmigrantsReceived = 0;
+	m_iTotalImmigrantsEmigrated = 0;
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	m_eCityScale = NO_CITY_SCALE;
@@ -21085,6 +21087,8 @@ void CvCity::read(FDataStream& kStream)
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream >> m_bCanDoImmigration;
 	kStream >> m_iNumAllScaleImmigrantIn;
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsReceived, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsEmigrated, 0);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	int iCityScale;
@@ -21498,6 +21502,8 @@ void CvCity::write(FDataStream& kStream) const
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream << m_bCanDoImmigration;
 	kStream << m_iNumAllScaleImmigrantIn;
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsReceived);
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsEmigrated);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	kStream << (int) m_eCityScale;
@@ -24347,6 +24353,22 @@ bool CvCity::CanAllScaleImmigrantIn() const
 void CvCity::ChangeNumAllScaleImmigrantIn(int iChange)
 {
 	m_iNumAllScaleImmigrantIn += iChange;
+}
+int CvCity::GetTotalImmigrantsReceived() const
+{
+	return m_iTotalImmigrantsReceived;
+}
+void CvCity::ChangeTotalImmigrantsReceived(int iChange)
+{
+	m_iTotalImmigrantsReceived += iChange;
+}
+int CvCity::GetTotalImmigrantsEmigrated() const
+{
+	return m_iTotalImmigrantsEmigrated;
+}
+void CvCity::ChangeTotalImmigrantsEmigrated(int iChange)
+{
+	m_iTotalImmigrantsEmigrated += iChange;
 }
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES

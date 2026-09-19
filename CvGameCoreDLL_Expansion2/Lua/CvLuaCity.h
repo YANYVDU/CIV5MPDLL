@@ -713,6 +713,10 @@ protected:
 	LUAAPIEXTN(SetCanDoImmigration, void);
 	LUAAPIEXTN(CanImmigrantIn, bool);
 	LUAAPIEXTN(CanImmigrantOut, bool);
+	LUAAPIEXTN(GetTotalImmigrantsReceived, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsReceived, void, iChange);
+	LUAAPIEXTN(GetTotalImmigrantsEmigrated, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsEmigrated, void, iChange);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	LUAAPIEXTN(GetScale, int);

@@ -962,6 +962,7 @@
 
 #define MOD_GLOBAL_CITY_SCALES gCustomMods.isGLOBAL_CITY_SCALES()
 #define MOD_EVENTS_CITY_SCALES gCustomMods.isEVENTS_CITY_SCALES()
+#define MOD_EVENTS_INTERNATIONAL_IMMIGRATION gCustomMods.isEVENTS_INTERNATIONAL_IMMIGRATION()
 
 #define MOD_PROMOTION_COLLECTIONS
 #define MOD_BUILDINGCLASS_COLLECTIONS
@@ -1349,6 +1350,7 @@ enum BattleTypeTypes
 #define GAMEEVENT_CanRemovePromotion			"CanRemovePromotion",			"iii"
 
 #define GAMEEVENT_LoyaltyStateChanged       	"LoyaltyStateChanged",			"iiii"
+#define GAMEEVENT_InternationalImmigration   "InternationalImmigration",     "iiii"
 
 // Serialization wrappers
 #define MOD_SERIALIZE
@@ -1811,6 +1813,7 @@ public:
 
 	MOD_OPT_DECL(GLOBAL_CITY_SCALES);
 	MOD_OPT_DECL(EVENTS_CITY_SCALES);
+	MOD_OPT_DECL(EVENTS_INTERNATIONAL_IMMIGRATION);
 
 	MOD_OPT_DECL(SPECIALIST_RESOURCES);
 
