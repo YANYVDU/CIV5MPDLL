@@ -249,6 +249,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(MakeCircumnavigated);
 
 	Method(DoFromUIDiploEvent);
+	Method(DoDiplomacyBargain);
 
 	Method(IsDebugMode);
 	Method(SetDebugMode);
@@ -1349,6 +1350,16 @@ int CvLuaGame::lMakeCircumnavigated(lua_State* L)
 int CvLuaGame::lDoFromUIDiploEvent(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::DoFromUIDiploEvent);
+}
+//------------------------------------------------------------------------------
+// Diplomacy Bargain (Super Power V11): broadcast a bargain attempt against eTargetPlayer.
+// It is evaluated inside the on-host authoritative command handler, so tryDiplomacyBargain's
+// getJonRandNum is consumed in lock-step across every client (safe in multiplayer).
+int CvLuaGame::lDoDiplomacyBargain(lua_State* L)
+{
+	const PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 1);
+	GC.getGame().DoFromUIDiploEvent(FROM_UI_DIPLO_EVENT_HUMAN_DIPLOMACY_BARGAIN, eTargetPlayer, (int)eTargetPlayer, -1);
+	return 0;
 }
 //------------------------------------------------------------------------------
 //bool isDebugMode();

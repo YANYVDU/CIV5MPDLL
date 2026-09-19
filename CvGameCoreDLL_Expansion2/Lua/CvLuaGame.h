@@ -172,6 +172,7 @@ protected:
 	static int lMakeCircumnavigated(lua_State* L);
 
 	static int lDoFromUIDiploEvent(lua_State* L);
+	static int lDoDiplomacyBargain(lua_State* L);
 
 	static int lIsDebugMode(lua_State* L);
 	static int lSetDebugMode(lua_State* L);

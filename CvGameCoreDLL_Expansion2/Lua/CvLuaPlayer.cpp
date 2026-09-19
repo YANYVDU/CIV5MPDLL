@@ -107,6 +107,8 @@ void CvLuaPlayer::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetConscriptCount);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetMinorCivUniqueUnit);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetEconomicAidAutoRenew);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lTryBuyFoodFromVenice);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetLastVeniceBuyFoodTurn);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChangeMinorCivFriendshipWithMajor);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetPersonalityType);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetOption);
@@ -1182,6 +1184,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetDealMyValue);
 	Method(GetDealTheyreValue);
 	Method(GetDiplomatTradeAdvice);
+	Method(GetLastVeniceBuyFoodTurn);
 	Method(MayNotAnnex);
 
 	Method(GetEspionageCityStatus);
@@ -7814,6 +7817,28 @@ int CvLuaPlayer::lSetEconomicAidAutoRenew(lua_State* L)
 
 	pkPlayer->GetMinorCivAI()->SetEconomicAidAutoRenew((PlayerTypes)eMajor, bRenew);
 	return 0;
+}
+//------------------------------------------------------------------------------
+//int TryBuyFoodFromVenice(int iFood, int iGold);  (Super Power V11)
+// Broadcast from the City-State Diplo popup so the authoritative per-player cooldown,
+// gold deduction and food gain run in lock-step on every client in multiplayer.
+int CvLuaPlayer::lTryBuyFoodFromVenice(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int iFood = lua_tointeger(L, 1);
+	const int iGold = lua_tointeger(L, 2);
+
+	const int iResult = pkPlayer->TryBuyFoodFromVenice(iFood, iGold);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetLastVeniceBuyFoodTurn() const;  (Super Power V11)
+int CvLuaPlayer::lGetLastVeniceBuyFoodTurn(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetLastVeniceBuyFoodTurn());
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetEconomicAidPoints(PlayerTypes eMajor);

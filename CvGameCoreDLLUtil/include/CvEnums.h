@@ -2630,6 +2630,10 @@ enum FromUIDiploEventTypes
 	FROM_UI_DIPLO_EVENT_HUMAN_JOIN_ECONOMIC_AID,
 	FROM_UI_DIPLO_EVENT_HUMAN_LEAVE_ECONOMIC_AID,
 
+	// Diplomacy Bargain (Super Power V11): human tries to swing a diplomatic bargain against the routed major civ.
+	// The bargain is evaluated inside the on-host authoritative command handler so getJonRandNum stays in sync.
+	FROM_UI_DIPLO_EVENT_HUMAN_DIPLOMACY_BARGAIN,
+
 	NUM_FROM_UI_DIPLO_EVENTS,
 };
 

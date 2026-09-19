@@ -816,6 +816,11 @@ public:
 	void SetNaturalWonderSubsequentFinderTech(int iValue);
 	void ChangeNaturalWonderSubsequentFinderTech(int iChange);
 
+	// Venice buy-food: authoritative per-player cooldown (returns 1=success, 0=cooldown, 2=not enough gold).
+	int TryBuyFoodFromVenice(int iFood, int iGold);
+	int GetLastVeniceBuyFoodTurn() const;
+	void SetLastVeniceBuyFoodTurn(int iTurn);
+
 
 	int GetGreatScientistBeakerMod() const;
 	void SetGreatScientistBeakerMod(int iValue);
@@ -2705,6 +2710,7 @@ protected:
 	int m_iNaturalWonderFirstFinderTech;
 	int m_iNaturalWonderSubsequentFinderPolicies;
 	int m_iNaturalWonderSubsequentFinderTech;
+	int m_iLastVeniceBuyFoodTurn; // authoritative per-player Venice buy-food cooldown (MP-synced via broadcast)
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;

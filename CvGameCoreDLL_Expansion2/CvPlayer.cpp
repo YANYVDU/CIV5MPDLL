@@ -1133,6 +1133,7 @@ void CvPlayer::uninit()
 	m_iNaturalWonderFirstFinderPolicies = 0;
 	m_iNaturalWonderSubsequentFinderTech = 0;
 	m_iNaturalWonderSubsequentFinderPolicies = 0;
+	m_iLastVeniceBuyFoodTurn = -1;
 	m_iProductionBeakerMod = 0;
 	m_iGreatEngineerRateModifier = 0;
 	m_iGreatPersonExpendGold = 0;
@@ -17197,6 +17198,41 @@ void CvPlayer::SetNaturalWonderSubsequentFinderTech(int iValue)
 {
 	m_iNaturalWonderSubsequentFinderTech = iValue;
 }
+
+//	--------------------------------------------------------------------------------
+// Venice buy-food (Super Power V11): authoritatively handle the per-player cooldown plus the
+// gold/food exchange. Broadcast from the UI, so the cooldown is applied in lock-step on every
+// client (no more client-local save/load cooldown that could desync in multiplayer).
+int CvPlayer::TryBuyFoodFromVenice(int iFood, int iGold)
+{
+	if(m_iLastVeniceBuyFoodTurn >= GC.getGame().getGameTurn())
+	{
+		return 0; // already bought this turn
+	}
+	if(GetTreasury()->GetGold() < iGold)
+	{
+		return 2; // not enough gold
+	}
+	GetTreasury()->ChangeGold(-iGold);
+	CvCity* pCapital = getCapitalCity();
+	if(pCapital)
+	{
+		pCapital->changeFood(iFood);
+	}
+	m_iLastVeniceBuyFoodTurn = GC.getGame().getGameTurn();
+	return 1; // success
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetLastVeniceBuyFoodTurn() const
+{
+	return m_iLastVeniceBuyFoodTurn;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetLastVeniceBuyFoodTurn(int iTurn)
+{
+	m_iLastVeniceBuyFoodTurn = iTurn;
+}
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetNaturalWonderSubsequentFinderPolicies() const
 {
@@ -29668,6 +29704,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderTech, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iLastVeniceBuyFoodTurn, -1);
 	kStream >> m_iProductionBeakerMod;
 	if (uiVersion >= 13)
 	{
@@ -30575,6 +30612,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderPolicies);
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderPolicies);
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderTech);
+	MOD_SERIALIZE_WRITE(kStream, m_iLastVeniceBuyFoodTurn);
 	kStream << m_iProductionBeakerMod;
 	kStream << m_iGreatEngineerRateModifier;
 	kStream << m_iGreatPersonExpendGold;

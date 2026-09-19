@@ -19968,6 +19968,40 @@ void CvDiplomacyAI::DoFromUIDiploEvent(PlayerTypes eFromPlayer, FromUIDiploEvent
 		break;
 	}
 
+	// Diplomacy Bargain (Super Power V11): a human is trying to swing a diplomatic
+	// bargain against the routed civ. We evaluate it inside the on-host authoritative
+	// command handler so TryDiplomacyBargain's getJonRandNum is consumed in lock-step
+	// across every client (deterministic outcome, safe in multiplayer).
+	case FROM_UI_DIPLO_EVENT_HUMAN_DIPLOMACY_BARGAIN:
+	{
+		CvPlayerEspionage* pkBargainEspionage = GET_PLAYER(eFromPlayer).GetEspionage();
+		if(pkBargainEspionage)
+		{
+			const PlayerTypes eBargainTarget = (PlayerTypes)eMyPlayer;
+			const int iBargainResult = pkBargainEspionage->TryDiplomacyBargain(eBargainTarget);
+
+			// Only the initiating active player needs the outcome feedback.
+			if(bActivePlayer)
+			{
+				CvCity* pBargainCity = GET_PLAYER(eBargainTarget).getCapitalCity();
+				const int iNoticeX = pBargainCity ? pBargainCity->getX() : -1;
+				const int iNoticeY = pBargainCity ? pBargainCity->getY() : -1;
+				CvNotifications* pkNotifications = GET_PLAYER(eFromPlayer).GetNotifications();
+				const char* szBargainTitle = Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_BUTTON").toUTF8();
+
+				if(iBargainResult == 1)
+				{
+					pkNotifications->Add(NOTIFICATION_GENERIC, Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_SUCCESS").toUTF8(), szBargainTitle, iNoticeX, iNoticeY, -1);
+				}
+				else if(iBargainResult == 0)
+				{
+					pkNotifications->Add(NOTIFICATION_GENERIC, Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_FAILURE").toUTF8(), szBargainTitle, iNoticeX, iNoticeY, -1);
+				}
+			}
+		}
+		break;
+	}
+
 	// Should always have a state we're handling
 	default:
 		CvAssert(false);

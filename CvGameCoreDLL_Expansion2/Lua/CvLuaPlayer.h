@@ -672,6 +672,8 @@ protected:
 	static int lIsEconomicAidOpenThisRound(lua_State* L);
 	static int lIsEconomicAidAutoRenew(lua_State* L);
 	static int lSetEconomicAidAutoRenew(lua_State* L);
+	static int lTryBuyFoodFromVenice(lua_State* L);
+	static int lGetLastVeniceBuyFoodTurn(lua_State* L);
 	static int lGetEconomicAidPoints(lua_State* L);
 	static int lChangeEconomicAidPoints(lua_State* L);
 	static int lGetTurnLastPledgedProtectionByMajor(lua_State* L);
