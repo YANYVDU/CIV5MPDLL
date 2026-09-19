@@ -6454,6 +6454,14 @@ int CvMinorCivAI::GetFriendshipAnchorWithMajor(PlayerTypes eMajor)
 		iAnchor += GC.getMINOR_FRIENDSHIP_ANCHOR_MOD_PROTECTED();
 	}
 
+	// Economic Aid (Super Power V11): while granting economic aid, raise the friendship
+	// anchor so influence climbs toward a higher resting point (default +20) instead of
+	// being pinned at a low value by the convergence clamp.
+	if (IsEconomicAidFromMajor(eMajor))
+	{
+		iAnchor += GC.getMINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID();
+	}
+
 	// Wary Of?
 	if (IsWaryOfTeam(pMajor->getTeam()))
 	{
