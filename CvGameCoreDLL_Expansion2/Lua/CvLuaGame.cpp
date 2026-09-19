@@ -84,6 +84,9 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetHolyCity);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetFounder);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lEnhanceReligion);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorFaithGiftFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithBeliefPurchaseFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithPantheonPurchaseFromMajor);
 
 #if defined(MOD_NUCLEAR_WINTER_FOR_SP)
 	REGIST_STATIC_FUNCTION(CvLuaGame::lChangeNuclearWinterProcess);
@@ -353,11 +356,14 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(DoMinorGoldGift);
 	Method(DoMinorGiftGold);
 	Method(DoMinorFaithGift);
+	Method(DoMinorFaithGiftFromMajor);
 	Method(GetCityStateFaithBeliefPurchaseCost);
 	Method(IsCityStateFaithBeliefPurchased);
 	Method(DoCityStateFaithBeliefPurchase);
+	Method(DoCityStateFaithBeliefPurchaseFromMajor);
 	Method(GetCityStateFaithPantheonPurchaseCost);
 	Method(DoCityStateFaithPantheonPurchase);
+	Method(DoCityStateFaithPantheonPurchaseFromMajor);
 	Method(DoMinorGiftTileImprovement);
 	Method(DoMinorBullyGold);
 	Method(DoMinorBullyUnit);
@@ -2101,6 +2107,17 @@ int CvLuaGame::lDoMinorFaithGift(lua_State* L)
 	return 0;
 }
 //------------------------------------------------------------------------------
+//void DoMinorFaithGiftFromMajor(int iMajorCivID, int iMinorCivID, int iEquivalentGold);
+// Gangtok CS UA: network-synced variant taking an explicit major (multiplayer-safe)
+int CvLuaGame::lDoMinorFaithGiftFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iEquivalentGold = lua_tointeger(L, 3);
+	GC.getGame().DoMinorFaithGiftFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, iEquivalentGold);
+	return 0;
+}
+//------------------------------------------------------------------------------
 //int GetCityStateFaithBeliefPurchaseCost(int iMinorCivID);
 // Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available)
 int CvLuaGame::lGetCityStateFaithBeliefPurchaseCost(lua_State* L)
@@ -2129,6 +2146,17 @@ int CvLuaGame::lDoCityStateFaithBeliefPurchase(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//bool DoCityStateFaithBeliefPurchaseFromMajor(int iMajorCivID, int iMinorCivID, int iBelief);
+// Wittenberg CS UA: network-synced variant taking an explicit major (multiplayer-safe)
+int CvLuaGame::lDoCityStateFaithBeliefPurchaseFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iBelief = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithBeliefPurchaseFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
+}
+//------------------------------------------------------------------------------
 //int GetCityStateFaithPantheonPurchaseCost(int iMinorCivID);
 // La Venta CS UA: faith cost for the active player to purchase an idle pantheon belief at this city-state (0 = not available)
 int CvLuaGame::lGetCityStateFaithPantheonPurchaseCost(lua_State* L)
@@ -2145,6 +2173,17 @@ int CvLuaGame::lDoCityStateFaithPantheonPurchase(lua_State* L)
 	const int iMinor = lua_tointeger(L, 1);
 	const int iBelief = lua_tointeger(L, 2);
 	lua_pushboolean(L, GC.getGame().DoCityStateFaithPantheonPurchase((PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoCityStateFaithPantheonPurchaseFromMajor(int iMajorCivID, int iMinorCivID, int iBelief);
+// La Venta CS UA: network-synced variant taking an explicit major (multiplayer-safe)
+int CvLuaGame::lDoCityStateFaithPantheonPurchaseFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iBelief = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithPantheonPurchaseFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, (BeliefTypes)iBelief));
 	return 1;
 }
 //------------------------------------------------------------------------------

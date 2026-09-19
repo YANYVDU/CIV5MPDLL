@@ -11244,6 +11244,22 @@ void CvGame::DoMinorFaithGift(PlayerTypes eMinor, int iEquivalentGold)
 }
 
 //	--------------------------------------------------------------------------------
+// Gangtok CS UA: network-synced variant of DoMinorFaithGift taking an explicit eMajor.
+// Broadcast via SendAndExecuteLuaFunction so every client acts on the same major.
+void CvGame::DoMinorFaithGiftFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iEquivalentGold)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		GET_PLAYER(eMinor).GetMinorCivAI()->DoFaithGiftFromMajor(eMajor, iEquivalentGold);
+	}
+}
+
+//	--------------------------------------------------------------------------------
 // Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion.
 // Executed locally for the active player (single-player focused; intentionally no network message).
 bool CvGame::DoCityStateFaithBeliefPurchase(PlayerTypes eMinor, BeliefTypes eBelief)
@@ -11252,6 +11268,23 @@ bool CvGame::DoCityStateFaithBeliefPurchase(PlayerTypes eMinor, BeliefTypes eBel
 	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
 
 	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithBeliefPurchase(eMajor, eBelief);
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+// Wittenberg CS UA: network-synced variant of DoCityStateFaithBeliefPurchase taking an explicit eMajor.
+// Broadcast via SendAndExecuteLuaFunction so every client acts on the same major.
+bool CvGame::DoCityStateFaithBeliefPurchaseFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
 	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
 	{
 		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithBeliefPurchase(eMajor, eBelief);
@@ -11325,6 +11358,23 @@ bool CvGame::DoCityStateFaithPantheonPurchase(PlayerTypes eMinor, BeliefTypes eB
 	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
 
 	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithPantheonPurchase(eMajor, eBelief);
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+// La Venta CS UA: network-synced variant of DoCityStateFaithPantheonPurchase taking an explicit eMajor.
+// Broadcast via SendAndExecuteLuaFunction so every client acts on the same major.
+bool CvGame::DoCityStateFaithPantheonPurchaseFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
 	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
 	{
 		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithPantheonPurchase(eMajor, eBelief);
