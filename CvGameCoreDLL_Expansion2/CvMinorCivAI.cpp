@@ -7717,9 +7717,11 @@ bool CvMinorCivAI::CanMajorStartEconomicAid(PlayerTypes eMajor)
 	if(IsEconomicAidFromMajor(eMajor))
 		return false;
 
-	// City-state must have started its economic program this round (re-founded city-states wait for the next round)
-	if(!IsEconomicAidOpenThisRound())
-		return false;
+	// Once economic aid is globally active, any living, non-warring city-state is
+	// eligible to be aided. The per-city-state isEconomicAidOpenThisRound flag is
+	// unreliable in multiplayer because player init / re-found resets it to false on
+	// non-authoritative clients (leaving a stale "closed" state that blocks gueses).
+	// Same-round re-entry after quitting is handled below via the turn-lock check.
 
 	// Locked for the remainder of this round after quitting (or war termination)
 	int iRoundStartTurn = GC.getGame().GetEconomicAidRoundStartTurn();
