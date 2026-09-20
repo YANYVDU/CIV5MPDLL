@@ -15492,6 +15492,18 @@ void CvPlayer::setHasPolicy(PolicyTypes eIndex, bool bNewValue)
 		m_pPlayerPolicies->SetPolicy(eIndex, bNewValue);
 #endif
 		processPolicies(eIndex, bNewValue ? 1 : -1);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Diplomatic prestige must be applied through this unified setHasPolicy entry
+		// (not only doAdoptPolicy) so it also takes effect for finishers, free grants
+		// and Lua-granted policies. Symmetric add/remove via (bNewValue ? 1 : -1).
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			CvPolicyEntry* pkPolicyInfo = GC.getPolicyInfo(eIndex);
+			if (pkPolicyInfo && pkPolicyInfo->GetDiplomaticPrestige() != 0)
+				ChangeExtraDiplomaticPrestige(pkPolicyInfo->GetDiplomaticPrestige() * (bNewValue ? 1 : -1));
+		}
+#endif
 	}
 }
 
@@ -15543,12 +15555,8 @@ void CvPlayer::doAdoptPolicy(PolicyTypes ePolicy)
 
 	setHasPolicy(ePolicy, true);
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (MOD_SP_UNIQUE_CITYSTATE && pkPolicyInfo->GetDiplomaticPrestige() != 0)
-	{
-		ChangeExtraDiplomaticPrestige(pkPolicyInfo->GetDiplomaticPrestige());
-		if (pkPolicyInfo->GetMinorCivAlliesThresholdModifier() != 0)
-			ChangeMinorCivAlliesThresholdModifier(pkPolicyInfo->GetMinorCivAlliesThresholdModifier());
-	}
+	if (MOD_SP_UNIQUE_CITYSTATE && pkPolicyInfo->GetMinorCivAlliesThresholdModifier() != 0)
+		ChangeMinorCivAlliesThresholdModifier(pkPolicyInfo->GetMinorCivAlliesThresholdModifier());
 #endif
 
 	// Update cost if trying to buy another policy this turn

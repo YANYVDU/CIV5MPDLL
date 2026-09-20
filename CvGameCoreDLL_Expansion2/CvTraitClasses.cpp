@@ -3469,6 +3469,8 @@ void CvPlayerTraits::InitPlayerTraits()
 	}
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (m_iDiplomaticPrestige != 0 && m_pPlayer)
+		m_pPlayer->ChangeExtraDiplomaticPrestige(m_iDiplomaticPrestige);
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(m_iMinorCivAlliesThresholdModifier);
 #endif
@@ -3528,6 +3530,8 @@ void CvPlayerTraits::Reset()
 	m_iCityStateFriendshipModifier = 0;
 	m_iCityStateCombatModifier = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (m_iDiplomaticPrestige != 0 && m_pPlayer)
+		m_pPlayer->ChangeExtraDiplomaticPrestige(-m_iDiplomaticPrestige);
 	m_iDiplomaticPrestige = 0;
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
