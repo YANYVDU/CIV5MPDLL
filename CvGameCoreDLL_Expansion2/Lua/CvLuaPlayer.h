@@ -1148,6 +1148,10 @@ protected:
 	static int lGetInternationalTradeRouteDomainModifier(lua_State* L);
 	static int lGetInternationalTradeRouteTotal(lua_State* L);
 	static int lGetInternationalTradeRouteScience(lua_State* L);
+	static int lGetInternationalTradeRouteBaseValueDetail(lua_State* L);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	static int lGetCSUATradeRouteGoldModifier(lua_State* L);
+#endif
 	static int lGetPotentialTradeUnitNewHomeCity(lua_State* L);
 	static int lGetPotentialAdmiralNewPort(lua_State* L);
 	static int lGetNumAvailableTradeUnits(lua_State* L);
