@@ -56,6 +56,7 @@ class CvDiplomacyRequests;
 class CvPlayerEspionage;
 class CvEspionageAI;
 class CvPlayerTrade;
+struct TradeConnection;
 class CvTradeAI;
 class CvLeagueAI;
 class CvPlayerCulture;
@@ -1166,6 +1167,8 @@ public:
 	int GetCSUAGoldDonationInfluenceModifier() const;
 	int GetCSUAYieldPercentModifier(YieldTypes eYield) const;
 	int GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const;
+	// Sum of all CSUA trade-route gold % modifiers for this connection (settlement/preview/AI paths)
+	int GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnection) const;
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;

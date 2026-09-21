@@ -191,6 +191,8 @@ public:
 	int GetImprovementYieldModifiers(int i, int j) const;
 	// Zanzibar: each worked plot holding the specified improvement grants flat local happiness
 	int GetImprovementHappiness(int i) const;
+	// Hormuz: each unit of surplus strategic resource grants trade-route gold %
+	int GetTradeRouteGoldPerSurplusResource(int i) const;
 	// Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
 	int GetHappinessPerFollowingCity() const;
 	// Gangtok: buy influence at any city-state with faith at (gold price / divisor) faith (divisor > 0 enables the feature)
@@ -330,6 +332,8 @@ private:
 	int** m_ppiImprovementYieldModifiers;
 	// Zanzibar
 	int* m_piImprovementHappiness;
+	// Hormuz
+	int* m_piTradeRouteGoldPerSurplusResource;
 	// Gangtok
 	int m_iHappinessPerFollowingCity;
 	int m_iFaithInfluencePurchaseCostDivisor;
@@ -538,6 +542,9 @@ public:
 	// Zanzibar
 	int GetImprovementHappiness(ImprovementTypes eImprovement) const;
 	bool HasImprovementHappiness() const;
+	// Hormuz
+	int GetTradeRouteGoldPerSurplusResource(ResourceTypes eResource) const;
+	bool HasTradeRouteGoldPerSurplusResource() const;
 	// Gangtok
 	int GetHappinessPerFollowingCity() const;
 	int GetFaithInfluencePurchaseCostDivisor() const;
@@ -659,6 +666,9 @@ protected:
 	// Zanzibar
 	std::vector<int> m_aiImprovementHappiness;
 	int m_iImprovementHappinessCount;
+	// Hormuz
+	std::vector<int> m_aiTradeRouteGoldPerSurplusResource;
+	int m_iTradeRouteGoldPerSurplusResourceCount;
 	// Gangtok
 	int m_iHappinessPerFollowingCity;
 	int m_iFaithInfluencePurchaseCostDivisor;

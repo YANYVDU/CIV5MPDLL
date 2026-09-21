@@ -18217,6 +18217,50 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 #endif
 	return iMod / 100;
 }
+// Malacca / Panama / Hormuz: total CSUA trade-route gold % modifier for this connection
+// (used by settlement, preview-total and AI evaluation paths via GetTradeConnectionValueTimes100)
+int CvPlayer::GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnection) const
+{
+	if (!m_pCityStateUA) return 0;
+	// these bonuses only apply to international connections
+	if (!GC.getGame().GetGameTrade()->IsConnectionInternational(kTradeConnection)) return 0;
+
+	int iModifier = 0;
+
+	// Malacca UA: trade route gold percentage per happy luxury type
+	iModifier += GetHappyLuxuryTypeCount() * m_pCityStateUA->GetTradeRouteGoldModifierPerLuxuryType() / 100;
+
+	// Panama UA: trade route gold percentage per distance tile
+	int iDistanceModifier = m_pCityStateUA->GetTradeRouteGoldModifierPerDistance();
+	if (iDistanceModifier != 0)
+	{
+		CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
+		CvPlot* pDestPlot = GC.getMap().plot(kTradeConnection.m_iDestX, kTradeConnection.m_iDestY);
+		if (pOriginPlot && pDestPlot)
+		{
+			int iDistance = plotDistance(pOriginPlot->getX(), pOriginPlot->getY(), pDestPlot->getX(), pDestPlot->getY());
+			iModifier += iDistance * iDistanceModifier / 100;
+		}
+	}
+
+	// Hormuz UA: trade route gold percentage per surplus strategic resource
+	// (surplus = getNumResourceAvailable, clamped to >= 0; a deficit must never reduce route gold)
+	int iNumResources = GC.getNumResourceInfos();
+	for (int iRes = 0; iRes < iNumResources; iRes++)
+	{
+		int iSurplusModifier = m_pCityStateUA->GetTradeRouteGoldPerSurplusResource((ResourceTypes)iRes);
+		if (iSurplusModifier != 0)
+		{
+			int iSurplus = getNumResourceAvailable((ResourceTypes)iRes);
+			if (iSurplus > 0)
+			{
+				iModifier += iSurplus * iSurplusModifier / 100;
+			}
+		}
+	}
+
+	return iModifier;
+}
 int CvPlayer::GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const
 {
 	if (!m_pCityStateUA) return 0;

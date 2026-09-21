@@ -83,6 +83,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iDiplomaticPrestigePerCity(0)
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_piImprovementHappiness(nullptr)
+	, m_piTradeRouteGoldPerSurplusResource(nullptr)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
 	, m_iFaithInfluencePurchasePerTurnLimit(0)
@@ -116,6 +117,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piImprovementHappiness);
+	SAFE_DELETE_ARRAY(m_piTradeRouteGoldPerSurplusResource);
 	SAFE_DELETE_ARRAY(m_piImmigrantYieldModifiers);
 }
 
@@ -453,6 +455,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vUnitBornYield.push_back(entry);
 		}
 	}
+	//Hormuz: each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
+	kUtility.PopulateArrayByValue(m_piTradeRouteGoldPerSurplusResource, "Resources", "CityStateUAEffect_TradeRouteGoldPerSurplusResource", "ResourceType", "EffectType", GetType(), "Modifier");
 
 	return true;
 }
@@ -617,6 +621,15 @@ int CvCityStateUAEffectEntry::GetImprovementHappiness(int i) const
 	if (!m_piImprovementHappiness || i < 0 || i >= GC.getNumImprovementInfos())
 		return 0;
 	return m_piImprovementHappiness[i];
+}
+
+int CvCityStateUAEffectEntry::GetTradeRouteGoldPerSurplusResource(int i) const
+{
+	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	if (!m_piTradeRouteGoldPerSurplusResource || i < 0 || i >= GC.getNumResourceInfos())
+		return 0;
+	return m_piTradeRouteGoldPerSurplusResource[i];
 }
 
 int CvCityStateUAEffectEntry::GetHappinessPerFollowingCity() const { return m_iHappinessPerFollowingCity; }
@@ -861,6 +874,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_iImprovementYieldModifierCount(0)
 	, m_iImprovementHappinessCount(0)
+	, m_iTradeRouteGoldPerSurplusResourceCount(0)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
 	, m_iFaithInfluencePurchasePerTurnLimit(0)
@@ -965,6 +979,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iImprovementYieldModifierCount = 0;
 	m_iImprovementHappinessCount = 0;
 	m_aiImprovementHappiness.assign(GC.getNumImprovementInfos(), 0);
+	m_iTradeRouteGoldPerSurplusResourceCount = 0;
+	m_aiTradeRouteGoldPerSurplusResource.assign(GC.getNumResourceInfos(), 0);
 	m_iHappinessPerFollowingCity = 0;
 	m_iFaithInfluencePurchaseCostDivisor = 0;
 	m_iFaithInfluencePurchasePerTurnLimit = 0;
@@ -1215,6 +1231,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		{
 			m_aiImprovementHappiness[iImp] += iHappy * iChange;
 			m_iImprovementHappinessCount += iChange;
+		}
+	}
+	//CityState UA (Hormuz): each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
+	for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
+	{
+		int iTRMod = pEffect->GetTradeRouteGoldPerSurplusResource(iRes);
+		if (iTRMod != 0)
+		{
+			m_aiTradeRouteGoldPerSurplusResource[iRes] += iTRMod * iChange;
+			m_iTradeRouteGoldPerSurplusResourceCount += iChange;
 		}
 	}
 	//Gangtok
@@ -1502,6 +1528,16 @@ int CvPlayerCityStateUA::GetImprovementHappiness(ImprovementTypes eImprovement) 
 bool CvPlayerCityStateUA::HasImprovementHappiness() const
 {
 	return m_iImprovementHappinessCount > 0;
+}
+
+int CvPlayerCityStateUA::GetTradeRouteGoldPerSurplusResource(ResourceTypes eResource) const
+{
+	return (eResource >= 0 && (int)eResource < (int)m_aiTradeRouteGoldPerSurplusResource.size()) ? m_aiTradeRouteGoldPerSurplusResource[(int)eResource] : 0;
+}
+
+bool CvPlayerCityStateUA::HasTradeRouteGoldPerSurplusResource() const
+{
+	return m_iTradeRouteGoldPerSurplusResourceCount > 0;
 }
 
 int CvPlayerCityStateUA::GetSpecialistPointRate(SpecialistTypes eSpecialist) const

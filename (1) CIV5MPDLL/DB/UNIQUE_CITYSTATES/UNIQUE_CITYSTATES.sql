@@ -373,3 +373,12 @@ create table CityStateUAEffect_ImmigrantCashReward (
     CashPercent integer default 0,
     CashCapBase integer default 0
 );
+
+-- CityState UA (Hormuz): each unit of surplus strategic resource grants trade-route gold %
+-- (per ResourceType; Modifier in basis points (percent x 100), e.g. Modifier 400 = +4% gold per surplus oil;
+--  surplus = max(0, getNumResourceAvailable), never negative)
+create table CityStateUAEffect_TradeRouteGoldPerSurplusResource (
+    EffectType text references CityStateUAEffects(Type),
+    ResourceType text references Resources(Type),
+    Modifier integer default 0
+);

@@ -2663,25 +2663,8 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 					if (MOD_SP_UNIQUE_CITYSTATE)
 					{
-						CvPlayerCityStateUA* pUA = kOriginPlayer.GetPlayerCityStateUA();
-						if (pUA)
-						{
-							// Malacca UA: trade route gold percentage per happy luxury type
-							iModifier += kOriginPlayer.GetHappyLuxuryTypeCount() * pUA->GetTradeRouteGoldModifierPerLuxuryType() / 100;
-
-							// Panama UA: trade route gold percentage per distance tile
-							int iDistanceModifier = pUA->GetTradeRouteGoldModifierPerDistance();
-							if (iDistanceModifier != 0)
-							{
-								CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
-								CvPlot* pDestPlot = GC.getMap().plot(kTradeConnection.m_iDestX, kTradeConnection.m_iDestY);
-								if (pOriginPlot && pDestPlot)
-								{
-									int iDistance = plotDistance(pOriginPlot->getX(), pOriginPlot->getY(), pDestPlot->getX(), pDestPlot->getY());
-									iModifier += iDistance * iDistanceModifier / 100;
-								}
-							}
-						}
+						// Malacca / Panama / Hormuz: summed CSUA trade-route gold % modifiers
+						iModifier += kOriginPlayer.GetCSUATradeRouteGoldModifier(kTradeConnection);
 					}
 #endif
 
