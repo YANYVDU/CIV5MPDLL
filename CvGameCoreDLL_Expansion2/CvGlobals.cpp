@@ -2047,7 +2047,15 @@ void CreateMiniDump(EXCEPTION_POINTERS *pep)
 	mdei.ExceptionPointers  = pep;
 	mdei.ClientPointers     = FALSE;
 
-	MINIDUMP_TYPE mdt       = MiniDumpNormal;
+	// We write the dump on the crashing thread itself, so MiniDumpWriteDump pushes
+	// a few extra frames onto the faulting stack.  To still be able to unwind the
+	// REAL load-game (deserialization) call chain afterwards we must:
+	//   1) keep the full stack (MiniDumpWithFullMemory), not just a small slice,
+	//   2) record every thread's raw stack + register context
+	//      (MiniDumpWithProcessThreadData),
+	//   3) keep the original crashing CONTEXT (this is already captured into the
+	//      exception stream because mdei.ExceptionPointers = pep points at it).
+	MINIDUMP_TYPE mdt       = (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithFullMemory | MiniDumpWithProcessThreadData);
 
 	MINIDUMP_USER_STREAM userStream;
 	userStream.Type = CommentStreamA;
