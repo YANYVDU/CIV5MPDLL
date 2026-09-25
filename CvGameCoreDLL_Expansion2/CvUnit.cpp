@@ -12206,6 +12206,8 @@ int CvUnit::getTradeInfluence(const CvPlot* pPlot) const
 		if (eMinor != NO_PLAYER)
 		{
 			iInf = /*30*/ GC.getMINOR_FRIENDSHIP_FROM_TRADE_MISSION();
+			// Amount of influence also increases with how far into the game we are
+			iInf += (m_pUnitInfo->GetNumInfluencePerEra() * GET_TEAM(getTeam()).GetCurrentEra());
 			int iInfTimes100 = iInf * (100 + GetTradeMissionInfluenceModifier());
 			iInf = iInfTimes100 / 100;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)

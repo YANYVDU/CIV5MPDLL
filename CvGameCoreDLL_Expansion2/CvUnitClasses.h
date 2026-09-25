@@ -61,6 +61,7 @@ public:
 	int GetBaseGold() const;
 	int GetExtraNukeBlastRadius() const;
 	int GetNumGoldPerEra() const;
+	int GetNumInfluencePerEra() const;
 	bool IsSpreadReligion() const;
 	int GetReligionSpreads() const;
 	int GetReligiousStrength() const;
@@ -265,6 +266,7 @@ private:
 	int m_iBaseGold;
 	int m_iExtraNukeBlastRadius;
 	int m_iNumGoldPerEra;
+	int m_iNumInfluencePerEra;
 	bool m_bSpreadReligion;
 	int m_iReligionSpreads;
 	int m_iReligiousStrength;

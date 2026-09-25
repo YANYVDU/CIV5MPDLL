@@ -46,6 +46,7 @@ CvUnitEntry::CvUnitEntry(void) :
 	m_iBaseGold(0),
 	m_iExtraNukeBlastRadius(0),
 	m_iNumGoldPerEra(0),
+	m_iNumInfluencePerEra(0),
 	m_bSpreadReligion(false),
 	m_bRemoveHeresy(false),
 	m_iReligionSpreads(0),
@@ -259,6 +260,7 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	m_iBaseGold = kResults.GetInt("BaseGold");
 	m_iExtraNukeBlastRadius = kResults.GetInt("ExtraNukeBlastRadius");
 	m_iNumGoldPerEra = kResults.GetInt("NumGoldPerEra");
+	m_iNumInfluencePerEra = kResults.GetInt("NumInfluencePerEra");
 	m_bSpreadReligion = kResults.GetBool("SpreadReligion");
 	m_bRemoveHeresy = kResults.GetBool("RemoveHeresy");
 	m_iReligionSpreads = kResults.GetInt("ReligionSpreads");
@@ -787,6 +789,12 @@ int CvUnitEntry::GetExtraNukeBlastRadius() const
 int CvUnitEntry::GetNumGoldPerEra() const
 {
 	return m_iNumGoldPerEra;
+}
+
+/// Era boost to influence (for great people)
+int CvUnitEntry::GetNumInfluencePerEra() const
+{
+	return m_iNumInfluencePerEra;
 }
 
 /// Can this Unit Spread Religion to a City?
