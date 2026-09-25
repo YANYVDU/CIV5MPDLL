@@ -98,6 +98,9 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_piImmigrantYieldModifiers(nullptr)
 	, m_iImmigrantCashPercent(0)
 	, m_iImmigrantCashCapBase(0)
+	, m_iCoastalCityHappiness(0)
+	, m_piHappinessYieldModifiers(nullptr)
+	, m_piHappinessYieldModifierCaps(nullptr)
 {
 }
 
@@ -119,6 +122,8 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	SAFE_DELETE_ARRAY(m_piImprovementHappiness);
 	SAFE_DELETE_ARRAY(m_piTradeRouteGoldPerSurplusResource);
 	SAFE_DELETE_ARRAY(m_piImmigrantYieldModifiers);
+	SAFE_DELETE_ARRAY(m_piHappinessYieldModifiers);
+	SAFE_DELETE_ARRAY(m_piHappinessYieldModifierCaps);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -457,6 +462,11 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Hormuz: each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
 	kUtility.PopulateArrayByValue(m_piTradeRouteGoldPerSurplusResource, "Resources", "CityStateUAEffect_TradeRouteGoldPerSurplusResource", "ResourceType", "EffectType", GetType(), "Modifier");
+	//Vancouver: global happiness per coastal city (basis points, 100 = +1 happiness per coastal city)
+	m_iCoastalCityHappiness = kResults.GetInt("CoastalCityHappiness");
+	//Vancouver: per point of net happiness, a yield % modifier per YieldType (YieldMod in basis points, Cap in percent)
+	kUtility.PopulateArrayByValue(m_piHappinessYieldModifiers, "Yields", "CityStateUAEffect_HappinessYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
+	kUtility.PopulateArrayByValue(m_piHappinessYieldModifierCaps, "Yields", "CityStateUAEffect_HappinessYieldModifiers", "YieldType", "EffectType", GetType(), "Cap");
 
 	return true;
 }
@@ -646,6 +656,9 @@ int CvCityStateUAEffectEntry::GetFollowingCityDivisor() const { return m_iFollow
 // Sydney: per immigrant received yield % modifier (per YieldType, 100 = +1%)
 int CvCityStateUAEffectEntry::GetImmigrantYieldModifier(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piImmigrantYieldModifiers ? m_piImmigrantYieldModifiers[i] : 0; }
 bool CvCityStateUAEffectEntry::HasImmigrantYieldModifiers() const { return m_piImmigrantYieldModifiers != NULL; }
+int CvCityStateUAEffectEntry::GetCoastalCityHappiness() const { return m_iCoastalCityHappiness; }
+int CvCityStateUAEffectEntry::GetHappinessYieldModifier(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piHappinessYieldModifiers ? m_piHappinessYieldModifiers[i] : 0; }
+int CvCityStateUAEffectEntry::GetHappinessYieldModifierCap(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piHappinessYieldModifierCaps ? m_piHappinessYieldModifierCaps[i] : 0; }
 int CvCityStateUAEffectEntry::GetImmigrantCashPercent() const { return m_iImmigrantCashPercent; }
 int CvCityStateUAEffectEntry::GetImmigrantCashCapBase() const { return m_iImmigrantCashCapBase; }
 
@@ -888,6 +901,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iFollowingCityDivisor(0)
 	, m_iImmigrantCashPercent(0)
 	, m_iImmigrantCashCapBase(0)
+	, m_iCoastalCityHappiness(0)
 {
 }
 
@@ -995,6 +1009,9 @@ void CvPlayerCityStateUA::Reset()
 	m_aiImmigrantYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_iImmigrantCashPercent = 0;
 	m_iImmigrantCashCapBase = 0;
+	m_iCoastalCityHappiness = 0;
+	m_aiHappinessYieldModifiers.assign(NUM_YIELD_TYPES, 0);
+	m_aiHappinessYieldModifierCaps.assign(NUM_YIELD_TYPES, 0);
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1264,6 +1281,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	}
 	m_iImmigrantCashPercent += pEffect->GetImmigrantCashPercent() * iChange;
 	m_iImmigrantCashCapBase += pEffect->GetImmigrantCashCapBase() * iChange;
+	//Vancouver: global happiness per coastal city, and per point of net happiness a yield % modifier per YieldType (with per-yield cap)
+	m_iCoastalCityHappiness += pEffect->GetCoastalCityHappiness() * iChange;
+	for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
+	{
+		int iHMod = pEffect->GetHappinessYieldModifier(iY);
+		if (iHMod != 0) m_aiHappinessYieldModifiers[iY] += iHMod * iChange;
+		int iHCapC = pEffect->GetHappinessYieldModifierCap(iY);
+		if (iHCapC != 0) m_aiHappinessYieldModifierCaps[iY] += iHCapC * iChange;
+	}
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
 	{
@@ -1597,4 +1623,19 @@ bool CvPlayerCityStateUA::HasImmigrantYieldModifiers() const
 }
 int CvPlayerCityStateUA::GetImmigrantCashPercent() const { return m_iImmigrantCashPercent; }
 int CvPlayerCityStateUA::GetImmigrantCashCapBase() const { return m_iImmigrantCashCapBase; }
+int CvPlayerCityStateUA::GetCoastalCityHappiness() const { return m_iCoastalCityHappiness; }
+int CvPlayerCityStateUA::GetHappinessYieldModifier(YieldTypes eYield) const
+{
+	return (eYield >= 0 && (int)eYield < (int)m_aiHappinessYieldModifiers.size()) ? m_aiHappinessYieldModifiers[(int)eYield] : 0;
+}
+int CvPlayerCityStateUA::GetHappinessYieldModifierCap(YieldTypes eYield) const
+{
+	return (eYield >= 0 && (int)eYield < (int)m_aiHappinessYieldModifierCaps.size()) ? m_aiHappinessYieldModifierCaps[(int)eYield] : 0;
+}
+bool CvPlayerCityStateUA::HasHappinessYieldModifiers() const
+{
+	for (size_t i = 0; i < m_aiHappinessYieldModifiers.size(); i++)
+		if (m_aiHappinessYieldModifiers[i] != 0) return true;
+	return false;
+}
 int CvPlayerCityStateUA::GetInquisitorRetentionPercent() const { return m_iInquisitorRetentionPercent; }

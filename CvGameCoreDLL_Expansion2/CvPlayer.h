@@ -1840,6 +1840,10 @@ public:
 	void RefreshPapalRecognitionFollowerCount();
 	// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
 	int GetCSUAHappinessPerFollowingCity() const;
+	// Vancouver CS UA: global happiness per coastal city owned by the player (100 = +1 happiness per coastal city)
+	int GetCSUACoastalCityHappiness() const;
+	// Vancouver CS UA: number of the player's coastal cities
+	int GetNumCoastalCities() const;
 	// Gangtok CS UA: buy influence at ANY city-state with faith (gold price / divisor faith; divisor > 0 enables the feature)
 	int GetCSUAFaithInfluencePurchaseCostDivisor() const;
 	// Gangtok CS UA: how many faith influence purchases the ally may make per turn (globally)

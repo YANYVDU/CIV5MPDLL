@@ -162,7 +162,9 @@ CREATE TABLE CityStateUAEffects (
     -- so it drives both the real DoFriendship settlement and the Lua influence-trend UI from the same source.
     InfluencePerTurnPerFollowCityMod integer DEFAULT 0,
     -- Geneva: how many cities following the ally-led religion produce one influence unit (3 = one per 3 cities)
-    FollowingCityDivisor integer DEFAULT 0
+    FollowingCityDivisor integer DEFAULT 0,
+    -- Vancouver: global happiness per coastal city owned by the ally/friend (100 = +1 happiness per coastal city)
+    CoastalCityHappiness integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
@@ -381,4 +383,14 @@ create table CityStateUAEffect_TradeRouteGoldPerSurplusResource (
     EffectType text references CityStateUAEffects(Type),
     ResourceType text references Resources(Type),
     Modifier integer default 0
+);
+
+-- CityState UA (Vancouver): each point of the player's net happiness grants a yield percentage
+-- modifier per YieldType, capped per yield. YieldMod is in basis points (100 = +1% per happiness);
+-- Cap is in percent (50 = +50% maximum). Applies to e.g. YIELD_FOOD and YIELD_TOURISM.
+create table CityStateUAEffect_HappinessYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0,
+    Cap integer default 0
 );

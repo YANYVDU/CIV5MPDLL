@@ -15096,6 +15096,13 @@ int CvPlayer::GetHappinessFromMinorCivs() const
 			iHappiness += (GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eFoundedReligion) * iCSHappinessPerCity) / 100;
 		}
 	}
+	// Vancouver CS UA: per coastal city owned by the player, global happiness
+	// (100 = +1 happiness per coastal city). Counted here so it shows up under "from City-States".
+	int iCoastalHappinessPerCity = GetCSUACoastalCityHappiness();
+	if (iCoastalHappinessPerCity > 0)
+	{
+		iHappiness += (GetNumCoastalCities() * iCoastalHappinessPerCity) / 100;
+	}
 #endif
 	return iHappiness;
 }
@@ -18221,6 +18228,24 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 #else
 	iMod += m_pCityStateUA->GetPolicyYieldModifier(eYield) * GetPlayerPolicies()->GetNumPoliciesOwned();
 #endif
+	// Vancouver CS UA: per point of the player's net happiness, a yield % modifier per YieldType
+	// (YieldMod in basis points per happiness, capped per yield at Cap percent). Accumulate into
+	// iMod in basis points, then normalized at the end. GetHappiness() already includes the per
+	// coastal-city happiness from this same UA, so the two effects compound, capped by Cap.
+	if (m_pCityStateUA->HasHappinessYieldModifiers())
+	{
+		// Vancouver UA: use NET happiness (income minus unhappiness), clamped at floor 0
+		int iHappinessBase = GetHappiness() - GetUnhappiness();
+		if (iHappinessBase < 0) iHappinessBase = 0;
+		int iPerPoint = m_pCityStateUA->GetHappinessYieldModifier(eYield);
+		if (iPerPoint > 0)
+		{
+			int iTotalBasis = iHappinessBase * iPerPoint;          // happiness x basis-points-per-happiness
+			int iCapBasis = m_pCityStateUA->GetHappinessYieldModifierCap(eYield) * 100;  // Cap percent -> basis points
+			if (iCapBasis > 0 && iTotalBasis > iCapBasis) iTotalBasis = iCapBasis;
+			iMod += iTotalBasis;
+		}
+	}
 	return iMod / 100;
 }
 // Malacca / Panama / Hormuz: total CSUA trade-route gold % modifier for this connection
@@ -32338,6 +32363,24 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	int CvPlayer::GetCSUAHappinessPerFollowingCity() const
 	{
 		return m_pCityStateUA ? m_pCityStateUA->GetHappinessPerFollowingCity() : 0;
+	}
+
+	// Vancouver CS UA: global happiness per coastal city (100 = +1 happiness per coastal city)
+	int CvPlayer::GetCSUACoastalCityHappiness() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetCoastalCityHappiness() : 0;
+	}
+	// Vancouver CS UA: number of the player's coastal cities
+	int CvPlayer::GetNumCoastalCities() const
+	{
+		int iCount = 0;
+		for (int iCityLoop = 0; iCityLoop < getNumCities(); iCityLoop++)
+		{
+			const CvCity* pCity = getCity(iCityLoop);
+			if (pCity != NULL && pCity->isCoastal())
+				iCount++;
+		}
+		return iCount;
 	}
 
 	//	------------------------------------------------------------------------

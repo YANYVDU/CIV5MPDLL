@@ -215,6 +215,12 @@ public:
 	int GetInfluencePerTurnPerFollowCityMod() const;
 	// Geneva: how many cities following the ally-led religion produce one per-turn influence unit
 	int GetFollowingCityDivisor() const;
+	// Vancouver: global happiness per coastal city owned by the ally/friend (100 = +1 happiness per coastal city)
+	int GetCoastalCityHappiness() const;
+	// Vancouver: per point of the player's net happiness, a yield % modifier per YieldType (YieldMod=100 => +1% per happiness)
+	int GetHappinessYieldModifier(int i) const;
+	// Vancouver: per-point yield % modifier cap per YieldType (in percent, 50 = +50% maximum)
+	int GetHappinessYieldModifierCap(int i) const;
 	// Sydney: per immigrant received, a yield % modifier per YieldType (Modifier=100 => +1%)
 	int GetImmigrantYieldModifier(int i) const;
 	bool HasImmigrantYieldModifiers() const;
@@ -354,6 +360,10 @@ private:
 	int* m_piImmigrantYieldModifiers;
 	int m_iImmigrantCashPercent;
 	int m_iImmigrantCashCapBase;
+	// Vancouver
+	int m_iCoastalCityHappiness;
+	int* m_piHappinessYieldModifiers;
+	int* m_piHappinessYieldModifierCaps;
 };
 
 //======================================================================================================
@@ -562,6 +572,12 @@ public:
 	int GetDiplomaticPrestigePerMajorityCiv() const;
 	int GetInfluencePerTurnPerFollowCityMod() const;
 	int GetFollowingCityDivisor() const;
+	// Vancouver: accumulated global happiness per coastal city (basis points, 100 = +1 happiness per coastal city)
+	int GetCoastalCityHappiness() const;
+	// Vancouver: accumulated per-happiness yield % modifier per YieldType (basis points, 100 = +1% per happiness)
+	int GetHappinessYieldModifier(YieldTypes eYield) const;
+	int GetHappinessYieldModifierCap(YieldTypes eYield) const;
+	bool HasHappinessYieldModifiers() const;
 	// Sydney
 	int GetImmigrantYieldModifier(YieldTypes eYield) const;
 	bool HasImmigrantYieldModifiers() const;
@@ -689,6 +705,10 @@ protected:
 	std::vector<int> m_aiImmigrantYieldModifiers;
 	int m_iImmigrantCashPercent;
 	int m_iImmigrantCashCapBase;
+	// Vancouver
+	int m_iCoastalCityHappiness;
+	std::vector<int> m_aiHappinessYieldModifiers;
+	std::vector<int> m_aiHappinessYieldModifierCaps;
 };
 
 #endif // CVCITYSTATEUACLASSES_H
