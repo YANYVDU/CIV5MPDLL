@@ -6084,12 +6084,12 @@ void CvEspionageAI::BuildOffenseCityList(EspionageCityList& aOffenseCityList)
 					iDiploModifier *= 50;
 				}
 
-				if (GET_TEAM(eTeam).IsAllowsOpenBordersToTeam(eTargetTeam))
+				if (GET_PLAYER(ePlayer).IsAllowsOpenBordersToPlayer(eTargetPlayer))
 				{
 					iDiploModifier *= 2;
 				}
 
-				if (GET_TEAM(eTargetTeam).IsAllowsOpenBordersToTeam(eTeam))
+				if (GET_PLAYER(eTargetPlayer).IsAllowsOpenBordersToPlayer(ePlayer))
 				{
 					iDiploModifier *= 2;
 				}

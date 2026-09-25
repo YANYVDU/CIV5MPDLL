@@ -1434,6 +1434,13 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 	// tutorial info
 	m_bEverPoppedGoody = false;
 
+	// Player-level open borders (array is REALLY_MAX_PLAYERS wide; init the whole range)
+	for(int iI = 0; iI < REALLY_MAX_PLAYERS; iI++)
+	{
+		m_abPlayerOpenBorders[iI] = false;
+	}
+	m_bPlayerOBsValid = false;
+
 	m_aiCityYieldChange.clear();
 	m_aiCityYieldChange.resize(NUM_YIELD_TYPES, 0);
 
@@ -15746,8 +15753,7 @@ CvString CvPlayer::GetInternationalTourismTooltip()
 			}
 
 			// Open borders with this player
-			CvTeam &kTeam = GET_TEAM(kPlayer.getTeam());
-			if (kTeam.IsAllowsOpenBordersToTeam(eTeam))
+			if (kPlayer.IsAllowsOpenBordersToPlayer(GetID()))
 			{
 				if (openBordersCivs.length() > 0)
 				{
@@ -19206,7 +19212,7 @@ int CvPlayer::GetImmigrationRate(PlayerTypes eTargetPlayer) const
 	CvTeam& kMoveInTeam = GET_TEAM(eMoveInTeam);
 	CvTeam& kMoveOutTeam = GET_TEAM(eMoveOutTeam);
 	if(kMoveInTeam.isAtWar(eMoveOutTeam)) return 0;
-	if(kMoveInTeam.IsAllowsOpenBordersToTeam(eMoveOutTeam))
+	if(kMoveInPlayer->IsAllowsOpenBordersToPlayer(kMoveOutPlayer->GetID()))
 	{
 		iMoveOutCounterMod += 100;
 	}
@@ -22586,6 +22592,49 @@ void CvPlayer::setPersonalityType(LeaderHeadTypes eNewValue)
 EraTypes CvPlayer::GetCurrentEra() const
 {
 	return GET_TEAM(getTeam()).GetCurrentEra();
+}
+
+//	--------------------------------------------------------------------------------
+//	Player-level open borders: "this player allows open borders to ePlayer".
+bool CvPlayer::IsAllowsOpenBordersToPlayer(PlayerTypes ePlayer) const
+{
+	if(ePlayer < 0 || ePlayer >= MAX_PLAYERS)
+	{
+		return false;
+	}
+
+	if(m_bPlayerOBsValid)
+	{
+		return m_abPlayerOpenBorders[ePlayer];
+	}
+
+	// Old save (written before player-level open borders existed): fall back to the legacy
+	// team-level rule so pre-existing games keep exactly their intended behavior.
+	return GET_TEAM(getTeam()).IsAllowsOpenBordersToTeam(GET_PLAYER(ePlayer).getTeam());
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetAllowsOpenBordersToPlayer(PlayerTypes ePlayer, bool bNewValue)
+{
+	if(ePlayer < 0 || ePlayer >= MAX_PLAYERS)
+	{
+		return;
+	}
+
+	// Any write means we are now authoritative on player-level open borders.
+	m_bPlayerOBsValid = true;
+
+	if(IsAllowsOpenBordersToPlayer(ePlayer) != bNewValue)
+	{
+		m_abPlayerOpenBorders[ePlayer] = bNewValue;
+
+		GC.getMap().verifyUnitValidPlot();
+
+		if((GetID() == GC.getGame().getActivePlayer()) || (ePlayer == GC.getGame().getActivePlayer()))
+		{
+			DLLUI->setDirty(Score_DIRTY_BIT, true);
+		}
+	}
 }
 
 //	--------------------------------------------------------------------------------
@@ -30517,6 +30566,11 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iNumGreatPersonSincePolicy;
 	kStream >> m_iNumSpaceshipPartPurchased;
 
+	// Player-level open borders (version-gated tail). Saves written before this feature skip the
+	// reads, leaving the bits at their defaults (false) so legacy team-level behavior is preserved.
+	MOD_SERIALIZE_READ(164, kStream, m_bPlayerOBsValid, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, &m_abPlayerOpenBorders[0], bool, REALLY_MAX_PLAYERS, false);
+
 	if(GetID() < MAX_MAJOR_CIVS)
 	{
 		if(!m_pDiplomacyRequests)
@@ -31275,6 +31329,13 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iBossLevel;
 	kStream << m_iNumGreatPersonSincePolicy;
 	kStream << m_iNumSpaceshipPartPurchased;
+
+	{
+		// Player-level open borders (appended to the tail). Write the valid-flag then the array; the
+		// versions-gated read on load keeps pre-feature saves recognizing this as legacy data.
+		MOD_SERIALIZE_WRITE(kStream, m_bPlayerOBsValid);
+		MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, &m_abPlayerOpenBorders[0], bool, REALLY_MAX_PLAYERS);
+	}
 }
 
 //	--------------------------------------------------------------------------------

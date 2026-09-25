@@ -1308,6 +1308,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(IsAtWarAnyMajor);
 	Method(IsAtWarAnyMinor);
 	Method(IsAtWarWith);
+	Method(IsAllowsOpenBordersToPlayer);
 	Method(HasPantheon);
 	Method(HasAnyReligion);
 	Method(HasReligion);
@@ -1709,6 +1710,17 @@ int CvLuaPlayer::lGetNickName(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	lua_pushstring(L, pkPlayer->getNickName());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+// bool IsAllowsOpenBordersToPlayer(PlayerTypes ePlayer)
+int CvLuaPlayer::lIsAllowsOpenBordersToPlayer(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eOther = (PlayerTypes)lua_tointeger(L, 2);
+	const bool bResult = pkPlayer->IsAllowsOpenBordersToPlayer(eOther);
+	lua_pushboolean(L, bResult);
 	return 1;
 }
 

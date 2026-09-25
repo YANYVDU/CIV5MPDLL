@@ -3474,7 +3474,7 @@ void CvUnit::doCommand(CommandTypes eCommand, int iData1, int iData2)
 }
 
 //	--------------------------------------------------------------------------------
-bool CvUnit::canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage, bool bIsCity, bool bIsDeclareWarMove) const
+bool CvUnit::canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage, bool bIsCity, bool bIsDeclareWarMove, PlayerTypes ePlotOwnerPlayer) const
 {
 	VALIDATE_OBJECT
 
@@ -3564,13 +3564,25 @@ bool CvUnit::canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage, bool
 
 	if(!bIgnoreRightOfPassage)
 	{
-#if defined(MOD_GLOBAL_CS_OVERSEAS_TERRITORY)
-		if(pTheirTeam->IsAllowsOpenBordersToTeam(eMyTeam))
-#else
-		if(kTheirTeam.IsAllowsOpenBordersToTeam(eMyTeam))
-#endif
+		// Player-level open borders: only the concrete owner of the plot grants access, so that an
+		// open-border deal between A and C never lets a different player B on the same team slip in.
+		// IsAllowsOpenBordersToPlayer itself falls back to the legacy team-level rule for old saves,
+		// so a granted open border is honored exactly when the player-level system is authoritative.
+		if(ePlotOwnerPlayer != NO_PLAYER && GET_PLAYER(ePlotOwnerPlayer).IsAllowsOpenBordersToPlayer(getOwner()))
 		{
 			return true;
+		}
+		// Only when the concrete plot owner cannot be determined do we fall back to the team-level rule.
+		else if(ePlotOwnerPlayer == NO_PLAYER)
+		{
+#if defined(MOD_GLOBAL_CS_OVERSEAS_TERRITORY)
+			if(pTheirTeam->IsAllowsOpenBordersToTeam(eMyTeam))
+#else
+			if(kTheirTeam.IsAllowsOpenBordersToTeam(eMyTeam))
+#endif
+			{
+				return true;
+			}
 		}
 	}
 
@@ -3655,7 +3667,7 @@ bool CvUnit::canEnterTerrain(const CvPlot& enterPlot, byte bMoveFlags) const
 
 	TeamTypes eTeam = getTeam();
 
-	if(canEnterTerritory(enterPlot.getTeam(), false /*bIgnoreRightOfPassage*/, enterPlot.getPlotCity() != NULL, bMoveFlags & MOVEFLAG_DECLARE_WAR))
+	if(canEnterTerritory(enterPlot.getTeam(), false /*bIgnoreRightOfPassage*/, enterPlot.getPlotCity() != NULL, bMoveFlags & MOVEFLAG_DECLARE_WAR, enterPlot.getOwner()))
 	{
 		if(enterPlot.getFeatureType() != NO_FEATURE && enterPlot.getRouteType() == NO_ROUTE)  // assume that all units can use roads and rails
 		{
@@ -3862,7 +3874,7 @@ TeamTypes CvUnit::GetDeclareWarMove(const CvPlot& plot) const
 		{
 			if(!GET_TEAM(eRevealedTeam).isMinorCiv() || plot.isCity())
 			{
-				if(!canEnterTerritory(eRevealedTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), true))
+				if(!canEnterTerritory(eRevealedTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), true, plot.getOwner()))
 				{
 #if defined(MOD_EVENTS_WAR_AND_PEACE)
 					if(GET_TEAM(getTeam()).canDeclareWar(plot.getTeam(), getOwner()))
@@ -3910,7 +3922,7 @@ PlayerTypes CvUnit::GetBullyMinorMove(const CvPlot* pPlot) const
 		{
 			if(GET_PLAYER(eMinor).isMinorCiv())
 			{
-				if(!canEnterTerritory(GET_PLAYER(eMinor).getTeam(), false /*bIgnoreRightOfPassage*/, pPlot->isCity()))
+				if(!canEnterTerritory(GET_PLAYER(eMinor).getTeam(), false /*bIgnoreRightOfPassage*/, pPlot->isCity(), false, eMinor))
 				{
 					return eMinor;
 				}
@@ -4282,7 +4294,7 @@ bool CvUnit::canMoveInto(const CvPlot& plot, byte bMoveFlags) const
 
 		ePlotTeam = ((isHuman()) ? plot.getRevealedTeam(getTeam()) : plot.getTeam());
 
-		if(!canEnterTerritory(ePlotTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), bMoveFlags & MOVEFLAG_DECLARE_WAR))
+		if(!canEnterTerritory(ePlotTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), bMoveFlags & MOVEFLAG_DECLARE_WAR, plot.getOwner()))
 		{
 			CvAssert(ePlotTeam != NO_TEAM);
 
@@ -4638,7 +4650,7 @@ bool CvUnit::jumpToNearestValidPlot()
 #endif
 				{
 					// Can only jump to a plot if we can enter the territory, and it's NOT enemy territory OR we're a barb
-					if(canEnterTerritory(pLoopPlot->getTeam()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)) && !(pLoopPlot->isMountain() && !pLoopPlot->isCity()))
+					if(canEnterTerritory(pLoopPlot->getTeam(), false, false, false, pLoopPlot->getOwner()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)) && !(pLoopPlot->isMountain() && !pLoopPlot->isCity()))
 					{
 						CvAssertMsg(!atPlot(*pLoopPlot), "atPlot(pLoopPlot) did not return false as expected");
 
@@ -4768,7 +4780,7 @@ bool CvUnit::jumpToNearestValidPlotWithinRange(int iRange)
 #endif
 						{
 							// Can only jump to a plot if we can enter the territory, and it's NOT enemy territory OR we're a barb
-							if(canEnterTerritory(pLoopPlot->getTeam()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)))
+							if(canEnterTerritory(pLoopPlot->getTeam(), false, false, false, pLoopPlot->getOwner()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)))
 							{
 								CvAssertMsg(!atPlot(*pLoopPlot), "atPlot(pLoopPlot) did not return false as expected");
 
@@ -4868,7 +4880,7 @@ bool CvUnit::MoveToNearestValidPlotWithinRangeFromPlot(const CvPlot& pPlot, int 
 					iNumUnitLimit = GC.getPLOT_UNIT_LIMIT();
 #endif
 					if(iNumUnit >= iNumUnitLimit) continue;
-					if(canEnterTerritory(pLoopPlot->getTeam()) && pLoopPlot->isRevealed(getTeam()))
+					if(canEnterTerritory(pLoopPlot->getTeam(), false, false, false, pLoopPlot->getOwner()) && pLoopPlot->isRevealed(getTeam()))
 					{
 						if(iLoopPlotIndex != iLastValidPlotIndex)
 						{
@@ -8641,7 +8653,7 @@ void CvUnit::DoAttrition()
 	if (eOwnerTeam != NO_TEAM)
 	{
 		CvTeam &kTeam = GET_TEAM(eOwnerTeam);
-		if (!kTeam.isMinorCiv() && eOwnerTeam != getTeam() && !kTeam.IsAllowsOpenBordersToTeam(getTeam()))
+		if (!kTeam.isMinorCiv() && eOwnerTeam != getTeam() && pPlot->getOwner() != NO_PLAYER && !GET_PLAYER(pPlot->getOwner()).IsAllowsOpenBordersToPlayer(getOwner()))
 		{
 			int iReligiousStrengthLoss = GetReligiousStrengthLossRivalTerritory();
 			if (iReligiousStrengthLoss > 0)

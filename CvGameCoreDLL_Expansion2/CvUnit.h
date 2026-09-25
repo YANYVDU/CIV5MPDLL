@@ -204,7 +204,7 @@ public:
 	int  UnitPathTo(int iX, int iY, int iFlags, int iPrevETA = -1, bool bBuildingRoute = false); // slewis'd the iPrevETA
 	bool UnitRoadTo(int iX, int iY, int iFlags);
 	bool UnitBuild(BuildTypes eBuild);
-	bool canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage = false, bool bIsCity = false, bool bIsDeclareWarMove = false) const;
+	bool canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage = false, bool bIsCity = false, bool bIsDeclareWarMove = false, PlayerTypes ePlotOwnerPlayer = NO_PLAYER) const;
 	bool canEnterTerrain(const CvPlot& pPlot, byte bMoveFlags = 0) const;
 	TeamTypes GetDeclareWarMove(const CvPlot& pPlot) const;
 	PlayerTypes GetBullyMinorMove(const CvPlot* pPlot) const;

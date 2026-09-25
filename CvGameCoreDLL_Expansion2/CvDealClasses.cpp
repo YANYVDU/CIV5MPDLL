@@ -544,7 +544,7 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 		}
 
 		// Already has OP
-		if(pFromTeam->IsAllowsOpenBordersToTeam(eToTeam) && bIgnoreExistingOP)
+		if(GET_PLAYER(ePlayer).IsAllowsOpenBordersToPlayer(eToPlayer) && bIgnoreExistingOP)
 			return false;
 		// Same Team
 		if(eFromTeam == eToTeam)
@@ -2621,7 +2621,7 @@ void CvGameDeals::FinalizeDealValidAndAccepted(PlayerTypes eFromPlayer, PlayerTy
 		// Open Borders
 		else if(it->m_eItemType == TRADE_ITEM_OPEN_BORDERS)
 		{
-			GET_TEAM(eFromTeam).SetAllowsOpenBordersToTeam(eToTeam, true);
+			GET_PLAYER(eAcceptedFromPlayer).SetAllowsOpenBordersToPlayer(eAcceptedToPlayer, true);
 		}
 		// Defensive Pact
 		else if(it->m_eItemType == TRADE_ITEM_DEFENSIVE_PACT)
@@ -2983,7 +2983,7 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 				// Open Borders
 				else if(it->m_eItemType == TRADE_ITEM_OPEN_BORDERS)
 				{
-					GET_TEAM(eFromTeam).SetAllowsOpenBordersToTeam(eToTeam, true);
+					GET_PLAYER(eAcceptedFromPlayer).SetAllowsOpenBordersToPlayer(eAcceptedToPlayer, true);
 				}
 				// Defensive Pact
 				else if(it->m_eItemType == TRADE_ITEM_DEFENSIVE_PACT)
@@ -3688,7 +3688,7 @@ void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bo
 	// Open Borders
 	else if(pItem->m_eItemType == TRADE_ITEM_OPEN_BORDERS)
 	{
-		GET_TEAM(eFromTeam).SetAllowsOpenBordersToTeam(eToTeam, false);
+		fromPlayer.SetAllowsOpenBordersToPlayer(toPlayer.GetID(), false);
 
 		pNotifications = fromPlayer.GetNotifications();
 		if(pNotifications)

@@ -2975,7 +2975,7 @@ PlayerTypes CvPlayerCulture::GetCivLowestInfluence(bool bCheckOpenBorders) const
 		CvTeam &kTeam = GET_TEAM(kPlayer.getTeam());
 		if (iLoopPlayer != m_pPlayer->GetID() && kPlayer.isAlive() && !kPlayer.isMinorCiv() && !kTeam.isAtWar(m_pPlayer->getTeam()))
 		{
-			if (!bCheckOpenBorders || kTeam.IsAllowsOpenBordersToTeam(m_pPlayer->getTeam()))
+			if (!bCheckOpenBorders || kPlayer.IsAllowsOpenBordersToPlayer(m_pPlayer->GetID()))
 			{
 				int iInfluenceOn = GetInfluenceOn((PlayerTypes)iLoopPlayer);
 				int iLifetimeCulture = kPlayer.GetJONSCultureEverGenerated();
@@ -3211,7 +3211,7 @@ int CvPlayerCulture::GetTourismModifierWith(PlayerTypes ePlayer) const
 	PolicyBranchTypes eTheirIdeology = kPlayer.GetPlayerPolicies()->GetLateGamePolicyTree();
 
 	// Open borders with this player
-	if (kTeam.IsAllowsOpenBordersToTeam(m_pPlayer->getTeam()))
+	if (kPlayer.IsAllowsOpenBordersToPlayer(m_pPlayer->GetID()))
 	{
 		iMultiplier += GetTourismModifierOpenBorders();
 	}
@@ -3295,7 +3295,7 @@ CvString CvPlayerCulture::GetTourismModifierWithTooltip(PlayerTypes ePlayer) con
 	// POSITIVE MODIFIERS
 
 	// Open borders with this player
-	if (kTeam.IsAllowsOpenBordersToTeam(m_pPlayer->getTeam()))
+	if (kPlayer.IsAllowsOpenBordersToPlayer(m_pPlayer->GetID()))
 	{
 		szRtnValue += "[COLOR_POSITIVE_TEXT]" + GetLocalizedText("TXT_KEY_CO_PLAYER_TOURISM_OPEN_BORDERS", GetTourismModifierOpenBorders()) + "[ENDCOLOR]";
 	}
@@ -3370,7 +3370,7 @@ CvString CvPlayerCulture::GetTourismModifierWithTooltip(PlayerTypes ePlayer) con
 	}
 
 	// NEUTRAL MODIFIERS
-	if (!kTeam.IsAllowsOpenBordersToTeam(m_pPlayer->getTeam()))
+	if (!kPlayer.IsAllowsOpenBordersToPlayer(m_pPlayer->GetID()))
 	{
 		szRtnValue += "[COLOR_GREY]" + GetLocalizedText("TXT_KEY_CO_PLAYER_TOURISM_OPEN_BORDERS", 0) + "[ENDCOLOR]";		
 	}
@@ -4790,7 +4790,7 @@ int CvCityCulture::GetTourismMultiplier(PlayerTypes ePlayer, bool bIgnoreReligio
 	if (!bIgnoreOpenBorders)
 	{
 		// Open borders with this player
-		if (kTeam.IsAllowsOpenBordersToTeam(kCityPlayer.getTeam()))
+		if (kPlayer.IsAllowsOpenBordersToPlayer(kCityPlayer.GetID()))
 		{
 			iMultiplier += kCityPlayer.GetCulture()->GetTourismModifierOpenBorders();
 		}

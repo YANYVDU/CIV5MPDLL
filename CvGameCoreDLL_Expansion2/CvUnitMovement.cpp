@@ -124,8 +124,8 @@ void CvUnitMovement::GetCostsForMove(const CvUnit* pUnit, const CvPlot* pFromPlo
 		{
 			if(!pToPlot->isWater() && pUnit->getDomainType() == DOMAIN_LAND)
 			{
-				// Don't apply penalty to OUR team or teams we've given open borders to
-				if(eUnitTeam != eTeam && !pPlotTeam->IsAllowsOpenBordersToTeam(eUnitTeam))
+				// Don't apply penalty to OUR team or players we've given open borders to
+				if(eUnitTeam != eTeam && !pPlotPlayer->IsAllowsOpenBordersToPlayer(pUnit->getOwner()))
 				{
 					iRegularCost += iMoveDenominator;
 				}

@@ -1395,6 +1395,11 @@ public:
 	void setTeam(TeamTypes eTeam);
 	bool IsAITeammateOfHuman() const;
 
+	// Player-level open borders (team-level counterpart lives on CvTeam and stays intact).
+	// "This player allows its open borders to ePlayer."
+	bool IsAllowsOpenBordersToPlayer(PlayerTypes ePlayer) const;
+	void SetAllowsOpenBordersToPlayer(PlayerTypes ePlayer, bool bNewValue);
+
 	PlayerColorTypes getPlayerColor() const;
 	const CvColorA& getPlayerTextColor() const;
 
@@ -3120,6 +3125,12 @@ protected:
 	FAutoVariable<bool, CvPlayer> m_bEverPoppedGoody;
 	FAutoVariable<bool, CvPlayer> m_bEverTrainedBuilder;
 	// end slewis's tutorial variables
+
+	// Player-level open borders, indexed by the player we allow into our territory.
+	Firaxis::Array< bool, REALLY_MAX_PLAYERS > m_abPlayerOpenBorders;
+	// True after a save written by this code path is loaded; used to distinguish new saves from
+	// old saves (which only carry legacy team-level open borders).
+	bool m_bPlayerOBsValid;
 
 	EndTurnBlockingTypes  m_eEndTurnBlockingType;
 	int  m_iEndTurnBlockingNotificationIndex;

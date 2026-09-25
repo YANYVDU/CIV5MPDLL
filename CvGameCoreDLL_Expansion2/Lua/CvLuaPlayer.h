@@ -64,6 +64,7 @@ protected:
 	static int lKillUnits(lua_State* L);
 	static int lIsHuman(lua_State* L);
 	static int lIsBarbarian(lua_State* L);
+	static int lIsAllowsOpenBordersToPlayer(lua_State* L);
 	static int lGetName(lua_State* L);
 	static int lGetNameKey(lua_State* L);
 	static int lGetNickName(lua_State* L);

@@ -4103,7 +4103,7 @@ bool CvPlot::isFriendlyCity(const CvUnit& kUnit, bool) const
 			return true;
 		}
 
-		if(GET_TEAM(ePlotTeam).IsAllowsOpenBordersToTeam(eTeam))
+		if(getOwner() != NO_PLAYER && GET_PLAYER(getOwner()).IsAllowsOpenBordersToPlayer(kUnit.getOwner()))
 		{
 			return true;
 		}
@@ -4245,7 +4245,7 @@ bool CvPlot::IsFriendlyTerritory(PlayerTypes ePlayer) const
 	}
 
 	// Major's territory we have OB with
-	if(GET_TEAM(ePlotOwner).IsAllowsOpenBordersToTeam(eTeam))
+	if(getOwner() != NO_PLAYER && GET_PLAYER(getOwner()).IsAllowsOpenBordersToPlayer(ePlayer))
 	{
 		return true;
 	}
