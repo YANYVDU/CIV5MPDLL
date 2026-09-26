@@ -18309,6 +18309,18 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += GetBornGreatPersonCount(eGP) * vGP[i].m_iYieldMod;
 		}
 	}
+	// Bogota CS UA: per owned city matching a special city type, ALL cities gain a yield % modifier, nation-wide.
+	// (YieldMod is a plain percent; the matching-city count is cached once per doTurn, so multiply by 100
+	// here because GetCSUAYieldPercentModifier normalizes by /100 at the end.)
+	if (m_pCityStateUA->HasSpecialCityCountYieldModifiers())
+	{
+		const std::vector<SpecialCityCountYieldModifierEntry>& vSpecCount = m_pCityStateUA->GetSpecialCityCountYieldModifiers();
+		for (size_t i = 0; i < vSpecCount.size(); i++)
+		{
+			if (vSpecCount[i].m_iYieldType != (int)eYield) continue;
+			iMod += m_pCityStateUA->GetCachedSpecialCityCount(vSpecCount[i].m_iSpecialCityType) * vSpecCount[i].m_iYieldMod * 100;
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -19943,6 +19955,11 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// (GetCSUAYieldPercentModifier) and global-happiness (GetHappinessFromMinorCivs) hot paths read flat ints.
 	m_pCityStateUA->ComputeLiteracyPercent();
 	m_pCityStateUA->CacheWorkedHolySites();
+
+	// Bogota UA: cache the owned cities matching each special city type once per turn so the per-yield
+	// hot paths (GetCSUAYieldPercentModifier, CvCity::GetBaseYieldRateModifier) read a flat table
+	// instead of re-running the predicate against every plot of every city.
+	m_pCityStateUA->CacheSpecialCityMatches();
 
 	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
 	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.

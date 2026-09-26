@@ -115,6 +115,8 @@ class CvTraitEntry;
 class CvTraitXMLEntries;
 class CvCityStateUAEffectEntry;
 class CvCityStateUAEffectXMLEntries;
+class CvSpecialCityTypeEntry;
+class CvCityStateUASpecialCityTypeXMLEntries;
 class CvCityStateUAEntry;
 class CvCityStateUAXMLEntries;
 class CvNotificationEntry;
@@ -592,6 +594,7 @@ public:
 	_Ret_maybenull_ CvTraitEntry* getTraitInfo(TraitTypes eTraitNum);
 	CvTraitXMLEntries* GetGameTraits() const;
 	CvCityStateUAEffectXMLEntries* GetGameCityStateUAEffects() const;
+	CvCityStateUASpecialCityTypeXMLEntries* GetGameCityStateUASpecialCityTypes() const;
 	CvCityStateUAXMLEntries* GetGameCityStateUAs() const;
 	CvCityStateUAEffectEntry* getCityStateUAEffectEntry(int index) const;
 
@@ -8086,6 +8089,7 @@ protected:
 	CvTraitXMLEntries* m_pTraits;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	CvCityStateUAEffectXMLEntries* m_pCityStateUAEffects;
+	CvCityStateUASpecialCityTypeXMLEntries* m_pCityStateUASpecialCityTypes;
 	CvCityStateUAXMLEntries* m_pCityStateUAs;
 #endif
 	CvReligionXMLEntries* m_pReligions;

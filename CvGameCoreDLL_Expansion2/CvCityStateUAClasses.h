@@ -85,6 +85,76 @@ struct GreatWorkYieldModifierEntry {
 };
 
 //======================================================================================================
+// Special city type - a named boolean predicate over a CvCity, described by data rows
+// (CityStateUAEffect_SpecialCityTypeConditionsOr / ...And) and referenced by effect rows.
+class CvCity;
+
+// Condition kind for a special city type; unknown kinds are ignored (fail-safe).
+// Add new branches in CvSpecialCityTypeEntry::EvaluateCondition when a future city-state needs them.
+enum SpecialCityConditionTypes {
+	SPECIAL_CITY_CONDITION_NONE = 0,
+	SPECIAL_CITY_CONDITION_HAS_RESOURCE,   // Value = resource type (must be developed/improved)
+	SPECIAL_CITY_CONDITION_HAS_FEATURE,    // Value = feature type (inside the city's territory)
+	NUM_SPECIAL_CITY_CONDITION_TYPES
+};
+
+struct SpecialCityConditionEntry {
+	SpecialCityConditionTypes m_eConditionType;
+	int m_iValue;   // resource/feature ID, -1 for boolean conditions
+};
+
+struct SpecialCityYieldModifierEntry {
+	int m_iSpecialCityType;
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
+struct SpecialCityCountYieldModifierEntry {
+	int m_iSpecialCityType;
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
+// A city type matches when: EVERY And-row matches AND (the Or table is empty OR at least one Or-row matches).
+class CvSpecialCityTypeEntry : public CvBaseInfo
+{
+public:
+	CvSpecialCityTypeEntry(void);
+	~CvSpecialCityTypeEntry(void);
+
+	bool CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility);
+
+	bool IsCityMatch(const CvCity* pCity) const;
+
+private:
+	bool EvaluateCondition(const SpecialCityConditionEntry& kCondition, const CvCity* pCity) const;
+
+	std::vector<SpecialCityConditionEntry> m_vConditionsOr;
+	std::vector<SpecialCityConditionEntry> m_vConditionsAnd;
+	// Set when a condition table has rows but none of them parsed. IsCityMatch then fails closed:
+	// without this an all-unparsable Or table would be read as "no restriction" and match every city.
+	bool m_bConditionsInvalid;
+};
+
+//======================================================================================================
+// CvCityStateUASpecialCityTypeXMLEntries - container for all CityStateUAEffect_SpecialCityTypes entries
+//======================================================================================================
+class CvCityStateUASpecialCityTypeXMLEntries
+{
+public:
+	CvCityStateUASpecialCityTypeXMLEntries(void);
+	~CvCityStateUASpecialCityTypeXMLEntries(void);
+
+	std::vector<CvSpecialCityTypeEntry*>& GetEntries();
+	int GetNumEntries() const;
+	CvSpecialCityTypeEntry* GetEntry(int index) const;
+	void DeleteArray();
+
+private:
+	std::vector<CvSpecialCityTypeEntry*> m_paEntries;
+};
+
+//======================================================================================================
 class CvCityStateUAEffectEntry : public CvBaseInfo
 {
 public:
@@ -263,6 +333,9 @@ public:
 	const std::vector<LiteracyYieldModifierEntry>& GetLiteracyYieldModifiers() const { return m_vLiteracyYieldModifiers; }
 	const std::vector<BornGreatPersonNationwideYieldEntry>& GetBornGreatPersonYieldModifiers() const { return m_vBornGreatPersonYieldModifiers; }
 	const std::vector<AdjacentImprovementYieldChangeEntry>& GetAdjacentImprovementYieldChanges() const { return m_vAdjacentImprovementYieldChanges; }
+	// Bogota: cities matching the special city type gain a yield % modifier; per owned matching city, all cities do
+	const std::vector<SpecialCityYieldModifierEntry>& GetSpecialCityYieldModifiers() const { return m_vSpecialCityYieldModifiers; }
+	const std::vector<SpecialCityCountYieldModifierEntry>& GetSpecialCityCountYieldModifiers() const { return m_vSpecialCityCountYieldModifiers; }
 
 private:
 	// Florence
@@ -410,6 +483,9 @@ private:
 	std::vector<LiteracyYieldModifierEntry> m_vLiteracyYieldModifiers;
 	std::vector<BornGreatPersonNationwideYieldEntry> m_vBornGreatPersonYieldModifiers;
 	std::vector<AdjacentImprovementYieldChangeEntry> m_vAdjacentImprovementYieldChanges;
+	// Bogota
+	std::vector<SpecialCityYieldModifierEntry> m_vSpecialCityYieldModifiers;
+	std::vector<SpecialCityCountYieldModifierEntry> m_vSpecialCityCountYieldModifiers;
 };
 
 //======================================================================================================
@@ -657,6 +733,19 @@ public:
 	int GetCachedWorkedHolySites() const;
 	void CacheWorkedHolySites();
 
+	// Bogota: cities matching a special city type gain a yield % modifier; per owned matching city,
+	// all cities gain a yield % modifier.
+	const std::vector<SpecialCityYieldModifierEntry>& GetSpecialCityYieldModifiers() const { return m_vSpecialCityYieldModifiers; }
+	bool HasSpecialCityYieldModifiers() const;
+	const std::vector<SpecialCityCountYieldModifierEntry>& GetSpecialCityCountYieldModifiers() const { return m_vSpecialCityCountYieldModifiers; }
+	bool HasSpecialCityCountYieldModifiers() const;
+	// Bogota: per special city type, the IDs of owned cities matching it, refreshed once per doTurn in
+	// CvPlayer::RefreshCSAllUAEffects. The hot path (CvCity::GetBaseYieldRateModifier) reads this table
+	// instead of re-running the predicate, which scans every plot of the city for each yield and type.
+	int GetCachedSpecialCityCount(int iSpecialCityType) const;
+	bool IsCachedSpecialCityTypeMatch(int iCityID, int iSpecialCityType) const;
+	void CacheSpecialCityMatches();
+
 	void Reset();
 
 protected:
@@ -796,6 +885,12 @@ protected:
 	std::vector<AdjacentImprovementYieldChangeEntry> m_vAdjacentImprovementYieldChanges;
 	int m_iCachedLiteracyPercent;
 	int m_iCachedWorkedHolySites;
+	// Bogota
+	std::vector<SpecialCityYieldModifierEntry> m_vSpecialCityYieldModifiers;
+	std::vector<SpecialCityCountYieldModifierEntry> m_vSpecialCityCountYieldModifiers;
+	// Cached IDs of owned cities matching each special city type, indexed by special city type ID,
+	// refreshed once per doTurn (in CvPlayer::RefreshCSAllUAEffects)
+	std::vector< std::vector<int> > m_avCachedSpecialCityIDs;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

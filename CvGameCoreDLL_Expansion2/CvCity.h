@@ -1320,6 +1320,8 @@ public:
 	bool HasAnyDomesticTradeRoute() const;
 	bool HasAnyInternationalTradeRoute() const;
 	bool HasTradeRouteToAnyCity() const;
+	//CityState UA: true when this city satisfies the named special city type's predicate
+	bool IsSpecialCityType(int iSpecialCityType) const;
 	bool HasTradeRouteTo(CvCity* pCity) const;
 	bool HasTradeRouteFromAnyCity() const;
 	bool HasTradeRouteFrom(CvCity* pCity) const;

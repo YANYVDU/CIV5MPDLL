@@ -13537,6 +13537,26 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
+	//CityState UA (Bogota): a city matching a special city type grants a yield percentage modifier.
+	//Reads the per-turn cache (CvPlayerCityStateUA::CacheSpecialCityMatches) instead of re-running the
+	//predicate, which scans every plot of the city for each yield type.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pCityStateUA && pCityStateUA->HasSpecialCityYieldModifiers())
+	{
+		const std::vector<SpecialCityYieldModifierEntry>& vSpecialCityMods = pCityStateUA->GetSpecialCityYieldModifiers();
+		for (size_t i = 0; i < vSpecialCityMods.size(); i++)
+		{
+			if (vSpecialCityMods[i].m_iYieldType != (int)eIndex) continue;
+			if (pCityStateUA->IsCachedSpecialCityTypeMatch(GetID(), vSpecialCityMods[i].m_iSpecialCityType))
+			{
+				iModifier += vSpecialCityMods[i].m_iYieldMod;
+				if (toolTipSink)
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD", vSpecialCityMods[i].m_iYieldMod);
+			}
+		}
+	}
+#endif
+
 	//CityState UA (Antananarivo): each worked plot holding a configured improvement grants a yield percentage modifier
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (pCityStateUA && pCityStateUA->HasImprovementYieldModifiers())
@@ -23814,6 +23834,21 @@ bool CvCity::HasTradeRouteToAnyCity() const
 	}
 
 	return false;
+}
+
+//CityState UA: true when this city satisfies the named special city type's predicate
+bool CvCity::IsSpecialCityType(int iSpecialCityType) const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (iSpecialCityType < 0) return false;
+
+	CvSpecialCityTypeEntry* pEntry = GC.GetGameCityStateUASpecialCityTypes()->GetEntry(iSpecialCityType);
+	if (pEntry == NULL) return false;
+
+	return pEntry->IsCityMatch(this);
+#else
+	return false;
+#endif
 }
 
 bool CvCity::HasTradeRouteTo(CvCity* pCity) const

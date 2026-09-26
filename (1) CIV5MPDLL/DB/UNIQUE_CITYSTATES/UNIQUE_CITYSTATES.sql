@@ -308,6 +308,56 @@ create table CityStateUAEffect_ResourceYieldModifiers (
     YieldMod integer default 0
 );
 
+-- CityState UA (Bogota): named special-city predicates, reused by several effects.
+-- The ID column is REQUIRED: the C++ side loads this table through PrefetchCollection,
+-- which issues "SELECT * FROM <table> WHERE ID > -1 ORDER BY ID" and FNEWs one entry per row.
+create table CityStateUAEffect_SpecialCityTypes (
+    ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+    Type text not null unique
+);
+
+-- A city type matches when: EVERY And-row matches AND (the Or table is empty OR at least one Or-row matches).
+-- Both are CHILD tables (read via "where SpecialCityType = ?"), so neither needs an ID column.
+-- ConditionType is a fixed enum parsed in CvSpecialCityTypeEntry::CacheResults; Value holds the
+-- resource/feature type name for value-carrying conditions (NULL for boolean ones).
+-- Currently only HAS_RESOURCE / HAS_FEATURE are implemented; add enum branches for future kinds
+-- (CAPITAL / HILLS / RIVER / COASTAL / HAS_BUILDINGCLASS / trade-route kinds / continent kinds).
+create table CityStateUAEffect_SpecialCityTypeConditionsOr (
+    SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
+    ConditionType   text,
+    Value           text
+);
+
+create table CityStateUAEffect_SpecialCityTypeConditionsAnd (
+    SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
+    ConditionType   text,
+    Value           text
+);
+
+-- A city matching the special city type grants a yield percentage modifier to that city.
+-- SPECIAL_CITY_BOGOTA_LUXURY / YIELD_CULTURE / 35 = +35% culture for cities of that type (no stacking).
+-- NOTE: YieldMod here is a PLAIN PERCENT (35 means +35%), NOT basis points -- the opposite convention
+-- from CityStateUAEffect_BornGreatPersonYieldModifiers (100 = +1%). CvCity::GetBaseYieldRateModifier
+-- adds this value straight to its percent total, whereas the born-great-person table is divided by 100.
+create table CityStateUAEffect_SpecialCityYieldModifiers (
+    EffectType      text references CityStateUAEffects(Type),
+    SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
+    YieldType       text references Yields(Type),
+    YieldMod        integer default 0
+);
+
+-- For each owned city matching the special city type, ALL cities gain a yield percentage modifier.
+-- SPECIAL_CITY_BOGOTA_LUXURY / YIELD_TOURISM / 5 = +5% tourism per qualifying city
+-- NOTE: YieldMod here is a PLAIN PERCENT (5 means +5% per qualifying city), NOT basis points.
+-- CvPlayer::GetCSUAYieldPercentModifier multiplies it by 100 because that function accumulates basis
+-- points and divides by 100 at the end; do not "pre-convert" the stored value.
+create table CityStateUAEffect_SpecialCityCountYieldModifiers (
+    EffectType      text references CityStateUAEffects(Type),
+    SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
+    YieldType       text references Yields(Type),
+    YieldMod        integer default 0
+);
+
 -- CityState UA (Antananarivo): each worked plot holding the specified improvement
 -- grants a yield percentage modifier to the city (e.g. MINE / YIELD_GOLD / 3 = +3% gold per worked mine)
 create table CityStateUAEffect_ImprovementYieldModifiers (

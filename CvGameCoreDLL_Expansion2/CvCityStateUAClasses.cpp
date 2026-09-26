@@ -10,6 +10,193 @@
 #include "LintFree.h"
 
 //======================================================================================================
+// CvSpecialCityTypeEntry
+//======================================================================================================
+namespace {
+SpecialCityConditionTypes ParseSpecialCityCondition(const char* szType)
+{
+	if (szType == NULL) return SPECIAL_CITY_CONDITION_NONE;
+	if (strcmp(szType, "HAS_RESOURCE") == 0) return SPECIAL_CITY_CONDITION_HAS_RESOURCE;
+	if (strcmp(szType, "HAS_FEATURE") == 0) return SPECIAL_CITY_CONDITION_HAS_FEATURE;
+	return SPECIAL_CITY_CONDITION_NONE;
+}
+}
+
+CvSpecialCityTypeEntry::CvSpecialCityTypeEntry(void)
+	: m_bConditionsInvalid(false)
+{
+}
+
+CvSpecialCityTypeEntry::~CvSpecialCityTypeEntry(void)
+{
+}
+
+bool CvSpecialCityTypeEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
+{
+	if (!CvBaseInfo::CacheResults(kResults, kUtility))
+		return false;
+
+	m_vConditionsOr.clear();
+	m_vConditionsAnd.clear();
+	m_bConditionsInvalid = false;
+
+	// Both condition tables are CHILD tables (no ID column), keyed by SpecialCityType.
+	const char* aszTables[2] = {
+		"CityStateUAEffect_SpecialCityTypeConditionsOr",
+		"CityStateUAEffect_SpecialCityTypeConditionsAnd"
+	};
+	std::vector<SpecialCityConditionEntry>* apvTarget[2] = { &m_vConditionsOr, &m_vConditionsAnd };
+
+	for (int iTable = 0; iTable < 2; iTable++)
+	{
+		std::string strKey(aszTables[iTable]);
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if (pResults == NULL)
+		{
+			std::string strQuery = "select ConditionType, Value from ";
+			strQuery += aszTables[iTable];
+			strQuery += " where SpecialCityType = ?";
+			pResults = kUtility.PrepareResults(strKey, strQuery.c_str());
+		}
+		if (pResults == NULL)
+		{
+			// A query that cannot even be prepared leaves the condition table empty, which IsCityMatch
+			// would read as "no restriction" (fail-open). Fail closed, same as the unparsable-row path.
+			m_bConditionsInvalid = true;
+			CvAssertMsg(false, "CvSpecialCityTypeEntry: failed to prepare the condition query; this special city type will match no city");
+			continue;
+		}
+
+		int iRawRows = 0;
+		pResults->Bind(1, GetType());
+		while (pResults->Step())
+		{
+			iRawRows++;
+
+			SpecialCityConditionEntry entry;
+			entry.m_eConditionType = ParseSpecialCityCondition(pResults->GetText(0));
+			entry.m_iValue = -1;
+			if (entry.m_eConditionType == SPECIAL_CITY_CONDITION_HAS_RESOURCE
+			 || entry.m_eConditionType == SPECIAL_CITY_CONDITION_HAS_FEATURE)
+			{
+				const char* szValue = pResults->GetText(1);
+				if (szValue != NULL)
+					entry.m_iValue = GC.getInfoTypeForString(szValue, true);
+			}
+
+			if (entry.m_eConditionType != SPECIAL_CITY_CONDITION_NONE && entry.m_iValue >= 0)
+			{
+				apvTarget[iTable]->push_back(entry);
+			}
+			else
+			{
+				CvAssertMsg(false, "CvSpecialCityTypeEntry: dropping unparsable condition row; check ConditionType/Value spelling in the special city type condition tables");
+			}
+		}
+
+		// A table with rows but no parsable ones must not silently become "no restriction" -- an empty
+		// Or table is read as "matches anything" by IsCityMatch, so that would be fail-open. Fail closed.
+		if (iRawRows > 0 && apvTarget[iTable]->empty())
+		{
+			m_bConditionsInvalid = true;
+			CvAssertMsg(false, "CvSpecialCityTypeEntry: every condition row failed to parse; this special city type will match no city");
+		}
+	}
+
+	// A named type with no condition rows at all has no predicate, and IsCityMatch would read the empty
+	// Or table as "no restriction" and match every city. Only a config omission can produce this (a
+	// pure-AND type always has And rows), so fail closed rather than silently buffing every city.
+	if (m_vConditionsOr.empty() && m_vConditionsAnd.empty())
+	{
+		m_bConditionsInvalid = true;
+		CvAssertMsg(false, "CvSpecialCityTypeEntry: special city type has no condition rows; it would match every city");
+	}
+
+	return true;
+}
+
+bool CvSpecialCityTypeEntry::EvaluateCondition(const SpecialCityConditionEntry& kCondition, const CvCity* pCity) const
+{
+	if (pCity == NULL) return false;
+
+	switch (kCondition.m_eConditionType)
+	{
+	case SPECIAL_CITY_CONDITION_HAS_RESOURCE:
+		// "Developed" = the city owns the resource and it is improved (bImproved = true)
+		return pCity->GetNumResourceLocal((ResourceTypes)kCondition.m_iValue, true) > 0;
+	case SPECIAL_CITY_CONDITION_HAS_FEATURE:
+		return pCity->IsHasFeatureLocal((FeatureTypes)kCondition.m_iValue);
+	default:
+		return false;
+	}
+}
+
+bool CvSpecialCityTypeEntry::IsCityMatch(const CvCity* pCity) const
+{
+	if (pCity == NULL) return false;
+
+	// Fail closed when the type's own condition rows could not be parsed: the empty Or table below
+	// would otherwise be read as "no restriction" and match every city.
+	if (m_bConditionsInvalid)
+		return false;
+
+	// Every And-row must match; an empty And table imposes no restriction.
+	for (size_t i = 0; i < m_vConditionsAnd.size(); i++)
+	{
+		if (!EvaluateCondition(m_vConditionsAnd[i], pCity))
+			return false;
+	}
+
+	// An empty Or table imposes no restriction; otherwise at least one Or-row must match.
+	if (m_vConditionsOr.empty())
+		return true;
+	for (size_t i = 0; i < m_vConditionsOr.size(); i++)
+	{
+		if (EvaluateCondition(m_vConditionsOr[i], pCity))
+			return true;
+	}
+	return false;
+}
+
+//======================================================================================================
+// CvCityStateUASpecialCityTypeXMLEntries
+//======================================================================================================
+CvCityStateUASpecialCityTypeXMLEntries::CvCityStateUASpecialCityTypeXMLEntries(void)
+{
+}
+
+CvCityStateUASpecialCityTypeXMLEntries::~CvCityStateUASpecialCityTypeXMLEntries(void)
+{
+	DeleteArray();
+}
+
+std::vector<CvSpecialCityTypeEntry*>& CvCityStateUASpecialCityTypeXMLEntries::GetEntries()
+{
+	return m_paEntries;
+}
+
+int CvCityStateUASpecialCityTypeXMLEntries::GetNumEntries() const
+{
+	return (int)m_paEntries.size();
+}
+
+CvSpecialCityTypeEntry* CvCityStateUASpecialCityTypeXMLEntries::GetEntry(int index) const
+{
+	if (index >= 0 && index < (int)m_paEntries.size())
+		return m_paEntries[index];
+	return NULL;
+}
+
+void CvCityStateUASpecialCityTypeXMLEntries::DeleteArray()
+{
+	for (size_t i = 0; i < m_paEntries.size(); i++)
+	{
+		SAFE_DELETE(m_paEntries[i]);
+	}
+	m_paEntries.clear();
+}
+
+//======================================================================================================
 // CvCityStateUAEffectEntry
 //======================================================================================================
 CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
@@ -565,6 +752,46 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Ife: while in a golden age, grant a yield % modifier per YieldType (YieldMod in percent, 25 = +25%)
 	kUtility.PopulateArrayByValue(m_piGoldenAgeYieldModifiers, "Yields", "CityStateUAEffect_GoldenAgeYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
+	//Bogota: a city matching a special city type gains a yield % modifier
+	{
+		m_vSpecialCityYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_SpecialCityYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select SpecialCityTypes.ID as SpecialCityTypeID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_SpecialCityYieldModifiers inner join CityStateUAEffect_SpecialCityTypes as SpecialCityTypes on SpecialCityTypes.Type = SpecialCityType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			SpecialCityYieldModifierEntry entry;
+			entry.m_iSpecialCityType = pResults->GetInt(0);
+			entry.m_iYieldType = pResults->GetInt(1);
+			entry.m_iYieldMod = pResults->GetInt(2);
+			m_vSpecialCityYieldModifiers.push_back(entry);
+		}
+	}
+	//Bogota: per owned city matching a special city type, ALL cities gain a yield % modifier
+	{
+		m_vSpecialCityCountYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_SpecialCityCountYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select SpecialCityTypes.ID as SpecialCityTypeID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_SpecialCityCountYieldModifiers inner join CityStateUAEffect_SpecialCityTypes as SpecialCityTypes on SpecialCityTypes.Type = SpecialCityType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			SpecialCityCountYieldModifierEntry entry;
+			entry.m_iSpecialCityType = pResults->GetInt(0);
+			entry.m_iYieldType = pResults->GetInt(1);
+			entry.m_iYieldMod = pResults->GetInt(2);
+			m_vSpecialCityCountYieldModifiers.push_back(entry);
+		}
+	}
 
 	return true;
 }
@@ -1192,6 +1419,10 @@ void CvPlayerCityStateUA::Reset()
 	m_iEnemyCityNoHealBesiegeCount = 0;
 	m_vPurchasedBuildingXP.clear();
 	m_vUnitBornYield.clear();
+	// Bogota
+	m_vSpecialCityYieldModifiers.clear();
+	m_vSpecialCityCountYieldModifiers.clear();
+	m_avCachedSpecialCityIDs.clear();
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -1532,6 +1763,26 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			AdjacentImprovementYieldChangeEntry entry = vEntries[i];
 			entry.m_iYield *= iChange;
 			m_vAdjacentImprovementYieldChanges.push_back(entry);
+		}
+	}
+	// Bogota: a city matching a special city type gains a yield % modifier
+	{
+		const std::vector<SpecialCityYieldModifierEntry>& vEntries = pEffect->GetSpecialCityYieldModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			SpecialCityYieldModifierEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vSpecialCityYieldModifiers.push_back(entry);
+		}
+	}
+	// Bogota: per owned city matching a special city type, ALL cities gain a yield % modifier
+	{
+		const std::vector<SpecialCityCountYieldModifierEntry>& vEntries = pEffect->GetSpecialCityCountYieldModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			SpecialCityCountYieldModifierEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vSpecialCityCountYieldModifiers.push_back(entry);
 		}
 	}
 }
@@ -1887,6 +2138,82 @@ void CvPlayerCityStateUA::CacheWorkedHolySites()
 		CvCity* pCity = m_pPlayer->getCity(iCityIdx);
 		if (pCity)
 			m_iCachedWorkedHolySites += pCity->GetNumImprovementWorked(eHolySite);
+	}
+}
+bool CvPlayerCityStateUA::HasSpecialCityYieldModifiers() const
+{
+	return !m_vSpecialCityYieldModifiers.empty();
+}
+bool CvPlayerCityStateUA::HasSpecialCityCountYieldModifiers() const
+{
+	return !m_vSpecialCityCountYieldModifiers.empty();
+}
+int CvPlayerCityStateUA::GetCachedSpecialCityCount(int iSpecialCityType) const
+{
+	if (iSpecialCityType < 0 || iSpecialCityType >= (int)m_avCachedSpecialCityIDs.size())
+		return 0;
+	return (int)m_avCachedSpecialCityIDs[iSpecialCityType].size();
+}
+bool CvPlayerCityStateUA::IsCachedSpecialCityTypeMatch(int iCityID, int iSpecialCityType) const
+{
+	if (iSpecialCityType < 0 || iSpecialCityType >= (int)m_avCachedSpecialCityIDs.size())
+		return false;
+
+	const std::vector<int>& vCityIDs = m_avCachedSpecialCityIDs[iSpecialCityType];
+	for (size_t i = 0; i < vCityIDs.size(); i++)
+	{
+		if (vCityIDs[i] == iCityID)
+			return true;
+	}
+	return false;
+}
+void CvPlayerCityStateUA::CacheSpecialCityMatches()
+{
+	m_avCachedSpecialCityIDs.clear();
+	if (!m_pPlayer) return;
+
+	// Size the cache to cover every special city type referenced by ANY special-city effect, whether it
+	// targets the matching city itself or counts matching cities nation-wide.
+	int iMaxType = -1;
+	for (size_t i = 0; i < m_vSpecialCityYieldModifiers.size(); i++)
+	{
+		if (m_vSpecialCityYieldModifiers[i].m_iSpecialCityType > iMaxType)
+			iMaxType = m_vSpecialCityYieldModifiers[i].m_iSpecialCityType;
+	}
+	for (size_t i = 0; i < m_vSpecialCityCountYieldModifiers.size(); i++)
+	{
+		if (m_vSpecialCityCountYieldModifiers[i].m_iSpecialCityType > iMaxType)
+			iMaxType = m_vSpecialCityCountYieldModifiers[i].m_iSpecialCityType;
+	}
+	if (iMaxType < 0) return;
+
+	// Mark referenced types so that a type carrying several yield rows still lists each matching city once.
+	std::vector<bool> abReferenced(iMaxType + 1, false);
+	for (size_t i = 0; i < m_vSpecialCityYieldModifiers.size(); i++)
+	{
+		const int iType = m_vSpecialCityYieldModifiers[i].m_iSpecialCityType;
+		if (iType >= 0 && iType <= iMaxType)
+			abReferenced[iType] = true;
+	}
+	for (size_t i = 0; i < m_vSpecialCityCountYieldModifiers.size(); i++)
+	{
+		const int iType = m_vSpecialCityCountYieldModifiers[i].m_iSpecialCityType;
+		if (iType >= 0 && iType <= iMaxType)
+			abReferenced[iType] = true;
+	}
+
+	m_avCachedSpecialCityIDs.resize(iMaxType + 1);
+	for (int iCityIdx = 0; iCityIdx < m_pPlayer->getNumCities(); iCityIdx++)
+	{
+		const CvCity* pCity = m_pPlayer->getCity(iCityIdx);
+		if (pCity == NULL) continue;
+
+		const int iCityID = pCity->GetID();
+		for (int iType = 0; iType <= iMaxType; iType++)
+		{
+			if (abReferenced[iType] && pCity->IsSpecialCityType(iType))
+				m_avCachedSpecialCityIDs[iType].push_back(iCityID);
+		}
 	}
 }
 int CvPlayerCityStateUA::GetGoldenAgeYieldModifier(YieldTypes eYield) const

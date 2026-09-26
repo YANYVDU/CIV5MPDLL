@@ -1999,6 +1999,7 @@ CvGlobals::CvGlobals() :
 	m_pTechs(NULL),
 	m_pBuildings(NULL),
 	m_pCityStateUAEffects(NULL),
+	m_pCityStateUASpecialCityTypes(NULL),
 	m_pCityStateUAs(NULL),
 	m_pEmphases(NULL),
 	m_pTraits(NULL),
@@ -2298,6 +2299,7 @@ void CvGlobals::init()
 	m_pTechs = FNEW(CvTechXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pBuildings = FNEW(CvBuildingXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pCityStateUAEffects = FNEW(CvCityStateUAEffectXMLEntries, c_eCiv5GameplayDLL, 0);
+	m_pCityStateUASpecialCityTypes = FNEW(CvCityStateUASpecialCityTypeXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pCityStateUAs = FNEW(CvCityStateUAXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pUnits = FNEW(CvUnitXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pProjects = FNEW(CvProjectXMLEntries, c_eCiv5GameplayDLL, 0);
@@ -2400,6 +2402,7 @@ void CvGlobals::uninit()
 	SAFE_DELETE(m_pPolicies);
 	SAFE_DELETE(m_pBuildings);
 	SAFE_DELETE(m_pCityStateUAEffects);
+	SAFE_DELETE(m_pCityStateUASpecialCityTypes);
 	SAFE_DELETE(m_pCityStateUAs);
 	SAFE_DELETE(m_pUnits);
 	SAFE_DELETE(m_pProjects);
@@ -4132,6 +4135,10 @@ CvTraitXMLEntries* CvGlobals::GetGameTraits() const
 CvCityStateUAEffectXMLEntries* CvGlobals::GetGameCityStateUAEffects() const
 {
 	return m_pCityStateUAEffects;
+}
+CvCityStateUASpecialCityTypeXMLEntries* CvGlobals::GetGameCityStateUASpecialCityTypes() const
+{
+	return m_pCityStateUASpecialCityTypes;
 }
 CvCityStateUAXMLEntries* CvGlobals::GetGameCityStateUAs() const
 {

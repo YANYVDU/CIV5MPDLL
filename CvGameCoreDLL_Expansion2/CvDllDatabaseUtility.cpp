@@ -467,6 +467,8 @@ bool CvDllDatabaseUtility::PrefetchGameData()
 	}
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Must precede CityStateUAEffects: its CacheResults resolves SpecialCityType names to IDs via SQL join.
+	PrefetchCollection(GC.GetGameCityStateUASpecialCityTypes()->GetEntries(), "CityStateUAEffect_SpecialCityTypes");
 	PrefetchCollection(GC.GetGameCityStateUAEffects()->GetEffectEntries(), "CityStateUAEffects");
 	PrefetchCollection(GC.GetGameCityStateUAs()->GetUAEntries(), "CityStateUAs");
 #endif
