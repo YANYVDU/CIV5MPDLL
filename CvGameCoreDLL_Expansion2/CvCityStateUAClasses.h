@@ -95,6 +95,8 @@ enum SpecialCityConditionTypes {
 	SPECIAL_CITY_CONDITION_NONE = 0,
 	SPECIAL_CITY_CONDITION_HAS_RESOURCE,   // Value = resource type (must be developed/improved)
 	SPECIAL_CITY_CONDITION_HAS_FEATURE,    // Value = feature type (inside the city's territory)
+	SPECIAL_CITY_CONDITION_IS_RIVER,       // Boolean, no Value: the city center sits on a river
+	SPECIAL_CITY_CONDITION_IS_COASTAL,     // Boolean, no Value: the city center borders the sea (lakes excluded)
 	NUM_SPECIAL_CITY_CONDITION_TYPES
 };
 

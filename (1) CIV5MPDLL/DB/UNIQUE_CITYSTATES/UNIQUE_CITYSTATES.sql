@@ -320,8 +320,8 @@ create table CityStateUAEffect_SpecialCityTypes (
 -- Both are CHILD tables (read via "where SpecialCityType = ?"), so neither needs an ID column.
 -- ConditionType is a fixed enum parsed in CvSpecialCityTypeEntry::CacheResults; Value holds the
 -- resource/feature type name for value-carrying conditions (NULL for boolean ones).
--- Currently only HAS_RESOURCE / HAS_FEATURE are implemented; add enum branches for future kinds
--- (CAPITAL / HILLS / RIVER / COASTAL / HAS_BUILDINGCLASS / trade-route kinds / continent kinds).
+-- Currently HAS_RESOURCE / HAS_FEATURE / IS_RIVER / IS_COASTAL are implemented; add enum branches
+-- for future kinds (CAPITAL / HILLS / HAS_BUILDINGCLASS / trade-route kinds / continent kinds).
 create table CityStateUAEffect_SpecialCityTypeConditionsOr (
     SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
     ConditionType   text,
@@ -335,7 +335,10 @@ create table CityStateUAEffect_SpecialCityTypeConditionsAnd (
 );
 
 -- A city matching the special city type grants a yield percentage modifier to that city.
--- SPECIAL_CITY_BOGOTA_LUXURY / YIELD_CULTURE / 35 = +35% culture for cities of that type (no stacking).
+-- SPECIAL_CITY_BOGOTA_LUXURY / YIELD_CULTURE / 35 = +35% culture for cities of that type.
+-- Modifiers ACCUMULATE: when one city matches several special city types, every matching row of the
+-- same YieldType is summed (CvCity::GetBaseYieldRateModifier adds without breaking). Example -- Riga's
+-- river+coastal city matches RIVER and RIVER_COASTAL, so gold/food get +15% + 15% = +30%.
 -- NOTE: YieldMod here is a PLAIN PERCENT (35 means +35%), NOT basis points -- the opposite convention
 -- from CityStateUAEffect_BornGreatPersonYieldModifiers (100 = +1%). CvCity::GetBaseYieldRateModifier
 -- adds this value straight to its percent total, whereas the born-great-person table is divided by 100.

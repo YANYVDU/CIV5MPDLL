@@ -18,7 +18,16 @@ SpecialCityConditionTypes ParseSpecialCityCondition(const char* szType)
 	if (szType == NULL) return SPECIAL_CITY_CONDITION_NONE;
 	if (strcmp(szType, "HAS_RESOURCE") == 0) return SPECIAL_CITY_CONDITION_HAS_RESOURCE;
 	if (strcmp(szType, "HAS_FEATURE") == 0) return SPECIAL_CITY_CONDITION_HAS_FEATURE;
+	if (strcmp(szType, "IS_RIVER") == 0) return SPECIAL_CITY_CONDITION_IS_RIVER;
+	if (strcmp(szType, "IS_COASTAL") == 0) return SPECIAL_CITY_CONDITION_IS_COASTAL;
 	return SPECIAL_CITY_CONDITION_NONE;
+}
+
+// Conditions parsed from ConditionType alone, with no Value column to validate.
+bool IsBooleanSpecialCityCondition(SpecialCityConditionTypes eType)
+{
+	return eType == SPECIAL_CITY_CONDITION_IS_RIVER
+	    || eType == SPECIAL_CITY_CONDITION_IS_COASTAL;
 }
 }
 
@@ -84,7 +93,8 @@ bool CvSpecialCityTypeEntry::CacheResults(Database::Results& kResults, CvDatabas
 					entry.m_iValue = GC.getInfoTypeForString(szValue, true);
 			}
 
-			if (entry.m_eConditionType != SPECIAL_CITY_CONDITION_NONE && entry.m_iValue >= 0)
+			if (entry.m_eConditionType != SPECIAL_CITY_CONDITION_NONE
+			 && (entry.m_iValue >= 0 || IsBooleanSpecialCityCondition(entry.m_eConditionType)))
 			{
 				apvTarget[iTable]->push_back(entry);
 			}
@@ -126,6 +136,12 @@ bool CvSpecialCityTypeEntry::EvaluateCondition(const SpecialCityConditionEntry& 
 		return pCity->GetNumResourceLocal((ResourceTypes)kCondition.m_iValue, true) > 0;
 	case SPECIAL_CITY_CONDITION_HAS_FEATURE:
 		return pCity->IsHasFeatureLocal((FeatureTypes)kCondition.m_iValue);
+	case SPECIAL_CITY_CONDITION_IS_RIVER:
+		// City center sits on a river, same test the Water Mill / Garden build requirement uses.
+		return pCity->plot() != NULL && pCity->plot()->isRiver();
+	case SPECIAL_CITY_CONDITION_IS_COASTAL:
+		// Default min water size counts the sea only; lakes do not qualify as coastal.
+		return pCity->isCoastal();
 	default:
 		return false;
 	}
