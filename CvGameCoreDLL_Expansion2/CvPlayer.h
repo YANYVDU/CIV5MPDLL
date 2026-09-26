@@ -1176,6 +1176,14 @@ public:
 	// immigrant counts (applied in GetImmigrationRate).
 	int GetCSUAImmigrationRateModifier() const;
 	int GetCSUAEmigrationRateModifier() const;
+	// Kiev CS UA: total national wonders completed by this player (used by the great-person rate modifier).
+	int GetNumNationalWonders();
+	// Kiev CS UA: great-person rate % modifier granted per national wonder completed (applied in
+	// CvCity::getGreatPeopleRateModifier).
+	int GetCSUAGreatPersonRateModifierFromNationalWonders() const;
+	// Kiev CS UA: extra League delegate votes, one per civilization this player has a Declaration of
+	// Friendship with (applied in CvLeague::CalculateStartingVotesForMember).
+	int GetCSUALeagueVotesFromDoF() const;
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;

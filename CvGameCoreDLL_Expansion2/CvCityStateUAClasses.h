@@ -102,6 +102,13 @@ struct DiplomatAbroadYieldModifierEntry {
 	int m_iCap;
 };
 
+// Kiev: each League vote the player holds grants a yield % modifier per YieldType, nation-wide.
+// YieldMod is in BASIS POINTS (100 = +1% per vote), matching Ife's GreatWorkYieldModifierEntry.
+struct LeagueVoteYieldModifierEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
 //======================================================================================================
 // Special city type - a named boolean predicate over a CvCity, described by data rows
 // (CityStateUAEffect_SpecialCityTypeConditionsOr / ...And) and referenced by effect rows.
@@ -327,6 +334,10 @@ public:
 	bool GetFaithPantheonPurchase() const;
 	// La Venta: +X% great-person rate per masterpiece/artifact the ally owns
 	int GetGreatPersonRateModifierPerGreatWork() const;
+	// Kiev: +X% great-person rate per national wonder the ally/friend has completed (plain percent)
+	int GetGreatPersonRateModifierPerNationalWonder() const;
+	// Kiev: League delegate votes granted per civilization the ally has a Declaration of Friendship with
+	int GetLeagueVotesPerDoF() const;
 	// Kathmandu: the first gold donation each turn refunds a % of the amount as faith to the ally
 	int GetFaithRefundPerDonationPercent() const;
 	// Geneva: diplomatic prestige per major civilization whose majority religion is the ally-led religion
@@ -364,6 +375,8 @@ public:
 	// Bucharest
 	const std::vector<WorldWonderYieldModifierEntry>& GetWorldWonderYieldModifiers() const { return m_vWorldWonderYieldModifiers; }
 	const std::vector<DiplomatAbroadYieldModifierEntry>& GetDiplomatAbroadYieldModifiers() const { return m_vDiplomatAbroadYieldModifiers; }
+	// Kiev
+	const std::vector<LeagueVoteYieldModifierEntry>& GetLeagueVoteYieldModifiers() const { return m_vLeagueVoteYieldModifiers; }
 
 private:
 	// Florence
@@ -522,6 +535,10 @@ private:
 	// Bucharest
 	std::vector<WorldWonderYieldModifierEntry> m_vWorldWonderYieldModifiers;
 	std::vector<DiplomatAbroadYieldModifierEntry> m_vDiplomatAbroadYieldModifiers;
+	// Kiev
+	int m_iGreatPersonRateModifierPerNationalWonder;
+	int m_iLeagueVotesPerDoF;
+	std::vector<LeagueVoteYieldModifierEntry> m_vLeagueVoteYieldModifiers;
 };
 
 //======================================================================================================
@@ -809,6 +826,28 @@ public:
 	int GetCachedDiplomatAbroadCount() const;
 	void CacheDiplomatAbroadCount();
 
+	// Kiev: +X% great-person rate per national wonder the player has completed, nation-wide
+	// (GreatPersonRateModifierPerNationalWonder is a plain percent; ally 2 = +2% per national wonder).
+	int GetGreatPersonRateModifierPerNationalWonder() const;
+	bool HasNationalWonderGreatPersonModifier() const;
+	// Kiev: cached national-wonder count, refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects.
+	// CvCity::getGreatPeopleRateModifier is a per-city hot path, so the city scan must not run there.
+	int GetCachedNationalWonderCount() const;
+	void CacheNationalWonderCount();
+
+	// Kiev: League delegate votes granted per civilization the player has a Declaration of Friendship with.
+	int GetLeagueVotesPerDoF() const;
+	bool HasLeagueVotesPerDoF() const;
+
+	// Kiev: each League vote held grants a yield % modifier per YieldType, nation-wide
+	// (YieldMod is basis points, 100 = +1% per vote).
+	const std::vector<LeagueVoteYieldModifierEntry>& GetLeagueVoteYieldModifiers() const { return m_vLeagueVoteYieldModifiers; }
+	bool HasLeagueVoteYieldModifiers() const;
+	// Kiev: cached League vote count, refreshed once per doTurn. The league lookup and vote recomputation
+	// are far too heavy for the per-yield hot path (GetCSUAYieldPercentModifier).
+	int GetCachedLeagueVotes() const;
+	void CacheLeagueVotes();
+
 	void Reset();
 
 protected:
@@ -967,6 +1006,13 @@ protected:
 	// Cached counts for the two Bucharest effects above, refreshed once per doTurn
 	int m_iCachedWorldWonderCount;
 	int m_iCachedDiplomatAbroadCount;
+	// Kiev
+	int m_iGreatPersonRateModifierPerNationalWonder;
+	int m_iLeagueVotesPerDoF;
+	std::vector<LeagueVoteYieldModifierEntry> m_vLeagueVoteYieldModifiers;
+	// Cached counts for the two Kiev effects above, refreshed once per doTurn
+	int m_iCachedNationalWonderCount;
+	int m_iCachedLeagueVotes;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

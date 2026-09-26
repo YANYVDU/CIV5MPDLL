@@ -18363,6 +18363,19 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += iTotal * 100;
 		}
 	}
+	// Kiev CS UA: each League delegate vote the player holds grants a yield % modifier per YieldType,
+	// nation-wide. (YieldMod is in basis points per vote, so no x100 conversion here; the vote count is
+	// cached once per doTurn because recomputing it walks the League.)
+	if (m_pCityStateUA->HasLeagueVoteYieldModifiers())
+	{
+		const std::vector<LeagueVoteYieldModifierEntry>& vLV = m_pCityStateUA->GetLeagueVoteYieldModifiers();
+		const int iVotes = m_pCityStateUA->GetCachedLeagueVotes();
+		for (size_t i = 0; i < vLV.size(); i++)
+		{
+			if (vLV[i].m_iYieldType != (int)eYield) continue;
+			iMod += iVotes * vLV[i].m_iYieldMod;
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -20072,6 +20085,12 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads flat ints.
 	m_pCityStateUA->CacheWorldWonderCount();
 	m_pCityStateUA->CacheDiplomatAbroadCount();
+
+	// Kiev UA: cache the national-wonder count and the player's current League delegate votes once per
+	// turn so the per-city (CvCity::getGreatPeopleRateModifier) and per-yield (GetCSUAYieldPercentModifier)
+	// hot paths read flat ints instead of re-scanning cities / recomputing League votes.
+	m_pCityStateUA->CacheNationalWonderCount();
+	m_pCityStateUA->CacheLeagueVotes();
 
 	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
 	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.
@@ -32767,6 +32786,49 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 			return iPerGreatWork * GetCulture()->GetNumGreatWorks(false);
 		}
 		return 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Kiev CS UA: total great-person rate modifier from every national wonder the player has completed.
+	// The wonder count is cached once per doTurn (CvPlayerCityStateUA::CacheNationalWonderCount) because
+	// CvCity::getGreatPeopleRateModifier, the caller, runs per city; a national wonder completed this turn
+	// therefore starts counting on the next turn, same as the other cached CSUA counts.
+	int CvPlayer::GetCSUAGreatPersonRateModifierFromNationalWonders() const
+	{
+		if (!m_pCityStateUA) return 0;
+		const int iPerWonder = m_pCityStateUA->GetGreatPersonRateModifierPerNationalWonder();
+		if (iPerWonder == 0) return 0;
+		return iPerWonder * m_pCityStateUA->GetCachedNationalWonderCount();
+	}
+
+	//	------------------------------------------------------------------------
+	// Kiev CS UA: League delegate votes granted per civilization the player has a Declaration of
+	// Friendship with. Called from CvLeague::CalculateStartingVotesForMember; the DoF count is read live
+	// because it is cheap compared to the rest of that function.
+	int CvPlayer::GetCSUALeagueVotesFromDoF() const
+	{
+		if (!m_pCityStateUA) return 0;
+		const int iPerDoF = m_pCityStateUA->GetLeagueVotesPerDoF();
+		if (iPerDoF == 0) return 0;
+		if (!GetDiplomacyAI()) return 0;
+		return iPerDoF * GetDiplomacyAI()->GetNumDoF();
+	}
+
+	//	------------------------------------------------------------------------
+	// Kiev CS UA: number of national wonders this player has completed, summed over all cities.
+	// Note: the palace counts as a national wonder (MaxPlayerInstances == 1), so any player with a
+	// capital always scores at least 1.
+	int CvPlayer::GetNumNationalWonders()
+	{
+		int iCount = 0;
+
+		int iLoop;
+		for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+		{
+			iCount += pLoopCity->getNumNationalWonders();
+		}
+
+		return iCount;
 	}
 
 	//	------------------------------------------------------------------------

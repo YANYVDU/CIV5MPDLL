@@ -312,6 +312,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_piFaithGPClassCostModifier(nullptr)
 	, m_piGoldenAgeYieldModifiers(nullptr)
 	, m_iHolySiteHappiness(0)
+	, m_iGreatPersonRateModifierPerNationalWonder(0)
+	, m_iLeagueVotesPerDoF(0)
 {
 }
 
@@ -351,6 +353,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_bGPNoDeathAfterGreatWork						= kResults.GetBool("GPNoDeathAfterGreatWork");
 	m_iGPConcertTourismRetentionPercent				= kResults.GetInt("GPConcertTourismRetentionPercent");
+
+	m_iGreatPersonRateModifierPerNationalWonder		= kResults.GetInt("GreatPersonRateModifierPerNationalWonder");
+	m_iLeagueVotesPerDoF							= kResults.GetInt("LeagueVotesPerDoF");
 
 	m_iGreatMusicianConcertTourismModifier			= kResults.GetInt("GreatMusicianConcertTourismModifier");
 	m_iGreatMusicianConcertGoldPercent				= kResults.GetInt("GreatMusicianConcertGoldPercent");
@@ -815,6 +820,25 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vDiplomatAbroadYieldModifiers.push_back(entry);
 		}
 	}
+	//Kiev: each League vote held grants a yield % modifier per YieldType, nation-wide
+	{
+		m_vLeagueVoteYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_LeagueVoteYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod from CityStateUAEffect_LeagueVoteYieldModifiers inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			LeagueVoteYieldModifierEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			m_vLeagueVoteYieldModifiers.push_back(entry);
+		}
+	}
 	//Ife: while in a golden age, grant a yield % modifier per YieldType (YieldMod in percent, 25 = +25%)
 	kUtility.PopulateArrayByValue(m_piGoldenAgeYieldModifiers, "Yields", "CityStateUAEffect_GoldenAgeYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 	//Bogota: a city matching a special city type gains a yield % modifier
@@ -1045,6 +1069,8 @@ bool CvCityStateUAEffectEntry::GetFaithBeliefPurchase() const { return m_bFaithB
 int CvCityStateUAEffectEntry::GetInquisitorRetentionPercent() const { return m_iInquisitorRetentionPercent; }
 bool CvCityStateUAEffectEntry::GetFaithPantheonPurchase() const { return m_bFaithPantheonPurchase; }
 int CvCityStateUAEffectEntry::GetGreatPersonRateModifierPerGreatWork() const { return m_iGreatPersonRateModifierPerGreatWork; }
+int CvCityStateUAEffectEntry::GetGreatPersonRateModifierPerNationalWonder() const { return m_iGreatPersonRateModifierPerNationalWonder; }
+int CvCityStateUAEffectEntry::GetLeagueVotesPerDoF() const { return m_iLeagueVotesPerDoF; }
 int CvCityStateUAEffectEntry::GetFaithRefundPerDonationPercent() const { return m_iFaithRefundPerDonationPercent; }
 int CvCityStateUAEffectEntry::GetDiplomaticPrestigePerMajorityCiv() const { return m_iDiplomaticPrestigePerMajorityCiv; }
 int CvCityStateUAEffectEntry::GetInfluencePerTurnPerFollowCityMod() const { return m_iInfluencePerTurnPerFollowCityMod; }
@@ -1312,6 +1338,10 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCachedHappyLuxuryCount(0)
 	, m_iCachedWorldWonderCount(0)
 	, m_iCachedDiplomatAbroadCount(0)
+	, m_iGreatPersonRateModifierPerNationalWonder(0)
+	, m_iLeagueVotesPerDoF(0)
+	, m_iCachedNationalWonderCount(0)
+	, m_iCachedLeagueVotes(0)
 {
 }
 
@@ -1442,6 +1472,11 @@ void CvPlayerCityStateUA::Reset()
 	m_vDiplomatAbroadYieldModifiers.clear();
 	m_iCachedWorldWonderCount = 0;
 	m_iCachedDiplomatAbroadCount = 0;
+	m_iGreatPersonRateModifierPerNationalWonder = 0;
+	m_iLeagueVotesPerDoF = 0;
+	m_vLeagueVoteYieldModifiers.clear();
+	m_iCachedNationalWonderCount = 0;
+	m_iCachedLeagueVotes = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1763,6 +1798,19 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			DiplomatAbroadYieldModifierEntry entry = vDAEntries[i];
 			entry.m_iYieldMod *= iChange;
 			m_vDiplomatAbroadYieldModifiers.push_back(entry);
+		}
+	}
+	//Kiev: +X% great-person rate per national wonder completed, and +X League votes per Declaration of Friendship
+	m_iGreatPersonRateModifierPerNationalWonder		+= pEffect->GetGreatPersonRateModifierPerNationalWonder() * iChange;
+	m_iLeagueVotesPerDoF							+= pEffect->GetLeagueVotesPerDoF() * iChange;
+	//Kiev: each League vote held grants a yield % modifier per YieldType
+	{
+		const std::vector<LeagueVoteYieldModifierEntry>& vLVEntries = pEffect->GetLeagueVoteYieldModifiers();
+		for (size_t i = 0; i < vLVEntries.size(); i++)
+		{
+			LeagueVoteYieldModifierEntry entry = vLVEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vLeagueVoteYieldModifiers.push_back(entry);
 		}
 	}
 	//Ife: while in a golden age, yield % modifier per YieldType
@@ -2313,6 +2361,47 @@ void CvPlayerCityStateUA::CacheDiplomatAbroadCount()
 		if (GET_PLAYER(eOwner).isMinorCiv()) continue;
 		m_iCachedDiplomatAbroadCount++;
 	}
+}
+// Kiev: +X% great-person rate per national wonder the player has completed (plain percent).
+int CvPlayerCityStateUA::GetGreatPersonRateModifierPerNationalWonder() const { return m_iGreatPersonRateModifierPerNationalWonder; }
+bool CvPlayerCityStateUA::HasNationalWonderGreatPersonModifier() const
+{
+	return m_iGreatPersonRateModifierPerNationalWonder != 0;
+}
+// Kiev: cached national-wonder count, refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects.
+// CvCity::getGreatPeopleRateModifier runs per city, so the city scan must stay out of it. The scan is
+// skipped unless the player actually holds a Kiev national-wonder effect.
+int CvPlayerCityStateUA::GetCachedNationalWonderCount() const { return m_iCachedNationalWonderCount; }
+void CvPlayerCityStateUA::CacheNationalWonderCount()
+{
+	m_iCachedNationalWonderCount = 0;
+	if (!m_pPlayer) return;
+	if (m_iGreatPersonRateModifierPerNationalWonder == 0) return;
+	m_iCachedNationalWonderCount = m_pPlayer->GetNumNationalWonders();
+}
+// Kiev: League delegate votes granted per Declaration of Friendship (read live; cheap diplomacy count).
+int CvPlayerCityStateUA::GetLeagueVotesPerDoF() const { return m_iLeagueVotesPerDoF; }
+bool CvPlayerCityStateUA::HasLeagueVotesPerDoF() const { return m_iLeagueVotesPerDoF != 0; }
+bool CvPlayerCityStateUA::HasLeagueVoteYieldModifiers() const
+{
+	return !m_vLeagueVoteYieldModifiers.empty();
+}
+// Kiev: cached League vote count, refreshed once per doTurn. Recomputing the member's starting votes
+// walks every civilization (city-state allies, diplomats, religion, ideology), so it must not run in
+// the per-yield hot path. The lookup is skipped unless the player holds a Kiev league-vote effect.
+// Note: CalculateStartingVotesForMember also rebuilds Member::sVoteSources when no session is running;
+// that write is idempotent, so calling it here has no lasting side effect.
+int CvPlayerCityStateUA::GetCachedLeagueVotes() const { return m_iCachedLeagueVotes; }
+void CvPlayerCityStateUA::CacheLeagueVotes()
+{
+	m_iCachedLeagueVotes = 0;
+	if (!m_pPlayer) return;
+	if (m_vLeagueVoteYieldModifiers.empty()) return;
+	CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+	if (pLeagues == NULL) return;
+	CvLeague* pLeague = pLeagues->GetActiveLeague();
+	if (pLeague == NULL) return;
+	m_iCachedLeagueVotes = pLeague->CalculateStartingVotesForMember(m_pPlayer->GetID());
 }
 int CvPlayerCityStateUA::GetCachedSpecialCityCount(int iSpecialCityType) const
 {

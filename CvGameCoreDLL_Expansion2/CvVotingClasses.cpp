@@ -3928,6 +3928,10 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 		// Vatican CS UA: Papal Recognition
 		int iPapalRecognitionVotes = GetPapalRecognitionVotes(ePlayer);
 		iVotes += iPapalRecognitionVotes;
+
+		// Kiev CS UA: one extra delegate per civilization this player has a Declaration of Friendship with
+		int iDoFVotes = GET_PLAYER(ePlayer).GetCSUALeagueVotesFromDoF();
+		iVotes += iDoFVotes;
 #endif
 
 		// World Ideology
@@ -3988,6 +3992,12 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 			{
 				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_PAPAL_RECOGNITION_VOTES");
 				sTemp << iPapalRecognitionVotes;
+				pMember->sVoteSources += sTemp.toUTF8();
+			}
+			if (iDoFVotes > 0)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_KIEV_DOF_VOTES");
+				sTemp << iDoFVotes;
 				pMember->sVoteSources += sTemp.toUTF8();
 			}
 #endif

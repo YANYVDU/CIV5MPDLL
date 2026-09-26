@@ -10430,6 +10430,12 @@ int CvCity::getGreatPeopleRateModifier() const
 	{
 		iModifier += GET_PLAYER(getOwner()).GetCSUAGreatPersonRateModifierFromGreatWorks();
 	}
+	// Kiev CS UA: +X% great-person rate per national wonder the player has completed (global count, all cities).
+	// Same rationale as the La Venta bonus above.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		iModifier += GET_PLAYER(getOwner()).GetCSUAGreatPersonRateModifierFromNationalWonders();
+	}
 #endif
 
 	return iModifier;

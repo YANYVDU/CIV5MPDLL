@@ -179,7 +179,12 @@ CREATE TABLE CityStateUAEffects (
     CoastalCityHappiness integer DEFAULT 0,
     -- Yerevan: global happiness per worked holy-site improvement (IMPROVEMENT_HOLY_SITE), accumulated in GetHappinessFromMinorCivs
     -- (basis points, 100 = +1 global happiness per worked holy site; no local-population cap). Ally = 300.
-    HolySiteHappiness integer DEFAULT 0
+    HolySiteHappiness integer DEFAULT 0,
+    -- Kiev: +X% great-person rate per national wonder the ally/friend has completed (plain percent).
+    -- The palace counts as a national wonder, so every player always has at least one.
+    GreatPersonRateModifierPerNationalWonder integer DEFAULT 0,
+    -- Kiev: extra League delegate votes per civilization the ally has a Declaration of Friendship with
+    LeagueVotesPerDoF integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
@@ -389,6 +394,16 @@ create table CityStateUAEffect_DiplomatAbroadYieldModifiers (
     YieldType  text references Yields(Type),
     YieldMod   integer default 0,
     Cap        integer default 0
+);
+
+-- CityState UA (Kiev): each League delegate vote the ally holds grants a yield percentage modifier per
+-- YieldType, nation-wide. YieldMod is in BASIS POINTS (100 = +1% per vote), matching
+-- GreatWorkYieldModifierEntry, so CvPlayer::GetCSUAYieldPercentModifier does NOT multiply it by 100.
+-- The vote count is recomputed and cached once per turn (CvPlayerCityStateUA::CacheLeagueVotes).
+create table CityStateUAEffect_LeagueVoteYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType  text references Yields(Type),
+    YieldMod   integer default 0
 );
 
 -- CityState UA (Antananarivo): each worked plot holding the specified improvement
