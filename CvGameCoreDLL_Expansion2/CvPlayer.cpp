@@ -19435,7 +19435,14 @@ void CvPlayer::DoInternationalImmigration()
 {
 	if (GC.getGame().isOption(GAMEOPTION_SP_IMMIGRATION_OFF)) return;
 
-	const int iRegressand = GC.getGame().GetImmigrationRegressand();
+	// The former Lua handler only registered GameEvents.PlayerDoTurn when the regressand
+	// was positive. Without this guard a zero regressand collapses the counter threshold
+	// (iRegressand * 2) to 0 and fires an immigration every single turn.
+	// Pass the acting player explicitly: the Lua handler implicitly used getActivePlayer(),
+	// which differs per client in MP and would let the counters diverge.
+	const int iRegressand = GC.getGame().GetImmigrationRegressand(GetID());
+	if (iRegressand <= 0) return;
+
 	for (int iOther = 0; iOther < MAX_MAJOR_CIVS; ++iOther)
 	{
 		PlayerTypes eOther = (PlayerTypes)iOther;
@@ -19450,7 +19457,10 @@ void CvPlayer::DoInternationalImmigration()
 			kOther.SetImmigrationCounter(GetID(), iRegressand);
 		}
 
-		iCounter = kOther.GetImmigrationCounter(GetID()) + kOther.GetImmigrationRate(GetID());
+		// GetImmigrationRate(X) on player P means "X's population moves into P". The acting
+		// player is the receiver here, so the rate must be queried from this player's side
+		// (GetImmigrationRate(eOther)), matching the former Lua thisPlayer:GetImmigrationRate(playerID).
+		iCounter = kOther.GetImmigrationCounter(GetID()) + GetImmigrationRate(eOther);
 		if (iCounter < 0) iCounter = 0;
 		else if (iCounter > iRegressand * 2) iCounter = iRegressand * 2;
 		kOther.SetImmigrationCounter(GetID(), iCounter);
@@ -19507,10 +19517,17 @@ bool CvPlayer::DoImmigration(PlayerTypes eOutPlayer, PlayerTypes eInPlayer)
 
 	if (vOutCityIDs.empty() || vInCityIDs.empty()) return false;
 
-	// Immigrant leaves
+	// Pick both cities before moving any population: if either lookup fails the whole
+	// transfer must abort, otherwise the source city loses a citizen for nothing.
 	int iRand = GC.getGame().getJonRandNum((int)vOutCityIDs.size(), "Immigration choose out city");
 	CvCity* pOutCity = kOutPlayer.getCity(vOutCityIDs[iRand]);
 	if (pOutCity == NULL) return false;
+
+	iRand = GC.getGame().getJonRandNum((int)vInCityIDs.size(), "Immigration choose in city");
+	CvCity* pInCity = kInPlayer.getCity(vInCityIDs[iRand]);
+	if (pInCity == NULL) return false;
+
+	// Immigrant leaves
 	pOutCity->changePopulation(-1, true);
 	pOutCity->SetCanDoImmigration(false);
 
@@ -19529,9 +19546,6 @@ bool CvPlayer::DoImmigration(PlayerTypes eOutPlayer, PlayerTypes eInPlayer)
 	}
 
 	// Immigrant arrives
-	iRand = GC.getGame().getJonRandNum((int)vInCityIDs.size(), "Immigration choose in city");
-	CvCity* pInCity = kInPlayer.getCity(vInCityIDs[iRand]);
-	if (pInCity == NULL) return false;
 	pInCity->changePopulation(1, true);
 	pInCity->SetCanDoImmigration(false);
 

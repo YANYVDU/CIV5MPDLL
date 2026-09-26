@@ -9789,19 +9789,24 @@ int CvGame::getAsyncRandNum(int iNum, const char* pszLog)
 
 //	--------------------------------------------------------------------------------
 // International immigration: regression base (IMMIGRATION_BASE_RATE) scaled by game speed
-// and the active player's regressand modifier. Extracted from the former Lua export
+// and the given player's regressand modifier. Extracted from the former Lua export
 // (CvLuaGame::lGetImmigrationRegressand) so C++ core logic and Lua share one source.
-int CvGame::GetImmigrationRegressand() const
+// ePlayer == NO_PLAYER falls back to the active player, which keeps the Lua-facing behaviour;
+// the turn simulation must pass an explicit player so every client derives the same value.
+int CvGame::GetImmigrationRegressand(PlayerTypes ePlayer) const
 {
 	int iRtnValue = 0;
 	if(!isOption(GAMEOPTION_SP_IMMIGRATION_OFF))
 	{
 		iRtnValue = GC.getIMMIGRATION_BASE_RATE() * getGameSpeedInfo().getCulturePercent();
-		PlayerTypes eActivePlayer = getActivePlayer();
-		if(eActivePlayer != NO_PLAYER)
+		if(ePlayer == NO_PLAYER)
 		{
-			CvPlayer& kActivePlayer = GET_PLAYER(eActivePlayer);
-			int iModifier = kActivePlayer.GetImmigrationRegressandModifier();
+			ePlayer = getActivePlayer();
+		}
+		if(ePlayer != NO_PLAYER)
+		{
+			CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+			int iModifier = kPlayer.GetImmigrationRegressandModifier();
 			iRtnValue = iRtnValue * (100 + iModifier) / 100;
 		}
 
