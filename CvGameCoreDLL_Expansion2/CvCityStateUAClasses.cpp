@@ -101,6 +101,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iCoastalCityHappiness(0)
 	, m_piHappinessYieldModifiers(nullptr)
 	, m_piHappinessYieldModifierCaps(nullptr)
+	, m_piFaithGPClassCostModifier(nullptr)
+	, m_piGoldenAgeYieldModifiers(nullptr)
 {
 }
 
@@ -124,6 +126,8 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	SAFE_DELETE_ARRAY(m_piImmigrantYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piHappinessYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piHappinessYieldModifierCaps);
+	SAFE_DELETE_ARRAY(m_piFaithGPClassCostModifier);
+	SAFE_DELETE_ARRAY(m_piGoldenAgeYieldModifiers);
 }
 
 bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -467,6 +471,30 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	//Vancouver: per point of net happiness, a yield % modifier per YieldType (YieldMod in basis points, Cap in percent)
 	kUtility.PopulateArrayByValue(m_piHappinessYieldModifiers, "Yields", "CityStateUAEffect_HappinessYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 	kUtility.PopulateArrayByValue(m_piHappinessYieldModifierCaps, "Yields", "CityStateUAEffect_HappinessYieldModifiers", "YieldType", "EffectType", GetType(), "Cap");
+	//Ife: per-unitclass FAITH great-people cost discount (CostRiseModifier in percent, negative = discount)
+	kUtility.PopulateArrayByValue(m_piFaithGPClassCostModifier, "UnitClasses", "CityStateUAEffect_FaithGPClassCostModifier", "UnitClassType", "EffectType", GetType(), "CostRiseModifier");
+	//Ife: each great work / artifact of a GreatWorkClassType grants a yield % modifier per YieldType
+	{
+		m_vGreatWorkYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_GreatWorkYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select GreatWorkClasses.ID as GreatWorkClassID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_GreatWorkYieldModifiers inner join GreatWorkClasses on GreatWorkClasses.Type = GreatWorkClassType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			GreatWorkYieldModifierEntry entry;
+			entry.m_iGreatWorkClassType = pResults->GetInt(0);
+			entry.m_iYieldType = pResults->GetInt(1);
+			entry.m_iYieldMod = pResults->GetInt(2);
+			m_vGreatWorkYieldModifiers.push_back(entry);
+		}
+	}
+	//Ife: while in a golden age, grant a yield % modifier per YieldType (YieldMod in percent, 25 = +25%)
+	kUtility.PopulateArrayByValue(m_piGoldenAgeYieldModifiers, "Yields", "CityStateUAEffect_GoldenAgeYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 
 	return true;
 }
@@ -661,6 +689,8 @@ int CvCityStateUAEffectEntry::GetHappinessYieldModifier(int i) const { CvAssertM
 int CvCityStateUAEffectEntry::GetHappinessYieldModifierCap(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piHappinessYieldModifierCaps ? m_piHappinessYieldModifierCaps[i] : 0; }
 int CvCityStateUAEffectEntry::GetImmigrantCashPercent() const { return m_iImmigrantCashPercent; }
 int CvCityStateUAEffectEntry::GetImmigrantCashCapBase() const { return m_iImmigrantCashCapBase; }
+int CvCityStateUAEffectEntry::GetFaithGPClassCostModifier(int i) const { CvAssertMsg(i < GC.getNumUnitClassInfos(), "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piFaithGPClassCostModifier ? m_piFaithGPClassCostModifier[i] : 0; }
+int CvCityStateUAEffectEntry::GetGoldenAgeYieldModifier(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piGoldenAgeYieldModifiers ? m_piGoldenAgeYieldModifiers[i] : 0; }
 
 int CvCityStateUAEffectEntry::GetGreatPersonOneShotModifier(int i) const
 {
@@ -1012,6 +1042,10 @@ void CvPlayerCityStateUA::Reset()
 	m_iCoastalCityHappiness = 0;
 	m_aiHappinessYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_aiHappinessYieldModifierCaps.assign(NUM_YIELD_TYPES, 0);
+	m_aiFaithGPClassCostModifier.assign(GC.getNumUnitClassInfos(), 0);
+	m_vGreatWorkYieldModifiers.clear();
+	m_aiGoldenAgeYieldModifiers.assign(NUM_YIELD_TYPES, 0);
+	m_aiCachedGreatWorkCount.clear();
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1289,6 +1323,28 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		if (iHMod != 0) m_aiHappinessYieldModifiers[iY] += iHMod * iChange;
 		int iHCapC = pEffect->GetHappinessYieldModifierCap(iY);
 		if (iHCapC != 0) m_aiHappinessYieldModifierCaps[iY] += iHCapC * iChange;
+	}
+	//Ife: per-unitclass FAITH great-people cost discount
+	for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+	{
+		int iClassMod = pEffect->GetFaithGPClassCostModifier(iUC);
+		if (iClassMod != 0) m_aiFaithGPClassCostModifier[iUC] += iClassMod * iChange;
+	}
+	//Ife: each great work / artifact grants a yield % modifier per YieldType (per GreatWorkClass)
+	{
+		const std::vector<GreatWorkYieldModifierEntry>& vGWEntries = pEffect->GetGreatWorkYieldModifiers();
+		for (size_t i = 0; i < vGWEntries.size(); i++)
+		{
+			GreatWorkYieldModifierEntry entry = vGWEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vGreatWorkYieldModifiers.push_back(entry);
+		}
+	}
+	//Ife: while in a golden age, yield % modifier per YieldType
+	for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
+	{
+		int iGAMod = pEffect->GetGoldenAgeYieldModifier(iY);
+		if (iGAMod != 0) m_aiGoldenAgeYieldModifiers[iY] += iGAMod * iChange;
 	}
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES; iYield++)
@@ -1631,6 +1687,70 @@ int CvPlayerCityStateUA::GetHappinessYieldModifier(YieldTypes eYield) const
 int CvPlayerCityStateUA::GetHappinessYieldModifierCap(YieldTypes eYield) const
 {
 	return (eYield >= 0 && (int)eYield < (int)m_aiHappinessYieldModifierCaps.size()) ? m_aiHappinessYieldModifierCaps[(int)eYield] : 0;
+}
+int CvPlayerCityStateUA::GetFaithGPClassCostModifier(UnitClassTypes eUnitClass) const
+{
+	return (eUnitClass >= 0 && (int)eUnitClass < (int)m_aiFaithGPClassCostModifier.size()) ? m_aiFaithGPClassCostModifier[(int)eUnitClass] : 0;
+}
+int CvPlayerCityStateUA::GetGreatWorkYieldModifier(GreatWorkClass eGreatWorkClass, YieldTypes eYield) const
+{
+	int iTotal = 0;
+	for (size_t i = 0; i < m_vGreatWorkYieldModifiers.size(); i++)
+	{
+		const GreatWorkYieldModifierEntry& entry = m_vGreatWorkYieldModifiers[i];
+		if (entry.m_iGreatWorkClassType == (int)eGreatWorkClass && entry.m_iYieldType == (int)eYield)
+			iTotal += entry.m_iYieldMod;
+	}
+	return iTotal;
+}
+const std::vector<GreatWorkYieldModifierEntry>& CvPlayerCityStateUA::GetGreatWorkYieldModifierEntries() const { return m_vGreatWorkYieldModifiers; }
+bool CvPlayerCityStateUA::HasGreatWorkYieldModifiers() const
+{
+	return !m_vGreatWorkYieldModifiers.empty();
+}
+// Ife: cached per-class great-work count (indexed by GreatWorkClass ID). Refreshed once per doTurn.
+int CvPlayerCityStateUA::GetCachedGreatWorkCount(GreatWorkClass eGreatWorkClass) const
+{
+	const int iClass = (int)eGreatWorkClass;
+	return (iClass >= 0 && iClass < (int)m_aiCachedGreatWorkCount.size()) ? m_aiCachedGreatWorkCount[iClass] : 0;
+}
+// Ife: rebuild the cached per-class great-work count from all of the player's cities.
+// Called once per doTurn in CvPlayer::RefreshCSAllUAEffects (which already traverses cities),
+// so the hot path GetCSUAYieldPercentModifier reads a flat cached int instead of per-city accumulation.
+void CvPlayerCityStateUA::CacheGreatWorkCounts()
+{
+	m_aiCachedGreatWorkCount.clear();
+	if (!m_pPlayer) return;
+	int iMaxClass = -1;
+	// Determine the greatest GreatWorkClass ID actually referenced by any persisted IFE entry.
+	for (size_t i = 0; i < m_vGreatWorkYieldModifiers.size(); i++)
+		if (m_vGreatWorkYieldModifiers[i].m_iGreatWorkClassType > iMaxClass)
+			iMaxClass = m_vGreatWorkYieldModifiers[i].m_iGreatWorkClassType;
+	if (iMaxClass < 0) return;
+	m_aiCachedGreatWorkCount.assign(iMaxClass + 1, 0);
+	// Accumulate the player's great works of each referenced class across all cities.
+	for (int iCityIdx = 0; iCityIdx < m_pPlayer->getNumCities(); iCityIdx++)
+	{
+		const CvCity* pCity = m_pPlayer->getCity(iCityIdx);
+		if (!pCity || !pCity->GetCityBuildings()) continue;
+		for (size_t i = 0; i < m_vGreatWorkYieldModifiers.size(); i++)
+		{
+			const GreatWorkYieldModifierEntry& e = m_vGreatWorkYieldModifiers[i];
+			const int iClass = e.m_iGreatWorkClassType;
+			if (iClass < (int)m_aiCachedGreatWorkCount.size())
+				m_aiCachedGreatWorkCount[iClass] += pCity->GetCityBuildings()->GetNumGreatWorks((GreatWorkClass)iClass);
+		}
+	}
+}
+int CvPlayerCityStateUA::GetGoldenAgeYieldModifier(YieldTypes eYield) const
+{
+	return (eYield >= 0 && (int)eYield < (int)m_aiGoldenAgeYieldModifiers.size()) ? m_aiGoldenAgeYieldModifiers[(int)eYield] : 0;
+}
+bool CvPlayerCityStateUA::HasGoldenAgeYieldModifiers() const
+{
+	for (size_t i = 0; i < m_aiGoldenAgeYieldModifiers.size(); i++)
+		if (m_aiGoldenAgeYieldModifiers[i] != 0) return true;
+	return false;
 }
 bool CvPlayerCityStateUA::HasHappinessYieldModifiers() const
 {

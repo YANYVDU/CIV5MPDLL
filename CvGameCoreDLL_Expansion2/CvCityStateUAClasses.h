@@ -60,6 +60,12 @@ struct UnitBornYieldEntry {
 	int m_iYieldMod;
 };
 
+struct GreatWorkYieldModifierEntry {
+	int m_iGreatWorkClassType;
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
 //======================================================================================================
 class CvCityStateUAEffectEntry : public CvBaseInfo
 {
@@ -221,6 +227,12 @@ public:
 	int GetHappinessYieldModifier(int i) const;
 	// Vancouver: per-point yield % modifier cap per YieldType (in percent, 50 = +50% maximum)
 	int GetHappinessYieldModifierCap(int i) const;
+	// Ife: per-unitclass discount on the FAITH cost of buying great people (CostRiseModifier in percent, negative = discount)
+	int GetFaithGPClassCostModifier(int i) const;
+	// Ife: each great work / artifact of a GreatWorkClassType grants a yield % modifier per YieldType (YieldMod basis points, 100 = +1%)
+	const std::vector<GreatWorkYieldModifierEntry>& GetGreatWorkYieldModifiers() const { return m_vGreatWorkYieldModifiers; }
+	// Ife: while the player is in a golden age, grant a yield % modifier per YieldType (YieldMod in percent, 25 = +25%)
+	int GetGoldenAgeYieldModifier(int i) const;
 	// Sydney: per immigrant received, a yield % modifier per YieldType (Modifier=100 => +1%)
 	int GetImmigrantYieldModifier(int i) const;
 	bool HasImmigrantYieldModifiers() const;
@@ -364,6 +376,10 @@ private:
 	int m_iCoastalCityHappiness;
 	int* m_piHappinessYieldModifiers;
 	int* m_piHappinessYieldModifierCaps;
+	// Ife
+	int* m_piFaithGPClassCostModifier;
+	std::vector<GreatWorkYieldModifierEntry> m_vGreatWorkYieldModifiers;
+	int* m_piGoldenAgeYieldModifiers;
 };
 
 //======================================================================================================
@@ -583,6 +599,17 @@ public:
 	bool HasImmigrantYieldModifiers() const;
 	int GetImmigrantCashPercent() const;
 	int GetImmigrantCashCapBase() const;
+	// Ife
+	int GetFaithGPClassCostModifier(UnitClassTypes eUnitClass) const;
+	int GetGreatWorkYieldModifier(GreatWorkClass eGreatWorkClass, YieldTypes eYield) const;
+	bool HasGreatWorkYieldModifiers() const;
+	int GetGoldenAgeYieldModifier(YieldTypes eYield) const;
+	bool HasGoldenAgeYieldModifiers() const;
+	const std::vector<GreatWorkYieldModifierEntry>& GetGreatWorkYieldModifierEntries() const;
+	// Ife: return the cached count of great works of the given class (refreshed once per doTurn, not per-yield query)
+	int GetCachedGreatWorkCount(GreatWorkClass eGreatWorkClass) const;
+	// Ife: clear + repopulate the cached per-class great-work count from the player's cities (called in CvPlayer::RefreshCSAllUAEffects)
+	void CacheGreatWorkCounts();
 
 	void Reset();
 
@@ -709,6 +736,12 @@ protected:
 	int m_iCoastalCityHappiness;
 	std::vector<int> m_aiHappinessYieldModifiers;
 	std::vector<int> m_aiHappinessYieldModifierCaps;
+	// Ife
+	std::vector<int> m_aiFaithGPClassCostModifier;
+	std::vector<GreatWorkYieldModifierEntry> m_vGreatWorkYieldModifiers;
+	std::vector<int> m_aiGoldenAgeYieldModifiers;
+	// Cached per-GreatWorkClass great-work count, refreshed once per doTurn (in CvPlayer::RefreshCSAllUAEffects)
+	std::vector<int> m_aiCachedGreatWorkCount;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

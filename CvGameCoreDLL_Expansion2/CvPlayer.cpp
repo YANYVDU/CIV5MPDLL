@@ -18246,6 +18246,30 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += iTotalBasis;
 		}
 	}
+	// Ife: each great work / artifact of the specified GreatWorkClass grants a yield % modifier, nation-wide.
+	// The per-class great-work count is cached once per doTurn (CvPlayerCityStateUA::CacheGreatWorkCounts),
+	// so this hot path only multiplies the cached count by the basis-point modifier.
+	if (m_pCityStateUA->HasGreatWorkYieldModifiers())
+	{
+		const std::vector<GreatWorkYieldModifierEntry>& vGWEnts = m_pCityStateUA->GetGreatWorkYieldModifierEntries();
+		int iGWTotal = 0;
+		for (size_t i = 0; i < vGWEnts.size(); i++)
+		{
+			const GreatWorkYieldModifierEntry& e = vGWEnts[i];
+			if (e.m_iYieldType != (int)eYield) continue;
+			const int iCount = m_pCityStateUA->GetCachedGreatWorkCount((GreatWorkClass)e.m_iGreatWorkClassType);
+			iGWTotal += iCount * e.m_iYieldMod;
+		}
+		iMod += iGWTotal;
+	}
+	// Ife: while in a golden age, grant a yield % modifier per YieldType, nation-wide.
+	// GoldenAgeYieldModifier is stored as a plain percent (25 = +25%); convert to basis points here
+	// because GetCSUAYieldPercentModifier normalizes by /100 at the end.
+	{
+		int iGAMod = m_pCityStateUA->GetGoldenAgeYieldModifier(eYield);
+		if (iGAMod != 0 && getGoldenAgeTurns() > 0)
+			iMod += iGAMod * 100;
+	}
 	return iMod / 100;
 }
 // Malacca / Panama / Hormuz: total CSUA trade-route gold % modifier for this connection
@@ -19816,6 +19840,10 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// Born-yield contribution is dynamic (per-specialist extra yield). Re-sync all cities so
 	// the rebuilt effect list takes effect idempotently (delta-based, never stacks per turn).
 	updateExtraSpecialistYield();
+
+	// Ife UA: cache the player's per-GreatWorkClass great-work count once per turn so the
+	// per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning cities.
+	m_pCityStateUA->CacheGreatWorkCounts();
 
 	// Refresh the cached per-turn spy rates (m_aiRate in CvCityEspionage). It is only
 	// recomputed by UpdateSpies/UpdateCity, so without this Sofia's steal-tech speed bonus

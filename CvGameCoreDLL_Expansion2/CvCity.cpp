@@ -6238,8 +6238,28 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 										iCost = iCostPrev + iDelta * (100 + iMod) / 100;
 									}
 								}
+						}
+						}
+#endif
+					// Ife UA: per-unitclass FAITH great-people final-cost discount (negative = discount).
+					// Deliberately outside the Florence/iNum block above so it applies to EVERY purchase of this
+					// unit class (including the first, iNum == 0), as a final-price correction applied after all
+					// other modifiers (era rise, policy, Florence) so the more the base cost rises the more offsets.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					if (MOD_SP_UNIQUE_CITYSTATE && iCost > 0)
+					{
+						CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+						if (pCSUA)
+						{
+							int iIfeClassMod = pCSUA->GetFaithGPClassCostModifier((UnitClassTypes)eUnitClass);
+							if (iIfeClassMod < 0)
+							{
+								const int iIfeCap = 90;  // Ife design: final-cost discount cap -90%
+								if (iIfeClassMod < -iIfeCap) iIfeClassMod = -iIfeCap;
+								iCost = iCost * (100 + iIfeClassMod) / 100;
 							}
 						}
+					}
 #endif
 				}
 			}
@@ -6284,6 +6304,24 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 #endif
 			iCost = iCost * iModifier / 100;
 		}
+		// Ife UA: per-unitclass FAITH cost discount for non-great-people units (negative = discount)
+		// Applied last, after all other modifiers above, so it is a final-price correction.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE && iCost > 0)
+		{
+			CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+			if (pCSUA)
+			{
+				int iIfeClassMod = pCSUA->GetFaithGPClassCostModifier((UnitClassTypes)pkUnitInfo->GetUnitClassType());
+				if (iIfeClassMod < 0)
+				{
+					const int iIfeCap = 90;  // Ife design: final-cost discount cap -90%
+					if (iIfeClassMod < -iIfeCap) iIfeClassMod = -iIfeCap;
+					iCost = iCost * (100 + iIfeClassMod) / 100;
+				}
+			}
+		}
+#endif
 	}
 
 	// Adjust for game speed

@@ -394,3 +394,30 @@ create table CityStateUAEffect_HappinessYieldModifiers (
     YieldMod integer default 0,
     Cap integer default 0
 );
+
+-- CityState UA (Ife): per-unitclass discount on the FAITH cost of buying great people. CostRiseModifier
+-- is in percent applied to the final price (negative = discount), keyed by UnitClassType so it affects
+-- only specified great people classes (e.g. UNITCLASS_ARTIST/WRITER/MUSICIAN). -30 = -30% final faith cost.
+create table CityStateUAEffect_FaithGPClassCostModifier (
+    EffectType text references CityStateUAEffects(Type),
+    UnitClassType text references UnitClasses(Type),
+    CostRiseModifier integer default 0
+);
+
+-- CityState UA (Ife): each great work / artifact of the specified GreatWorkClassType grants a yield
+-- percentage modifier per YieldType, nation-wide. YieldMod in basis points (100 = +1% per great work);
+-- e.g. GREAT_WORK_ARTIFACT / YIELD_FAITH / 200 = +2% faith nation-wide per artifact owned.
+create table CityStateUAEffect_GreatWorkYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    GreatWorkClassType text references GreatWorkClasses(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
+
+-- CityState UA (Ife): while the player is in a golden age, grant a yield percentage modifier per YieldType
+-- nation-wide. YieldMod is a plain percent (25 = +25% faith during golden age), not basis points.
+create table CityStateUAEffect_GoldenAgeYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
