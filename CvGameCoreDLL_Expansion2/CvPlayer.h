@@ -1169,6 +1169,9 @@ public:
 	int GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const;
 	// Sum of all CSUA trade-route gold % modifiers for this connection (settlement/preview/AI paths)
 	int GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnection) const;
+	// Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
+	// this plot gains +Yield of eYield (flat yield, e.g. +1 culture next to a worked holy site).
+	int GetCSUAAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eAdjacentImprovement, YieldTypes eYield) const;
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;

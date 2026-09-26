@@ -29,6 +29,24 @@ struct BornGreatPersonAllyInfluenceModEntry {
 	int m_iModPerBorn;
 };
 
+struct BornGreatPersonNationwideYieldEntry {
+	int m_iUnitClassType;
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
+struct LiteracyYieldModifierEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
+struct AdjacentImprovementYieldChangeEntry {
+	int m_iImprovementType;          // local (affected) improvement type (strict match)
+	int m_iAdjacentImprovementType;  // adjacent (neighbor) improvement that triggers the bonus
+	int m_iYieldType;
+	int m_iYield;
+};
+
 struct GreatWorkGreatPersonPointsEntry {
 	int m_iGreatWorkClassType;
 	int m_iSpecialistType;
@@ -239,6 +257,11 @@ public:
 	// Sydney: each immigrant received grants cash (CashPercent% of treasury, capped by CashCapBase x era x game speed)
 	int GetImmigrantCashPercent() const;
 	int GetImmigrantCashCapBase() const;
+	// Yerevan: global happiness per worked holy-site improvement (100 = +1, no local cap)
+	int GetHolySiteHappiness() const;
+	const std::vector<LiteracyYieldModifierEntry>& GetLiteracyYieldModifiers() const { return m_vLiteracyYieldModifiers; }
+	const std::vector<BornGreatPersonNationwideYieldEntry>& GetBornGreatPersonYieldModifiers() const { return m_vBornGreatPersonYieldModifiers; }
+	const std::vector<AdjacentImprovementYieldChangeEntry>& GetAdjacentImprovementYieldChanges() const { return m_vAdjacentImprovementYieldChanges; }
 
 private:
 	// Florence
@@ -380,6 +403,11 @@ private:
 	int* m_piFaithGPClassCostModifier;
 	std::vector<GreatWorkYieldModifierEntry> m_vGreatWorkYieldModifiers;
 	int* m_piGoldenAgeYieldModifiers;
+	// Yerevan
+	int m_iHolySiteHappiness;
+	std::vector<LiteracyYieldModifierEntry> m_vLiteracyYieldModifiers;
+	std::vector<BornGreatPersonNationwideYieldEntry> m_vBornGreatPersonYieldModifiers;
+	std::vector<AdjacentImprovementYieldChangeEntry> m_vAdjacentImprovementYieldChanges;
 };
 
 //======================================================================================================
@@ -611,6 +639,21 @@ public:
 	// Ife: clear + repopulate the cached per-class great-work count from the player's cities (called in CvPlayer::RefreshCSAllUAEffects)
 	void CacheGreatWorkCounts();
 
+	// Yerevan: global happiness per worked holy-site improvement (100 = +1, no local cap)
+	int GetHolySiteHappiness() const;
+	const std::vector<LiteracyYieldModifierEntry>& GetLiteracyYieldModifiers() const { return m_vLiteracyYieldModifiers; }
+	const std::vector<BornGreatPersonNationwideYieldEntry>& GetBornGreatPersonYieldModifiers() const { return m_vBornGreatPersonYieldModifiers; }
+	const std::vector<AdjacentImprovementYieldChangeEntry>& GetAdjacentImprovementYieldChanges() const { return m_vAdjacentImprovementYieldChanges; }
+	bool HasLiteracyYieldModifiers() const;
+	bool HasBornGreatPersonYieldModifiers() const;
+	bool HasAdjacentImprovementYieldChanges() const;
+	// Yerevan: cached literacy percent points + worked holy-site count, refreshed once per doTurn
+	// in CvPlayer::RefreshCSAllUAEffects so the hot paths read flat ints instead of re-scanning.
+	int GetCachedLiteracyPercent() const;
+	void ComputeLiteracyPercent();
+	int GetCachedWorkedHolySites() const;
+	void CacheWorkedHolySites();
+
 	void Reset();
 
 protected:
@@ -742,6 +785,13 @@ protected:
 	std::vector<int> m_aiGoldenAgeYieldModifiers;
 	// Cached per-GreatWorkClass great-work count, refreshed once per doTurn (in CvPlayer::RefreshCSAllUAEffects)
 	std::vector<int> m_aiCachedGreatWorkCount;
+	// Yerevan
+	int m_iHolySiteHappiness;
+	std::vector<LiteracyYieldModifierEntry> m_vLiteracyYieldModifiers;
+	std::vector<BornGreatPersonNationwideYieldEntry> m_vBornGreatPersonYieldModifiers;
+	std::vector<AdjacentImprovementYieldChangeEntry> m_vAdjacentImprovementYieldChanges;
+	int m_iCachedLiteracyPercent;
+	int m_iCachedWorkedHolySites;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

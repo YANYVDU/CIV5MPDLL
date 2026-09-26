@@ -164,7 +164,10 @@ CREATE TABLE CityStateUAEffects (
     -- Geneva: how many cities following the ally-led religion produce one influence unit (3 = one per 3 cities)
     FollowingCityDivisor integer DEFAULT 0,
     -- Vancouver: global happiness per coastal city owned by the ally/friend (100 = +1 happiness per coastal city)
-    CoastalCityHappiness integer DEFAULT 0
+    CoastalCityHappiness integer DEFAULT 0,
+    -- Yerevan: global happiness per worked holy-site improvement (IMPROVEMENT_HOLY_SITE), accumulated in GetHappinessFromMinorCivs
+    -- (basis points, 100 = +1 global happiness per worked holy site; no local-population cap). Ally = 300.
+    HolySiteHappiness integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
@@ -420,4 +423,39 @@ create table CityStateUAEffect_GoldenAgeYieldModifiers (
     EffectType text references CityStateUAEffects(Type),
     YieldType text references Yields(Type),
     YieldMod integer default 0
+);
+
+-- CityState UA (Yerevan): literacy rate (owned techs / total techs x 100, integer percent points)
+-- grants a nation-wide yield percentage modifier, keyed by YieldType so it can apply to any yield
+-- (YieldMod is basis points per literacy point; ally 100 = +1% production per point, friend 50 = +1% per 2 points).
+create table CityStateUAEffect_LiteracyYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
+
+-- CityState UA (Yerevan): each born great person of the specified UnitClassType grants a nation-wide
+-- yield percentage modifier per YieldType (YieldMod is basis points per born great person;
+-- ally prophet: UNITCLASS_PROPHET / YIELD_FAITH / 500 = +5% faith per born prophet).
+create table CityStateUAEffect_BornGreatPersonYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    UnitClassType text references UnitClasses(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
+
+-- CityState UA (Yerevan): if this plot is an improvement and an adjacent plot's improvement is
+-- AdjacentImprovementType, this plot gains +Yield of YieldType. Direction matches the vanilla
+-- *_AdjacentImprovementYieldChanges family (neighbor improvement -> this improvement).
+-- ImprovementType is the LOCAL (affected) improvement and MUST be a concrete type; rows are meant to be
+-- fully enumerated for every improvement via SP SQL (INSERT...SELECT FROM Improvements + an AFTER INSERT
+-- trigger, same approach as SP_AdjacentImprovementYieldChangesForNewImproments). No wildcard supported.
+-- Ally: each <ImprovementType> / IMPROVEMENT_HOLY_SITE / YIELD_CULTURE / 1 = +1 culture to that improved
+-- plot when it borders a holy site. Mirrors the Policy/Trait/Building adjacent-improvement family.
+create table CityStateUAEffect_AdjacentImprovementYieldChanges (
+    EffectType text references CityStateUAEffects(Type),
+    ImprovementType text references Improvements(Type),
+    AdjacentImprovementType text references Improvements(Type),
+    YieldType text references Yields(Type),
+    Yield integer default 0
 );

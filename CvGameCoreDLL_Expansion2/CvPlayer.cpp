@@ -15109,6 +15109,13 @@ int CvPlayer::GetHappinessFromMinorCivs() const
 	{
 		iHappiness += (GetNumCoastalCities() * iCoastalHappinessPerCity) / 100;
 	}
+	// Yerevan CS UA: per worked holy-site improvement, GLOBAL happiness (no local-population cap).
+	// (100 = +1 global happiness per worked holy site). Counted here so it shows up under
+	// "from City-States". Use the per-turn cached worked-holy-site count for the hot path.
+	if (m_pCityStateUA && m_pCityStateUA->GetHolySiteHappiness() > 0)
+	{
+		iHappiness += (m_pCityStateUA->GetCachedWorkedHolySites() * m_pCityStateUA->GetHolySiteHappiness()) / 100;
+	}
 #endif
 	return iHappiness;
 }
@@ -18276,7 +18283,54 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 		if (iGAMod != 0 && getGoldenAgeTurns() > 0)
 			iMod += iGAMod * 100;
 	}
+	// Yerevan CS UA: literacy rate (owned techs / total techs x 100) grants a yield % per literacy point,
+	// nation-wide. (YieldMod is basis points per point; ally 100 = +1% production per point, friend 50 = +1% per 2 points.)
+	if (m_pCityStateUA->HasLiteracyYieldModifiers())
+	{
+		const std::vector<LiteracyYieldModifierEntry>& vLit = m_pCityStateUA->GetLiteracyYieldModifiers();
+		const int iLitPercent = m_pCityStateUA->GetCachedLiteracyPercent();
+		for (size_t i = 0; i < vLit.size(); i++)
+		{
+			if (vLit[i].m_iYieldType == (int)eYield)
+				iMod += iLitPercent * vLit[i].m_iYieldMod;
+		}
+	}
+	// Yerevan CS UA: each born great person of a unit class grants a yield % per born, nation-wide.
+	// (YieldMod is basis points per born; ally prophet: UNITCLASS_PROPHET / YIELD_FAITH / 500 = +5% faith per born prophet.)
+	if (m_pCityStateUA->HasBornGreatPersonYieldModifiers())
+	{
+		const std::vector<BornGreatPersonNationwideYieldEntry>& vGP = m_pCityStateUA->GetBornGreatPersonYieldModifiers();
+		for (size_t i = 0; i < vGP.size(); i++)
+		{
+			if (vGP[i].m_iYieldType != (int)eYield) continue;
+			GreatPersonTypes eGP = GetGreatPersonFromUnitClass((UnitClassTypes)vGP[i].m_iUnitClassType);
+			if (eGP == NO_GREATPERSON) continue;
+			iMod += GetBornGreatPersonCount(eGP) * vGP[i].m_iYieldMod;
+		}
+	}
 	return iMod / 100;
+}
+// Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
+// this plot gains +Yield of eYield (flat yield, e.g. +1 culture next to a worked holy site).
+// Callers apply the "adjacent is a worked holy site" gate separately (see CvPlot::computePeakYield).
+int CvPlayer::GetCSUAAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eAdjacentImprovement, YieldTypes eYield) const
+{
+	if (!m_pCityStateUA || !m_pCityStateUA->HasAdjacentImprovementYieldChanges()) return 0;
+	const std::vector<AdjacentImprovementYieldChangeEntry>& vEntries = m_pCityStateUA->GetAdjacentImprovementYieldChanges();
+	int iResult = 0;
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		const AdjacentImprovementYieldChangeEntry& entry = vEntries[i];
+		// Strict match: the LOCAL plot's improvement must equal the configured ImprovementType.
+		// (Entries are fully enumerated for every improvement by SP SQL, so there is no wildcard here.)
+		if (entry.m_iAdjacentImprovementType == (int)eAdjacentImprovement &&
+			entry.m_iYieldType == (int)eYield &&
+			entry.m_iImprovementType == (int)eImprovement)
+		{
+			iResult += entry.m_iYield;
+		}
+	}
+	return iResult;
 }
 // Malacca / Panama / Hormuz: total CSUA trade-route gold % modifier for this connection
 // (used by settlement, preview-total and AI evaluation paths via GetTradeConnectionValueTimes100)
@@ -19850,6 +19904,11 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// Ife UA: cache the player's per-GreatWorkClass great-work count once per turn so the
 	// per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning cities.
 	m_pCityStateUA->CacheGreatWorkCounts();
+
+	// Yerevan UA: cache literacy rate and worked holy-site count once per turn so the per-yield
+	// (GetCSUAYieldPercentModifier) and global-happiness (GetHappinessFromMinorCivs) hot paths read flat ints.
+	m_pCityStateUA->ComputeLiteracyPercent();
+	m_pCityStateUA->CacheWorkedHolySites();
 
 	// Refresh the cached per-turn spy rates (m_aiRate in CvCityEspionage). It is only
 	// recomputed by UpdateSpies/UpdateCity, so without this Sofia's steal-tech speed bonus

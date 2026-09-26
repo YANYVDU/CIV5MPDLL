@@ -103,6 +103,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_piHappinessYieldModifierCaps(nullptr)
 	, m_piFaithGPClassCostModifier(nullptr)
 	, m_piGoldenAgeYieldModifiers(nullptr)
+	, m_iHolySiteHappiness(0)
 {
 }
 
@@ -471,6 +472,73 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	//Vancouver: per point of net happiness, a yield % modifier per YieldType (YieldMod in basis points, Cap in percent)
 	kUtility.PopulateArrayByValue(m_piHappinessYieldModifiers, "Yields", "CityStateUAEffect_HappinessYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 	kUtility.PopulateArrayByValue(m_piHappinessYieldModifierCaps, "Yields", "CityStateUAEffect_HappinessYieldModifiers", "YieldType", "EffectType", GetType(), "Cap");
+	//Yerevan: global happiness per worked holy-site improvement (basis points, 100 = +1 global happiness per worked holy site)
+	m_iHolySiteHappiness = kResults.GetInt("HolySiteHappiness");
+	//Yerevan: literacy rate (owned techs / total techs x 100) grants a yield % modifier per YieldType (YieldMod = basis per literacy point)
+	{
+		m_vLiteracyYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_LiteracyYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod from CityStateUAEffect_LiteracyYieldModifiers inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			LiteracyYieldModifierEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			m_vLiteracyYieldModifiers.push_back(entry);
+		}
+	}
+	//Yerevan: each born great person of a UnitClassType grants a yield % modifier per YieldType (YieldMod = basis per born GP)
+	{
+		m_vBornGreatPersonYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_BornGreatPersonYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select UnitClasses.ID as UnitClassID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_BornGreatPersonYieldModifiers inner join UnitClasses on UnitClasses.Type = UnitClassType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			BornGreatPersonNationwideYieldEntry entry;
+			entry.m_iUnitClassType = pResults->GetInt(0);
+			entry.m_iYieldType = pResults->GetInt(1);
+			entry.m_iYieldMod = pResults->GetInt(2);
+			m_vBornGreatPersonYieldModifiers.push_back(entry);
+		}
+	}
+	//Yerevan: local plot is an improvement and an adjacent plot's improvement is AdjacentImprovementType -> +Yield
+	//ImprovementType (local, affected) is optional; leave NULL/empty = any improved plot (resolved as -1 here).
+	{
+		m_vAdjacentImprovementYieldChanges.clear();
+		std::string strKey("CityStateUAEffect_AdjacentImprovementYieldChanges");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey,
+				"select "
+				"  case when t.ImprovementType is null then -1 else (select ID from Improvements where Type=t.ImprovementType) end, "
+				"  (select ID from Improvements where Type=t.AdjacentImprovementType), "
+				"  (select ID from Yields where Type=t.YieldType), "
+				"  t.Yield "
+				"from CityStateUAEffect_AdjacentImprovementYieldChanges t "
+				"where t.EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			AdjacentImprovementYieldChangeEntry entry;
+			entry.m_iImprovementType = pResults->GetInt(0);
+			entry.m_iAdjacentImprovementType = pResults->GetInt(1);
+			entry.m_iYieldType = pResults->GetInt(2);
+			entry.m_iYield = pResults->GetInt(3);
+			m_vAdjacentImprovementYieldChanges.push_back(entry);
+		}
+	}
 	//Ife: per-unitclass FAITH great-people cost discount (CostRiseModifier in percent, negative = discount)
 	kUtility.PopulateArrayByValue(m_piFaithGPClassCostModifier, "UnitClasses", "CityStateUAEffect_FaithGPClassCostModifier", "UnitClassType", "EffectType", GetType(), "CostRiseModifier");
 	//Ife: each great work / artifact of a GreatWorkClassType grants a yield % modifier per YieldType
@@ -685,6 +753,7 @@ int CvCityStateUAEffectEntry::GetFollowingCityDivisor() const { return m_iFollow
 int CvCityStateUAEffectEntry::GetImmigrantYieldModifier(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piImmigrantYieldModifiers ? m_piImmigrantYieldModifiers[i] : 0; }
 bool CvCityStateUAEffectEntry::HasImmigrantYieldModifiers() const { return m_piImmigrantYieldModifiers != NULL; }
 int CvCityStateUAEffectEntry::GetCoastalCityHappiness() const { return m_iCoastalCityHappiness; }
+int CvCityStateUAEffectEntry::GetHolySiteHappiness() const { return m_iHolySiteHappiness; }
 int CvCityStateUAEffectEntry::GetHappinessYieldModifier(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piHappinessYieldModifiers ? m_piHappinessYieldModifiers[i] : 0; }
 int CvCityStateUAEffectEntry::GetHappinessYieldModifierCap(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piHappinessYieldModifierCaps ? m_piHappinessYieldModifierCaps[i] : 0; }
 int CvCityStateUAEffectEntry::GetImmigrantCashPercent() const { return m_iImmigrantCashPercent; }
@@ -932,6 +1001,9 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iImmigrantCashPercent(0)
 	, m_iImmigrantCashCapBase(0)
 	, m_iCoastalCityHappiness(0)
+	, m_iHolySiteHappiness(0)
+	, m_iCachedLiteracyPercent(0)
+	, m_iCachedWorkedHolySites(0)
 {
 }
 
@@ -1046,6 +1118,12 @@ void CvPlayerCityStateUA::Reset()
 	m_vGreatWorkYieldModifiers.clear();
 	m_aiGoldenAgeYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_aiCachedGreatWorkCount.clear();
+	m_iHolySiteHappiness = 0;
+	m_vLiteracyYieldModifiers.clear();
+	m_vBornGreatPersonYieldModifiers.clear();
+	m_vAdjacentImprovementYieldChanges.clear();
+	m_iCachedLiteracyPercent = 0;
+	m_iCachedWorkedHolySites = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1421,6 +1499,35 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_vUnitBornYield.push_back(entry);
 		}
 	}
+	// Yerevan: global happiness per worked holy site + literacy / born-great-person / adjacent-improvement sub-tables
+	m_iHolySiteHappiness += pEffect->GetHolySiteHappiness() * iChange;
+	{
+		const std::vector<LiteracyYieldModifierEntry>& vEntries = pEffect->GetLiteracyYieldModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			LiteracyYieldModifierEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vLiteracyYieldModifiers.push_back(entry);
+		}
+	}
+	{
+		const std::vector<BornGreatPersonNationwideYieldEntry>& vEntries = pEffect->GetBornGreatPersonYieldModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			BornGreatPersonNationwideYieldEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vBornGreatPersonYieldModifiers.push_back(entry);
+		}
+	}
+	{
+		const std::vector<AdjacentImprovementYieldChangeEntry>& vEntries = pEffect->GetAdjacentImprovementYieldChanges();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			AdjacentImprovementYieldChangeEntry entry = vEntries[i];
+			entry.m_iYield *= iChange;
+			m_vAdjacentImprovementYieldChanges.push_back(entry);
+		}
+	}
 }
 
 int CvPlayerCityStateUA::GetFaithPurchaseGreatPeopleCostRiseModifier() const { return m_iFaithPurchaseGreatPeopleCostRiseModifier; }
@@ -1740,6 +1847,39 @@ void CvPlayerCityStateUA::CacheGreatWorkCounts()
 			if (iClass < (int)m_aiCachedGreatWorkCount.size())
 				m_aiCachedGreatWorkCount[iClass] += pCity->GetCityBuildings()->GetNumGreatWorks((GreatWorkClass)iClass);
 		}
+	}
+}
+int CvPlayerCityStateUA::GetHolySiteHappiness() const { return m_iHolySiteHappiness; }
+bool CvPlayerCityStateUA::HasLiteracyYieldModifiers() const { return !m_vLiteracyYieldModifiers.empty(); }
+bool CvPlayerCityStateUA::HasBornGreatPersonYieldModifiers() const { return !m_vBornGreatPersonYieldModifiers.empty(); }
+bool CvPlayerCityStateUA::HasAdjacentImprovementYieldChanges() const { return !m_vAdjacentImprovementYieldChanges.empty(); }
+int CvPlayerCityStateUA::GetCachedLiteracyPercent() const { return m_iCachedLiteracyPercent; }
+void CvPlayerCityStateUA::ComputeLiteracyPercent()
+{
+	m_iCachedLiteracyPercent = 0;
+	if (!m_pPlayer) return;
+	const int iTotal = GC.getNumTechInfos();
+	if (iTotal <= 0) return;
+	int iKnown = 0;
+	for (int iTech = 0; iTech < iTotal; iTech++)
+	{
+		if (m_pPlayer->HasTech((TechTypes)iTech))
+			iKnown++;
+	}
+	m_iCachedLiteracyPercent = (iKnown * 100) / iTotal;
+}
+int CvPlayerCityStateUA::GetCachedWorkedHolySites() const { return m_iCachedWorkedHolySites; }
+void CvPlayerCityStateUA::CacheWorkedHolySites()
+{
+	m_iCachedWorkedHolySites = 0;
+	if (!m_pPlayer) return;
+	const ImprovementTypes eHolySite = (ImprovementTypes)GC.getInfoTypeForString("IMPROVEMENT_HOLY_SITE");
+	if (eHolySite == NO_IMPROVEMENT) return;
+	for (int iCityIdx = 0; iCityIdx < m_pPlayer->getNumCities(); iCityIdx++)
+	{
+		CvCity* pCity = m_pPlayer->getCity(iCityIdx);
+		if (pCity)
+			m_iCachedWorkedHolySites += pCity->GetNumImprovementWorked(eHolySite);
 	}
 }
 int CvPlayerCityStateUA::GetGoldenAgeYieldModifier(YieldTypes eYield) const
