@@ -3469,8 +3469,10 @@ void CvPlayerTraits::InitPlayerTraits()
 	}
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (m_iDiplomaticPrestige != 0 && m_pPlayer)
-		m_pPlayer->ChangeExtraDiplomaticPrestige(m_iDiplomaticPrestige);
+	// Diplomatic prestige from traits is NOT applied here (no symmetric add/remove): it is re-applied
+	// reload-safe by CvPlayer::InitPlayerTraits (ChangeExtraDiplomaticPrestige) after CvPlayer::Reset
+	// zeroes the player counter each (re)start, mirroring ExtraUnitPlayerInstances. This avoids the
+	// hot-restart bug where Reset used the runtime m_iDiplomaticPrestige (possibly garbage) to subtract.
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(m_iMinorCivAlliesThresholdModifier);
 #endif
@@ -3530,8 +3532,9 @@ void CvPlayerTraits::Reset()
 	m_iCityStateFriendshipModifier = 0;
 	m_iCityStateCombatModifier = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (m_iDiplomaticPrestige != 0 && m_pPlayer)
-		m_pPlayer->ChangeExtraDiplomaticPrestige(-m_iDiplomaticPrestige);
+	// No reverse-subtract of diplomatic prestige here (see note in Init above): the player counter is
+	// reset to 0 by CvPlayer::Reset and re-populated by CvPlayer::InitPlayerTraits, so a stale/garbage
+	// m_iDiplomaticPrestige during hot restart can no longer be pushed into the persisted player value.
 	m_iDiplomaticPrestige = 0;
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);

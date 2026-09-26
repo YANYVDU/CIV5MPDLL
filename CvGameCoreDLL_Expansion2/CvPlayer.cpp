@@ -814,6 +814,12 @@ void CvPlayer::init(PlayerTypes eID)
 		changeWonderProductionModifier(GetPlayerTraits()->GetWonderProductionModifier());
 		ChangeRouteGoldMaintenanceMod(GetPlayerTraits()->GetImprovementMaintenanceModifier());
 		ChangeExtraUnitPlayerInstances(GetPlayerTraits()->GetExtraUnitPlayerInstances());
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Trait diplomatic prestige is applied here reload-safely (after CvPlayer::Reset zeroes this
+		// counter each (re)start), mirroring ChangeExtraUnitPlayerInstances. Traits no longer do a
+		// symmetric add/remove, which avoided the hot-restart garbage-read bug in CvPlayerTraits::Reset.
+		ChangeExtraDiplomaticPrestige(GetPlayerTraits()->GetDiplomaticPrestige());
+#endif
 		ChangeConquestCasualtiesModifier(GetPlayerTraits()->GetConquestCasualtiesModifier());
 		for(iJ = 0; iJ < NUM_YIELD_TYPES; iJ++)
 		{

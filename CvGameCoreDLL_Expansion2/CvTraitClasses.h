@@ -1037,6 +1037,12 @@ public:
 	{
 		return m_iExtraUnitPlayerInstances;
 	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+#endif
 	int GetConquestCasualtiesModifier() const
 	{
 		return m_iConquestCasualtiesModifier;
