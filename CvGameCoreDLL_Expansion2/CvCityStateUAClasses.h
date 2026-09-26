@@ -254,6 +254,11 @@ public:
 	// Panama (BaNaMa)
 	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
+	// Manila (MaNiLa)
+	int GetTradeRouteGoldPercentInternational() const;
+	int GetTradeRouteGoldModifierPerInternationalRoute() const;
+	int GetFoodModifierPerHappyLuxuryType() const;
+	int GetFoodModifierPerHappyLuxuryCap() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
@@ -424,6 +429,11 @@ private:
 	// Panama
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	// Manila
+	int m_iTradeRouteGoldPercentInternational;
+	int m_iTradeRouteGoldModifierPerInternationalRoute;
+	int m_iFoodModifierPerHappyLuxuryType;
+	int m_iFoodModifierPerHappyLuxuryCap;
 	// Prague / Yerevan
 	int** m_ppiBuildingClassYieldModifiers;
 	// Brussels
@@ -649,6 +659,11 @@ public:
 	// Panama
 	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
+	// Manila
+	int GetTradeRouteGoldPercentInternational() const;
+	int GetTradeRouteGoldModifierPerInternationalRoute() const;
+	int GetFoodModifierPerHappyLuxuryType() const;
+	int GetFoodModifierPerHappyLuxuryCap() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	int GetAllyInfluenceModFromBornGreatPerson() const;
@@ -748,6 +763,12 @@ public:
 	bool IsCachedSpecialCityTypeMatch(int iCityID, int iSpecialCityType) const;
 	void CacheSpecialCityMatches();
 
+	// Manila: cached count of happy luxury types owned by the player, refreshed once per doTurn in
+	// CvPlayer::RefreshCSAllUAEffects so the per-yield hot path (GetCSUAYieldPercentModifier) reads a
+	// flat int instead of re-scanning every resource for every city.
+	int GetCachedHappyLuxuryCount() const;
+	void CacheHappyLuxuryCount();
+
 	void Reset();
 
 protected:
@@ -818,6 +839,11 @@ protected:
 	int m_iTradeRouteGoldModifierPerLuxuryType;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
+	// Manila
+	int m_iTradeRouteGoldPercentInternational;
+	int m_iTradeRouteGoldModifierPerInternationalRoute;
+	int m_iFoodModifierPerHappyLuxuryType;
+	int m_iFoodModifierPerHappyLuxuryCap;
 	// Prague / Yerevan
 	int** m_ppiBuildingClassYieldModifiers;
 	int m_iBuildingClassYieldModifierCount;
@@ -893,6 +919,8 @@ protected:
 	// Cached IDs of owned cities matching each special city type, indexed by special city type ID,
 	// refreshed once per doTurn (in CvPlayer::RefreshCSAllUAEffects)
 	std::vector< std::vector<int> > m_avCachedSpecialCityIDs;
+	// Manila: cached happy-luxury type count, refreshed once per doTurn (in CvPlayer::RefreshCSAllUAEffects)
+	int m_iCachedHappyLuxuryCount;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

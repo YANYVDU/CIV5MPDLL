@@ -125,6 +125,15 @@ CREATE TABLE CityStateUAEffects (
     TradeRouteGoldModifierPerDistance               integer DEFAULT 0,
     -- Panama: population unhappiness reduction per cross-continental trade route (value = per-route % * 100; 每1=100, cap 90)
     UnhappinessReductionPerCrossContinentRoute      integer DEFAULT 0,
+    -- Manila: flat gold % on the ally's international trade routes (plain percent, 25 = +25%; ally 25 / friend 10)
+    TradeRouteGoldPercentInternational              integer DEFAULT 0,
+    -- Manila: gold % on the ally's international trade routes per international route the ally runs
+    -- (plain percent, 2 = +2% per route; applies to every international route, city-state destinations included)
+    TradeRouteGoldModifierPerInternationalRoute     integer DEFAULT 0,
+    -- Manila: nation-wide food % per happy luxury type the ally owns (plain percent, 2 = +2% per luxury type)
+    FoodModifierPerHappyLuxuryType                  integer DEFAULT 0,
+    -- Manila: cap on the food % above (plain percent, 50 = at most +50%; 0 = uncapped)
+    FoodModifierPerHappyLuxuryCap                   integer DEFAULT 0,
     -- Valletta: enemy city besieged by >= this many of our combat units cannot heal
     EnemyCityNoHealBesiegeCount                      integer DEFAULT 0,
     -- Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1, 20 = kill 5 gain 1)

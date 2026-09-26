@@ -18321,6 +18321,21 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += m_pCityStateUA->GetCachedSpecialCityCount(vSpecCount[i].m_iSpecialCityType) * vSpecCount[i].m_iYieldMod * 100;
 		}
 	}
+	// Manila CS UA: per happy luxury type owned, a nation-wide food % modifier (plain percent,
+	// capped by FoodModifierPerHappyLuxuryCap; 0 = uncapped). The luxury count is cached once per
+	// doTurn (CvPlayerCityStateUA::CacheHappyLuxuryCount), and the plain percent is converted to
+	// basis points here because GetCSUAYieldPercentModifier normalizes by /100 at the end.
+	if (eYield == YIELD_FOOD)
+	{
+		int iPerLuxury = m_pCityStateUA->GetFoodModifierPerHappyLuxuryType();
+		if (iPerLuxury != 0)
+		{
+			int iTotal = m_pCityStateUA->GetCachedHappyLuxuryCount() * iPerLuxury;
+			int iCap = m_pCityStateUA->GetFoodModifierPerHappyLuxuryCap();
+			if (iCap > 0 && iTotal > iCap) iTotal = iCap;
+			iMod += iTotal * 100;
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -18357,6 +18372,27 @@ int CvPlayer::GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnect
 
 	// Malacca UA: trade route gold percentage per happy luxury type
 	iModifier += GetHappyLuxuryTypeCount() * m_pCityStateUA->GetTradeRouteGoldModifierPerLuxuryType() / 100;
+
+	// Manila UA: flat gold percentage on every international trade route the player runs
+	iModifier += m_pCityStateUA->GetTradeRouteGoldPercentInternational();
+
+	// Manila UA: additional gold percentage per international trade route the player runs
+	// (routes to city-states count as international; the count is applied to every route)
+	int iManilaPerRoute = m_pCityStateUA->GetTradeRouteGoldModifierPerInternationalRoute();
+	if (iManilaPerRoute != 0)
+	{
+		int iNumInternationalRoutes = 0;
+		const TradeConnectionList& aTradeConnections = GC.getGame().GetGameTrade()->m_aTradeConnections;
+		for (uint i = 0; i < aTradeConnections.size(); i++)
+		{
+			const TradeConnection& kConnection = aTradeConnections[i];
+			if (kConnection.m_eOriginOwner == GetID() && GC.getGame().GetGameTrade()->IsConnectionInternational(kConnection))
+			{
+				iNumInternationalRoutes++;
+			}
+		}
+		iModifier += iNumInternationalRoutes * iManilaPerRoute;
+	}
 
 	// Panama UA: trade route gold percentage per distance tile
 	int iDistanceModifier = m_pCityStateUA->GetTradeRouteGoldModifierPerDistance();
@@ -19960,6 +19996,10 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// hot paths (GetCSUAYieldPercentModifier, CvCity::GetBaseYieldRateModifier) read a flat table
 	// instead of re-running the predicate against every plot of every city.
 	m_pCityStateUA->CacheSpecialCityMatches();
+
+	// Manila UA: cache the happy-luxury type count once per turn so the per-yield hot path
+	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
+	m_pCityStateUA->CacheHappyLuxuryCount();
 
 	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
 	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.

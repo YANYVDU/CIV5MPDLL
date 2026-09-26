@@ -276,6 +276,10 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iTradeRouteGoldModifierPerLuxuryType(0)
 	, m_iTradeRouteGoldModifierPerDistance(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
+	, m_iTradeRouteGoldPercentInternational(0)
+	, m_iTradeRouteGoldModifierPerInternationalRoute(0)
+	, m_iFoodModifierPerHappyLuxuryType(0)
+	, m_iFoodModifierPerHappyLuxuryCap(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_piSpecialistPointRate(nullptr)
@@ -422,6 +426,11 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iTradeRouteGoldModifierPerLuxuryType			= kResults.GetInt("TradeRouteGoldModifierPerLuxuryType");
 	m_iTradeRouteGoldModifierPerDistance				= kResults.GetInt("TradeRouteGoldModifierPerDistance");
 	m_iUnhappinessReductionPerCrossContinentRoute	= kResults.GetInt("UnhappinessReductionPerCrossContinentRoute");
+
+	m_iTradeRouteGoldPercentInternational = kResults.GetInt("TradeRouteGoldPercentInternational");
+	m_iTradeRouteGoldModifierPerInternationalRoute = kResults.GetInt("TradeRouteGoldModifierPerInternationalRoute");
+	m_iFoodModifierPerHappyLuxuryType = kResults.GetInt("FoodModifierPerHappyLuxuryType");
+	m_iFoodModifierPerHappyLuxuryCap = kResults.GetInt("FoodModifierPerHappyLuxuryCap");
 
 	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
 	m_iSpyKillGainSpyProgress						= kResults.GetInt("SpyKillGainSpyProgress");
@@ -910,6 +919,11 @@ int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerLuxuryType() const { r
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
 int CvCityStateUAEffectEntry::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
 
+int CvCityStateUAEffectEntry::GetTradeRouteGoldPercentInternational() const { return m_iTradeRouteGoldPercentInternational; }
+int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerInternationalRoute() const { return m_iTradeRouteGoldModifierPerInternationalRoute; }
+int CvCityStateUAEffectEntry::GetFoodModifierPerHappyLuxuryType() const { return m_iFoodModifierPerHappyLuxuryType; }
+int CvCityStateUAEffectEntry::GetFoodModifierPerHappyLuxuryCap() const { return m_iFoodModifierPerHappyLuxuryCap; }
+
 int CvCityStateUAEffectEntry::GetBuildingClassYieldModifiers(int i, int j) const
 {
 	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
@@ -1222,6 +1236,10 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iTradeRouteGoldModifierPerLuxuryType(0)
 	, m_iTradeRouteGoldModifierPerDistance(0)
 	, m_iUnhappinessReductionPerCrossContinentRoute(0)
+	, m_iTradeRouteGoldPercentInternational(0)
+	, m_iTradeRouteGoldModifierPerInternationalRoute(0)
+	, m_iFoodModifierPerHappyLuxuryType(0)
+	, m_iFoodModifierPerHappyLuxuryCap(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_iSpyGarrisonYieldModifierCount(0)
@@ -1251,6 +1269,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iHolySiteHappiness(0)
 	, m_iCachedLiteracyPercent(0)
 	, m_iCachedWorkedHolySites(0)
+	, m_iCachedHappyLuxuryCount(0)
 {
 }
 
@@ -1333,6 +1352,10 @@ void CvPlayerCityStateUA::Reset()
 	m_iTradeRouteGoldModifierPerLuxuryType = 0;
 	m_iTradeRouteGoldModifierPerDistance = 0;
 	m_iUnhappinessReductionPerCrossContinentRoute = 0;
+	m_iTradeRouteGoldPercentInternational = 0;
+	m_iTradeRouteGoldModifierPerInternationalRoute = 0;
+	m_iFoodModifierPerHappyLuxuryType = 0;
+	m_iFoodModifierPerHappyLuxuryCap = 0;
 	m_iBuildingClassYieldModifierCount = 0;
 	m_iSpyKillGainSpyProgress = 0;
 	m_iSpyGarrisonYieldModifierCount = 0;
@@ -1372,6 +1395,7 @@ void CvPlayerCityStateUA::Reset()
 	m_vAdjacentImprovementYieldChanges.clear();
 	m_iCachedLiteracyPercent = 0;
 	m_iCachedWorkedHolySites = 0;
+	m_iCachedHappyLuxuryCount = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1548,6 +1572,10 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iTradeRouteGoldModifierPerLuxuryType			+= pEffect->GetTradeRouteGoldModifierPerLuxuryType() * iChange;
 	m_iTradeRouteGoldModifierPerDistance			+= pEffect->GetTradeRouteGoldModifierPerDistance() * iChange;
 	m_iUnhappinessReductionPerCrossContinentRoute	+= pEffect->GetUnhappinessReductionPerCrossContinentRoute() * iChange;
+	m_iTradeRouteGoldPercentInternational			+= pEffect->GetTradeRouteGoldPercentInternational() * iChange;
+	m_iTradeRouteGoldModifierPerInternationalRoute	+= pEffect->GetTradeRouteGoldModifierPerInternationalRoute() * iChange;
+	m_iFoodModifierPerHappyLuxuryType				+= pEffect->GetFoodModifierPerHappyLuxuryType() * iChange;
+	m_iFoodModifierPerHappyLuxuryCap				+= pEffect->GetFoodModifierPerHappyLuxuryCap() * iChange;
 	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
 	m_iSpyKillGainSpyProgress						+= pEffect->GetSpyKillGainSpyProgress() * iChange;
 	m_iCoastalCityGrowthThresholdModifier			+= pEffect->GetCoastalCityGrowthThresholdModifier() * iChange;
@@ -1876,6 +1904,10 @@ int CvPlayerCityStateUA::GetFoodKeptModifierPerLuxury() const { return m_iFoodKe
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerLuxuryType() const { return m_iTradeRouteGoldModifierPerLuxuryType; }
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
 int CvPlayerCityStateUA::GetUnhappinessReductionPerCrossContinentRoute() const { return m_iUnhappinessReductionPerCrossContinentRoute; }
+int CvPlayerCityStateUA::GetTradeRouteGoldPercentInternational() const { return m_iTradeRouteGoldPercentInternational; }
+int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerInternationalRoute() const { return m_iTradeRouteGoldModifierPerInternationalRoute; }
+int CvPlayerCityStateUA::GetFoodModifierPerHappyLuxuryType() const { return m_iFoodModifierPerHappyLuxuryType; }
+int CvPlayerCityStateUA::GetFoodModifierPerHappyLuxuryCap() const { return m_iFoodModifierPerHappyLuxuryCap; }
 int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const
 {
 	if (!m_pPlayer) return 0;
@@ -2155,6 +2187,17 @@ void CvPlayerCityStateUA::CacheWorkedHolySites()
 		if (pCity)
 			m_iCachedWorkedHolySites += pCity->GetNumImprovementWorked(eHolySite);
 	}
+}
+int CvPlayerCityStateUA::GetCachedHappyLuxuryCount() const { return m_iCachedHappyLuxuryCount; }
+// Manila: rebuild the cached happy-luxury type count, called once per doTurn in
+// CvPlayer::RefreshCSAllUAEffects. The resource scan is skipped unless the player actually holds a
+// Manila food effect, so the common case (no Manila ally) costs nothing.
+void CvPlayerCityStateUA::CacheHappyLuxuryCount()
+{
+	m_iCachedHappyLuxuryCount = 0;
+	if (!m_pPlayer) return;
+	if (m_iFoodModifierPerHappyLuxuryType == 0) return;
+	m_iCachedHappyLuxuryCount = m_pPlayer->GetHappyLuxuryTypeCount();
 }
 bool CvPlayerCityStateUA::HasSpecialCityYieldModifiers() const
 {
