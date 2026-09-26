@@ -1851,8 +1851,10 @@ public:
 	int GetCSUAHappinessPerFollowingCity() const;
 	// Vancouver CS UA: global happiness per coastal city owned by the player (100 = +1 happiness per coastal city)
 	int GetCSUACoastalCityHappiness() const;
-	// Vancouver CS UA: number of the player's coastal cities
+	// Vancouver CS UA: number of the player's coastal cities (cached once per turn; lazy on first access)
 	int GetNumCoastalCities() const;
+	// Vancouver CS UA: recompute the cached coastal-city count (called once per turn in RefreshCSAllUAEffects)
+	void RefreshCoastalCityCount();
 	// Gangtok CS UA: buy influence at ANY city-state with faith (gold price / divisor faith; divisor > 0 enables the feature)
 	int GetCSUAFaithInfluencePurchaseCostDivisor() const;
 	// Gangtok CS UA: how many faith influence purchases the ally may make per turn (globally)
@@ -3247,6 +3249,7 @@ protected:
 	int m_iCityStateUASpyKillProgress;
 	int m_iCachedHolyCityCount; // Jerusalem CS UA: cached holy-city count, refreshed once per turn in doTurn(); -1 = not computed yet
 	int m_iCachedPapalRecognitionFollowerCount; // Vatican CS UA: cached follower-civ count, refreshed once per turn in doTurn(); -1 = not computed yet
+	int m_iCachedCoastalCityCount; // Vancouver CS UA: cached coastal-city count, refreshed once per turn in RefreshCSAllUAEffects(); -1 = not computed yet
 	int m_iCSUAFaithInfluencePurchaseUsed; // Gangtok CS UA: faith influence purchases made this turn (reset each turn in doTurn())
 #endif
 

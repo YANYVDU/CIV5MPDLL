@@ -1275,6 +1275,7 @@ void CvPlayer::uninit()
 	m_iSpyPointsPerTurn = 0;
 	m_iCachedHolyCityCount = -1;
 	m_iCachedPapalRecognitionFollowerCount = -1;
+	m_iCachedCoastalCityCount = -1;
 	m_iCSUAFaithInfluencePurchaseUsed = 0;
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
@@ -19922,6 +19923,10 @@ void CvPlayer::RefreshCSAllUAEffects()
 	m_pCityStateUA->ComputeLiteracyPercent();
 	m_pCityStateUA->CacheWorkedHolySites();
 
+	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
+	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.
+	RefreshCoastalCityCount();
+
 	// Refresh the cached per-turn spy rates (m_aiRate in CvCityEspionage). It is only
 	// recomputed by UpdateSpies/UpdateCity, so without this Sofia's steal-tech speed bonus
 	// (and changes in alive spy count) would not affect the actual gathering progress or the
@@ -32511,17 +32516,26 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	{
 		return m_pCityStateUA ? m_pCityStateUA->GetCoastalCityHappiness() : 0;
 	}
-	// Vancouver CS UA: number of the player's coastal cities
+	// Vancouver CS UA: number of the player's coastal cities, cached once per turn (lazy on first access).
+	// -1 means "not computed yet"; the cache is rebuilt by RefreshCoastalCityCount().
 	int CvPlayer::GetNumCoastalCities() const
 	{
+		if (m_iCachedCoastalCityCount < 0)
+			const_cast<CvPlayer*>(this)->RefreshCoastalCityCount();
+		return m_iCachedCoastalCityCount;
+	}
+
+	// Vancouver CS UA: recompute the cached coastal-city count (called once per turn in RefreshCSAllUAEffects)
+	void CvPlayer::RefreshCoastalCityCount()
+	{
 		int iCount = 0;
-		for (int iCityLoop = 0; iCityLoop < getNumCities(); iCityLoop++)
+		int iLoop = 0;
+		for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
 		{
-			const CvCity* pCity = getCity(iCityLoop);
-			if (pCity != NULL && pCity->isCoastal())
+			if (pLoopCity->isCoastal())
 				iCount++;
 		}
-		return iCount;
+		m_iCachedCoastalCityCount = iCount;
 	}
 
 	//	------------------------------------------------------------------------
