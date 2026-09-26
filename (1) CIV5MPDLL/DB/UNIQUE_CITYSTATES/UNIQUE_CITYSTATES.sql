@@ -334,8 +334,8 @@ create table CityStateUAEffect_SpecialCityTypes (
 -- Both are CHILD tables (read via "where SpecialCityType = ?"), so neither needs an ID column.
 -- ConditionType is a fixed enum parsed in CvSpecialCityTypeEntry::CacheResults; Value holds the
 -- resource/feature type name for value-carrying conditions (NULL for boolean ones).
--- Currently HAS_RESOURCE / HAS_FEATURE / IS_RIVER / IS_COASTAL are implemented; add enum branches
--- for future kinds (CAPITAL / HILLS / HAS_BUILDINGCLASS / trade-route kinds / continent kinds).
+-- Currently HAS_RESOURCE / HAS_FEATURE / IS_RIVER / IS_COASTAL / IS_PUPPET are implemented; add enum
+-- branches for future kinds (CAPITAL / HILLS / HAS_BUILDINGCLASS / trade-route kinds / continent kinds).
 create table CityStateUAEffect_SpecialCityTypeConditionsOr (
     SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
     ConditionType   text,
@@ -371,6 +371,20 @@ create table CityStateUAEffect_SpecialCityYieldModifiers (
 create table CityStateUAEffect_SpecialCityCountYieldModifiers (
     EffectType      text references CityStateUAEffects(Type),
     SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
+    YieldType       text references Yields(Type),
+    YieldMod        integer default 0
+);
+
+-- For each N population living in cities matching the special city type, ALL cities gain a yield
+-- percentage modifier. Kuala Lumpur: SPECIAL_CITY_PUPPET / 5 / YIELD_CULTURE / 2 = +2% culture per 5
+-- population living in puppet cities. PerPopulation is the population step (>0; rows with 0 are ignored).
+-- NOTE: YieldMod here is a PLAIN PERCENT (2 means +2% per step), NOT basis points.
+-- CvPlayer::GetCSUAYieldPercentModifier multiplies it by 100 because that function accumulates basis
+-- points and divides by 100 at the end; do not "pre-convert" the stored value.
+create table CityStateUAEffect_SpecialCityPopulationYieldModifiers (
+    EffectType      text references CityStateUAEffects(Type),
+    SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
+    PerPopulation   integer default 0,
     YieldType       text references Yields(Type),
     YieldMod        integer default 0
 );

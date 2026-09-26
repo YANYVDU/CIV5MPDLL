@@ -122,6 +122,7 @@ enum SpecialCityConditionTypes {
 	SPECIAL_CITY_CONDITION_HAS_FEATURE,    // Value = feature type (inside the city's territory)
 	SPECIAL_CITY_CONDITION_IS_RIVER,       // Boolean, no Value: the city center sits on a river
 	SPECIAL_CITY_CONDITION_IS_COASTAL,     // Boolean, no Value: the city center borders the sea (lakes excluded)
+	SPECIAL_CITY_CONDITION_IS_PUPPET,      // Boolean, no Value: the city is a puppet (annexed cities do not qualify)
 	NUM_SPECIAL_CITY_CONDITION_TYPES
 };
 
@@ -138,6 +139,16 @@ struct SpecialCityYieldModifierEntry {
 
 struct SpecialCityCountYieldModifierEntry {
 	int m_iSpecialCityType;
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
+// Kuala Lumpur: per N population living in cities matching a special city type, a nation-wide yield %
+// modifier per YieldType. YieldMod is a PLAIN PERCENT (2 = +2% per N population), NOT basis points;
+// PerPopulation is the population step (5 = count one step per 5 population).
+struct SpecialCityPopulationYieldModifierEntry {
+	int m_iSpecialCityType;
+	int m_iPerPopulation;
 	int m_iYieldType;
 	int m_iYieldMod;
 };
@@ -377,6 +388,8 @@ public:
 	const std::vector<DiplomatAbroadYieldModifierEntry>& GetDiplomatAbroadYieldModifiers() const { return m_vDiplomatAbroadYieldModifiers; }
 	// Kiev
 	const std::vector<LeagueVoteYieldModifierEntry>& GetLeagueVoteYieldModifiers() const { return m_vLeagueVoteYieldModifiers; }
+	// Kuala Lumpur
+	const std::vector<SpecialCityPopulationYieldModifierEntry>& GetSpecialCityPopulationYieldModifiers() const { return m_vSpecialCityPopulationYieldModifiers; }
 
 private:
 	// Florence
@@ -539,6 +552,8 @@ private:
 	int m_iGreatPersonRateModifierPerNationalWonder;
 	int m_iLeagueVotesPerDoF;
 	std::vector<LeagueVoteYieldModifierEntry> m_vLeagueVoteYieldModifiers;
+	// Kuala Lumpur
+	std::vector<SpecialCityPopulationYieldModifierEntry> m_vSpecialCityPopulationYieldModifiers;
 };
 
 //======================================================================================================
@@ -804,6 +819,19 @@ public:
 	bool IsCachedSpecialCityTypeMatch(int iCityID, int iSpecialCityType) const;
 	void CacheSpecialCityMatches();
 
+	// Kuala Lumpur: per N population living in cities matching a special city type, a nation-wide yield %
+	// modifier per YieldType (YieldMod is a plain percent).
+	const std::vector<SpecialCityPopulationYieldModifierEntry>& GetSpecialCityPopulationYieldModifiers() const { return m_vSpecialCityPopulationYieldModifiers; }
+	bool HasSpecialCityPopulationYieldModifiers() const;
+	// Kuala Lumpur: cached population living in cities matching each special city type, refreshed once
+	// per doTurn by CacheSpecialCityMatches.
+	int GetCachedSpecialCityPopulation(int iSpecialCityType) const;
+	// Kuala Lumpur: cached puppet count, refreshed once per doTurn. Read by CvPlayerTechs::
+	// GetResearchCost, which is a hot path, so the city scan must not run there. Kept out of
+	// CacheSpecialCityMatches, which returns early when the player holds no special-city-type effects.
+	int GetCachedPuppetCount() const;
+	void CachePuppetStats();
+
 	// Manila: cached count of happy luxury types owned by the player, refreshed once per doTurn in
 	// CvPlayer::RefreshCSAllUAEffects so the per-yield hot path (GetCSUAYieldPercentModifier) reads a
 	// flat int instead of re-scanning every resource for every city.
@@ -1013,6 +1041,12 @@ protected:
 	// Cached counts for the two Kiev effects above, refreshed once per doTurn
 	int m_iCachedNationalWonderCount;
 	int m_iCachedLeagueVotes;
+	// Kuala Lumpur
+	std::vector<SpecialCityPopulationYieldModifierEntry> m_vSpecialCityPopulationYieldModifiers;
+	// Cached population per special city type, plus the puppet count, refreshed once per doTurn
+	// (in CvPlayer::RefreshCSAllUAEffects)
+	std::vector<int> m_aiCachedSpecialCityPopulation;
+	int m_iCachedPuppetCount;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

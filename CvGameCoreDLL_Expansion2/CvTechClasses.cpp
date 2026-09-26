@@ -18,6 +18,7 @@
 #include "LintFree.h"
 #include "NetworkMessageUtil.h"
 #include "CvLuaTeamTech.h"
+#include "CvCityStateUAClasses.h"
 
 /// Constructor
 CvTechEntry::CvTechEntry(void):
@@ -1609,8 +1610,30 @@ long long CvPlayerTechs::GetResearchCost(TechTypes eTech) const
 	iResearchCost = ((iResearchCost * 10000) / iResearchMod);
 
 	// Mod for City Count
-	int iMod = GC.getMap().getWorldInfo().GetNumCitiesTechCostMod();	// Default is 40, gets smaller on larger maps
-	iMod = iMod * m_pPlayer->GetMaxEffectiveCities(/*bIncludePuppets*/ true);
+	const int iModPerCity = GC.getMap().getWorldInfo().GetNumCitiesTechCostMod();	// Default is 40, gets smaller on larger maps
+	int iMod = iModPerCity * m_pPlayer->GetMaxEffectiveCities(/*bIncludePuppets*/ true);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Kuala Lumpur CS UA: puppet cities stop (ally) or only half (friend) raising the tech threshold.
+	// The discount is taken off the total modifier rather than off the puppet count, so "half" still
+	// works with a single puppet (iNumPuppets * 50 / 100 would round down to 0 there). It must stay
+	// ahead of the golden-age line below, which scales the same iMod.
+	{
+		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+		if (pCSUA != NULL)
+		{
+			const int iPuppetPartial = pCSUA->IsPuppetNoTechCostPenalty() ? 0
+			                         : 100 - pCSUA->GetPuppetTechCostPartial();
+			if (iPuppetPartial < 100)
+			{
+				const int iNumPuppets = pCSUA->GetCachedPuppetCount();
+				if (iNumPuppets > 0)
+					iMod -= iModPerCity * iNumPuppets * (100 - iPuppetPartial) / 100;
+			}
+		}
+	}
+#endif
+
 	if (m_pPlayer->isGoldenAge())
 		iMod = iMod * (m_pPlayer->GetPlayerTraits()->GetGoldenAgeResearchCityCountCostModifier() + 100) / 100; // some UA may reduce the modifier from the city count.
 

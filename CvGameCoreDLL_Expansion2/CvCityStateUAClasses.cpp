@@ -20,6 +20,7 @@ SpecialCityConditionTypes ParseSpecialCityCondition(const char* szType)
 	if (strcmp(szType, "HAS_FEATURE") == 0) return SPECIAL_CITY_CONDITION_HAS_FEATURE;
 	if (strcmp(szType, "IS_RIVER") == 0) return SPECIAL_CITY_CONDITION_IS_RIVER;
 	if (strcmp(szType, "IS_COASTAL") == 0) return SPECIAL_CITY_CONDITION_IS_COASTAL;
+	if (strcmp(szType, "IS_PUPPET") == 0) return SPECIAL_CITY_CONDITION_IS_PUPPET;
 	return SPECIAL_CITY_CONDITION_NONE;
 }
 
@@ -27,7 +28,8 @@ SpecialCityConditionTypes ParseSpecialCityCondition(const char* szType)
 bool IsBooleanSpecialCityCondition(SpecialCityConditionTypes eType)
 {
 	return eType == SPECIAL_CITY_CONDITION_IS_RIVER
-	    || eType == SPECIAL_CITY_CONDITION_IS_COASTAL;
+	    || eType == SPECIAL_CITY_CONDITION_IS_COASTAL
+	    || eType == SPECIAL_CITY_CONDITION_IS_PUPPET;
 }
 }
 
@@ -142,6 +144,9 @@ bool CvSpecialCityTypeEntry::EvaluateCondition(const SpecialCityConditionEntry& 
 	case SPECIAL_CITY_CONDITION_IS_COASTAL:
 		// Default min water size counts the sea only; lakes do not qualify as coastal.
 		return pCity->isCoastal();
+	case SPECIAL_CITY_CONDITION_IS_PUPPET:
+		// IsPuppet() is false for cities under annexation, so those are excluded as well.
+		return pCity->IsPuppet();
 	default:
 		return false;
 	}
@@ -881,6 +886,27 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vSpecialCityCountYieldModifiers.push_back(entry);
 		}
 	}
+	//Kuala Lumpur: per N population living in cities matching a special city type, a nation-wide yield %
+	{
+		m_vSpecialCityPopulationYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_SpecialCityPopulationYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select SpecialCityTypes.ID as SpecialCityTypeID, PerPopulation, Yields.ID as YieldID, YieldMod from CityStateUAEffect_SpecialCityPopulationYieldModifiers inner join CityStateUAEffect_SpecialCityTypes as SpecialCityTypes on SpecialCityTypes.Type = SpecialCityType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			SpecialCityPopulationYieldModifierEntry entry;
+			entry.m_iSpecialCityType = pResults->GetInt(0);
+			entry.m_iPerPopulation = pResults->GetInt(1);
+			entry.m_iYieldType = pResults->GetInt(2);
+			entry.m_iYieldMod = pResults->GetInt(3);
+			m_vSpecialCityPopulationYieldModifiers.push_back(entry);
+		}
+	}
 
 	return true;
 }
@@ -1342,6 +1368,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iLeagueVotesPerDoF(0)
 	, m_iCachedNationalWonderCount(0)
 	, m_iCachedLeagueVotes(0)
+	, m_iCachedPuppetCount(0)
 {
 }
 
@@ -1544,6 +1571,10 @@ void CvPlayerCityStateUA::Reset()
 	m_vSpecialCityYieldModifiers.clear();
 	m_vSpecialCityCountYieldModifiers.clear();
 	m_avCachedSpecialCityIDs.clear();
+	// Kuala Lumpur
+	m_vSpecialCityPopulationYieldModifiers.clear();
+	m_aiCachedSpecialCityPopulation.clear();
+	m_iCachedPuppetCount = 0;
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -1941,6 +1972,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			SpecialCityCountYieldModifierEntry entry = vEntries[i];
 			entry.m_iYieldMod *= iChange;
 			m_vSpecialCityCountYieldModifiers.push_back(entry);
+		}
+	}
+	//Kuala Lumpur: per N population living in cities matching a special city type, a nation-wide yield %
+	{
+		const std::vector<SpecialCityPopulationYieldModifierEntry>& vEntries = pEffect->GetSpecialCityPopulationYieldModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			SpecialCityPopulationYieldModifierEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vSpecialCityPopulationYieldModifiers.push_back(entry);
 		}
 	}
 }
@@ -2425,10 +2466,11 @@ bool CvPlayerCityStateUA::IsCachedSpecialCityTypeMatch(int iCityID, int iSpecial
 void CvPlayerCityStateUA::CacheSpecialCityMatches()
 {
 	m_avCachedSpecialCityIDs.clear();
+	m_aiCachedSpecialCityPopulation.clear();
 	if (!m_pPlayer) return;
 
 	// Size the cache to cover every special city type referenced by ANY special-city effect, whether it
-	// targets the matching city itself or counts matching cities nation-wide.
+	// targets the matching city itself, counts matching cities nation-wide, or counts their population.
 	int iMaxType = -1;
 	for (size_t i = 0; i < m_vSpecialCityYieldModifiers.size(); i++)
 	{
@@ -2439,6 +2481,11 @@ void CvPlayerCityStateUA::CacheSpecialCityMatches()
 	{
 		if (m_vSpecialCityCountYieldModifiers[i].m_iSpecialCityType > iMaxType)
 			iMaxType = m_vSpecialCityCountYieldModifiers[i].m_iSpecialCityType;
+	}
+	for (size_t i = 0; i < m_vSpecialCityPopulationYieldModifiers.size(); i++)
+	{
+		if (m_vSpecialCityPopulationYieldModifiers[i].m_iSpecialCityType > iMaxType)
+			iMaxType = m_vSpecialCityPopulationYieldModifiers[i].m_iSpecialCityType;
 	}
 	if (iMaxType < 0) return;
 
@@ -2456,8 +2503,15 @@ void CvPlayerCityStateUA::CacheSpecialCityMatches()
 		if (iType >= 0 && iType <= iMaxType)
 			abReferenced[iType] = true;
 	}
+	for (size_t i = 0; i < m_vSpecialCityPopulationYieldModifiers.size(); i++)
+	{
+		const int iType = m_vSpecialCityPopulationYieldModifiers[i].m_iSpecialCityType;
+		if (iType >= 0 && iType <= iMaxType)
+			abReferenced[iType] = true;
+	}
 
 	m_avCachedSpecialCityIDs.resize(iMaxType + 1);
+	m_aiCachedSpecialCityPopulation.assign(iMaxType + 1, 0);
 	for (int iCityIdx = 0; iCityIdx < m_pPlayer->getNumCities(); iCityIdx++)
 	{
 		const CvCity* pCity = m_pPlayer->getCity(iCityIdx);
@@ -2467,7 +2521,47 @@ void CvPlayerCityStateUA::CacheSpecialCityMatches()
 		for (int iType = 0; iType <= iMaxType; iType++)
 		{
 			if (abReferenced[iType] && pCity->IsSpecialCityType(iType))
+			{
 				m_avCachedSpecialCityIDs[iType].push_back(iCityID);
+				m_aiCachedSpecialCityPopulation[iType] += pCity->getPopulation();
+			}
+		}
+	}
+}
+// Kuala Lumpur: cached population living in cities matching each special city type, refreshed once per
+// doTurn (in CvPlayer::RefreshCSAllUAEffects, via CacheSpecialCityMatches). The per-yield hot path
+// (CvPlayer::GetCSUAYieldPercentModifier) reads this table instead of re-running the predicate.
+bool CvPlayerCityStateUA::HasSpecialCityPopulationYieldModifiers() const
+{
+	return !m_vSpecialCityPopulationYieldModifiers.empty();
+}
+int CvPlayerCityStateUA::GetCachedSpecialCityPopulation(int iSpecialCityType) const
+{
+	if (iSpecialCityType < 0 || iSpecialCityType >= (int)m_aiCachedSpecialCityPopulation.size())
+		return 0;
+	return m_aiCachedSpecialCityPopulation[iSpecialCityType];
+}
+// Kuala Lumpur: puppet count, refreshed once per doTurn. CvPlayerTechs::GetResearchCost reads it on a
+// hot path, so the city scan must not run there. The counting rule matches CvPlayer::GetNumPuppetCities
+// (every IsPuppet city, regardless of razing/limbo state), which is exactly what GetMaxEffectiveCities
+// adds back into the tech-cost city count. Puppet population is not cached here: the per-yield effect
+// reads it from m_aiCachedSpecialCityPopulation, filled by CacheSpecialCityMatches.
+int CvPlayerCityStateUA::GetCachedPuppetCount() const { return m_iCachedPuppetCount; }
+void CvPlayerCityStateUA::CachePuppetStats()
+{
+	m_iCachedPuppetCount = 0;
+	if (!m_pPlayer) return;
+	// Only the tech-threshold path reads this count, and it skips the discount entirely unless the
+	// player holds one of the two puppet tech-cost effects. Guard on the same condition so the city
+	// scan is skipped for every player that has neither (the common case).
+	if (!IsPuppetNoTechCostPenalty() && GetPuppetTechCostPartial() <= 0) return;
+
+	int iLoop;
+	for (const CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if (pLoopCity->IsPuppet())
+		{
+			m_iCachedPuppetCount++;
 		}
 	}
 }

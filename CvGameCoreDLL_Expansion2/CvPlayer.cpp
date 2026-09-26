@@ -18376,6 +18376,21 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += iVotes * vLV[i].m_iYieldMod;
 		}
 	}
+	// Kuala Lumpur CS UA: per N population living in cities matching a special city type, a yield % per
+	// YieldType, nation-wide. (YieldMod is a plain percent, so it is multiplied by 100 here because
+	// GetCSUAYieldPercentModifier accumulates basis points; the per-type population is cached once per
+	// doTurn by CacheSpecialCityMatches.)
+	if (m_pCityStateUA->HasSpecialCityPopulationYieldModifiers())
+	{
+		const std::vector<SpecialCityPopulationYieldModifierEntry>& vPop = m_pCityStateUA->GetSpecialCityPopulationYieldModifiers();
+		for (size_t i = 0; i < vPop.size(); i++)
+		{
+			if (vPop[i].m_iYieldType != (int)eYield) continue;
+			if (vPop[i].m_iPerPopulation <= 0) continue;
+			const int iPop = m_pCityStateUA->GetCachedSpecialCityPopulation(vPop[i].m_iSpecialCityType);
+			iMod += (iPop / vPop[i].m_iPerPopulation) * vPop[i].m_iYieldMod * 100;
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -20076,6 +20091,11 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// hot paths (GetCSUAYieldPercentModifier, CvCity::GetBaseYieldRateModifier) read a flat table
 	// instead of re-running the predicate against every plot of every city.
 	m_pCityStateUA->CacheSpecialCityMatches();
+
+	// Kuala Lumpur UA: cache the puppet count once per turn so the tech-threshold hot path
+	// (CvPlayerTechs::GetResearchCost) reads a flat int instead of re-scanning every city. The puppet
+	// population is cached by CacheSpecialCityMatches above, for the per-yield path.
+	m_pCityStateUA->CachePuppetStats();
 
 	// Manila UA: cache the happy-luxury type count once per turn so the per-yield hot path
 	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
