@@ -19398,24 +19398,30 @@ void CvPlayer::ChangeTotalImmigrantsReceived(int iChange)
 {
 	VALIDATE_OBJECT
 	m_iTotalImmigrantsReceived += iChange;
+}
 
-	// Sydney CS UA: each immigrant received grants cash (a % of the treasury, capped by era and game speed)
+// Sydney CS UA: an arriving immigrant grants cash (a % of the treasury, capped by era and game speed).
+// Deliberately kept out of ChangeTotalImmigrantsReceived - that setter is a plain counter exposed to
+// Lua, and the cash must only follow an actual population transfer.
+void CvPlayer::DoImmigrantCashReward()
+{
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (iChange > 0 && m_pCityStateUA)
+	if (m_pCityStateUA == NULL) return;
+
+	const int iCashPercent = m_pCityStateUA->GetImmigrantCashPercent();
+	if (iCashPercent <= 0) return;
+
+	int iReward = GetTreasury()->GetGold() * iCashPercent / 100;
+	// A bankrupt treasury yields a negative reward - the UA grants cash, it must not drain it.
+	if (iReward <= 0) return;
+
+	const int iCapBase = m_pCityStateUA->GetImmigrantCashCapBase();
+	if (iCapBase > 0)
 	{
-		const int iCashPercent = m_pCityStateUA->GetImmigrantCashPercent();
-		if (iCashPercent > 0)
-		{
-			int iReward = GetTreasury()->GetGold() * iCashPercent / 100;
-			const int iCapBase = m_pCityStateUA->GetImmigrantCashCapBase();
-			if (iCapBase > 0)
-			{
-				const int iCap = iCapBase * (GetCurrentEra() + 1) * GC.getGame().getGameSpeedInfo().getCulturePercent() / 100;
-				if (iReward > iCap) iReward = iCap;
-			}
-			GetTreasury()->ChangeGold(iReward);
-		}
+		const int iCap = iCapBase * (GetCurrentEra() + 1) * GC.getGame().getGameSpeedInfo().getCulturePercent() / 100;
+		if (iReward > iCap) iReward = iCap;
 	}
+	GetTreasury()->ChangeGold(iReward);
 #endif
 }
 int CvPlayer::GetTotalImmigrantsEmigrated() const
@@ -19557,8 +19563,9 @@ bool CvPlayer::DoImmigration(PlayerTypes eOutPlayer, PlayerTypes eInPlayer)
 		kInPlayer.AddNotification(NOTIFICATION_CITY_GROWTH, strText.toUTF8(), strHeading.toUTF8(), pInCity->plot(), -1, -1);
 	}
 
-	// Player-level counters (Sydney CS UA depends on the received count)
+	// Player-level counters, then the Sydney CS UA cash reward for the receiving civ
 	kInPlayer.ChangeTotalImmigrantsReceived(1);
+	kInPlayer.DoImmigrantCashReward();
 	kOutPlayer.ChangeTotalImmigrantsEmigrated(1);
 
 	// City-level counters

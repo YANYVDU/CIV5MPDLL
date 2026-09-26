@@ -2487,6 +2487,7 @@ public:
 	int GetImmigrationRate(PlayerTypes eTargetPlayer) const;
 	int GetTotalImmigrantsReceived() const;
 	void ChangeTotalImmigrantsReceived(int iChange);
+	void DoImmigrantCashReward();
 	int GetTotalImmigrantsEmigrated() const;
 	void ChangeTotalImmigrantsEmigrated(int iChange);
 	void DoInternationalImmigration();

@@ -1422,6 +1422,9 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 #endif
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	Method(GetImmigrationCounter);
+	// MP: ChangeImmigrationCounter / SetImmigrationCounter / ChangeTotalImmigrants* are raw setters.
+	// A direct Lua call mutates only the local copy and desyncs the other clients. The counters are
+	// advanced authoritatively by CvPlayer::DoInternationalImmigration; mods must not call them.
 	Method(ChangeImmigrationCounter);
 	Method(SetImmigrationCounter);
 	Method(GetImmigrationRate);
@@ -13837,6 +13840,8 @@ LUAAPIIMPL(Player, IsCanEstablishArmee)
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 LUAAPIIMPL(Player, GetImmigrationCounter)
+// MP: raw setters, see the registration note above. ChangeTotalImmigrantsReceived no longer pays out
+// the Sydney CS UA cash - that now runs explicitly in CvPlayer::DoImmigration.
 LUAAPIIMPL(Player, ChangeImmigrationCounter)
 LUAAPIIMPL(Player, SetImmigrationCounter)
 LUAAPIIMPL(Player, GetTotalImmigrantsReceived)

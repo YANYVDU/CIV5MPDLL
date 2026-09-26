@@ -780,6 +780,9 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	Method(IsCanDoImmigration);
+	// MP: SetCanDoImmigration and the ChangeTotalImmigrants* setters mutate local state only - a
+	// direct Lua call desyncs the other clients. The flag is reset each turn by CvCity::doTurn and
+	// cleared by CvPlayer::DoImmigration; mods must not call them.
 	Method(SetCanDoImmigration);
 	Method(CanImmigrantIn);
 	Method(CanImmigrantOut);
@@ -5361,6 +5364,7 @@ int CvLuaCity::lIsSecondaryReligionActive(lua_State* L)
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 LUAAPIIMPL(City, IsCanDoImmigration)
+// MP: raw setters, see the registration note above.
 LUAAPIIMPL(City, SetCanDoImmigration)
 LUAAPIIMPL(City, CanImmigrantIn)
 LUAAPIIMPL(City, CanImmigrantOut)
