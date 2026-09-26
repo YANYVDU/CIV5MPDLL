@@ -370,6 +370,27 @@ create table CityStateUAEffect_SpecialCityCountYieldModifiers (
     YieldMod        integer default 0
 );
 
+-- CityState UA (Bucharest): each world wonder owned by the ally/friend grants a yield percentage
+-- modifier per YieldType, nation-wide. YieldMod is a PLAIN PERCENT (4 = +4% per world wonder) and Cap
+-- is a plain percent cap (0 = uncapped). CvPlayer::GetCSUAYieldPercentModifier multiplies it by 100
+-- because that function accumulates basis points and divides by 100 at the end; do not pre-convert.
+create table CityStateUAEffect_WorldWonderYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType  text references Yields(Type),
+    YieldMod   integer default 0,
+    Cap        integer default 0
+);
+
+-- CityState UA (Bucharest): each diplomat stationed in a foreign MAJOR civilization's city grants a
+-- yield percentage modifier per YieldType, nation-wide. Diplomats sent to city-states do NOT count.
+-- YieldMod is a PLAIN PERCENT (5 = +5% per diplomat); Cap 0 = uncapped.
+create table CityStateUAEffect_DiplomatAbroadYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType  text references Yields(Type),
+    YieldMod   integer default 0,
+    Cap        integer default 0
+);
+
 -- CityState UA (Antananarivo): each worked plot holding the specified improvement
 -- grants a yield percentage modifier to the city (e.g. MINE / YIELD_GOLD / 3 = +3% gold per worked mine)
 create table CityStateUAEffect_ImprovementYieldModifiers (

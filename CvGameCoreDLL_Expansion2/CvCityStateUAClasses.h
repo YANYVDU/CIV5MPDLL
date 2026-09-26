@@ -84,6 +84,24 @@ struct GreatWorkYieldModifierEntry {
 	int m_iYieldMod;
 };
 
+// Bucharest: each world wonder owned by the player grants a yield % modifier per YieldType, nation-wide.
+// YieldMod is a PLAIN PERCENT (4 = +4% per world wonder), NOT basis points; Cap is a plain percent
+// cap (0 = uncapped).
+struct WorldWonderYieldModifierEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
+	int m_iCap;
+};
+
+// Bucharest: each diplomat stationed in a foreign MAJOR civilization's city grants a yield % modifier
+// per YieldType, nation-wide. Diplomats sent to city-states do NOT count. YieldMod is a PLAIN PERCENT
+// (5 = +5% per diplomat); Cap 0 = uncapped.
+struct DiplomatAbroadYieldModifierEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
+	int m_iCap;
+};
+
 //======================================================================================================
 // Special city type - a named boolean predicate over a CvCity, described by data rows
 // (CityStateUAEffect_SpecialCityTypeConditionsOr / ...And) and referenced by effect rows.
@@ -343,6 +361,9 @@ public:
 	// Bogota: cities matching the special city type gain a yield % modifier; per owned matching city, all cities do
 	const std::vector<SpecialCityYieldModifierEntry>& GetSpecialCityYieldModifiers() const { return m_vSpecialCityYieldModifiers; }
 	const std::vector<SpecialCityCountYieldModifierEntry>& GetSpecialCityCountYieldModifiers() const { return m_vSpecialCityCountYieldModifiers; }
+	// Bucharest
+	const std::vector<WorldWonderYieldModifierEntry>& GetWorldWonderYieldModifiers() const { return m_vWorldWonderYieldModifiers; }
+	const std::vector<DiplomatAbroadYieldModifierEntry>& GetDiplomatAbroadYieldModifiers() const { return m_vDiplomatAbroadYieldModifiers; }
 
 private:
 	// Florence
@@ -498,6 +519,9 @@ private:
 	// Bogota
 	std::vector<SpecialCityYieldModifierEntry> m_vSpecialCityYieldModifiers;
 	std::vector<SpecialCityCountYieldModifierEntry> m_vSpecialCityCountYieldModifiers;
+	// Bucharest
+	std::vector<WorldWonderYieldModifierEntry> m_vWorldWonderYieldModifiers;
+	std::vector<DiplomatAbroadYieldModifierEntry> m_vDiplomatAbroadYieldModifiers;
 };
 
 //======================================================================================================
@@ -769,6 +793,22 @@ public:
 	int GetCachedHappyLuxuryCount() const;
 	void CacheHappyLuxuryCount();
 
+	// Bucharest: each world wonder owned grants a yield % modifier per YieldType, nation-wide.
+	const std::vector<WorldWonderYieldModifierEntry>& GetWorldWonderYieldModifiers() const { return m_vWorldWonderYieldModifiers; }
+	bool HasWorldWonderYieldModifiers() const;
+	// Bucharest: cached world-wonder count, refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects
+	// so the per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int.
+	int GetCachedWorldWonderCount() const;
+	void CacheWorldWonderCount();
+
+	// Bucharest: each diplomat stationed in a foreign MAJOR civilization's city grants a yield % modifier
+	// per YieldType, nation-wide (diplomats sent to city-states do not count).
+	const std::vector<DiplomatAbroadYieldModifierEntry>& GetDiplomatAbroadYieldModifiers() const { return m_vDiplomatAbroadYieldModifiers; }
+	bool HasDiplomatAbroadYieldModifiers() const;
+	// Bucharest: cached count of diplomats stationed abroad, refreshed once per doTurn.
+	int GetCachedDiplomatAbroadCount() const;
+	void CacheDiplomatAbroadCount();
+
 	void Reset();
 
 protected:
@@ -921,6 +961,12 @@ protected:
 	std::vector< std::vector<int> > m_avCachedSpecialCityIDs;
 	// Manila: cached happy-luxury type count, refreshed once per doTurn (in CvPlayer::RefreshCSAllUAEffects)
 	int m_iCachedHappyLuxuryCount;
+	// Bucharest
+	std::vector<WorldWonderYieldModifierEntry> m_vWorldWonderYieldModifiers;
+	std::vector<DiplomatAbroadYieldModifierEntry> m_vDiplomatAbroadYieldModifiers;
+	// Cached counts for the two Bucharest effects above, refreshed once per doTurn
+	int m_iCachedWorldWonderCount;
+	int m_iCachedDiplomatAbroadCount;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

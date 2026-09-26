@@ -18336,6 +18336,33 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += iTotal * 100;
 		}
 	}
+	// Bucharest CS UA: each world wonder owned grants a yield % modifier per YieldType, nation-wide.
+	// (YieldMod is a plain percent; the wonder count is cached once per doTurn, so multiply by 100
+	// here because GetCSUAYieldPercentModifier normalizes by /100 at the end.)
+	if (m_pCityStateUA->HasWorldWonderYieldModifiers())
+	{
+		const std::vector<WorldWonderYieldModifierEntry>& vWW = m_pCityStateUA->GetWorldWonderYieldModifiers();
+		for (size_t i = 0; i < vWW.size(); i++)
+		{
+			if (vWW[i].m_iYieldType != (int)eYield) continue;
+			int iTotal = m_pCityStateUA->GetCachedWorldWonderCount() * vWW[i].m_iYieldMod;
+			if (vWW[i].m_iCap > 0 && iTotal > vWW[i].m_iCap) iTotal = vWW[i].m_iCap;
+			iMod += iTotal * 100;
+		}
+	}
+	// Bucharest CS UA: each diplomat stationed in a foreign major civilization's city grants a yield %
+	// modifier per YieldType, nation-wide. (Plain percent; count cached once per doTurn.)
+	if (m_pCityStateUA->HasDiplomatAbroadYieldModifiers())
+	{
+		const std::vector<DiplomatAbroadYieldModifierEntry>& vDA = m_pCityStateUA->GetDiplomatAbroadYieldModifiers();
+		for (size_t i = 0; i < vDA.size(); i++)
+		{
+			if (vDA[i].m_iYieldType != (int)eYield) continue;
+			int iTotal = m_pCityStateUA->GetCachedDiplomatAbroadCount() * vDA[i].m_iYieldMod;
+			if (vDA[i].m_iCap > 0 && iTotal > vDA[i].m_iCap) iTotal = vDA[i].m_iCap;
+			iMod += iTotal * 100;
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -18438,6 +18465,40 @@ int CvPlayer::GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) con
 #endif
 	}
 	return 0;
+}
+// Bucharest CS UA: the receiving side's immigration rate bonus, derived from how many immigrants it has
+// already received (per-immigrant percent, capped by ImmigrationRateMax). Returns a percent to be ADDED
+// to the immigration rate multiplier.
+int CvPlayer::GetCSUAImmigrationRateModifier() const
+{
+	if (!m_pCityStateUA) return 0;
+	const int iPerImmigrant = m_pCityStateUA->GetImmigrationRatePerImmigrant();
+	if (iPerImmigrant == 0) return 0;
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	int iTotal = iPerImmigrant * m_iTotalImmigrantsReceived;
+	const int iMax = m_pCityStateUA->GetImmigrationRateMax();
+	if (iMax > 0 && iTotal > iMax) iTotal = iMax;
+	return iTotal;
+#else
+	return 0;
+#endif
+}
+// Bucharest CS UA: the leaving side's emigration rate reduction, derived from how many emigrants it has
+// already lost (per-immigrant percent, capped by EmigrationRateMax). Returns a positive percent to be
+// SUBTRACTED from the emigration rate multiplier.
+int CvPlayer::GetCSUAEmigrationRateModifier() const
+{
+	if (!m_pCityStateUA) return 0;
+	const int iPerImmigrant = m_pCityStateUA->GetEmigrationRatePerImmigrant();
+	if (iPerImmigrant == 0) return 0;
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	int iTotal = iPerImmigrant * m_iTotalImmigrantsEmigrated;
+	const int iMax = m_pCityStateUA->GetEmigrationRateMax();
+	if (iMax > 0 && iTotal > iMax) iTotal = iMax;
+	return iTotal;
+#else
+	return 0;
+#endif
 }
 int CvPlayer::GetTotalGoldDonated() const
 {
@@ -19425,6 +19486,12 @@ int CvPlayer::GetImmigrationRate(PlayerTypes eTargetPlayer) const
 	iMoveOutCounterMod += kMoveInPlayer->getPolicyModifiers(POLICYMOD_IMMIGRATION_IN_MODIFIER);
 	iMoveOutCounterMod += kMoveOutPlayer->getPolicyModifiers(POLICYMOD_IMMIGRATION_OUT_MODIFIER);
 
+	//CityState UA (Bucharest) Modifier: the receiving side gains immigration speed per immigrant already
+	//received, the leaving side loses emigration speed per emigrant already lost. kMoveInPlayer/kMoveOutPlayer
+	//are derived from iMoveOutCounterBase's sign, so A->B and B->A yield the same multiplier (symmetric).
+	iMoveOutCounterMod += kMoveInPlayer->GetCSUAImmigrationRateModifier();
+	iMoveOutCounterMod -= kMoveOutPlayer->GetCSUAEmigrationRateModifier();
+
 	//Trait Modifier
 	if(iInExcessHappiness > iOutExcessHappiness)
 	{
@@ -20000,6 +20067,11 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// Manila UA: cache the happy-luxury type count once per turn so the per-yield hot path
 	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
 	m_pCityStateUA->CacheHappyLuxuryCount();
+
+	// Bucharest UA: cache the world-wonder count and the number of diplomats stationed abroad once per
+	// turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads flat ints.
+	m_pCityStateUA->CacheWorldWonderCount();
+	m_pCityStateUA->CacheDiplomatAbroadCount();
 
 	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
 	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.

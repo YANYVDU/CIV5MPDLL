@@ -1172,6 +1172,10 @@ public:
 	// Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
 	// this plot gains +Yield of eYield (flat yield, e.g. +1 culture next to a worked holy site).
 	int GetCSUAAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eAdjacentImprovement, YieldTypes eYield) const;
+	// Bucharest CS UA: immigration / emigration rate modifiers derived from the player's cumulative
+	// immigrant counts (applied in GetImmigrationRate).
+	int GetCSUAImmigrationRateModifier() const;
+	int GetCSUAEmigrationRateModifier() const;
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;

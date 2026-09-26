@@ -775,6 +775,46 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vGreatWorkYieldModifiers.push_back(entry);
 		}
 	}
+	//Bucharest: each world wonder owned grants a yield % modifier per YieldType, nation-wide
+	{
+		m_vWorldWonderYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_WorldWonderYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod, Cap from CityStateUAEffect_WorldWonderYieldModifiers inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			WorldWonderYieldModifierEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			entry.m_iCap = pResults->GetInt(2);
+			m_vWorldWonderYieldModifiers.push_back(entry);
+		}
+	}
+	//Bucharest: each diplomat stationed in a foreign major civilization's city grants a yield % modifier
+	{
+		m_vDiplomatAbroadYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_DiplomatAbroadYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod, Cap from CityStateUAEffect_DiplomatAbroadYieldModifiers inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			DiplomatAbroadYieldModifierEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			entry.m_iCap = pResults->GetInt(2);
+			m_vDiplomatAbroadYieldModifiers.push_back(entry);
+		}
+	}
 	//Ife: while in a golden age, grant a yield % modifier per YieldType (YieldMod in percent, 25 = +25%)
 	kUtility.PopulateArrayByValue(m_piGoldenAgeYieldModifiers, "Yields", "CityStateUAEffect_GoldenAgeYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 	//Bogota: a city matching a special city type gains a yield % modifier
@@ -1270,6 +1310,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCachedLiteracyPercent(0)
 	, m_iCachedWorkedHolySites(0)
 	, m_iCachedHappyLuxuryCount(0)
+	, m_iCachedWorldWonderCount(0)
+	, m_iCachedDiplomatAbroadCount(0)
 {
 }
 
@@ -1396,6 +1438,10 @@ void CvPlayerCityStateUA::Reset()
 	m_iCachedLiteracyPercent = 0;
 	m_iCachedWorkedHolySites = 0;
 	m_iCachedHappyLuxuryCount = 0;
+	m_vWorldWonderYieldModifiers.clear();
+	m_vDiplomatAbroadYieldModifiers.clear();
+	m_iCachedWorldWonderCount = 0;
+	m_iCachedDiplomatAbroadCount = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1697,6 +1743,26 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			GreatWorkYieldModifierEntry entry = vGWEntries[i];
 			entry.m_iYieldMod *= iChange;
 			m_vGreatWorkYieldModifiers.push_back(entry);
+		}
+	}
+	//Bucharest: each world wonder owned grants a yield % modifier per YieldType
+	{
+		const std::vector<WorldWonderYieldModifierEntry>& vWWEntries = pEffect->GetWorldWonderYieldModifiers();
+		for (size_t i = 0; i < vWWEntries.size(); i++)
+		{
+			WorldWonderYieldModifierEntry entry = vWWEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vWorldWonderYieldModifiers.push_back(entry);
+		}
+	}
+	//Bucharest: each diplomat stationed in a foreign major civilization's city grants a yield % modifier
+	{
+		const std::vector<DiplomatAbroadYieldModifierEntry>& vDAEntries = pEffect->GetDiplomatAbroadYieldModifiers();
+		for (size_t i = 0; i < vDAEntries.size(); i++)
+		{
+			DiplomatAbroadYieldModifierEntry entry = vDAEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vDiplomatAbroadYieldModifiers.push_back(entry);
 		}
 	}
 	//Ife: while in a golden age, yield % modifier per YieldType
@@ -2206,6 +2272,47 @@ bool CvPlayerCityStateUA::HasSpecialCityYieldModifiers() const
 bool CvPlayerCityStateUA::HasSpecialCityCountYieldModifiers() const
 {
 	return !m_vSpecialCityCountYieldModifiers.empty();
+}
+bool CvPlayerCityStateUA::HasWorldWonderYieldModifiers() const
+{
+	return !m_vWorldWonderYieldModifiers.empty();
+}
+// Bucharest: cached world-wonder count, refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects.
+// The city scan is skipped unless the player actually holds a Bucharest world-wonder effect.
+int CvPlayerCityStateUA::GetCachedWorldWonderCount() const { return m_iCachedWorldWonderCount; }
+void CvPlayerCityStateUA::CacheWorldWonderCount()
+{
+	m_iCachedWorldWonderCount = 0;
+	if (!m_pPlayer) return;
+	if (m_vWorldWonderYieldModifiers.empty()) return;
+	m_iCachedWorldWonderCount = m_pPlayer->GetNumWorldWonders();
+}
+bool CvPlayerCityStateUA::HasDiplomatAbroadYieldModifiers() const
+{
+	return !m_vDiplomatAbroadYieldModifiers.empty();
+}
+// Bucharest: cached count of diplomats stationed in a foreign MAJOR civilization's city, refreshed
+// once per doTurn. Diplomats sent to city-states do not count. The spy scan is skipped unless the
+// player actually holds a Bucharest diplomat effect.
+int CvPlayerCityStateUA::GetCachedDiplomatAbroadCount() const { return m_iCachedDiplomatAbroadCount; }
+void CvPlayerCityStateUA::CacheDiplomatAbroadCount()
+{
+	m_iCachedDiplomatAbroadCount = 0;
+	if (!m_pPlayer) return;
+	if (m_vDiplomatAbroadYieldModifiers.empty()) return;
+	CvPlayerEspionage* pEspionage = m_pPlayer->GetEspionage();
+	if (pEspionage == NULL) return;
+	const int iNumSpies = pEspionage->GetNumSpies();
+	for (int iSpy = 0; iSpy < iNumSpies; iSpy++)
+	{
+		if (!pEspionage->IsDiplomat((uint)iSpy)) continue;
+		CvCity* pCity = pEspionage->GetCityWithSpy((uint)iSpy);
+		if (pCity == NULL) continue;
+		const PlayerTypes eOwner = pCity->getOwner();
+		if (eOwner == m_pPlayer->GetID()) continue;
+		if (GET_PLAYER(eOwner).isMinorCiv()) continue;
+		m_iCachedDiplomatAbroadCount++;
+	}
 }
 int CvPlayerCityStateUA::GetCachedSpecialCityCount(int iSpecialCityType) const
 {
