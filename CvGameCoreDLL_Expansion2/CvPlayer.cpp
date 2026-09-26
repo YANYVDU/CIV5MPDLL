@@ -18964,7 +18964,19 @@ int CvPlayer::GetDomainFreeExperiencesPerTurnGlobal(DomainTypes eIndex) const
 	int iRtnValue = m_aiDomainFreeExperiencesPerTurnGlobal[eIndex];
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	if (eIndex == DOMAIN_LAND)
+	{
 		iRtnValue += GetCSLandXPPerTurn();
+	}
+	else
+	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Sidon UA: allied militaristic city-state per-turn XP also applies to sea and air domains
+		if (MOD_SP_UNIQUE_CITYSTATE && IsCSAMilitaryXPSeaAir())
+		{
+			iRtnValue += GetCSLandXPPerTurn();
+		}
+#endif
+	}
 #endif
 	return iRtnValue;
 }
@@ -32303,7 +32315,43 @@ int CvPlayer::GetCSImmigrationRegressandModifier() const
 //	------------------------------------------------------------------------
 int CvPlayer::GetCSLandXPPerTurn() const
 {
-	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MILITARISTIC) * GC.getCS_MILITARISTIC_LAND_XP_PER_TURN();
+	int iXP = GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MILITARISTIC) * GC.getCS_MILITARISTIC_LAND_XP_PER_TURN();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Sidon UA: allied military city-states grant +X% per-turn XP
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		int iMod = GetCSAMilitaryXPPerTurnModifier();
+		if (iMod != 0)
+			iXP = iXP * (100 + iMod) / 100;
+	}
+#endif
+
+	return iXP;
+}
+
+//	------------------------------------------------------------------------
+// Sidon UA: portion (in %) of a defended city's building defense that this player's attacking units bypass
+int CvPlayer::GetCSACityAttackIgnoreBuildingDefensePercent() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) ? pCSUA->GetCityAttackIgnoreBuildingDefensePercent() : 0;
+}
+
+//	------------------------------------------------------------------------
+// Sidon UA: percentage modifier on the per-turn XP granted by allied militaristic city-states
+int CvPlayer::GetCSAMilitaryXPPerTurnModifier() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) ? pCSUA->GetMilitaryXPPerTurnModifier() : 0;
+}
+
+//	------------------------------------------------------------------------
+// Sidon UA: whether the militaristic per-turn XP is extended to sea and air domains
+bool CvPlayer::IsCSAMilitaryXPSeaAir() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) && (pCSUA->GetMilitaryXPSeaAir() > 0);
 }
 
 //	------------------------------------------------------------------------

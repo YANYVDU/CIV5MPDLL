@@ -134,8 +134,9 @@ public:
 	int GetManpowerPerCity() const;
 	int GetCombatBonusPerTechDifference() const;
 	// Sidon (XiDun)
-	int GetNavalAttackIgnoreBuildingDefense() const;
-	int GetForeignRegenPercent() const;
+	int GetCityAttackIgnoreBuildingDefensePercent() const;
+	int GetMilitaryXPPerTurnModifier() const;
+	int GetMilitaryXPSeaAir() const;
 	// Sofia (SuoFeiYa)
 	int GetHillsCityDamageReduction() const;
 	int GetHillsMovementModifier() const;
@@ -305,8 +306,9 @@ private:
 	int m_iManpowerPerCity;
 	int m_iCombatBonusPerTechDifference;
 	// Sidon
-	int m_iNavalAttackIgnoreBuildingDefense;
-	int m_iForeignRegenPercent;
+	int m_iCityAttackIgnoreBuildingDefensePercent;
+	int m_iMilitaryXPPerTurnModifier;
+	int m_iMilitaryXPSeaAir;
 	// Sofia
 	int m_iHillsCityDamageReduction;
 	int m_iHillsMovementModifier;
@@ -531,8 +533,9 @@ public:
 	int GetManpowerPerCity() const;
 	int GetCombatBonusPerTechDifference() const;
 	// Sidon
-	int GetNavalAttackIgnoreBuildingDefense() const;
-	int GetForeignRegenPercent() const;
+	int GetCityAttackIgnoreBuildingDefensePercent() const;
+	int GetMilitaryXPPerTurnModifier() const;
+	int GetMilitaryXPSeaAir() const;
 	// Sofia
 	int GetHillsCityDamageReduction() const;
 	int GetHillsMovementModifier() const;
@@ -688,8 +691,9 @@ protected:
 	int m_iUnitProductionModifierPerCity;
 	int m_iManpowerPerCity;
 	int m_iCombatBonusPerTechDifference;
-	int m_iNavalAttackIgnoreBuildingDefense;
-	int m_iForeignRegenPercent;
+	int m_iCityAttackIgnoreBuildingDefensePercent;
+	int m_iMilitaryXPPerTurnModifier;
+	int m_iMilitaryXPSeaAir;
 	int m_iHillsCityDamageReduction;
 	int m_iHillsMovementModifier;
 	int m_iHillsCityRangeBonus;

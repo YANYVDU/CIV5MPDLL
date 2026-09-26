@@ -4613,7 +4613,8 @@ int CvLuaCity::lGetStrengthValue(lua_State* L)
 {
 	CvCity* pkCity = GetInstance(L);
 	bool bForRangeStrike = luaL_optbool(L, 2, false);
-	const int iResult = pkCity->getStrengthValue(bForRangeStrike);
+	int iIgnoreBuildingDefensePercent = luaL_optint(L, 3, 0);
+	const int iResult = pkCity->getStrengthValue(bForRangeStrike, iIgnoreBuildingDefensePercent);
 
 	lua_pushinteger(L, iResult);
 	return 1;

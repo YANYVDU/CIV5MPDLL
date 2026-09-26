@@ -1086,7 +1086,8 @@ public:
 	void changeSpecialistFreeExperience(int iChange);
 
 	void updateStrengthValue();
-	int getStrengthValue(bool bForRangeStrike = false) const;
+	// iIgnoreBuildingDefensePercent: portion (in %) of this city's building defense the attacker bypasses (0 = none)
+	int getStrengthValue(bool bForRangeStrike = false, int iIgnoreBuildingDefensePercent = 0) const;
 	int GetPower() const;
 
 	int getDamage() const;

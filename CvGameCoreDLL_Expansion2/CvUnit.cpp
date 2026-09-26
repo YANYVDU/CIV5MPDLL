@@ -2980,7 +2980,18 @@ void CvUnit::doTurn()
 	if (iTotalXP > 0)
 	{
 #if defined(MOD_UNITS_XP_TIMES_100)
-		changeExperienceTimes100(iTotalXP * 100);
+#if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
+		// Carrier-based aircraft hand their per-turn XP over to the transport, mirroring what
+		// DoGiveEXPToCarrier does for combat XP (PROMOTION_CARRIER_FIGHTER/HELICOPTER use 100).
+		if (MOD_PROMOTION_NEW_EFFECT_FOR_SP && GetCarrierEXPGivenModifier() > 0 && getTransportUnit() != NULL)
+		{
+			getTransportUnit()->changeExperienceTimes100(iTotalXP * 100 * GetCarrierEXPGivenModifier() / 100);
+		}
+		else
+#endif
+		{
+			changeExperienceTimes100(iTotalXP * 100);
+		}
 #else
 		changeExperience(iTotalxp);
 #endif
@@ -17377,7 +17388,13 @@ int CvUnit::GetAirCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bInc
 	// City is Defender
 	else
 	{
-		iDefenderStrength = pCity->getStrengthValue();
+		// Sidon UA: attackers of an allied player bypass part of the defended city's building defense
+		int iIgnoreBuildingDefense = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+			iIgnoreBuildingDefense = GET_PLAYER(getOwner()).GetCSACityAttackIgnoreBuildingDefensePercent();
+#endif
+		iDefenderStrength = pCity->getStrengthValue(false, iIgnoreBuildingDefense);
 	}
 
 	// The roll will vary damage between 30 and 40 (out of 100) for two units of identical strength
@@ -17510,7 +17527,13 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 	// City is Defender
 	else
 	{
-		iDefenderStrength = pCity->getStrengthValue();
+		// Sidon UA: attackers of an allied player bypass part of the defended city's building defense
+		int iIgnoreBuildingDefense = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+			iIgnoreBuildingDefense = GET_PLAYER(getOwner()).GetCSACityAttackIgnoreBuildingDefensePercent();
+#endif
+		iDefenderStrength = pCity->getStrengthValue(false, iIgnoreBuildingDefense);
 	}
 
 	// The roll will vary damage between 30 and 40 (out of 100) for two units of identical strength

@@ -122,7 +122,13 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 		int iMaxCityHP = pkCity->GetMaxHitPoints();
 
 		int iAttackerStrength = kAttacker.GetMaxAttackStrength(kAttacker.plot(), &plot, NULL);
-		int iDefenderStrength = pkCity->getStrengthValue();
+		// Sidon UA: attackers of an allied player bypass part of the defended city's building defense
+		int iIgnoreBuildingDefense = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+			iIgnoreBuildingDefense = GET_PLAYER(kAttacker.getOwner()).GetCSACityAttackIgnoreBuildingDefensePercent();
+#endif
+		int iDefenderStrength = pkCity->getStrengthValue(false, iIgnoreBuildingDefense);
 
 		int iAttackerDamageInflicted = kAttacker.getCombatDamage(iAttackerStrength, iDefenderStrength, kAttacker.getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ true);
 		int iDefenderDamageInflicted = kAttacker.getCombatDamage(iDefenderStrength, iAttackerStrength, pkCity->getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ true, /*bDefenderIsCity*/ false);

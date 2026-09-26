@@ -16992,7 +16992,7 @@ void CvCity::updateStrengthValue()
 }
 
 //	--------------------------------------------------------------------------------
-int CvCity::getStrengthValue(bool bForRangeStrike) const
+int CvCity::getStrengthValue(bool bForRangeStrike, int iIgnoreBuildingDefensePercent) const
 {
 	VALIDATE_OBJECT
 	// Strike strikes are weaker
@@ -17059,6 +17059,27 @@ int CvCity::getStrengthValue(bool bForRangeStrike) const
 		iValue *= (100 + GET_PLAYER(getOwner()).GetGlobalRangedStrikeModifier());
 		iValue /= 100;
 #endif
+
+		return iValue;
+	}
+
+	// Sidon UA: the attacker bypasses part of this city's building defense.
+	// Building defense enters m_iStrengthValue via updateStrengthValue() with the same
+	// (100 + BuildingDefenseMod + cityDefenseModifierGlobal) scaling, so it must be mirrored here -
+	// otherwise the amount deducted would not match what was actually added.
+	if (iIgnoreBuildingDefensePercent > 0)
+	{
+		if (iIgnoreBuildingDefensePercent > 100)
+			iIgnoreBuildingDefensePercent = 100;
+
+		int iBuildingDefense = m_pCityBuildings->GetBuildingDefense();
+		int iBuildingDefenseMod = 100 + m_pCityBuildings->GetBuildingDefenseMod() + GET_PLAYER(m_eOwner).getCityDefenseModifierGlobal();
+		iBuildingDefense *= iBuildingDefenseMod;
+		iBuildingDefense /= 100;
+
+		int iValue = m_iStrengthValue - (iBuildingDefense * iIgnoreBuildingDefensePercent) / 100;
+		if (iValue < 1)
+			iValue = 1;
 
 		return iValue;
 	}

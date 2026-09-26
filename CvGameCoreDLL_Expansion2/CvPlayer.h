@@ -1830,6 +1830,12 @@ public:
 	int GetCapturedHolyCityCount();
 	void RefreshHolyCityCount();
 	bool IsDenounceImmunity() const;
+	// Sidon CS UA: % of a defended city's building defense bypassed by this player's attacking units
+	int GetCSACityAttackIgnoreBuildingDefensePercent() const;
+	// Sidon CS UA: % modifier on the per-turn XP granted by allied militaristic city-states
+	int GetCSAMilitaryXPPerTurnModifier() const;
+	// Sidon CS UA: whether the militaristic per-turn XP also applies to sea and air domains
+	bool IsCSAMilitaryXPSeaAir() const;
 	// Vatican CS UA: spread speed of the founder's religion (ally +50% / friend +20%)
 	int GetCSUAReligionSpreadSpeedModifier() const;
 	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)

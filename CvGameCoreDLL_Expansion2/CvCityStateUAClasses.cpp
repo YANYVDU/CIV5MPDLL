@@ -41,8 +41,9 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iUnitProductionModifierPerCity(0)
 	, m_iManpowerPerCity(0)
 	, m_iCombatBonusPerTechDifference(0)
-	, m_iNavalAttackIgnoreBuildingDefense(0)
-	, m_iForeignRegenPercent(0)
+	, m_iCityAttackIgnoreBuildingDefensePercent(0)
+	, m_iMilitaryXPPerTurnModifier(0)
+	, m_iMilitaryXPSeaAir(0)
 	, m_iHillsCityDamageReduction(0)
 	, m_iHillsMovementModifier(0)
 	, m_iHillsCityRangeBonus(0)
@@ -176,8 +177,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iManpowerPerCity								= kResults.GetInt("ManpowerPerCity");
 	m_iCombatBonusPerTechDifference				= kResults.GetInt("CombatBonusPerTechDifference");
 
-	m_iNavalAttackIgnoreBuildingDefense				= kResults.GetInt("NavalAttackIgnoreBuildingDefense");
-	m_iForeignRegenPercent							= kResults.GetInt("ForeignRegenPercent");
+	m_iCityAttackIgnoreBuildingDefensePercent		= kResults.GetInt("CityAttackIgnoreBuildingDefensePercent");
+	m_iMilitaryXPPerTurnModifier					= kResults.GetInt("MilitaryXPPerTurnModifier");
+	m_iMilitaryXPSeaAir								= kResults.GetInt("MilitaryXPSeaAir");
 
 	m_iHillsCityDamageReduction						= kResults.GetInt("HillsCityDamageReduction");
 	m_iHillsMovementModifier						= kResults.GetInt("HillsMovementModifier");
@@ -608,8 +610,9 @@ int CvCityStateUAEffectEntry::GetUnitProductionModifierPerCity() const { return 
 int CvCityStateUAEffectEntry::GetManpowerPerCity() const { return m_iManpowerPerCity; }
 int CvCityStateUAEffectEntry::GetCombatBonusPerTechDifference() const { return m_iCombatBonusPerTechDifference; }
 
-int CvCityStateUAEffectEntry::GetNavalAttackIgnoreBuildingDefense() const { return m_iNavalAttackIgnoreBuildingDefense; }
-int CvCityStateUAEffectEntry::GetForeignRegenPercent() const { return m_iForeignRegenPercent; }
+int CvCityStateUAEffectEntry::GetCityAttackIgnoreBuildingDefensePercent() const { return m_iCityAttackIgnoreBuildingDefensePercent; }
+int CvCityStateUAEffectEntry::GetMilitaryXPPerTurnModifier() const { return m_iMilitaryXPPerTurnModifier; }
+int CvCityStateUAEffectEntry::GetMilitaryXPSeaAir() const { return m_iMilitaryXPSeaAir; }
 
 int CvCityStateUAEffectEntry::GetHillsCityDamageReduction() const { return m_iHillsCityDamageReduction; }
 int CvCityStateUAEffectEntry::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
@@ -949,8 +952,9 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iUnitProductionModifierPerCity(0)
 	, m_iManpowerPerCity(0)
 	, m_iCombatBonusPerTechDifference(0)
-	, m_iNavalAttackIgnoreBuildingDefense(0)
-	, m_iForeignRegenPercent(0)
+	, m_iCityAttackIgnoreBuildingDefensePercent(0)
+	, m_iMilitaryXPPerTurnModifier(0)
+	, m_iMilitaryXPSeaAir(0)
 	, m_iHillsCityDamageReduction(0)
 	, m_iHillsMovementModifier(0)
 	, m_iHillsCityRangeBonus(0)
@@ -1054,8 +1058,9 @@ void CvPlayerCityStateUA::Reset()
 	m_iUnitProductionModifierPerCity = 0;
 	m_iManpowerPerCity = 0;
 	m_iCombatBonusPerTechDifference = 0;
-	m_iNavalAttackIgnoreBuildingDefense = 0;
-	m_iForeignRegenPercent = 0;
+	m_iCityAttackIgnoreBuildingDefensePercent = 0;
+	m_iMilitaryXPPerTurnModifier = 0;
+	m_iMilitaryXPSeaAir = 0;
 	m_iHillsCityDamageReduction = 0;
 	m_iHillsMovementModifier = 0;
 	m_iHillsCityRangeBonus = 0;
@@ -1239,8 +1244,9 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iManpowerPerCity								+= pEffect->GetManpowerPerCity() * iChange;
 	m_iCombatBonusPerTechDifference				+= pEffect->GetCombatBonusPerTechDifference() * iChange;
 
-	m_iNavalAttackIgnoreBuildingDefense				+= pEffect->GetNavalAttackIgnoreBuildingDefense() * iChange;
-	m_iForeignRegenPercent							+= pEffect->GetForeignRegenPercent() * iChange;
+	m_iCityAttackIgnoreBuildingDefensePercent		+= pEffect->GetCityAttackIgnoreBuildingDefensePercent() * iChange;
+	m_iMilitaryXPPerTurnModifier					+= pEffect->GetMilitaryXPPerTurnModifier() * iChange;
+	m_iMilitaryXPSeaAir								+= pEffect->GetMilitaryXPSeaAir() * iChange;
 
 	m_iHillsCityDamageReduction						+= pEffect->GetHillsCityDamageReduction() * iChange;
 	m_iHillsMovementModifier						+= pEffect->GetHillsMovementModifier() * iChange;
@@ -1559,8 +1565,9 @@ int CvPlayerCityStateUA::GetEnemyCombatModifierInBordersPerBeenDoW() const { ret
 int CvPlayerCityStateUA::GetUnitProductionModifierPerCity() const { return m_iUnitProductionModifierPerCity; }
 int CvPlayerCityStateUA::GetManpowerPerCity() const { return m_iManpowerPerCity; }
 int CvPlayerCityStateUA::GetCombatBonusPerTechDifference() const { return m_iCombatBonusPerTechDifference; }
-int CvPlayerCityStateUA::GetNavalAttackIgnoreBuildingDefense() const { return m_iNavalAttackIgnoreBuildingDefense; }
-int CvPlayerCityStateUA::GetForeignRegenPercent() const { return m_iForeignRegenPercent; }
+int CvPlayerCityStateUA::GetCityAttackIgnoreBuildingDefensePercent() const { return m_iCityAttackIgnoreBuildingDefensePercent; }
+int CvPlayerCityStateUA::GetMilitaryXPPerTurnModifier() const { return m_iMilitaryXPPerTurnModifier; }
+int CvPlayerCityStateUA::GetMilitaryXPSeaAir() const { return m_iMilitaryXPSeaAir; }
 int CvPlayerCityStateUA::GetHillsCityDamageReduction() const { return m_iHillsCityDamageReduction; }
 int CvPlayerCityStateUA::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
 int CvPlayerCityStateUA::GetHillsCityRangeBonus() const { return m_iHillsCityRangeBonus; }

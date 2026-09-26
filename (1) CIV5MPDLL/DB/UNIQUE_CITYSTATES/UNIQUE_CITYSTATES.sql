@@ -86,9 +86,12 @@ CREATE TABLE CityStateUAEffects (
     UnitProductionModifierPerCity                   integer DEFAULT 0,
     ManpowerPerCity                                 integer DEFAULT 0,
     CombatBonusPerTechDifference                    integer DEFAULT 0,
-    -- Sidon: naval siege + heal outside borders
-    NavalAttackIgnoreBuildingDefense                integer DEFAULT 0,
-    ForeignRegenPercent                             integer DEFAULT 0,
+    -- Sidon: attacker ignores this % of the defended city's building defense (30 ally / 15 friend)
+    CityAttackIgnoreBuildingDefensePercent          integer DEFAULT 0,
+    -- Sidon: % modifier on the per-turn XP granted by allied militaristic city-states (100 = +100%)
+    MilitaryXPPerTurnModifier                       integer DEFAULT 0,
+    -- Sidon: when non-zero, the militaristic city-state per-turn XP also applies to sea and air domains
+    MilitaryXPSeaAir                                integer DEFAULT 0,
     -- Sofia: hills cities
     HillsCityDamageReduction                        integer DEFAULT 0,
     HillsMovementModifier                           integer DEFAULT 0,
