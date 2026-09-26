@@ -429,7 +429,10 @@ static void ApplySelectedMinorCivs()
 		sprintf_s(szBuf, 64, "GAMEOPTION_SP_CS_%d", slot);
 		int iValue = -1;
 		CvPreGame::GetGameOption(szBuf, iValue);
-		if(iValue >= 0 && iValue < GC.getNumMinorCivInfos())
+		// Unset options fall back to their database default (0), and the info
+		// array leaves NULL holes for unused database ids, so both must be
+		// rejected here or a NULL id reaches CvGame::InitPlayers.
+		if(iValue >= 0 && iValue < GC.getNumMinorCivInfos() && GC.getMinorCivInfo((MinorCivTypes)iValue) != NULL)
 			aChosen.push_back((MinorCivTypes)iValue);
 	}
 	if(aChosen.empty())
@@ -449,17 +452,26 @@ static void ApplySelectedMinorCivs()
 	}
 
 	const int iSlots = iLastMinor - iFirstMinor;
-	const int iPool = GC.getNumMinorCivInfos();
+
+	// The info array is indexed by database id, so unused ids show up as NULL
+	// holes. Build the random pool from valid entries only: shuffling raw
+	// indices would let a NULL id reach CvGame::InitPlayers and crash it.
+	std::vector<int> aPool;
+	for(int i = 0; i < GC.getNumMinorCivInfos(); ++i)
+	{
+		if(GC.getMinorCivInfo((MinorCivTypes)i) != NULL)
+			aPool.push_back(i);
+	}
+	const int iPool = (int)aPool.size();
 	if(iPool == 0)
 		return;
 
-	std::vector<bool> bUsed(iPool, false);
+	std::vector<bool> bUsed(GC.getNumMinorCivInfos(), false);
 	for(size_t i = 0; i < aUnique.size(); ++i)
 		bUsed[aUnique[i]] = true;
 
-	// Fisher-Yates shuffle of the full pool using the persistent (MP-synced) RNG.
-	std::vector<int> iShuffle(iPool);
-	shuffleArray(&iShuffle[0], iPool, GC.getGame().getJonRand());
+	// Fisher-Yates shuffle of the valid pool using the persistent (MP-synced) RNG.
+	shuffleArray(&aPool[0], iPool, GC.getGame().getJonRand());
 
 	int iFill = 0;
 	for(int s = 0; s < iSlots; ++s)
@@ -471,11 +483,11 @@ static void ApplySelectedMinorCivs()
 		}
 		else
 		{
-			while(iFill < iPool && bUsed[iShuffle[iFill]])
+			while(iFill < iPool && bUsed[aPool[iFill]])
 				++iFill;
 			if(iFill >= iPool)
 				break; // Pool exhausted; leave the remaining slots at their default.
-			mc = (MinorCivTypes)iShuffle[iFill];
+			mc = (MinorCivTypes)aPool[iFill];
 			bUsed[mc] = true;
 			++iFill;
 		}
@@ -782,6 +794,15 @@ void CvGame::InitPlayers()
 #else
 				CvMinorCivInfo* pMinorCivInfo = GC.getMinorCivInfo(CvPreGame::minorCivType(eMinorPlayer));
 #endif
+
+				// A pregame slot can hold an id that has no CvMinorCivInfo (the info
+				// array keeps NULL holes for unused database ids). Close the slot
+				// rather than dereferencing a NULL pointer below.
+				if(pMinorCivInfo == NULL)
+				{
+					CvPreGame::setSlotStatus(eMinorPlayer, SS_CLOSED);
+					continue;
+				}
 
 				CvPreGame::setSlotStatus(eMinorPlayer, SS_COMPUTER);
 				CvPreGame::setNetID(eMinorPlayer, -1);
