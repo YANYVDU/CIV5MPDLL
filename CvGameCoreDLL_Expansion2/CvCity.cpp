@@ -13557,6 +13557,20 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
+	//CityState UA (Bratislava): the capital and the second capital grant a culture percentage modifier
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pCityStateUA && eIndex == YIELD_CULTURE && (isCapital() || IsSecondCapital()))
+	{
+		const int iCapitalCultureMod = pCityStateUA->GetCapitalAndSecondCapitalCultureModifier();
+		if (iCapitalCultureMod != 0)
+		{
+			iModifier += iCapitalCultureMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD", iCapitalCultureMod);
+		}
+	}
+#endif
+
 	//CityState UA (Antananarivo): each worked plot holding a configured improvement grants a yield percentage modifier
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (pCityStateUA && pCityStateUA->HasImprovementYieldModifiers())
