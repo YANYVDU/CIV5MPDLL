@@ -1622,8 +1622,11 @@ long long CvPlayerTechs::GetResearchCost(TechTypes eTech) const
 		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
 		if (pCSUA != NULL)
 		{
-			const int iPuppetPartial = pCSUA->IsPuppetNoTechCostPenalty() ? 0
+			int iPuppetPartial = pCSUA->IsPuppetNoTechCostPenalty() ? 0
 			                         : 100 - pCSUA->GetPuppetTechCostPartial();
+			// Guard a stored value above 100, which would drive iPuppetPartial negative and let the
+			// discount exceed the puppet share.
+			if (iPuppetPartial < 0) iPuppetPartial = 0;
 			if (iPuppetPartial < 100)
 			{
 				const int iNumPuppets = pCSUA->GetCachedPuppetCount();
