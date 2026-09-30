@@ -153,6 +153,24 @@ struct SpecialCityPopulationYieldModifierEntry {
 	int m_iYieldMod;
 };
 
+// Singapore: each owned building class grants a nation-wide yield % modifier per YieldType. The count
+// comes from CvPlayer::getBuildingClassCount (maintained live by the building system). For one-per-city
+// dummy buildings (city scale / corruption tiers) this equals the number of cities of that tier; only use
+// it with dummy building classes. YieldMod is a PLAIN PERCENT (10 = +10% per owned building class).
+struct BuildingClassGlobalYieldModifierEntry {
+	int m_iBuildingClass;
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
+// Singapore: each owned building class lowers the city-count research threshold
+// (CvPlayerTechs::GetResearchCost) by TechCostMod percent, nation-wide. TechCostMod is a PLAIN PERCENT
+// (2 = -2% per owned building class); the consumer clamps the sum at 100.
+struct BuildingClassTechCostModifierEntry {
+	int m_iBuildingClass;
+	int m_iTechCostMod;
+};
+
 // A city type matches when: EVERY And-row matches AND (the Or table is empty OR at least one Or-row matches).
 class CvSpecialCityTypeEntry : public CvBaseInfo
 {
@@ -390,6 +408,9 @@ public:
 	const std::vector<LeagueVoteYieldModifierEntry>& GetLeagueVoteYieldModifiers() const { return m_vLeagueVoteYieldModifiers; }
 	// Kuala Lumpur
 	const std::vector<SpecialCityPopulationYieldModifierEntry>& GetSpecialCityPopulationYieldModifiers() const { return m_vSpecialCityPopulationYieldModifiers; }
+	// Singapore
+	const std::vector<BuildingClassGlobalYieldModifierEntry>& GetBuildingClassGlobalYieldModifiers() const { return m_vBuildingClassGlobalYieldModifiers; }
+	const std::vector<BuildingClassTechCostModifierEntry>& GetBuildingClassTechCostModifiers() const { return m_vBuildingClassTechCostModifiers; }
 
 private:
 	// Florence
@@ -554,6 +575,9 @@ private:
 	std::vector<LeagueVoteYieldModifierEntry> m_vLeagueVoteYieldModifiers;
 	// Kuala Lumpur
 	std::vector<SpecialCityPopulationYieldModifierEntry> m_vSpecialCityPopulationYieldModifiers;
+	// Singapore
+	std::vector<BuildingClassGlobalYieldModifierEntry> m_vBuildingClassGlobalYieldModifiers;
+	std::vector<BuildingClassTechCostModifierEntry> m_vBuildingClassTechCostModifiers;
 };
 
 //======================================================================================================
@@ -832,6 +856,14 @@ public:
 	int GetCachedPuppetCount() const;
 	void CachePuppetStats();
 
+	// Singapore: each owned building class grants a nation-wide yield % modifier (YieldMod is a plain
+	// percent). The count is read live from CvPlayer::getBuildingClassCount, so no per-turn cache is needed.
+	const std::vector<BuildingClassGlobalYieldModifierEntry>& GetBuildingClassGlobalYieldModifiers() const { return m_vBuildingClassGlobalYieldModifiers; }
+	bool HasBuildingClassGlobalYieldModifiers() const;
+	// Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent.
+	const std::vector<BuildingClassTechCostModifierEntry>& GetBuildingClassTechCostModifiers() const { return m_vBuildingClassTechCostModifiers; }
+	bool HasBuildingClassTechCostModifiers() const;
+
 	// Manila: cached count of happy luxury types owned by the player, refreshed once per doTurn in
 	// CvPlayer::RefreshCSAllUAEffects so the per-yield hot path (GetCSUAYieldPercentModifier) reads a
 	// flat int instead of re-scanning every resource for every city.
@@ -1047,6 +1079,9 @@ protected:
 	// (in CvPlayer::RefreshCSAllUAEffects)
 	std::vector<int> m_aiCachedSpecialCityPopulation;
 	int m_iCachedPuppetCount;
+	// Singapore
+	std::vector<BuildingClassGlobalYieldModifierEntry> m_vBuildingClassGlobalYieldModifiers;
+	std::vector<BuildingClassTechCostModifierEntry> m_vBuildingClassTechCostModifiers;
 };
 
 #endif // CVCITYSTATEUACLASSES_H

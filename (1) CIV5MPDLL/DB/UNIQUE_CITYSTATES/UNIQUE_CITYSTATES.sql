@@ -240,6 +240,29 @@ create table CityStateUAEffect_BuildingClassYieldModifiers (
     YieldMod integer default 0
 );
 
+-- CityState UA (Singapore): each owned building class grants a nation-wide yield % modifier per YieldType.
+-- The count comes from CvPlayer::getBuildingClassCount, which the building system maintains live. For
+-- one-per-city dummy buildings (city scale / corruption tiers) this equals the number of cities of that
+-- tier; for stackable normal buildings it would count total copies, so only use it with dummy building
+-- classes. YieldMod is a PLAIN PERCENT (10 = +10% per owned building class), NOT basis points.
+create table CityStateUAEffect_BuildingClassGlobalYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    BuildingClassType text references BuildingClasses(Type),
+    YieldType text references Yields(Type),
+    YieldMod integer default 0
+);
+
+-- CityState UA (Singapore): each owned building class lowers the city-count research threshold
+-- (CvPlayerTechs::GetResearchCost) by TechCostMod percent, nation-wide. TechCostMod is a PLAIN PERCENT
+-- (2 = -2% of the city-count threshold per owned building class); the sum across all rows is clamped at
+-- 100 so the threshold can never go negative. See BuildingClassGlobalYieldModifiers for the dummy-building
+-- caveat on the count.
+create table CityStateUAEffect_BuildingClassTechCostModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    BuildingClassType text references BuildingClasses(Type),
+    TechCostMod integer default 0
+);
+
 -- CityState UA (Brussels): specified specialist's great person point accumulation rate (%)
 create table CityStateUAEffect_SpecialistPointRate (
     EffectType text references CityStateUAEffects(Type),

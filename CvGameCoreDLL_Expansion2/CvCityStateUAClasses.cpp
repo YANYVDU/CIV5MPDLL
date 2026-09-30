@@ -907,6 +907,45 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vSpecialCityPopulationYieldModifiers.push_back(entry);
 		}
 	}
+	//Singapore: each owned building class grants a nation-wide yield % modifier per YieldType
+	{
+		m_vBuildingClassGlobalYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_BuildingClassGlobalYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select BuildingClasses.ID as BuildingClassID, Yields.ID as YieldID, YieldMod from CityStateUAEffect_BuildingClassGlobalYieldModifiers inner join BuildingClasses on BuildingClasses.Type = BuildingClassType inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			BuildingClassGlobalYieldModifierEntry entry;
+			entry.m_iBuildingClass = pResults->GetInt(0);
+			entry.m_iYieldType = pResults->GetInt(1);
+			entry.m_iYieldMod = pResults->GetInt(2);
+			m_vBuildingClassGlobalYieldModifiers.push_back(entry);
+		}
+	}
+	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent
+	{
+		m_vBuildingClassTechCostModifiers.clear();
+		std::string strKey("CityStateUAEffect_BuildingClassTechCostModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select BuildingClasses.ID as BuildingClassID, TechCostMod from CityStateUAEffect_BuildingClassTechCostModifiers inner join BuildingClasses on BuildingClasses.Type = BuildingClassType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			BuildingClassTechCostModifierEntry entry;
+			entry.m_iBuildingClass = pResults->GetInt(0);
+			entry.m_iTechCostMod = pResults->GetInt(1);
+			m_vBuildingClassTechCostModifiers.push_back(entry);
+		}
+	}
 
 	return true;
 }
@@ -1575,6 +1614,9 @@ void CvPlayerCityStateUA::Reset()
 	m_vSpecialCityPopulationYieldModifiers.clear();
 	m_aiCachedSpecialCityPopulation.clear();
 	m_iCachedPuppetCount = 0;
+	// Singapore
+	m_vBuildingClassGlobalYieldModifiers.clear();
+	m_vBuildingClassTechCostModifiers.clear();
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -1982,6 +2024,26 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			SpecialCityPopulationYieldModifierEntry entry = vEntries[i];
 			entry.m_iYieldMod *= iChange;
 			m_vSpecialCityPopulationYieldModifiers.push_back(entry);
+		}
+	}
+	//Singapore: each owned building class grants a nation-wide yield % modifier per YieldType
+	{
+		const std::vector<BuildingClassGlobalYieldModifierEntry>& vEntries = pEffect->GetBuildingClassGlobalYieldModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			BuildingClassGlobalYieldModifierEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vBuildingClassGlobalYieldModifiers.push_back(entry);
+		}
+	}
+	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent
+	{
+		const std::vector<BuildingClassTechCostModifierEntry>& vEntries = pEffect->GetBuildingClassTechCostModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			BuildingClassTechCostModifierEntry entry = vEntries[i];
+			entry.m_iTechCostMod *= iChange;
+			m_vBuildingClassTechCostModifiers.push_back(entry);
 		}
 	}
 }
@@ -2534,6 +2596,14 @@ void CvPlayerCityStateUA::CacheSpecialCityMatches()
 bool CvPlayerCityStateUA::HasSpecialCityPopulationYieldModifiers() const
 {
 	return !m_vSpecialCityPopulationYieldModifiers.empty();
+}
+bool CvPlayerCityStateUA::HasBuildingClassGlobalYieldModifiers() const
+{
+	return !m_vBuildingClassGlobalYieldModifiers.empty();
+}
+bool CvPlayerCityStateUA::HasBuildingClassTechCostModifiers() const
+{
+	return !m_vBuildingClassTechCostModifiers.empty();
 }
 int CvPlayerCityStateUA::GetCachedSpecialCityPopulation(int iSpecialCityType) const
 {

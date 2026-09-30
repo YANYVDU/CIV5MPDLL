@@ -1637,6 +1637,25 @@ long long CvPlayerTechs::GetResearchCost(TechTypes eTech) const
 	}
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Singapore CS UA: each owned building class lowers the city-count research threshold by TechCostMod
+	// percent. Clamp the sum at 100 so the threshold can never go negative. Must stay ahead of the
+	// golden-age line below, which scales the same iMod.
+	{
+		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+		if (pCSUA != NULL && pCSUA->HasBuildingClassTechCostModifiers())
+		{
+			const std::vector<BuildingClassTechCostModifierEntry>& vTC = pCSUA->GetBuildingClassTechCostModifiers();
+			int iPercent = 0;
+			for (size_t i = 0; i < vTC.size(); i++)
+				iPercent += m_pPlayer->getBuildingClassCount((BuildingClassTypes)vTC[i].m_iBuildingClass) * vTC[i].m_iTechCostMod;
+			if (iPercent > 100) iPercent = 100;
+			if (iPercent > 0)
+				iMod = iMod * (100 - iPercent) / 100;
+		}
+	}
+#endif
+
 	if (m_pPlayer->isGoldenAge())
 		iMod = iMod * (m_pPlayer->GetPlayerTraits()->GetGoldenAgeResearchCityCountCostModifier() + 100) / 100; // some UA may reduce the modifier from the city count.
 

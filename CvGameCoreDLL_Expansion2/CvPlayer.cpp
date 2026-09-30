@@ -18321,6 +18321,19 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += m_pCityStateUA->GetCachedSpecialCityCount(vSpecCount[i].m_iSpecialCityType) * vSpecCount[i].m_iYieldMod * 100;
 		}
 	}
+	// Singapore CS UA: each owned building class grants a nation-wide yield % modifier. The count is read
+	// live from the player's building-class counter (CvPlayer::getBuildingClassCount), so no per-turn cache
+	// is needed. YieldMod is a plain percent; multiply by 100 because this function accumulates basis points
+	// and divides by 100 at the end.
+	if (m_pCityStateUA->HasBuildingClassGlobalYieldModifiers())
+	{
+		const std::vector<BuildingClassGlobalYieldModifierEntry>& vBC = m_pCityStateUA->GetBuildingClassGlobalYieldModifiers();
+		for (size_t i = 0; i < vBC.size(); i++)
+		{
+			if (vBC[i].m_iYieldType != (int)eYield) continue;
+			iMod += getBuildingClassCount((BuildingClassTypes)vBC[i].m_iBuildingClass) * vBC[i].m_iYieldMod * 100;
+		}
+	}
 	// Manila CS UA: per happy luxury type owned, a nation-wide food % modifier (plain percent,
 	// capped by FoodModifierPerHappyLuxuryCap; 0 = uncapped). The luxury count is cached once per
 	// doTurn (CvPlayerCityStateUA::CacheHappyLuxuryCount), and the plain percent is converted to
