@@ -379,6 +379,8 @@ public:
 	int GetGreatPersonRateModifierPerNationalWonder() const;
 	// Kiev: League delegate votes granted per civilization the ally has a Declaration of Friendship with
 	int GetLeagueVotesPerDoF() const;
+	// Ur: global happiness per world wonder owned by the ally/friend (100 = +1 happiness per world wonder)
+	int GetWorldWonderHappiness() const;
 	// Kathmandu: the first gold donation each turn refunds a % of the amount as faith to the ally
 	int GetFaithRefundPerDonationPercent() const;
 	// Geneva: diplomatic prestige per major civilization whose majority religion is the ally-led religion
@@ -587,6 +589,8 @@ private:
 	int m_iGreatPersonRateModifierPerNationalWonder;
 	int m_iLeagueVotesPerDoF;
 	std::vector<LeagueVoteYieldModifierEntry> m_vLeagueVoteYieldModifiers;
+	// Ur
+	int m_iWorldWonderHappiness;
 	// Kuala Lumpur
 	std::vector<SpecialCityPopulationYieldModifierEntry> m_vSpecialCityPopulationYieldModifiers;
 	// Tyre
@@ -929,6 +933,10 @@ public:
 	int GetCachedLeagueVotes() const;
 	void CacheLeagueVotes();
 
+	// Ur: global happiness per world wonder owned by the ally/friend (100 = +1 happiness per world wonder).
+	// Shares the world-wonder count cached for Bucharest (GetCachedWorldWonderCount).
+	int GetWorldWonderHappiness() const;
+
 	void Reset();
 
 protected:
@@ -1094,6 +1102,8 @@ protected:
 	// Cached counts for the two Kiev effects above, refreshed once per doTurn
 	int m_iCachedNationalWonderCount;
 	int m_iCachedLeagueVotes;
+	// Ur: global happiness per world wonder owned by the ally/friend (100 = +1 happiness per world wonder)
+	int m_iWorldWonderHappiness;
 	// Kuala Lumpur
 	std::vector<SpecialCityPopulationYieldModifierEntry> m_vSpecialCityPopulationYieldModifiers;
 	// Cached population per special city type, plus the puppet count, refreshed once per doTurn

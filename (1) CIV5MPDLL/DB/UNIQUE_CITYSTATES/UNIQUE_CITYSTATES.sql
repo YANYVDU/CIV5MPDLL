@@ -184,7 +184,10 @@ CREATE TABLE CityStateUAEffects (
     -- The palace counts as a national wonder, so every player always has at least one.
     GreatPersonRateModifierPerNationalWonder integer DEFAULT 0,
     -- Kiev: extra League delegate votes per civilization the ally has a Declaration of Friendship with
-    LeagueVotesPerDoF integer DEFAULT 0
+    LeagueVotesPerDoF integer DEFAULT 0,
+    -- Ur: global happiness per world wonder owned by the ally/friend, accumulated in GetHappinessFromMinorCivs
+    -- (basis points, 100 = +1 global happiness per world wonder). Ally = 200, friend = 100.
+    WorldWonderHappiness integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects

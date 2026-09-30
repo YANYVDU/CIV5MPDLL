@@ -15117,6 +15117,13 @@ int CvPlayer::GetHappinessFromMinorCivs() const
 	{
 		iHappiness += (m_pCityStateUA->GetCachedWorkedHolySites() * m_pCityStateUA->GetHolySiteHappiness()) / 100;
 	}
+	// Ur CS UA: per world wonder owned, GLOBAL happiness (100 = +1 happiness per world wonder).
+	// Counted here so it shows up under "from City-States". Shares the per-turn cached world-wonder
+	// count with Bucharest's yield effect.
+	if (m_pCityStateUA && m_pCityStateUA->GetWorldWonderHappiness() > 0)
+	{
+		iHappiness += (m_pCityStateUA->GetCachedWorldWonderCount() * m_pCityStateUA->GetWorldWonderHappiness()) / 100;
+	}
 #endif
 	return iHappiness;
 }

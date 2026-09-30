@@ -332,6 +332,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iHolySiteHappiness(0)
 	, m_iGreatPersonRateModifierPerNationalWonder(0)
 	, m_iLeagueVotesPerDoF(0)
+	, m_iWorldWonderHappiness(0)
 {
 }
 
@@ -374,6 +375,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iGreatPersonRateModifierPerNationalWonder		= kResults.GetInt("GreatPersonRateModifierPerNationalWonder");
 	m_iLeagueVotesPerDoF							= kResults.GetInt("LeagueVotesPerDoF");
+	m_iWorldWonderHappiness							= kResults.GetInt("WorldWonderHappiness");
 
 	m_iGreatMusicianConcertTourismModifier			= kResults.GetInt("GreatMusicianConcertTourismModifier");
 	m_iGreatMusicianConcertGoldPercent				= kResults.GetInt("GreatMusicianConcertGoldPercent");
@@ -1168,6 +1170,7 @@ bool CvCityStateUAEffectEntry::GetFaithPantheonPurchase() const { return m_bFait
 int CvCityStateUAEffectEntry::GetGreatPersonRateModifierPerGreatWork() const { return m_iGreatPersonRateModifierPerGreatWork; }
 int CvCityStateUAEffectEntry::GetGreatPersonRateModifierPerNationalWonder() const { return m_iGreatPersonRateModifierPerNationalWonder; }
 int CvCityStateUAEffectEntry::GetLeagueVotesPerDoF() const { return m_iLeagueVotesPerDoF; }
+int CvCityStateUAEffectEntry::GetWorldWonderHappiness() const { return m_iWorldWonderHappiness; }
 int CvCityStateUAEffectEntry::GetFaithRefundPerDonationPercent() const { return m_iFaithRefundPerDonationPercent; }
 int CvCityStateUAEffectEntry::GetDiplomaticPrestigePerMajorityCiv() const { return m_iDiplomaticPrestigePerMajorityCiv; }
 int CvCityStateUAEffectEntry::GetInfluencePerTurnPerFollowCityMod() const { return m_iInfluencePerTurnPerFollowCityMod; }
@@ -1440,6 +1443,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCachedNationalWonderCount(0)
 	, m_iCachedLeagueVotes(0)
 	, m_iCachedPuppetCount(0)
+	, m_iWorldWonderHappiness(0)
 {
 }
 
@@ -1575,6 +1579,7 @@ void CvPlayerCityStateUA::Reset()
 	m_vLeagueVoteYieldModifiers.clear();
 	m_iCachedNationalWonderCount = 0;
 	m_iCachedLeagueVotes = 0;
+	m_iWorldWonderHappiness = 0;
 	m_aiSpecialistPointRate.assign(GC.getNumSpecialistInfos(), 0);
 	m_vGreatWorkGreatPersonPoints.clear();
 	m_aiGreatPersonOneShotModifier.assign(GC.getNumUnitClassInfos(), 0);
@@ -1910,6 +1915,8 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	//Kiev: +X% great-person rate per national wonder completed, and +X League votes per Declaration of Friendship
 	m_iGreatPersonRateModifierPerNationalWonder		+= pEffect->GetGreatPersonRateModifierPerNationalWonder() * iChange;
 	m_iLeagueVotesPerDoF							+= pEffect->GetLeagueVotesPerDoF() * iChange;
+	//Ur: global happiness per world wonder owned by the ally/friend
+	m_iWorldWonderHappiness							+= pEffect->GetWorldWonderHappiness() * iChange;
 	//Kiev: each League vote held grants a yield % modifier per YieldType
 	{
 		const std::vector<LeagueVoteYieldModifierEntry>& vLVEntries = pEffect->GetLeagueVoteYieldModifiers();
@@ -2472,14 +2479,15 @@ bool CvPlayerCityStateUA::HasWorldWonderYieldModifiers() const
 {
 	return !m_vWorldWonderYieldModifiers.empty();
 }
-// Bucharest: cached world-wonder count, refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects.
-// The city scan is skipped unless the player actually holds a Bucharest world-wonder effect.
+// Bucharest / Ur: cached world-wonder count, refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects.
+// The city scan is skipped unless the player actually holds a world-wonder effect (Bucharest yield % or
+// Ur global happiness).
 int CvPlayerCityStateUA::GetCachedWorldWonderCount() const { return m_iCachedWorldWonderCount; }
 void CvPlayerCityStateUA::CacheWorldWonderCount()
 {
 	m_iCachedWorldWonderCount = 0;
 	if (!m_pPlayer) return;
-	if (m_vWorldWonderYieldModifiers.empty()) return;
+	if (m_vWorldWonderYieldModifiers.empty() && m_iWorldWonderHappiness == 0) return;
 	m_iCachedWorldWonderCount = m_pPlayer->GetNumWorldWonders();
 }
 bool CvPlayerCityStateUA::HasDiplomatAbroadYieldModifiers() const
@@ -2529,6 +2537,8 @@ void CvPlayerCityStateUA::CacheNationalWonderCount()
 // Kiev: League delegate votes granted per Declaration of Friendship (read live; cheap diplomacy count).
 int CvPlayerCityStateUA::GetLeagueVotesPerDoF() const { return m_iLeagueVotesPerDoF; }
 bool CvPlayerCityStateUA::HasLeagueVotesPerDoF() const { return m_iLeagueVotesPerDoF != 0; }
+// Ur: global happiness per world wonder owned by the ally/friend (100 = +1 happiness per world wonder).
+int CvPlayerCityStateUA::GetWorldWonderHappiness() const { return m_iWorldWonderHappiness; }
 bool CvPlayerCityStateUA::HasLeagueVoteYieldModifiers() const
 {
 	return !m_vLeagueVoteYieldModifiers.empty();
