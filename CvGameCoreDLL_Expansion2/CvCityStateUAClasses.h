@@ -284,6 +284,8 @@ public:
 	int GetZOCRangeBonus() const;
 	// Budapest (BuDaPeiSi)
 	bool IsLandUnitsImmuneRiverCrossing() const;
+	int GetUnitMaintenancePerCavalry() const;
+	int GetWoundedFixedDamage() const;
 	// Ha Noi (HeNei)
 	int GetEnemyFixedDamageModifierInBorders() const;
 	int GetCulturePerWarPeace() const;
@@ -492,6 +494,8 @@ private:
 	int m_iZOCRangeBonus;
 	// Budapest
 	bool m_bLandUnitsImmuneRiverCrossing;
+	int m_iUnitMaintenancePerCavalry;
+	int m_iWoundedFixedDamage;
 	// Ha Noi
 	int m_iEnemyFixedDamageModifierInBorders;
 	int m_iCulturePerWarPeace;
@@ -750,6 +754,8 @@ public:
 	int GetZOCRangeBonus() const;
 	// Budapest
 	bool IsLandUnitsImmuneRiverCrossing() const;
+	int GetUnitMaintenancePerCavalry() const;
+	int GetWoundedFixedDamage() const;
 	// Ha Noi
 	int GetEnemyFixedDamageModifierInBorders() const;
 	int GetCulturePerWarPeace() const;
@@ -1020,6 +1026,8 @@ protected:
 	int m_iMilitaryUnitProductionXP;
 	int m_iZOCRangeBonus;
 	int m_iLandUnitsImmuneRiverCrossingCount;
+	int m_iUnitMaintenancePerCavalry;
+	int m_iWoundedFixedDamage;
 	int m_iEnemyFixedDamageModifierInBorders;
 	int m_iCulturePerWarPeace;
 	int m_iEnemyCombatModifierInBordersPerBeenDoW;

@@ -23039,7 +23039,22 @@ int CvUnit::getRiverCrossingNoPenaltyCount() const
 bool CvUnit::isRiverCrossingNoPenalty() const
 {
 	VALIDATE_OBJECT
-	return (getRiverCrossingNoPenaltyCount() > 0);
+	if (getRiverCrossingNoPenaltyCount() > 0)
+	{
+		return true;
+	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Budapest UA: the ally's land units are immune to the river-crossing combat penalty (and the AI pathing penalty); the extra movement cost still applies.
+	if (MOD_SP_UNIQUE_CITYSTATE && getDomainType() == DOMAIN_LAND)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		if (pCSUA != NULL && pCSUA->IsLandUnitsImmuneRiverCrossing())
+		{
+			return true;
+		}
+	}
+#endif
+	return false;
 }
 
 

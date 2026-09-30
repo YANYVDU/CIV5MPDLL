@@ -282,6 +282,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iMilitaryUnitProductionXP(0)
 	, m_iZOCRangeBonus(0)
 	, m_bLandUnitsImmuneRiverCrossing(false)
+	, m_iUnitMaintenancePerCavalry(0)
+	, m_iWoundedFixedDamage(0)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
 	, m_iEnemyCombatModifierInBordersPerBeenDoW(0)
@@ -429,6 +431,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iZOCRangeBonus								= kResults.GetInt("ZOCRangeBonus");
 
 	m_bLandUnitsImmuneRiverCrossing				= kResults.GetBool("LandUnitsImmuneRiverCrossing");
+
+	m_iUnitMaintenancePerCavalry					= kResults.GetInt("UnitMaintenancePerCavalry");
+	m_iWoundedFixedDamage							= kResults.GetInt("WoundedFixedDamage");
 
 	m_iEnemyFixedDamageModifierInBorders			= kResults.GetInt("EnemyFixedDamageModifierInBorders");
 	m_iCulturePerWarPeace							= kResults.GetInt("CulturePerWarPeace");
@@ -1088,6 +1093,8 @@ int CvCityStateUAEffectEntry::GetMilitaryUnitProductionXP() const { return m_iMi
 int CvCityStateUAEffectEntry::GetZOCRangeBonus() const { return m_iZOCRangeBonus; }
 
 bool CvCityStateUAEffectEntry::IsLandUnitsImmuneRiverCrossing() const { return m_bLandUnitsImmuneRiverCrossing; }
+int CvCityStateUAEffectEntry::GetUnitMaintenancePerCavalry() const { return m_iUnitMaintenancePerCavalry; }
+int CvCityStateUAEffectEntry::GetWoundedFixedDamage() const { return m_iWoundedFixedDamage; }
 
 int CvCityStateUAEffectEntry::GetEnemyFixedDamageModifierInBorders() const { return m_iEnemyFixedDamageModifierInBorders; }
 int CvCityStateUAEffectEntry::GetCulturePerWarPeace() const { return m_iCulturePerWarPeace; }
@@ -1456,6 +1463,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iMilitaryUnitProductionXP(0)
 	, m_iZOCRangeBonus(0)
 	, m_iLandUnitsImmuneRiverCrossingCount(0)
+	, m_iUnitMaintenancePerCavalry(0)
+	, m_iWoundedFixedDamage(0)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
 	, m_iEnemyCombatModifierInBordersPerBeenDoW(0)
@@ -1579,6 +1588,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iMilitaryUnitProductionXP = 0;
 	m_iZOCRangeBonus = 0;
 	m_iLandUnitsImmuneRiverCrossingCount = 0;
+	m_iUnitMaintenancePerCavalry = 0;
+	m_iWoundedFixedDamage = 0;
 	m_iEnemyFixedDamageModifierInBorders = 0;
 	m_iCulturePerWarPeace = 0;
 	m_iEnemyCombatModifierInBordersPerBeenDoW = 0;
@@ -1797,6 +1808,9 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iZOCRangeBonus								+= pEffect->GetZOCRangeBonus() * iChange;
 
 	m_iLandUnitsImmuneRiverCrossingCount += (pEffect->IsLandUnitsImmuneRiverCrossing() ? iChange : 0);
+
+	m_iUnitMaintenancePerCavalry					+= pEffect->GetUnitMaintenancePerCavalry() * iChange;
+	m_iWoundedFixedDamage							+= pEffect->GetWoundedFixedDamage() * iChange;
 
 	m_iEnemyFixedDamageModifierInBorders			+= pEffect->GetEnemyFixedDamageModifierInBorders() * iChange;
 	m_iCulturePerWarPeace							+= pEffect->GetCulturePerWarPeace() * iChange;
@@ -2245,6 +2259,8 @@ int CvPlayerCityStateUA::GetMilitaryUnitProductionXP() const { return m_iMilitar
 
 int CvPlayerCityStateUA::GetZOCRangeBonus() const { return m_iZOCRangeBonus; }
 bool CvPlayerCityStateUA::IsLandUnitsImmuneRiverCrossing() const { return m_iLandUnitsImmuneRiverCrossingCount > 0; }
+int CvPlayerCityStateUA::GetUnitMaintenancePerCavalry() const { return m_iUnitMaintenancePerCavalry; }
+int CvPlayerCityStateUA::GetWoundedFixedDamage() const { return m_iWoundedFixedDamage; }
 int CvPlayerCityStateUA::GetEnemyFixedDamageModifierInBorders() const { return m_iEnemyFixedDamageModifierInBorders; }
 int CvPlayerCityStateUA::GetCulturePerWarPeace() const { return m_iCulturePerWarPeace; }
 int CvPlayerCityStateUA::GetEnemyCombatModifierInBordersPerBeenDoW() const { return m_iEnemyCombatModifierInBordersPerBeenDoW; }

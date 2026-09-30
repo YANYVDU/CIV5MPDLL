@@ -81,6 +81,10 @@ CREATE TABLE CityStateUAEffects (
     ZOCRangeBonus                                   integer DEFAULT 0,
     -- Budapest: immune to river crossing penalties
     LandUnitsImmuneRiverCrossing                    boolean DEFAULT 0,
+    -- Budapest: per light/heavy cavalry unit owned, the ally's total unit maintenance is reduced by this many gold (ally 4 / friend 2), floored at 0
+    UnitMaintenancePerCavalry                       integer DEFAULT 0,
+    -- Budapest: the ally's units deal this much extra flat HP damage against a wounded target (both when attacking and when defending)
+    WoundedFixedDamage                              integer DEFAULT 0,
     -- Hanoi: fixed damage in borders + peace treaty + being declared war on
     EnemyFixedDamageModifierInBorders               integer DEFAULT 0,
     CulturePerWarPeace                              integer DEFAULT 0,

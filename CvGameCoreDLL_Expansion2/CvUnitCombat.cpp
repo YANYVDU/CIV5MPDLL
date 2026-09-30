@@ -14,6 +14,7 @@
 #include "ICvDLLUserInterface.h"
 #include "CvDiplomacyAI.h"
 #include "CvTypes.h"
+#include "CvCityStateUAClasses.h"
 
 #include "CvDllCity.h"
 #include "CvDllUnit.h"
@@ -4854,6 +4855,34 @@ void FixAddDamageIntervene(InflictDamageContext* ctx)
 		*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetPerKillInflictDamageChangeValue();
 	}
 }
+
+// Budapest UA: the ally's units deal extra flat HP damage against a wounded target, both when
+// attacking (piAttackInflictDamage) and when defending (piDefenseInflictDamage). The judgement is
+// on the receiving side: the target must already be wounded (getDamage() > 0). Unit vs unit only.
+void BudapestWoundedFixedDamageIntervene(InflictDamageContext* ctx)
+{
+	if (!MOD_SP_UNIQUE_CITYSTATE) return;
+
+	if (ctx->pAttackerUnit != nullptr && ctx->pDefenderUnit != nullptr && ctx->piAttackInflictDamage != nullptr
+		&& ctx->pDefenderUnit->getDamage() > 0)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(ctx->pAttackerUnit->getOwner()).GetPlayerCityStateUA();
+		if (pCSUA != nullptr && pCSUA->GetWoundedFixedDamage() != 0)
+		{
+			*ctx->piAttackInflictDamage += pCSUA->GetWoundedFixedDamage();
+		}
+	}
+
+	if (ctx->pDefenderUnit != nullptr && ctx->pAttackerUnit != nullptr && ctx->piDefenseInflictDamage != nullptr
+		&& ctx->pAttackerUnit->getDamage() > 0)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(ctx->pDefenderUnit->getOwner()).GetPlayerCityStateUA();
+		if (pCSUA != nullptr && pCSUA->GetWoundedFixedDamage() != 0)
+		{
+			*ctx->piDefenseInflictDamage += pCSUA->GetWoundedFixedDamage();
+		}
+	}
+}
 void SiegeInflictDamageIntervene(InflictDamageContext* ctx)
 {
 	// Unit VS City
@@ -4946,6 +4975,7 @@ void CvUnitCombat::InterveneInflictDamage(InflictDamageContext* ctx)
 	UnitDefenseInflictDamageIntervene(ctx);
 	FixReduceDamageIntervene(ctx);
 	FixAddDamageIntervene(ctx);
+	BudapestWoundedFixedDamageIntervene(ctx);
 	SiegeInflictDamageIntervene(ctx);
 	OutsideFriendlyLandsDamageIntervene(ctx);
 
