@@ -76,6 +76,9 @@ CREATE TABLE CityStateUAEffects (
     GarrisonCityDefenseModifier                     integer DEFAULT 0,
     -- Belgrade: ally-built military units gain XP (purchases do not apply)
     MilitaryUnitProductionXP                        integer DEFAULT 0,
+    -- Belgrade: bonus ZOC range for the ally's units (1 = the ally's units exert Zone of Control
+    -- at radius 2 instead of 1). Plain integer; 0 = base behavior.
+    ZOCRangeBonus                                   integer DEFAULT 0,
     -- Budapest: immune to river crossing penalties
     LandUnitsImmuneRiverCrossing                    boolean DEFAULT 0,
     -- Hanoi: fixed damage in borders + peace treaty + being declared war on

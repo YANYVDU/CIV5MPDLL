@@ -20092,6 +20092,12 @@ void CvPlayer::RefreshCSAllUAEffects()
 	if (!m_pCityStateUA)
 		return;
 
+	// Belgrade UA: capture the previous garrison-defense modifier before the rebuild below, so the
+	// city-strength refresh at the end of this function can also run when the bonus is being lost
+	// (old != 0 while new == 0). Players never affected by this modifier skip that full-city recompute,
+	// which would otherwise be redundant with the per-turn CvCity::doTurn refresh.
+	int iOldGarrisonCityDefenseModifier = m_pCityStateUA->GetGarrisonCityDefenseModifier();
+
 	m_pCityStateUA->Reset();
 
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
@@ -20177,6 +20183,15 @@ void CvPlayer::RefreshCSAllUAEffects()
 	if (GetEspionage())
 	{
 		GetEspionage()->UpdateSpies();
+	}
+
+	// Belgrade UA: the garrison city-defense bonus depends on the ally/friend relationship, which does
+	// not otherwise invalidate the cached city strength. Recompute all cities only when this player holds
+	// the modifier now or held it last turn, so both gaining and losing the relationship take effect on
+	// the same turn while unaffected players avoid the (CvCity::doTurn already covers) redundant pass.
+	if (iOldGarrisonCityDefenseModifier != 0 || m_pCityStateUA->GetGarrisonCityDefenseModifier() != 0)
+	{
+		UpdateCityStrength();
 	}
 }
 #endif

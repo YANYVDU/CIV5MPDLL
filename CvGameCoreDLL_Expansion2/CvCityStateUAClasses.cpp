@@ -280,6 +280,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_bCanPillageNeutralTradeRoute(false)
 	, m_iGarrisonCityDefenseModifier(0)
 	, m_iMilitaryUnitProductionXP(0)
+	, m_iZOCRangeBonus(0)
 	, m_bLandUnitsImmuneRiverCrossing(false)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
@@ -425,6 +426,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iGarrisonCityDefenseModifier					= kResults.GetInt("GarrisonCityDefenseModifier");
 	m_iMilitaryUnitProductionXP						= kResults.GetInt("MilitaryUnitProductionXP");
+	m_iZOCRangeBonus								= kResults.GetInt("ZOCRangeBonus");
 
 	m_bLandUnitsImmuneRiverCrossing				= kResults.GetBool("LandUnitsImmuneRiverCrossing");
 
@@ -1083,6 +1085,8 @@ int CvCityStateUAEffectEntry::GetGarrisonCityDefenseModifier() const { return m_
 
 int CvCityStateUAEffectEntry::GetMilitaryUnitProductionXP() const { return m_iMilitaryUnitProductionXP; }
 
+int CvCityStateUAEffectEntry::GetZOCRangeBonus() const { return m_iZOCRangeBonus; }
+
 bool CvCityStateUAEffectEntry::IsLandUnitsImmuneRiverCrossing() const { return m_bLandUnitsImmuneRiverCrossing; }
 
 int CvCityStateUAEffectEntry::GetEnemyFixedDamageModifierInBorders() const { return m_iEnemyFixedDamageModifierInBorders; }
@@ -1450,6 +1454,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCanPillageNeutralTradeRouteCount(0)
 	, m_iGarrisonCityDefenseModifier(0)
 	, m_iMilitaryUnitProductionXP(0)
+	, m_iZOCRangeBonus(0)
 	, m_iLandUnitsImmuneRiverCrossingCount(0)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
@@ -1572,6 +1577,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iCanPillageNeutralTradeRouteCount = 0;
 	m_iGarrisonCityDefenseModifier = 0;
 	m_iMilitaryUnitProductionXP = 0;
+	m_iZOCRangeBonus = 0;
 	m_iLandUnitsImmuneRiverCrossingCount = 0;
 	m_iEnemyFixedDamageModifierInBorders = 0;
 	m_iCulturePerWarPeace = 0;
@@ -1788,6 +1794,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 	m_iGarrisonCityDefenseModifier					+= pEffect->GetGarrisonCityDefenseModifier() * iChange;
 	m_iMilitaryUnitProductionXP						+= pEffect->GetMilitaryUnitProductionXP() * iChange;
+	m_iZOCRangeBonus								+= pEffect->GetZOCRangeBonus() * iChange;
 
 	m_iLandUnitsImmuneRiverCrossingCount += (pEffect->IsLandUnitsImmuneRiverCrossing() ? iChange : 0);
 
@@ -2235,6 +2242,8 @@ bool CvPlayerCityStateUA::IsCanPillageNeutralTradeRoute() const { return m_iCanP
 int CvPlayerCityStateUA::GetGarrisonCityDefenseModifier() const { return m_iGarrisonCityDefenseModifier; }
 
 int CvPlayerCityStateUA::GetMilitaryUnitProductionXP() const { return m_iMilitaryUnitProductionXP; }
+
+int CvPlayerCityStateUA::GetZOCRangeBonus() const { return m_iZOCRangeBonus; }
 bool CvPlayerCityStateUA::IsLandUnitsImmuneRiverCrossing() const { return m_iLandUnitsImmuneRiverCrossingCount > 0; }
 int CvPlayerCityStateUA::GetEnemyFixedDamageModifierInBorders() const { return m_iEnemyFixedDamageModifierInBorders; }
 int CvPlayerCityStateUA::GetCulturePerWarPeace() const { return m_iCulturePerWarPeace; }

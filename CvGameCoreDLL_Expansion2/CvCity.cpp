@@ -17012,6 +17012,20 @@ void CvCity::updateStrengthValue()
 		iStrengthFromUnits = pGarrisonedUnit->GetBaseCombatStrength() * 100 * (iMaxHits - pGarrisonedUnit->getDamage()) / iMaxHits;
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Belgrade UA: the ally's garrisoned units provide +X% city defense (X = GarrisonCityDefenseModifier).
+	// Applied to the garrison contribution only, not to the base or building defense.
+	if (MOD_SP_UNIQUE_CITYSTATE && iStrengthFromUnits > 0)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		int iCSUADefMod = (pCSUA != NULL) ? pCSUA->GetGarrisonCityDefenseModifier() : 0;
+		if (iCSUADefMod != 0)
+		{
+			iStrengthFromUnits = iStrengthFromUnits * (100 + iCSUADefMod) / 100;
+		}
+	}
+#endif
+
 	iStrengthValue += ((iStrengthFromUnits * 100) / /*300*/ GC.getCITY_STRENGTH_UNIT_DIVISOR());
 
 	// Tech Progress increases City Strength

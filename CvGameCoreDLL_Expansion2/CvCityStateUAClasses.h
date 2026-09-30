@@ -281,6 +281,7 @@ public:
 	// Belgrade (BeiErGeLaiDe)
 	int GetGarrisonCityDefenseModifier() const;
 	int GetMilitaryUnitProductionXP() const;
+	int GetZOCRangeBonus() const;
 	// Budapest (BuDaPeiSi)
 	bool IsLandUnitsImmuneRiverCrossing() const;
 	// Ha Noi (HeNei)
@@ -488,6 +489,7 @@ private:
 	// Belgrade
 	int m_iGarrisonCityDefenseModifier;
 	int m_iMilitaryUnitProductionXP;
+	int m_iZOCRangeBonus;
 	// Budapest
 	bool m_bLandUnitsImmuneRiverCrossing;
 	// Ha Noi
@@ -745,6 +747,7 @@ public:
 	// Belgrade
 	int GetGarrisonCityDefenseModifier() const;
 	int GetMilitaryUnitProductionXP() const;
+	int GetZOCRangeBonus() const;
 	// Budapest
 	bool IsLandUnitsImmuneRiverCrossing() const;
 	// Ha Noi
@@ -1015,6 +1018,7 @@ protected:
 	int m_iCanPillageNeutralTradeRouteCount;
 	int m_iGarrisonCityDefenseModifier;
 	int m_iMilitaryUnitProductionXP;
+	int m_iZOCRangeBonus;
 	int m_iLandUnitsImmuneRiverCrossingCount;
 	int m_iEnemyFixedDamageModifierInBorders;
 	int m_iCulturePerWarPeace;

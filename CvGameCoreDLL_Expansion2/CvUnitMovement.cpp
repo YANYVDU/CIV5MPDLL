@@ -5,6 +5,7 @@
 #include "CvGlobals.h"
 #include "CvUnitMovement.h"
 #include "CvGameCoreUtils.h"
+#include "CvCityStateUAClasses.h"
 //	---------------------------------------------------------------------------
 void CvUnitMovement::GetCostsForMove(const CvUnit* pUnit, const CvPlot* pFromPlot, const CvPlot* pToPlot, int iBaseMoves, int& iRegularCost, int& iRouteCost, int& iRouteFlatCost)
 {
@@ -316,6 +317,46 @@ bool CvUnitMovement::CostsOnlyOne(const CvUnit* pUnit, const CvPlot* pFromPlot, 
 	return false;
 }
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//	--------------------------------------------------------------------------------
+// Belgrade UA support: is any alive player currently holding a ZOC-range bonus?
+// The lookup is cached per game turn, so the A* hot path (IsSlowedByZOC) pays O(1) for the query itself
+// in the common case (nobody allied with Belgrade). Note this only picks the scan window size: the scan
+// is 3x3 while no bonus exists and expands globally to 5x5 while any bonus is active.
+// All clients derive the same value from the deterministic CSUA state, so multiplayer stays in sync;
+// a mid-turn diplomacy change may lag by one turn, which is tolerated.
+static bool AnyPlayerHasZOCRangeBonus()
+{
+	static int s_iCachedTurn = -1;
+	static bool s_bCached = false;
+
+	int iTurn = GC.getGame().getGameTurn();
+	if (iTurn != s_iCachedTurn)
+	{
+		s_iCachedTurn = iTurn;
+		s_bCached = false;
+
+		for (int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+		{
+			CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+			if (!kPlayer.isAlive())
+			{
+				continue;
+			}
+
+			CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+			if (pCSUA != NULL && pCSUA->GetZOCRangeBonus() > 0)
+			{
+				s_bCached = true;
+				break;
+			}
+		}
+	}
+
+	return s_bCached;
+}
+#endif
+
 //	--------------------------------------------------------------------------------
 bool CvUnitMovement::IsSlowedByZOC(const CvUnit* pUnit, const CvPlot* pFromPlot, const CvPlot* pToPlot)
 {
@@ -339,26 +380,46 @@ bool CvUnitMovement::IsSlowedByZOC(const CvUnit* pUnit, const CvPlot* pFromPlot,
 		bool bIsVisibleEnemyUnit     = pToPlot->isVisibleEnemyUnit(pUnit);
 		CvTeam& kUnitTeam = GET_TEAM(unit_team_type);
 
-		for(int iDirection0 = 0; iDirection0 < NUM_DIRECTION_TYPES; iDirection0++)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Belgrade UA: an ally's units exert ZOC at +1 range. iScanRange is the largest ZOC radius any
+		// source may have this turn. When no player holds a ZOC-range bonus (the common case) it stays 1
+		// and the scan below is a 3x3 window; when any bonus exists it expands globally to 5x5.
+		int iScanRange = 1;
+		if (MOD_SP_UNIQUE_CITYSTATE && AnyPlayerHasZOCRangeBonus())
 		{
-			CvPlot* pAdjPlot = plotDirection(iFromPlotX, iFromPlotY, ((DirectionTypes)iDirection0));
-			if(NULL != pAdjPlot)
+			iScanRange = 2;
+		}
+#else
+		int iScanRange = 1;
+#endif
+
+		// Scan the neighbourhood of the start plot within iScanRange for ZOC sources. For iScanRange == 1
+		// the plotDistance filter keeps exactly the six hex neighbours (the same source set as the original
+		// implementation), though the loop itself now visits 3x3 plots instead of 6 directions.
+		for(int iDX = -iScanRange; iDX <= iScanRange; iDX++)
+		{
+			for(int iDY = -iScanRange; iDY <= iScanRange; iDY++)
 			{
-				// check city zone of control
-				if(pAdjPlot->isEnemyCity(*pUnit))
+				CvPlot* pAdjPlot = GC.getMap().plot(iFromPlotX + iDX, iFromPlotY + iDY);
+				if(NULL == pAdjPlot)
 				{
-					// Loop through plots adjacent to the enemy city and see if it's the same as our unit's Destination Plot
-					for(int iDirection = 0; iDirection < NUM_DIRECTION_TYPES; iDirection++)
+					continue;
+				}
+
+				// A ZOC source must be strictly away from, yet within reach of, the mover's start plot.
+				int iFromDist = plotDistance(iFromPlotX, iFromPlotY, pAdjPlot->getX(), pAdjPlot->getY());
+				if(iFromDist <= 0 || iFromDist > iScanRange)
+				{
+					continue;
+				}
+
+				// check city zone of control (cities always exert ZOC at radius 1)
+				if(iFromDist == 1 && pAdjPlot->isEnemyCity(*pUnit))
+				{
+					// Destination adjacent to enemy city?
+					if(plotDistance(iToPlotX, iToPlotY, pAdjPlot->getX(), pAdjPlot->getY()) == 1)
 					{
-						CvPlot* pEnemyAdjPlot = plotDirection(pAdjPlot->getX(), pAdjPlot->getY(), ((DirectionTypes)iDirection));
-						if(NULL != pEnemyAdjPlot)
-						{
-							// Destination adjacent to enemy city?
-							if(pEnemyAdjPlot->getX() == iToPlotX && pEnemyAdjPlot->getY() == iToPlotY)
-							{
-								return true;
-							}
-						}
+						return true;
 					}
 				}
 
@@ -421,23 +482,34 @@ bool CvUnitMovement::IsSlowedByZOC(const CvUnit* pUnit, const CvPlot* pFromPlot,
 							continue;
 						}
 
-						// Loop through plots adjacent to the enemy unit and see if it's the same as our unit's Destination Plot
-						for(int iDirection2 = 0; iDirection2 < NUM_DIRECTION_TYPES; iDirection2++)
+						// Belgrade UA: this source's own ZOC radius is 1 unless its owner holds a
+						// ZOC-range bonus (read per source, so normal units keep radius 1).
+						int iSrcRange = 1;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+						if (MOD_SP_UNIQUE_CITYSTATE)
 						{
-							CvPlot* pEnemyAdjPlot = plotDirection(pAdjPlot->getX(), pAdjPlot->getY(), ((DirectionTypes)iDirection2));
-							if(!pEnemyAdjPlot)
+							CvPlayerCityStateUA* pSrcCSUA = GET_PLAYER(pLoopUnit->getOwner()).GetPlayerCityStateUA();
+							if (pSrcCSUA != NULL && pSrcCSUA->GetZOCRangeBonus() > 0)
 							{
-								continue;
+								iSrcRange = 1 + pSrcCSUA->GetZOCRangeBonus();
 							}
+						}
+#endif
 
-							// Don't check Enemy Unit's plot
-							if(!bIsVisibleEnemyUnit)
+						// The mover's start must be inside this source's ZOC range...
+						if(iFromDist > iSrcRange)
+						{
+							continue;
+						}
+
+						// Don't check Enemy Unit's plot
+						if(!bIsVisibleEnemyUnit)
+						{
+							// ...and its destination must also be inside the source's ZOC range.
+							int iToDist = plotDistance(iToPlotX, iToPlotY, pAdjPlot->getX(), pAdjPlot->getY());
+							if(iToDist > 0 && iToDist <= iSrcRange)
 							{
-								// Destination adjacent to enemy unit?
-								if(pEnemyAdjPlot->getX() == iToPlotX && pEnemyAdjPlot->getY() == iToPlotY)
-								{
-									return true;
-								}
+								return true;
 							}
 						}
 					}
