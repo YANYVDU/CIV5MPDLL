@@ -10008,6 +10008,24 @@ int CvPlayer::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) cons
 			iTempMod = getMilitaryProductionModifier();
 			iMultiplier += iTempMod;
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_MILITARY_PLAYER", iTempMod);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Mbanza Kongo CS UA: each owned city adds UnitProductionModifierPerCity% to military unit
+			// production, applied nation-wide (this player-level function is reached by every city's
+			// production path). Plain percent per city: no basis-point scaling here, because the consumer
+			// is getProductionModifier, not GetCSUAYieldPercentModifier.
+			if (MOD_SP_UNIQUE_CITYSTATE)
+			{
+				CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+				int iPerCity = (pCSUA != NULL) ? pCSUA->GetUnitProductionModifierPerCity() : 0;
+				if (iPerCity != 0)
+				{
+					iTempMod = iPerCity * getNumCities();
+					iMultiplier += iTempMod;
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+				}
+			}
+#endif
 		}
 
 		// Settler bonus
@@ -24645,6 +24663,20 @@ int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) con
 
 		iTotalNumResource += iCityPOPResource / 100;
 		iTotalNumResource += iCityResourceFromPolicy;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Mbanza Kongo CS UA: each owned city provides ManpowerPerCity extra Manpower. Placed before the
+		// GetStrategicResourceMod() multiplier so it scales the same way as building/policy manpower.
+		// Only the ally effect sets ManpowerPerCity (friend = 0). No serialized member is touched: this
+		// only affects the derived return value.
+		if (MOD_SP_UNIQUE_CITYSTATE && eIndex == (ResourceTypes)GC.getInfoTypeForString("RESOURCE_MANPOWER", true))
+		{
+			CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+			int iPerCity = (pCSUA != NULL) ? pCSUA->GetManpowerPerCity() : 0;
+			if (iPerCity != 0)
+				iTotalNumResource += getNumCities() * iPerCity;
+		}
+#endif
 
 		if(GetStrategicResourceMod() != 0)
 		{
