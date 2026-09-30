@@ -22,6 +22,7 @@ SpecialCityConditionTypes ParseSpecialCityCondition(const char* szType)
 	if (strcmp(szType, "IS_COASTAL") == 0) return SPECIAL_CITY_CONDITION_IS_COASTAL;
 	if (strcmp(szType, "IS_PUPPET") == 0) return SPECIAL_CITY_CONDITION_IS_PUPPET;
 	if (strcmp(szType, "IS_OTHER_CONTINENT") == 0) return SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT;
+	if (strcmp(szType, "HAS_LAND_AND_SEA_INTERNATIONAL_TR") == 0) return SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR;
 	return SPECIAL_CITY_CONDITION_NONE;
 }
 
@@ -31,7 +32,8 @@ bool IsBooleanSpecialCityCondition(SpecialCityConditionTypes eType)
 	return eType == SPECIAL_CITY_CONDITION_IS_RIVER
 	    || eType == SPECIAL_CITY_CONDITION_IS_COASTAL
 	    || eType == SPECIAL_CITY_CONDITION_IS_PUPPET
-	    || eType == SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT;
+	    || eType == SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT
+	    || eType == SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR;
 }
 }
 
@@ -159,6 +161,28 @@ bool CvSpecialCityTypeEntry::EvaluateCondition(const SpecialCityConditionEntry& 
 		CvPlot* pCapitalPlot = GC.getMap().plot(kPlayer.GetOriginalCapitalX(), kPlayer.GetOriginalCapitalY());
 		return pCity->plot() != NULL && pCapitalPlot != NULL
 			&& pCity->plot()->getLandmass() != pCapitalPlot->getLandmass();
+	}
+	case SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR:
+	{
+		// True when the city is the origin of at least one international land route AND at least one
+		// international sea route. Domestic routes (both ends on the same team) do not count; the
+		// international test goes through IsConnectionInternational so it matches the engine-wide
+		// team-based definition rather than comparing player IDs.
+		CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+		if (pTrade == NULL) return false;
+		bool bLand = false;
+		bool bSea = false;
+		for (uint iTradeRoute = 0; iTradeRoute < pTrade->m_aTradeConnections.size(); iTradeRoute++)
+		{
+			if (pTrade->IsTradeRouteIndexEmpty(iTradeRoute)) continue;
+			const TradeConnection* pConnection = &(pTrade->m_aTradeConnections[iTradeRoute]);
+			if (pConnection->m_iOriginX != pCity->getX() || pConnection->m_iOriginY != pCity->getY()) continue;
+			if (!pTrade->IsConnectionInternational(*pConnection)) continue;
+			if (pConnection->m_eDomain == DOMAIN_LAND) bLand = true;
+			else if (pConnection->m_eDomain == DOMAIN_SEA) bSea = true;
+			if (bLand && bSea) return true;
+		}
+		return false;
 	}
 	default:
 		return false;

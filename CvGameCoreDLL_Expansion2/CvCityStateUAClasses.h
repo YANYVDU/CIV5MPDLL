@@ -124,6 +124,7 @@ enum SpecialCityConditionTypes {
 	SPECIAL_CITY_CONDITION_IS_COASTAL,     // Boolean, no Value: the city center borders the sea (lakes excluded)
 	SPECIAL_CITY_CONDITION_IS_PUPPET,      // Boolean, no Value: the city is a puppet (annexed cities do not qualify)
 	SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT, // Boolean, no Value: the city sits on a different landmass than the owner's original capital
+	SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR, // Boolean, no Value: the city is the origin of both an international land route and an international sea route
 	NUM_SPECIAL_CITY_CONDITION_TYPES
 };
 
