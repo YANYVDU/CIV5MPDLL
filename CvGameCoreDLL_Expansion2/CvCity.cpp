@@ -13563,7 +13563,9 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
-	//CityState UA (Bratislava): the capital and the second capital grant a culture percentage modifier
+	//CityState UA (Bratislava): the capital and the second capital grant a culture percentage modifier.
+	//Reported under the city-state modifier line (like the Jerusalem/Vatican capital effects below), not the
+	//generic yield-modifier line, because the bonus is tied to the city's capital status rather than the yield itself.
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (pCityStateUA && eIndex == YIELD_CULTURE && (isCapital() || IsSecondCapital()))
 	{
@@ -13572,7 +13574,7 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 		{
 			iModifier += iCapitalCultureMod;
 			if (toolTipSink)
-				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD", iCapitalCultureMod);
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iCapitalCultureMod);
 		}
 	}
 #endif
