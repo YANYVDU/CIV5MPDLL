@@ -10744,6 +10744,14 @@ int CvCity::getJONSCulturePerTurn(bool bStatic) const
 	iCulture *= iModifier;
 	iCulture /= 100;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//Mogadishu: culture has its own per-turn function that parallels getBaseYieldRate, so the UCS
+	//conversion is added here as a final value (after the culture modifiers). Adding it inside the
+	//base-yield accumulation would let those modifiers scale the converted amount.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		iCulture += GetYieldRateFromUCSConversion(YIELD_CULTURE);
+#endif
+
 	return iCulture;
 }
 
@@ -11046,6 +11054,14 @@ int CvCity::GetFaithPerTurn(bool bStatic) const
 		iFaith *= (100 + iModifier);
 		iFaith /= 100;
 	}
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//CityState UA: faith has its own per-turn function that parallels getBaseYieldRate, so the UCS
+	//conversion is added here as a final value (after the faith modifiers). Adding it inside the
+	//base-yield accumulation would let those modifiers scale the converted amount.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		iFaith += GetYieldRateFromUCSConversion(YIELD_FAITH);
 #endif
 
 	return iFaith;
@@ -14189,6 +14205,16 @@ int CvCity::getBasicYieldRateTimes100(const YieldTypes eIndex, const bool bIgnor
 		iModifiedYield += iTradeYield;
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//CityState UA: a yield converted from other yields is a final value. It must not be scaled by
+	//this yield's percentage modifiers, so it is added only after getBaseYieldRateModifier has been
+	//applied. bIgnoreFromOtherYield stays guarded to keep the conversion source free of recursion.
+	if (MOD_SP_UNIQUE_CITYSTATE && !bIgnoreFromOtherYield)
+	{
+		iModifiedYield += GetYieldRateFromUCSConversion(eIndex) * 100;
+	}
+#endif
+
 	return iModifiedYield;
 }
 
@@ -14275,13 +14301,6 @@ int CvCity::getBaseYieldRate(YieldTypes eIndex, const bool bIgnoreFromOtherYield
 	if (MOD_BUILDINGS_YIELD_FROM_OTHER_YIELD && !bIgnoreFromOtherYield)
 	{
 		iValue += GetBaseYieldRateFromOtherYield(eIndex);
-	}
-#endif
-
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (MOD_SP_UNIQUE_CITYSTATE && !bIgnoreFromOtherYield)
-	{
-		iValue += GetYieldRateFromUCSConversion(eIndex);
 	}
 #endif
 
@@ -15247,9 +15266,12 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 		if (!pEffectEntry)
 			continue;
 
-		// the conversion only applies to cities that actually run a trade route to this city-state
-		if (!GET_PLAYER(ePlayer).GetTrade()->HasTradeRouteToPlayer(this, eMinor))
-			continue;
+		// Colombo / Cape Town: entries with RequireRouteToThisCS=1 require a trade route TO this
+		// city-state. Mogadishu: entries with RequireRouteToThisCS=0 apply to any international trade
+		// route originating from this city (city-state destinations included). Each predicate is
+		// evaluated at most once per city-state, lazily (-1 = not yet computed).
+		int iHasRouteToThisCS = -1;
+		int iHasAnyIntlRoute = -1;
 
 		// iterate all input yields that convert into the requested OUT yield; the source
 		// base yield is computed without other-yield conversions to avoid recursion
@@ -15258,6 +15280,21 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 			int iPercent = pEffectEntry->GetYieldToYieldViaTRToUCS((YieldTypes)iIn, eYield);
 			if (iPercent <= 0)
 				continue;
+
+			if (pEffectEntry->YieldToYieldViaTRToUCSRequiresRouteToThisCS((YieldTypes)iIn, eYield))
+			{
+				if (iHasRouteToThisCS < 0)
+					iHasRouteToThisCS = GET_PLAYER(ePlayer).GetTrade()->HasTradeRouteToPlayer(this, eMinor) ? 1 : 0;
+				if (iHasRouteToThisCS == 0)
+					continue;
+			}
+			else
+			{
+				if (iHasAnyIntlRoute < 0)
+					iHasAnyIntlRoute = GET_PLAYER(ePlayer).GetTrade()->HasInternationalTradeRouteFromCity(this) ? 1 : 0;
+				if (iHasAnyIntlRoute == 0)
+					continue;
+			}
 
 			int iInBase = getBasicYieldRateTimes100((YieldTypes)iIn, false, true) / 100;
 			iResult += (iInBase * iPercent) / 100;

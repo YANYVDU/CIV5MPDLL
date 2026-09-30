@@ -63,6 +63,8 @@ struct YieldToYieldViaTRToUCSEntry {
 	int m_iInYieldType;
 	int m_iOutYieldType;
 	int m_iPercent;
+	// 1 = the route must go TO this city-state (Colombo/Cape Town); 0 = any international route from the city (Mogadishu)
+	bool m_bRequireRouteToThisCS;
 };
 
 struct PurchasedBuildingXPEntry {
@@ -91,6 +93,14 @@ struct WorldWonderYieldModifierEntry {
 	int m_iYieldType;
 	int m_iYieldMod;
 	int m_iCap;
+};
+
+// Mogadishu: each international trade route the ally runs TO a city-state grants a yield % modifier per
+// YieldType, nation-wide. Mirrors the building effect Building_CityStateTradeRouteYieldModifiersGlobal.
+// YieldMod is a PLAIN PERCENT (5 = +5% per route), NOT basis points.
+struct CityStateTradeRouteYieldModifierGlobalEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
 };
 
 // Bucharest: each diplomat stationed in a foreign MAJOR civilization's city grants a yield % modifier
@@ -326,6 +336,9 @@ public:
 	int GetTradeRouteGoldModifierPerInternationalRoute() const;
 	int GetFoodModifierPerHappyLuxuryType() const;
 	int GetFoodModifierPerHappyLuxuryCap() const;
+	// Mogadishu (MoJiaDiSha)
+	const std::vector<CityStateTradeRouteYieldModifierGlobalEntry>& GetCityStateTradeRouteYieldModifiersGlobal() const { return m_vCityStateTradeRouteYieldModifiersGlobal; }
+	int GetResearchAgreementBreakBonusPercent() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
@@ -342,6 +355,9 @@ public:
 	int GetInternalTRToUCSPerEraYield(int eYield) const;
 	// Colombo: in cities with a trade route to this city-state (UCS), a percentage of the input yield is granted as extra output yield
 	int GetYieldToYieldViaTRToUCS(int eInYield, int eOutYield) const;
+	// Mogadishu: whether the YieldToYieldViaTRToUCS entry for (eInYield -> eOutYield) requires a trade
+	// route TO this city-state (true) or any international trade route originating from the city (false)
+	bool YieldToYieldViaTRToUCSRequiresRouteToThisCS(int eInYield, int eOutYield) const;
 	// Valletta: enemy city besieged by >= this many of our combat units cannot heal
 	int GetEnemyCityNoHealBesiegeCount() const;
 	// Valletta: buying the specified building class grants all units of the specified domain XP
@@ -519,6 +535,9 @@ private:
 	int m_iTradeRouteGoldModifierPerInternationalRoute;
 	int m_iFoodModifierPerHappyLuxuryType;
 	int m_iFoodModifierPerHappyLuxuryCap;
+	// Mogadishu
+	std::vector<CityStateTradeRouteYieldModifierGlobalEntry> m_vCityStateTradeRouteYieldModifiersGlobal;
+	int m_iResearchAgreementBreakBonusPercent;
 	// Prague / Yerevan
 	int** m_ppiBuildingClassYieldModifiers;
 	// Brussels
@@ -765,6 +784,10 @@ public:
 	int GetTradeRouteGoldModifierPerInternationalRoute() const;
 	int GetFoodModifierPerHappyLuxuryType() const;
 	int GetFoodModifierPerHappyLuxuryCap() const;
+	// Mogadishu
+	bool HasCityStateTradeRouteYieldModifiersGlobal() const;
+	const std::vector<CityStateTradeRouteYieldModifierGlobalEntry>& GetCityStateTradeRouteYieldModifiersGlobal() const { return m_vCityStateTradeRouteYieldModifiersGlobal; }
+	int GetResearchAgreementBreakBonusPercent() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
 	int GetAllyInfluenceModFromBornGreatPerson() const;
@@ -1013,6 +1036,9 @@ protected:
 	int m_iTradeRouteGoldModifierPerInternationalRoute;
 	int m_iFoodModifierPerHappyLuxuryType;
 	int m_iFoodModifierPerHappyLuxuryCap;
+	// Mogadishu
+	std::vector<CityStateTradeRouteYieldModifierGlobalEntry> m_vCityStateTradeRouteYieldModifiersGlobal;
+	int m_iResearchAgreementBreakBonusPercent;
 	// Prague / Yerevan
 	int** m_ppiBuildingClassYieldModifiers;
 	int m_iBuildingClassYieldModifierCount;

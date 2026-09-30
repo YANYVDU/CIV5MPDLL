@@ -134,6 +134,9 @@ CREATE TABLE CityStateUAEffects (
     FoodModifierPerHappyLuxuryType                  integer DEFAULT 0,
     -- Manila: cap on the food % above (plain percent, 50 = at most +50%; 0 = uncapped)
     FoodModifierPerHappyLuxuryCap                   integer DEFAULT 0,
+    -- Mogadishu: a research agreement broken because the OTHER side declared war grants the non-initiator
+    -- this percent of the normal completion bonus (plain percent, 200 = 200% of normal = double)
+    ResearchAgreementBreakBonusPercent              integer DEFAULT 0,
     -- Valletta: enemy city besieged by >= this many of our combat units cannot heal
     EnemyCityNoHealBesiegeCount                      integer DEFAULT 0,
     -- Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1, 20 = kill 5 gain 1)
@@ -298,12 +301,15 @@ create table CityStateUAEffect_InternalTRToUCSPerEraYield (
 );
 
 -- City State UA (Colombo): for cities running a trade route to this city-state (UCS), a percentage of
--- the input yield (InYieldType) is granted as extra output yield (OutYieldType); the original input yield is unchanged
+-- the input yield (InYieldType) is granted as extra output yield (OutYieldType); the original input yield is unchanged.
+-- RequireRouteToThisCS: 1 = the route must go TO this city-state (Colombo/Cape Town); 0 = any international
+-- trade route originating from the city counts, city-state destinations included (Mogadishu).
 create table CityStateUAEffect_YieldToYieldViaTRToUCS (
     EffectType text references CityStateUAEffects(Type),
     InYieldType text references Yields(Type),
     OutYieldType text references Yields(Type),
-    Percent integer default 0
+    Percent integer default 0,
+    RequireRouteToThisCS integer default 1
 );
 
 -- CityState UA (Valletta): buying the specified building class grants all units of the specified domain XP
@@ -436,6 +442,19 @@ create table CityStateUAEffect_WorldWonderYieldModifiers (
     YieldType  text references Yields(Type),
     YieldMod   integer default 0,
     Cap        integer default 0
+);
+
+-- CityState UA (Mogadishu): each international trade route the ally runs TO a city-state grants a
+-- nation-wide yield percentage modifier per YieldType (e.g. YIELD_GOLD / 5 = +5% gold per route).
+-- Routes to major civilizations do NOT count, only city-state destinations. This mirrors the existing
+-- building effect Building_CityStateTradeRouteYieldModifiersGlobal, which likewise multiplies its
+-- stored value by CvPlayerTrade::GetNumberOfCityStateTradeRoutes(). YieldMod is a PLAIN PERCENT
+-- (5 = +5% per route); CvPlayer::GetCSUAYieldPercentModifier multiplies it by 100 because that
+-- function accumulates basis points and divides by 100 at the end; do not pre-convert.
+create table CityStateUAEffect_CityStateTradeRouteYieldModifiersGlobal (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType  text references Yields(Type),
+    YieldMod   integer default 0
 );
 
 -- CityState UA (Bucharest): each diplomat stationed in a foreign MAJOR civilization's city grants a

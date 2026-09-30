@@ -11,6 +11,7 @@
 #include "CvGameCoreUtils.h"
 #include "CvDiplomacyAI.h"
 #include "CvMinorCivAI.h"
+#include "CvCityStateUAClasses.h"
 
 // must be included after all other headers
 #include "LintFree.h"
@@ -3386,14 +3387,15 @@ void CvGameDeals::DoCancelDealsBetweenTeams(TeamTypes eTeam1, TeamTypes eTeam2)
 					continue;
 				}
 
-				DoCancelDealsBetweenPlayers(eFromPlayer, eToPlayer);
+				// Called from a war declaration, so eFromPlayer (on the declaring team) is the aggressor
+				DoCancelDealsBetweenPlayers(eFromPlayer, eToPlayer, eFromPlayer);
 			}
 		}
 	}
 }
 
 /// Deals between these two Players were interrupted (death)
-void CvGameDeals::DoCancelDealsBetweenPlayers(PlayerTypes eFromPlayer, PlayerTypes eToPlayer)
+void CvGameDeals::DoCancelDealsBetweenPlayers(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, PlayerTypes eWarAggressor)
 {
 	DealList::iterator it;
 	DealList tempDeals;
@@ -3434,7 +3436,7 @@ void CvGameDeals::DoCancelDealsBetweenPlayers(PlayerTypes eFromPlayer, PlayerTyp
 					eFromPlayer = itemIter->m_eFromPlayer;
 					eToPlayer = it->GetOtherPlayer(eFromPlayer);
 
-					DoEndTradedItem(&*itemIter, eToPlayer, true);
+					DoEndTradedItem(&*itemIter, eToPlayer, true, eWarAggressor);
 
 					if(itemIter->m_eItemType == TRADE_ITEM_GOLD && eFromPlayer == eDefensePlayer)
 					{
@@ -3593,7 +3595,7 @@ void CvGameDeals::DoCancelAllProposedDealsWithPlayer(PlayerTypes eCancelPlayer)
 }
 
 /// End a TradedItem (if it's an ongoing item)
-void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bool bCancelled)
+void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bool bCancelled, PlayerTypes eWarAggressor)
 {
 	CvString strBuffer;
 	CvString strSummary;
@@ -3766,6 +3768,39 @@ void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bo
 		}
 		else
 		{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Mogadishu: if the agreement was broken by the OTHER side declaring war (and this player is
+			// not on the aggressor's team), grant a multiple of the normal completion bonus
+			if(eWarAggressor != NO_PLAYER && toPlayer.getTeam() != GET_PLAYER(eWarAggressor).getTeam())
+			{
+				CvPlayerCityStateUA* pCSUA = toPlayer.GetPlayerCityStateUA();
+				int iPercent = pCSUA ? pCSUA->GetResearchAgreementBreakBonusPercent() : 0;
+				if(iPercent > 0)
+				{
+					CvTeam& kTeam = GET_TEAM(toPlayer.getTeam());
+					int iToPlayerBeakers = toPlayer.GetResearchAgreementCounter(eFromPlayer);
+					int iFromPlayerBeakers = fromPlayer.GetResearchAgreementCounter(eToPlayer);
+#if defined(MOD_GLOBAL_SUZERAIN)
+					bool bToPlayerCountsVassals = toPlayer.GetPlayerTraits()->IsResearchAgreementCountVassalScience() && toPlayer.HasAnyVassal();
+					int iBeakersBonus = (bToPlayerCountsVassals ? iToPlayerBeakers : min(iToPlayerBeakers, iFromPlayerBeakers)) / GC.getRESEARCH_AGREEMENT_BOOST_DIVISOR();
+#else
+					int iBeakersBonus = min(iToPlayerBeakers, iFromPlayerBeakers) / GC.getRESEARCH_AGREEMENT_BOOST_DIVISOR();
+#endif
+					iBeakersBonus = (iBeakersBonus * toPlayer.GetMedianTechPercentage()) / 100;
+					iBeakersBonus = (iBeakersBonus * iPercent) / 100;
+
+					TechTypes eCurrentTech = toPlayer.GetPlayerTechs()->GetCurrentResearch();
+					if(eCurrentTech == NO_TECH)
+					{
+						toPlayer.changeOverflowResearch(iBeakersBonus);
+					}
+					else
+					{
+						kTeam.GetTeamTechs()->ChangeResearchProgress(eCurrentTech, iBeakersBonus, eToPlayer);
+					}
+				}
+			}
+#endif
 			pNotifications = toPlayer.GetNotifications();
 			if(pNotifications)
 			{

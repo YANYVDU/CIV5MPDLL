@@ -298,14 +298,18 @@ public:
 	void DestroyDeal(uint index);
 
 	void DoCancelDealsBetweenTeams(TeamTypes eTeam1, TeamTypes eTeam2);
-	void DoCancelDealsBetweenPlayers(PlayerTypes eFromPlayer, PlayerTypes eToPlayer);
+	// eWarAggressor is non-NO_PLAYER only when called from a war declaration, so callers can tell a
+	// passive deal break (declared upon) apart from a normal expiry or a player's death
+	void DoCancelDealsBetweenPlayers(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, PlayerTypes eWarAggressor = NO_PLAYER);
 	void DoCancelAllDealsWithPlayer(PlayerTypes eCancelPlayer);
 #if defined(MOD_AI_MP_DIPLOMACY)
 	void DoCancelAllProposedDealsWithPlayer(PlayerTypes eCancelPlayer, DiplomacyPlayerType eTargetPlayers);
 #else
 	void DoCancelAllProposedDealsWithPlayer(PlayerTypes eCancelPlayer);
 #endif
-	void DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bool bCancelled);
+	// eWarAggressor: set only when the deal is cancelled by a war declaration; identifies the declaring
+	// player so effects can distinguish a passive break (rewarded) from a self-initiated one
+	void DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bool bCancelled, PlayerTypes eWarAggressor = NO_PLAYER);
 
 	int GetTradeItemGoldCost(TradeableItems eItem, PlayerTypes ePlayer1, PlayerTypes ePlayer2) const;
 

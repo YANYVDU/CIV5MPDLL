@@ -322,6 +322,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iTradeRouteGoldModifierPerInternationalRoute(0)
 	, m_iFoodModifierPerHappyLuxuryType(0)
 	, m_iFoodModifierPerHappyLuxuryCap(0)
+	, m_iResearchAgreementBreakBonusPercent(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_piSpecialistPointRate(nullptr)
@@ -480,6 +481,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iTradeRouteGoldModifierPerInternationalRoute = kResults.GetInt("TradeRouteGoldModifierPerInternationalRoute");
 	m_iFoodModifierPerHappyLuxuryType = kResults.GetInt("FoodModifierPerHappyLuxuryType");
 	m_iFoodModifierPerHappyLuxuryCap = kResults.GetInt("FoodModifierPerHappyLuxuryCap");
+	m_iResearchAgreementBreakBonusPercent = kResults.GetInt("ResearchAgreementBreakBonusPercent");
 
 	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
 	m_iSpyKillGainSpyProgress						= kResults.GetInt("SpyKillGainSpyProgress");
@@ -677,7 +679,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 		Database::Results* pResults = kUtility.GetResults(strKey);
 		if(pResults == NULL)
 		{
-			pResults = kUtility.PrepareResults(strKey, "select YieldsIn.ID as InYieldID, YieldsOut.ID as OutYieldID, Percent from CityStateUAEffect_YieldToYieldViaTRToUCS inner join Yields as YieldsIn on YieldsIn.Type = InYieldType inner join Yields as YieldsOut on YieldsOut.Type = OutYieldType where EffectType = ?");
+			pResults = kUtility.PrepareResults(strKey, "select YieldsIn.ID as InYieldID, YieldsOut.ID as OutYieldID, Percent, RequireRouteToThisCS from CityStateUAEffect_YieldToYieldViaTRToUCS inner join Yields as YieldsIn on YieldsIn.Type = InYieldType inner join Yields as YieldsOut on YieldsOut.Type = OutYieldType where EffectType = ?");
 		}
 		pResults->Bind(1, GetType());
 		while(pResults->Step())
@@ -686,6 +688,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			entry.m_iInYieldType = pResults->GetInt(0);
 			entry.m_iOutYieldType = pResults->GetInt(1);
 			entry.m_iPercent = pResults->GetInt(2);
+			entry.m_bRequireRouteToThisCS = (pResults->GetInt(3) != 0);
 			m_vYieldToYieldViaTRToUCS.push_back(entry);
 		}
 	}
@@ -842,6 +845,25 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			entry.m_iYieldMod = pResults->GetInt(1);
 			entry.m_iCap = pResults->GetInt(2);
 			m_vWorldWonderYieldModifiers.push_back(entry);
+		}
+	}
+	//Mogadishu: each international trade route the ally runs to a city-state grants a yield % modifier
+	{
+		m_vCityStateTradeRouteYieldModifiersGlobal.clear();
+		std::string strKey("CityStateUAEffect_CityStateTradeRouteYieldModifiersGlobal");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod from CityStateUAEffect_CityStateTradeRouteYieldModifiersGlobal inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			CityStateTradeRouteYieldModifierGlobalEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			m_vCityStateTradeRouteYieldModifiersGlobal.push_back(entry);
 		}
 	}
 	//Bucharest: each diplomat stationed in a foreign major civilization's city grants a yield % modifier
@@ -1110,6 +1132,7 @@ int CvCityStateUAEffectEntry::GetTradeRouteGoldPercentInternational() const { re
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerInternationalRoute() const { return m_iTradeRouteGoldModifierPerInternationalRoute; }
 int CvCityStateUAEffectEntry::GetFoodModifierPerHappyLuxuryType() const { return m_iFoodModifierPerHappyLuxuryType; }
 int CvCityStateUAEffectEntry::GetFoodModifierPerHappyLuxuryCap() const { return m_iFoodModifierPerHappyLuxuryCap; }
+int CvCityStateUAEffectEntry::GetResearchAgreementBreakBonusPercent() const { return m_iResearchAgreementBreakBonusPercent; }
 
 int CvCityStateUAEffectEntry::GetBuildingClassYieldModifiers(int i, int j) const
 {
@@ -1238,6 +1261,19 @@ int CvCityStateUAEffectEntry::GetYieldToYieldViaTRToUCS(int eInYield, int eOutYi
 			iTotal += m_vYieldToYieldViaTRToUCS[i].m_iPercent;
 	}
 	return iTotal;
+}
+
+// Mogadishu: whether the entry for (eInYield -> eOutYield) requires a trade route TO this city-state
+// (true) or any international trade route originating from the city (false). Defaults to true so
+// existing entries (Colombo / Cape Town) keep their route-to-this-city-state semantics.
+bool CvCityStateUAEffectEntry::YieldToYieldViaTRToUCSRequiresRouteToThisCS(int eInYield, int eOutYield) const
+{
+	for (size_t i = 0; i < m_vYieldToYieldViaTRToUCS.size(); i++)
+	{
+		if (m_vYieldToYieldViaTRToUCS[i].m_iInYieldType == eInYield && m_vYieldToYieldViaTRToUCS[i].m_iOutYieldType == eOutYield)
+			return m_vYieldToYieldViaTRToUCS[i].m_bRequireRouteToThisCS;
+	}
+	return true;
 }
 
 int CvCityStateUAEffectEntry::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }
@@ -1430,6 +1466,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iTradeRouteGoldModifierPerInternationalRoute(0)
 	, m_iFoodModifierPerHappyLuxuryType(0)
 	, m_iFoodModifierPerHappyLuxuryCap(0)
+	, m_iResearchAgreementBreakBonusPercent(0)
 	, m_iEnemyCityNoHealBesiegeCount(0)
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_iSpyGarrisonYieldModifierCount(0)
@@ -1554,6 +1591,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iTradeRouteGoldModifierPerInternationalRoute = 0;
 	m_iFoodModifierPerHappyLuxuryType = 0;
 	m_iFoodModifierPerHappyLuxuryCap = 0;
+	m_vCityStateTradeRouteYieldModifiersGlobal.clear();
+	m_iResearchAgreementBreakBonusPercent = 0;
 	m_iBuildingClassYieldModifierCount = 0;
 	m_iSpyKillGainSpyProgress = 0;
 	m_iSpyGarrisonYieldModifierCount = 0;
@@ -1793,6 +1832,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iTradeRouteGoldModifierPerInternationalRoute	+= pEffect->GetTradeRouteGoldModifierPerInternationalRoute() * iChange;
 	m_iFoodModifierPerHappyLuxuryType				+= pEffect->GetFoodModifierPerHappyLuxuryType() * iChange;
 	m_iFoodModifierPerHappyLuxuryCap				+= pEffect->GetFoodModifierPerHappyLuxuryCap() * iChange;
+	m_iResearchAgreementBreakBonusPercent			+= pEffect->GetResearchAgreementBreakBonusPercent() * iChange;
 	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
 	m_iSpyKillGainSpyProgress						+= pEffect->GetSpyKillGainSpyProgress() * iChange;
 	m_iCoastalCityGrowthThresholdModifier			+= pEffect->GetCoastalCityGrowthThresholdModifier() * iChange;
@@ -1924,6 +1964,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			WorldWonderYieldModifierEntry entry = vWWEntries[i];
 			entry.m_iYieldMod *= iChange;
 			m_vWorldWonderYieldModifiers.push_back(entry);
+		}
+	}
+	//Mogadishu: each international trade route the ally runs to a city-state grants a yield % modifier
+	{
+		const std::vector<CityStateTradeRouteYieldModifierGlobalEntry>& vTREntries = pEffect->GetCityStateTradeRouteYieldModifiersGlobal();
+		for (size_t i = 0; i < vTREntries.size(); i++)
+		{
+			CityStateTradeRouteYieldModifierGlobalEntry entry = vTREntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vCityStateTradeRouteYieldModifiersGlobal.push_back(entry);
 		}
 	}
 	//Bucharest: each diplomat stationed in a foreign major civilization's city grants a yield % modifier
@@ -2200,6 +2250,11 @@ int CvPlayerCityStateUA::GetTradeRouteGoldPercentInternational() const { return 
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerInternationalRoute() const { return m_iTradeRouteGoldModifierPerInternationalRoute; }
 int CvPlayerCityStateUA::GetFoodModifierPerHappyLuxuryType() const { return m_iFoodModifierPerHappyLuxuryType; }
 int CvPlayerCityStateUA::GetFoodModifierPerHappyLuxuryCap() const { return m_iFoodModifierPerHappyLuxuryCap; }
+bool CvPlayerCityStateUA::HasCityStateTradeRouteYieldModifiersGlobal() const
+{
+	return !m_vCityStateTradeRouteYieldModifiersGlobal.empty();
+}
+int CvPlayerCityStateUA::GetResearchAgreementBreakBonusPercent() const { return m_iResearchAgreementBreakBonusPercent; }
 int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const
 {
 	if (!m_pPlayer) return 0;

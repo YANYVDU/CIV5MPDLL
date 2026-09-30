@@ -3120,6 +3120,46 @@ bool CvPlayerTrade::HasTradeRouteToPlayer (const CvCity* pOriginCity, PlayerType
 }
 
 //	--------------------------------------------------------------------------------
+// Mogadishu: does this city originate at least one international trade route? City-state destinations
+// count as international, matching the team-based IsConnectionInternational test used everywhere else.
+bool CvPlayerTrade::HasInternationalTradeRouteFromCity (const CvCity* pOriginCity)
+{
+	if (!pOriginCity)
+	{
+		return false;
+	}
+
+	const PlayerTypes eCityOwnerPlayer = pOriginCity->getOwner();
+	const int iCityX = pOriginCity->getX();
+	const int iCityY = pOriginCity->getY();
+
+	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+	if (pTrade == NULL)
+	{
+		return false;
+	}
+
+	for (uint ui = 0; ui < pTrade->m_aTradeConnections.size(); ui++)
+	{
+		if (pTrade->IsTradeRouteIndexEmpty(ui))
+		{
+			continue;
+		}
+
+		const TradeConnection* pConnection = &(pTrade->m_aTradeConnections[ui]);
+
+		if (pConnection->m_eOriginOwner == eCityOwnerPlayer &&
+			pConnection->m_iOriginX == iCityX && pConnection->m_iOriginY == iCityY &&
+			pTrade->IsConnectionInternational(*pConnection))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
 int CvPlayerTrade::GetAllTradeValueTimes100 (YieldTypes eYield)
 {
 	CvGameTrade* pTrade = GC.getGame().GetGameTrade();

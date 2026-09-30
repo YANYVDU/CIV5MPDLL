@@ -18411,6 +18411,20 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += (iPop / vPop[i].m_iPerPopulation) * vPop[i].m_iYieldMod * 100;
 		}
 	}
+	// Mogadishu CS UA: per international trade route the player runs TO a city-state, a nation-wide
+	// yield % modifier per YieldType (plain percent, 5 = +5% per route). Mirrors the existing building
+	// effect (CvPlayer::GetCityStateTradeRouteYieldModifierGlobal): the stored value is multiplied by
+	// the live city-state trade route count; the plain percent is converted to basis points here
+	// because GetCSUAYieldPercentModifier normalizes by /100 at the end.
+	if (m_pCityStateUA->HasCityStateTradeRouteYieldModifiersGlobal() && GetTrade() != NULL)
+	{
+		const std::vector<CityStateTradeRouteYieldModifierGlobalEntry>& vTR = m_pCityStateUA->GetCityStateTradeRouteYieldModifiersGlobal();
+		for (size_t i = 0; i < vTR.size(); i++)
+		{
+			if (vTR[i].m_iYieldType != (int)eYield) continue;
+			iMod += GetTrade()->GetNumberOfCityStateTradeRoutes() * vTR[i].m_iYieldMod * 100;
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
