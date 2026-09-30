@@ -33980,7 +33980,13 @@ int CvPlayer::GetMaxEffectiveCities(bool bIncludePuppets)
 
 	if (bIncludePuppets)
 	{
-		return m_iMaxEffectiveCities + iNumPuppetCities - iNumNoResearchCostWLKDCity;
+		// A city turned into a puppet in place drops the non-puppet count without ever leaving the empire,
+		// so the stale peak would count it once as a regular city and once again as a puppet. Capping the
+		// peak against the live total keeps the protection for cities that were genuinely lost while never
+		// counting a converted city twice.
+		const int iTotalCities = iNumCities + iNumPuppetCities;
+		const int iEffectiveCities = (m_iMaxEffectiveCities > iTotalCities) ? m_iMaxEffectiveCities : iTotalCities;
+		return iEffectiveCities - iNumNoResearchCostWLKDCity;
 	}
 
 	return m_iMaxEffectiveCities;
