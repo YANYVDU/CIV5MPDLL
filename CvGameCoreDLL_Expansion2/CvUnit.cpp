@@ -15580,6 +15580,30 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 			}
 		}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Hanoi CS UA: enemy units fighting inside the territory of a player holding this effect lose
+		// Combat Strength (plain percent per declaration of war that owner has suffered, accumulated).
+		// The battle plot owner is checked against this unit's own owner, and only enemies are affected.
+		// D9: the penalty is capped at -50% (the only implementation-chosen cap for this UA).
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			PlayerTypes eHanoiPlotOwner = pBattlePlot->getOwner();
+			if (eHanoiPlotOwner != NO_PLAYER && eHanoiPlotOwner != getOwner())
+			{
+				CvPlayer& kHanoiPlotOwner = GET_PLAYER(eHanoiPlotOwner);
+				CvPlayerCityStateUA* pHanoiUA = kHanoiPlotOwner.GetPlayerCityStateUA();
+				if (pHanoiUA != NULL && pHanoiUA->GetEnemyCombatModifierInBordersPerBeenDoW() != 0
+					&& atWar(getTeam(), kHanoiPlotOwner.getTeam()))
+				{
+					int iHanoiPenalty = pHanoiUA->GetEnemyCombatModifierInBordersPerBeenDoW()
+						* kHanoiPlotOwner.GetNumTimesDeclaredWarOn();
+					if (iHanoiPenalty < -50) iHanoiPenalty = -50;
+					iModifier += iHanoiPenalty;
+				}
+			}
+		}
+#endif
+
 		// Capital Defense
 		iTempModifier = GetCapitalDefenseModifier();
 		if(iTempModifier > 0)

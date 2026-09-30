@@ -1187,6 +1187,14 @@ public:
 	// Kiev CS UA: extra League delegate votes, one per civilization this player has a Declaration of
 	// Friendship with (applied in CvLeague::CalculateStartingVotesForMember).
 	int GetCSUALeagueVotesFromDoF() const;
+	// Hanoi CS UA: cumulative number of war peace treaties this player has completed (serialized, never
+	// decays). Consumed by GetCSUAYieldPercentModifier for a nation-wide Culture % modifier.
+	int GetNumWarPeacesCompleted() const;
+	void ChangeNumWarPeacesCompleted(int iChange);
+	// Hanoi CS UA: cumulative number of times this player has been declared war on (serialized, never
+	// decays). Consumed by CvUnit::GetGenericMaxStrengthModifier for an in-borders enemy strength penalty.
+	int GetNumTimesDeclaredWarOn() const;
+	void ChangeNumTimesDeclaredWarOn(int iChange);
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;
@@ -3273,6 +3281,8 @@ protected:
 	int m_iCachedPapalRecognitionFollowerCount; // Vatican CS UA: cached follower-civ count, refreshed once per turn in doTurn(); -1 = not computed yet
 	int m_iCachedCoastalCityCount; // Vancouver CS UA: cached coastal-city count, refreshed once per turn in RefreshCSAllUAEffects(); -1 = not computed yet
 	int m_iCSUAFaithInfluencePurchaseUsed; // Gangtok CS UA: faith influence purchases made this turn (reset each turn in doTurn())
+	int m_iNumWarPeacesCompleted; // Hanoi CS UA: cumulative completed war peace treaties (serialized, never decays)
+	int m_iNumTimesDeclaredWarOn; // Hanoi CS UA: cumulative times declared war on (serialized, never decays)
 #endif
 
 	// human player wanted to end turn processing but hasn't received

@@ -1277,6 +1277,8 @@ void CvPlayer::uninit()
 	m_iCachedPapalRecognitionFollowerCount = -1;
 	m_iCachedCoastalCityCount = -1;
 	m_iCSUAFaithInfluencePurchaseUsed = 0;
+	m_iNumWarPeacesCompleted = 0;
+	m_iNumTimesDeclaredWarOn = 0;
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
@@ -18440,6 +18442,16 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += GetTrade()->GetNumberOfCityStateTradeRoutes() * vTR[i].m_iYieldMod * 100;
 		}
 	}
+	// Hanoi CS UA: each completed war peace treaty grants a nation-wide Culture % modifier (plain percent,
+	// so multiply by 100 because this function accumulates basis points and divides by 100 at the end).
+	// The counter is a serialized CvPlayer member, incremented live on each peace treaty, so no per-turn
+	// cache is required. Only the ally effect sets CulturePerWarPeace (friend = 0).
+	if (eYield == YIELD_CULTURE)
+	{
+		int iPerPeace = m_pCityStateUA->GetCulturePerWarPeace();
+		if (iPerPeace != 0)
+			iMod += GetNumWarPeacesCompleted() * iPerPeace * 100;
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -30368,6 +30380,8 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(162, kStream, m_iCityStateAllyCount, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
 	MOD_SERIALIZE_READ(163, kStream, m_iCityStateUASpyKillProgress, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iNumWarPeacesCompleted, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iNumTimesDeclaredWarOn, 0);
 #endif
 	MOD_SERIALIZE_READ(164, kStream, m_iSpyPoints, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsTotal, 0);
@@ -31246,6 +31260,8 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateAllyCount);
 	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateUASpyKillProgress);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumWarPeacesCompleted);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumTimesDeclaredWarOn);
 #endif
 	MOD_SERIALIZE_WRITE(kStream, m_iSpyPoints);
 	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsTotal);
@@ -32826,6 +32842,30 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	void CvPlayer::ChangeCSUAFaithInfluencePurchaseUsed(int iChange)
 	{
 		m_iCSUAFaithInfluencePurchaseUsed = max(0, m_iCSUAFaithInfluencePurchaseUsed + iChange);
+	}
+
+	//	------------------------------------------------------------------------
+	// Hanoi CS UA: cumulative completed war peace treaties (serialized, never decays)
+	int CvPlayer::GetNumWarPeacesCompleted() const
+	{
+		return m_iNumWarPeacesCompleted;
+	}
+
+	void CvPlayer::ChangeNumWarPeacesCompleted(int iChange)
+	{
+		m_iNumWarPeacesCompleted = max(0, m_iNumWarPeacesCompleted + iChange);
+	}
+
+	//	------------------------------------------------------------------------
+	// Hanoi CS UA: cumulative times this player has been declared war on (serialized, never decays)
+	int CvPlayer::GetNumTimesDeclaredWarOn() const
+	{
+		return m_iNumTimesDeclaredWarOn;
+	}
+
+	void CvPlayer::ChangeNumTimesDeclaredWarOn(int iChange)
+	{
+		m_iNumTimesDeclaredWarOn = max(0, m_iNumTimesDeclaredWarOn + iChange);
 	}
 
 	//	------------------------------------------------------------------------

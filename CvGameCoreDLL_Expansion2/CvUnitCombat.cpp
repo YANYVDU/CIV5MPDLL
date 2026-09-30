@@ -4693,6 +4693,34 @@ void CvUnitCombat::ApplyPostCityCombatEffects(CvUnit* pkAttacker, CvCity* pkDefe
 }
 
 #ifdef MOD_NEW_BATTLE_EFFECTS
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+// Hanoi CS UA: returns the percent (0..100) of fixed damage / fixed damage reduction a unit may still
+// apply when fighting on pBattlePlot. If the battle plot is owned by another player who holds this CSUA
+// effect and the unit is at war with that owner, the effect scales the unit's fixed-damage contributions
+// down: EnemyFixedDamageModifierInBorders is the PERCENT NULLIFIED (ally 100 -> scale 0, friend 50 -> 50).
+// Returns 100 (unaffected) in every other case. This is the single gate shared by every fixed-damage
+// contribution inside InterveneInflictDamage, so attacker/defender behaviour never diverges.
+// NOTE: the criterion is BATTLE PLOT OWNERSHIP, not the unit's own location. A unit attacking into
+// the owner's territory is scaled even if the unit itself stands outside the border, and a unit
+// fighting outside the border is not scaled even if it stands inside. This is deliberate: it matches
+// the "defend the homeland" reading of this UA and the battlefield semantics of the companion
+// effect "enemy units inside the borders lose Combat Strength".
+static int GetCSUAFixedDamageScale(const CvUnit* pUnit, const CvPlot* pBattlePlot)
+{
+	if (pUnit == nullptr || pBattlePlot == nullptr) return 100;
+	PlayerTypes eOwner = pBattlePlot->getOwner();
+	if (eOwner == NO_PLAYER || eOwner == pUnit->getOwner()) return 100;
+	CvPlayerCityStateUA* pUA = GET_PLAYER(eOwner).GetPlayerCityStateUA();
+	if (pUA == nullptr) return 100;
+	const int iDisabledPercent = pUA->GetEnemyFixedDamageModifierInBorders();
+	if (iDisabledPercent <= 0) return 100;
+	if (!atWar(pUnit->getTeam(), GET_PLAYER(eOwner).getTeam())) return 100;
+	int iScale = 100 - iDisabledPercent;
+	if (iScale < 0) iScale = 0;
+	if (iScale > 100) iScale = 100;
+	return iScale;
+}
+#endif
 inline static CvPlayerAI& getAttackerPlayer(const CvCombatInfo& kCombatInfo)
 {
 	CvUnit* pAttackerUnit = kCombatInfo.getUnit(BATTLE_UNIT_ATTACKER);
@@ -4707,25 +4735,28 @@ inline static CvPlayerAI& getDefenderPlayer(const CvCombatInfo& kCombatInfo)
 }
 
 #ifdef MOD_ROG_CORE
-void UnitDamageChangeInterveneNoCondition(CvUnit* thisUnit, int* enemyInflictDamage)
+void UnitDamageChangeInterveneNoCondition(CvUnit* thisUnit, int* enemyInflictDamage, int iScale)
 {
 	if (!thisUnit || !enemyInflictDamage) return;
 	if (thisUnit->getForcedDamageValue() != 0)
 	{
-		*enemyInflictDamage = thisUnit->getForcedDamageValue();
+		*enemyInflictDamage = thisUnit->getForcedDamageValue() * iScale / 100;
 	}
 	if (thisUnit->getChangeDamageValue() != 0)
 	{
-		*enemyInflictDamage += thisUnit->getChangeDamageValue();
+		*enemyInflictDamage += thisUnit->getChangeDamageValue() * iScale / 100;
 	}
 }
 
 void UnitDamageChangeIntervene(InflictDamageContext* ctx)
 {
-	UnitDamageChangeInterveneNoCondition(ctx->pAttackerUnit, ctx->piDefenseInflictDamage);
-	UnitDamageChangeInterveneNoCondition(ctx->pDefenderUnit, ctx->piAttackInflictDamage);
+	// Hanoi CS UA: each side's forced/change damage is scaled by that side's fixed-damage scale.
+	UnitDamageChangeInterveneNoCondition(ctx->pAttackerUnit, ctx->piDefenseInflictDamage, ctx->iAttackerFixedDamageScale);
+	UnitDamageChangeInterveneNoCondition(ctx->pDefenderUnit, ctx->piAttackInflictDamage, ctx->iDefenderFixedDamageScale);
 }
 
+// Hanoi CS UA: cities are the territory itself, never scaled. A city cannot be "inside an ally's
+// borders yet enemy-owned", so the Hanoi fixed-damage scaling never applies to a city's own damage.
 void CityDamageChangeInterveneNoCondition(CvCity* thisCity, int* enemyInflictDamage)
 {
 	if (!thisCity || !enemyInflictDamage) return;
@@ -4761,98 +4792,108 @@ void CityDamageChangeInterveneNoCondition(CvCity* thisCity, int* enemyInflictDam
 
 void CityDamageChangeIntervene(InflictDamageContext* ctx)
 {
+	// Hanoi CS UA: no scale is passed here on purpose (see the note above CityDamageChangeInterveneNoCondition).
 	CityDamageChangeInterveneNoCondition(ctx->pDefenderCity, ctx->piAttackInflictDamage);
 	CityDamageChangeInterveneNoCondition(ctx->pAttackerCity, ctx->piAttackInflictDamage);
 }
 
 void UnitAttackInflictDamageIntervene(InflictDamageContext* ctx)
 {
+	const int iScale = ctx->iAttackerFixedDamageScale; // Hanoi CS UA: attacker's fixed-damage scale
 	// Unit VS Unit
 	if (ctx->pAttackerUnit != nullptr && ctx->piAttackInflictDamage != nullptr && ctx->pDefenderCity == nullptr)
 	{
 #if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
-		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOriginalCapitalDamageFixTotal();
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOriginalCapitalDamageFixTotal() * iScale / 100;
 #endif
-		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetAttackInflictDamageChange();
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetAttackInflictDamageChange() * iScale / 100;
 		if (ctx->pDefenderUnit != nullptr)
 		{
 #if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
 			int iSpecialDamageFix = ctx->pAttackerUnit->GetOriginalCapitalSpecialDamageFixTotal();
-			*ctx->piAttackInflictDamage += ctx->pDefenderUnit->getDomainType() == DOMAIN_LAND ? iSpecialDamageFix : iSpecialDamageFix / 2;
-#endif		
-			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetAttackInflictDamageChangeMaxHPPercent() * ctx->pDefenderUnit->GetMaxHitPoints() / 100;
+			*ctx->piAttackInflictDamage += (ctx->pDefenderUnit->getDomainType() == DOMAIN_LAND ? iSpecialDamageFix : iSpecialDamageFix / 2) * iScale / 100;
+#endif
+			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetAttackInflictDamageChangeMaxHPPercent() * ctx->pDefenderUnit->GetMaxHitPoints() * iScale / 10000;
 		}
 	}
 }
 
 void UnitDefenseInflictDamageIntervene(InflictDamageContext* ctx)
 {
+	const int iScale = ctx->iDefenderFixedDamageScale; // Hanoi CS UA: defender's fixed-damage scale
 	// Unit VS Unit
 	if (ctx->pDefenderUnit != nullptr && ctx->piDefenseInflictDamage != nullptr && ctx->pAttackerCity == nullptr)
 	{
-		*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetDefenseInflictDamageChange();
+		*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetDefenseInflictDamageChange() * iScale / 100;
 		if (ctx->pAttackerUnit != nullptr)
 		{
-			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetDefenseInflictDamageChangeMaxHPPercent() * ctx->pAttackerUnit->GetMaxHitPoints() / 100;
+			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetDefenseInflictDamageChangeMaxHPPercent() * ctx->pAttackerUnit->GetMaxHitPoints() * iScale / 10000;
 		}
 	}
 }
 
 void FixReduceDamageIntervene(InflictDamageContext* ctx)
 {
+	// Hanoi CS UA: the attacker's fixed damage reduction affects the damage the attacker takes, so it
+	// is scaled by the attacker's scale; likewise the defender's by the defender's scale.
 	if (ctx->pAttackerUnit != nullptr && ctx->piDefenseInflictDamage != nullptr)
 	{
+		const int iScale = ctx->iAttackerFixedDamageScale;
 		const int iFixReducePerPromotion = ctx->pAttackerUnit->GetFixReducePerPromotionTotal();
 		if (iFixReducePerPromotion != 0)
 		{
-			*ctx->piDefenseInflictDamage -= ctx->pAttackerUnit->GetNumPromotions() * iFixReducePerPromotion / 100;
+			*ctx->piDefenseInflictDamage -= ctx->pAttackerUnit->GetNumPromotions() * iFixReducePerPromotion * iScale / 10000;
 		}
 		// Per Kill stacking fixed damage reduction (both directions)
 		const int iPerKillDefenseReduceAtk = ctx->pAttackerUnit->GetPerKillDefenseDamageChangeValue();
 		if (iPerKillDefenseReduceAtk != 0)
 		{
-			*ctx->piDefenseInflictDamage -= iPerKillDefenseReduceAtk;
+			*ctx->piDefenseInflictDamage -= iPerKillDefenseReduceAtk * iScale / 100;
 		}
 	}
 
 	if (ctx->pDefenderUnit != nullptr && ctx->piAttackInflictDamage != nullptr)
 	{
+		const int iScale = ctx->iDefenderFixedDamageScale;
 		const int iFixReducePerPromotion = ctx->pDefenderUnit->GetFixReducePerPromotionTotal();
 		if (iFixReducePerPromotion != 0)
 		{
-			*ctx->piAttackInflictDamage -= ctx->pDefenderUnit->GetNumPromotions() * iFixReducePerPromotion / 100;
+			*ctx->piAttackInflictDamage -= ctx->pDefenderUnit->GetNumPromotions() * iFixReducePerPromotion * iScale / 10000;
 		}
 		// Per Kill stacking fixed damage reduction (both directions)
 		const int iPerKillDefenseReduceDef = ctx->pDefenderUnit->GetPerKillDefenseDamageChangeValue();
 		if (iPerKillDefenseReduceDef != 0)
 		{
-			*ctx->piAttackInflictDamage -= iPerKillDefenseReduceDef;
+			*ctx->piAttackInflictDamage -= iPerKillDefenseReduceDef * iScale / 100;
 		}
 	}
 }
 
 void FixAddDamageIntervene(InflictDamageContext* ctx)
 {
+	// Hanoi CS UA: each side's fixed damage is scaled by that side's fixed-damage scale.
 	if (ctx->pAttackerUnit != nullptr && ctx->piAttackInflictDamage != nullptr)
 	{
+		const int iScale = ctx->iAttackerFixedDamageScale;
 		const int iFixDamagePerPromotion = ctx->pAttackerUnit->GetFixDamagePerPromotionTotal();
 		if (iFixDamagePerPromotion != 0)
 		{
-			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetNumPromotions() * iFixDamagePerPromotion / 100;
+			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetNumPromotions() * iFixDamagePerPromotion * iScale / 10000;
 		}
 		// Per Kill stacking fixed damage (both directions)
-		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetPerKillInflictDamageChangeValue();
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetPerKillInflictDamageChangeValue() * iScale / 100;
 	}
 
 	if (ctx->pDefenderUnit != nullptr && ctx->piDefenseInflictDamage != nullptr && ctx->pAttackerCity == nullptr)
 	{
+		const int iScale = ctx->iDefenderFixedDamageScale;
 		const int iFixDamagePerPromotion = ctx->pDefenderUnit->GetFixDamagePerPromotionTotal();
 		if (iFixDamagePerPromotion != 0)
 		{
-			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetNumPromotions() * iFixDamagePerPromotion / 100;
+			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetNumPromotions() * iFixDamagePerPromotion * iScale / 10000;
 		}
 		// Per Kill stacking fixed damage (both directions)
-		*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetPerKillInflictDamageChangeValue();
+		*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetPerKillInflictDamageChangeValue() * iScale / 100;
 	}
 }
 
@@ -4863,13 +4904,14 @@ void BudapestWoundedFixedDamageIntervene(InflictDamageContext* ctx)
 {
 	if (!MOD_SP_UNIQUE_CITYSTATE) return;
 
+	// Hanoi CS UA: this is also fixed damage, so it is scaled by the owning unit's fixed-damage scale.
 	if (ctx->pAttackerUnit != nullptr && ctx->pDefenderUnit != nullptr && ctx->piAttackInflictDamage != nullptr
 		&& ctx->pDefenderUnit->getDamage() > 0)
 	{
 		CvPlayerCityStateUA* pCSUA = GET_PLAYER(ctx->pAttackerUnit->getOwner()).GetPlayerCityStateUA();
 		if (pCSUA != nullptr && pCSUA->GetWoundedFixedDamage() != 0)
 		{
-			*ctx->piAttackInflictDamage += pCSUA->GetWoundedFixedDamage();
+			*ctx->piAttackInflictDamage += pCSUA->GetWoundedFixedDamage() * ctx->iAttackerFixedDamageScale / 100;
 		}
 	}
 
@@ -4879,22 +4921,23 @@ void BudapestWoundedFixedDamageIntervene(InflictDamageContext* ctx)
 		CvPlayerCityStateUA* pCSUA = GET_PLAYER(ctx->pDefenderUnit->getOwner()).GetPlayerCityStateUA();
 		if (pCSUA != nullptr && pCSUA->GetWoundedFixedDamage() != 0)
 		{
-			*ctx->piDefenseInflictDamage += pCSUA->GetWoundedFixedDamage();
+			*ctx->piDefenseInflictDamage += pCSUA->GetWoundedFixedDamage() * ctx->iDefenderFixedDamageScale / 100;
 		}
 	}
 }
 void SiegeInflictDamageIntervene(InflictDamageContext* ctx)
 {
+	const int iScale = ctx->iAttackerFixedDamageScale; // Hanoi CS UA: attacker's fixed-damage scale
 	// Unit VS City
 	if (ctx->pAttackerUnit != nullptr && ctx->piAttackInflictDamage != nullptr && ctx->pDefenderCity != nullptr)
 	{
 #if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
-		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOriginalCapitalDamageFixTotal();
-		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOriginalCapitalSpecialDamageFixTotal() / 2;
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOriginalCapitalDamageFixTotal() * iScale / 100;
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOriginalCapitalSpecialDamageFixTotal() / 2 * iScale / 100;
 #endif
-		
-		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetSiegeInflictDamageChange();
-		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetSiegeInflictDamageChangeMaxHPPercent() * ctx->pDefenderCity->GetMaxHitPoints() / 100;
+
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetSiegeInflictDamageChange() * iScale / 100;
+		*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetSiegeInflictDamageChangeMaxHPPercent() * ctx->pDefenderCity->GetMaxHitPoints() * iScale / 10000;
 	}
 }
 
@@ -4905,22 +4948,26 @@ static void DamageInterveneFromTraitReligion(InflictDamageContext* ctx)
 
 	if (ctx->pAttackerUnit)
 	{
+		// Hanoi CS UA: the attacker's religion/trait fixed damage is scaled by the attacker's scale.
+		const int iScale = ctx->iAttackerFixedDamageScale;
 		CvPlayerAI& kAttacker = GET_PLAYER(ctx->pAttackerUnit->getOwner());
 		const int iHolyCityCount = kAttacker.GetCachedCapturedHolyCity();
 		if (ctx->piAttackInflictDamage)
-			*ctx->piAttackInflictDamage += kAttacker.GetPlayerTraits()->GetInflictDamageChangePerCapturedHolyCity() * iHolyCityCount;
+			*ctx->piAttackInflictDamage += kAttacker.GetPlayerTraits()->GetInflictDamageChangePerCapturedHolyCity() * iHolyCityCount * iScale / 100;
 		if (ctx->piDefenseInflictDamage)
-			*ctx->piDefenseInflictDamage += kAttacker.GetPlayerTraits()->GetDamageChangePerCapturedHolyCity() * iHolyCityCount;
+			*ctx->piDefenseInflictDamage += kAttacker.GetPlayerTraits()->GetDamageChangePerCapturedHolyCity() * iHolyCityCount * iScale / 100;
 	}
 
 	if (ctx->pDefenderUnit)
 	{
+		// Hanoi CS UA: the defender's religion/trait fixed damage is scaled by the defender's scale.
+		const int iScale = ctx->iDefenderFixedDamageScale;
 		CvPlayerAI& kDefender = GET_PLAYER(ctx->pDefenderUnit->getOwner());
 		const int iHolyCityCount = kDefender.GetCachedCapturedHolyCity();
 		if (ctx->piAttackInflictDamage)
-			*ctx->piAttackInflictDamage += kDefender.GetPlayerTraits()->GetDamageChangePerCapturedHolyCity() * iHolyCityCount;
+			*ctx->piAttackInflictDamage += kDefender.GetPlayerTraits()->GetDamageChangePerCapturedHolyCity() * iHolyCityCount * iScale / 100;
 		if (ctx->piDefenseInflictDamage)
-			*ctx->piDefenseInflictDamage += kDefender.GetPlayerTraits()->GetInflictDamageChangePerCapturedHolyCity() * iHolyCityCount;
+			*ctx->piDefenseInflictDamage += kDefender.GetPlayerTraits()->GetInflictDamageChangePerCapturedHolyCity() * iHolyCityCount * iScale / 100;
 	}
 }
 #endif
@@ -4936,7 +4983,7 @@ static void SiegeDamageInterveneIfSameReligion(InflictDamageContext* ctx)
 		if (kReligion != NO_RELIGION && kReligion != RELIGION_PANTHEON && kAttacker.GetPlayerTraits()->GetSiegeDamagePercentIfSameReligion() != 0 && ctx->pDefenderCity->GetCityReligions()->GetReligiousMajority() == kReligion)
 		{
 			if (ctx->piAttackInflictDamage)
-				*ctx->piAttackInflictDamage += kAttacker.GetPlayerTraits()->GetSiegeDamagePercentIfSameReligion() * ctx->pDefenderCity->GetMaxHitPoints() / 100;
+				*ctx->piAttackInflictDamage += kAttacker.GetPlayerTraits()->GetSiegeDamagePercentIfSameReligion() * ctx->pDefenderCity->GetMaxHitPoints() * ctx->iAttackerFixedDamageScale / 10000;
 		}
 	}
 }
@@ -4954,14 +5001,16 @@ static void OutsideFriendlyLandsDamageIntervene(InflictDamageContext* ctx)
 	{
 		if (!targetPlot->IsFriendlyTerritory(ctx->pAttackerUnit->getOwner()))
 		{
-			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOutsideFriendlyLandsInflictDamageChange();
+			// Hanoi CS UA: scaled by the attacker's fixed-damage scale.
+			*ctx->piAttackInflictDamage += ctx->pAttackerUnit->GetOutsideFriendlyLandsInflictDamageChange() * ctx->iAttackerFixedDamageScale / 100;
 		}
 	}
 	if (ctx->pDefenderUnit && ctx->piDefenseInflictDamage)
 	{
 		if (!targetPlot->IsFriendlyTerritory(ctx->pDefenderUnit->getOwner()))
 		{
-			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetOutsideFriendlyLandsInflictDamageChange();
+			// Hanoi CS UA: scaled by the defender's fixed-damage scale.
+			*ctx->piDefenseInflictDamage += ctx->pDefenderUnit->GetOutsideFriendlyLandsInflictDamageChange() * ctx->iDefenderFixedDamageScale / 100;
 		}
 	}
 }
@@ -4969,6 +5018,16 @@ static void OutsideFriendlyLandsDamageIntervene(InflictDamageContext* ctx)
 void CvUnitCombat::InterveneInflictDamage(InflictDamageContext* ctx)
 {
 	if (ctx == nullptr) return;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Hanoi CS UA: precompute the fixed-damage scale for the attacker and defender units from the
+	// battle plot owner's CSUA effect. Every fixed-damage contribution below is then scaled by the
+	// scale of the unit that owns it (100 = unaffected, so non-Hanoi games are unchanged).
+	{
+		const CvPlot* pCSUABattlePlot = ctx->pCombatInfo ? ctx->pCombatInfo->getPlot() : nullptr;
+		ctx->iAttackerFixedDamageScale = GetCSUAFixedDamageScale(ctx->pAttackerUnit, pCSUABattlePlot);
+		ctx->iDefenderFixedDamageScale = GetCSUAFixedDamageScale(ctx->pDefenderUnit, pCSUABattlePlot);
+	}
+#endif
 	UnitDamageChangeIntervene(ctx);
 	CityDamageChangeIntervene(ctx);
 	UnitAttackInflictDamageIntervene(ctx);

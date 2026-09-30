@@ -1717,6 +1717,24 @@ void CvTeam::DoMakePeace(TeamTypes eTeam, bool bBumpUnits, bool bSuppressNotific
 		SetTurnMadePeaceTreatyWithTeam(eTeam, iCurrentTurn);
 		GET_TEAM(eTeam).SetTurnMadePeaceTreatyWithTeam(GetID(), iCurrentTurn);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Hanoi CS UA: count a completed war peace treaty for every major-civilization player on either
+		// side (design: "for each war peace treaty the ally has completed"). City-state peaces are excluded
+		// by requiring both teams to be major. This sits inside the isAtWar(eTeam) block, and the recursive
+		// calls below always involve a city-state team, so a single war never double-counts.
+		if (MOD_SP_UNIQUE_CITYSTATE && !isMinorCiv() && !GET_TEAM(eTeam).isMinorCiv())
+		{
+			for (int iPeacePlayer = 0; iPeacePlayer < MAX_MAJOR_CIVS; iPeacePlayer++)
+			{
+				PlayerTypes ePeacePlayer = (PlayerTypes) iPeacePlayer;
+				if (!GET_PLAYER(ePeacePlayer).isAlive()) continue;
+				TeamTypes ePeacePlayerTeam = GET_PLAYER(ePeacePlayer).getTeam();
+				if (ePeacePlayerTeam == GetID() || ePeacePlayerTeam == eTeam)
+					GET_PLAYER(ePeacePlayer).ChangeNumWarPeacesCompleted(1);
+			}
+		}
+#endif
+
 		TeamTypes eTeamWeMadePeaceWith = eTeam;
 
 		if(!isMinorCiv())

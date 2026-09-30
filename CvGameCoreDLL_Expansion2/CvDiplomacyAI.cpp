@@ -5995,6 +5995,14 @@ void CvDiplomacyAI::SetMusteringForAttack(PlayerTypes ePlayer, bool bValue)
 /// Player was attacked by another!  Change appropriate Diplomacy stuff
 void CvDiplomacyAI::DoSomeoneDeclaredWarOnMe(TeamTypes eTeam)
 {
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Hanoi CS UA: this player has been declared war on. Any non-barbarian declaration counts,
+	// city-states included (design: "for each time the ally has been declared war on"). Cumulative
+	// and serialized on CvPlayer. This function is invoked once per player on the defending team.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		m_pPlayer->ChangeNumTimesDeclaredWarOn(1);
+#endif
+
 	PlayerTypes eLoopPlayer;
 
 	// Loop through all players on our attacker's Team
