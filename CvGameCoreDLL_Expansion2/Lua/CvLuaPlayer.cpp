@@ -286,6 +286,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetResearchCost);
 	Method(GetResearchProgress);
 	Method(GetResearchProgressExceptOverflow);
+	Method(GetResearchThresholdMod);
 
 	Method(UnitsRequiredForGoldenAge);
 	Method(UnitsGoldenAgeCapable);
@@ -2523,6 +2524,29 @@ int CvLuaPlayer::lGetResearchProgressExceptOverflow(lua_State* L)
 	const int iResult = GET_TEAM(pkPlayer->getTeam()).GetTeamTechs()->GetResearchProgress(eTech);
 	lua_pushinteger(L, iResult);
 	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetResearchThresholdMod();
+// Returns the city-count research threshold (the "research threshold") broken into its parts:
+// iModPerCity, iEffectiveCities, iPuppetDiscount, iBuildingClassPercent, iGoldenAgePercent, iTotal.
+int CvLuaPlayer::lGetResearchThresholdMod(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iModPerCity = 0;
+	int iEffectiveCities = 0;
+	int iPuppetDiscount = 0;
+	int iBuildingClassPercent = 0;
+	int iGoldenAgePercent = 0;
+	const int iTotal = pkPlayer->GetResearchThresholdMod(&iModPerCity, &iEffectiveCities,
+		&iPuppetDiscount, &iBuildingClassPercent, &iGoldenAgePercent);
+	lua_pushinteger(L, iModPerCity);
+	lua_pushinteger(L, iEffectiveCities);
+	lua_pushinteger(L, iPuppetDiscount);
+	lua_pushinteger(L, iBuildingClassPercent);
+	lua_pushinteger(L, iGoldenAgePercent);
+	lua_pushinteger(L, iTotal);
+	return 6;
 }
 
 //------------------------------------------------------------------------------

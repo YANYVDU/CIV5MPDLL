@@ -33986,6 +33986,82 @@ int CvPlayer::GetMaxEffectiveCities(bool bIncludePuppets)
 	return m_iMaxEffectiveCities;
 }
 //	--------------------------------------------------------------------------------
+// Research threshold (the city-count tech cost modifier) broken into its component parts, for UI display.
+// Mirrors the threshold math in CvPlayerTechs::GetResearchCost, which calls this function.
+int CvPlayer::GetResearchThresholdMod(int* piModPerCity, int* piEffectiveCities,
+	int* piPuppetDiscount, int* piBuildingClassPercent, int* piGoldenAgePercent)
+{
+	const int iModPerCity = GC.getMap().getWorldInfo().GetNumCitiesTechCostMod();	// Default is 40, gets smaller on larger maps
+	const int iEffectiveCities = GetMaxEffectiveCities(/*bIncludePuppets*/ true);
+	int iMod = iModPerCity * iEffectiveCities;
+
+	int iPuppetDiscount = 0;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Kuala Lumpur CS UA: puppet cities stop (ally) or only half (friend) raising the tech threshold.
+	// The discount is taken off the total modifier rather than off the puppet count, so "half" still
+	// works with a single puppet (iNumPuppets * 50 / 100 would round down to 0 there).
+	{
+		CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+		if (pCSUA != NULL)
+		{
+			int iPuppetPartial = pCSUA->IsPuppetNoTechCostPenalty() ? 0
+			                         : 100 - pCSUA->GetPuppetTechCostPartial();
+			// Guard a stored value above 100, which would drive iPuppetPartial negative and let the
+			// discount exceed the puppet share.
+			if (iPuppetPartial < 0) iPuppetPartial = 0;
+			if (iPuppetPartial < 100)
+			{
+				const int iNumPuppets = pCSUA->GetCachedPuppetCount();
+				if (iNumPuppets > 0)
+				{
+					iPuppetDiscount = iModPerCity * iNumPuppets * (100 - iPuppetPartial) / 100;
+					iMod -= iPuppetDiscount;
+				}
+			}
+		}
+	}
+#endif
+
+	int iBuildingClassPercent = 0;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Singapore CS UA: each owned building class lowers the city-count research threshold by TechCostMod
+	// percent. Clamp the sum at 100 so the threshold can never go negative.
+	{
+		CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+		if (pCSUA != NULL && pCSUA->HasBuildingClassTechCostModifiers())
+		{
+			const std::vector<BuildingClassTechCostModifierEntry>& vTC = pCSUA->GetBuildingClassTechCostModifiers();
+			int iPercent = 0;
+			for (size_t i = 0; i < vTC.size(); i++)
+				iPercent += getBuildingClassCount((BuildingClassTypes)vTC[i].m_iBuildingClass) * vTC[i].m_iTechCostMod;
+			if (iPercent > 100) iPercent = 100;
+			if (iPercent > 0)
+			{
+				iBuildingClassPercent = iPercent;
+				iMod = iMod * (100 - iPercent) / 100;
+			}
+		}
+	}
+#endif
+
+	int iGoldenAgePercent = 0;
+	if (isGoldenAge())
+	{
+		iGoldenAgePercent = GetPlayerTraits()->GetGoldenAgeResearchCityCountCostModifier();
+		iMod = iMod * (iGoldenAgePercent + 100) / 100;
+	}
+
+	if (piModPerCity != NULL) *piModPerCity = iModPerCity;
+	if (piEffectiveCities != NULL) *piEffectiveCities = iEffectiveCities;
+	if (piPuppetDiscount != NULL) *piPuppetDiscount = iPuppetDiscount;
+	if (piBuildingClassPercent != NULL) *piBuildingClassPercent = iBuildingClassPercent;
+	if (piGoldenAgePercent != NULL) *piGoldenAgePercent = iGoldenAgePercent;
+
+	return iMod;
+}
+//	--------------------------------------------------------------------------------
 /// How many Natural Wonders has this player found in its area?
 int CvPlayer::GetNumNaturalWondersDiscoveredInArea() const
 {

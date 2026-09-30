@@ -1609,55 +1609,9 @@ long long CvPlayerTechs::GetResearchCost(TechTypes eTech) const
 	int iResearchMod = std::max(1, m_pPlayer->calculateResearchModifier(eTech));
 	iResearchCost = ((iResearchCost * 10000) / iResearchMod);
 
-	// Mod for City Count
-	const int iModPerCity = GC.getMap().getWorldInfo().GetNumCitiesTechCostMod();	// Default is 40, gets smaller on larger maps
-	int iMod = iModPerCity * m_pPlayer->GetMaxEffectiveCities(/*bIncludePuppets*/ true);
-
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	// Kuala Lumpur CS UA: puppet cities stop (ally) or only half (friend) raising the tech threshold.
-	// The discount is taken off the total modifier rather than off the puppet count, so "half" still
-	// works with a single puppet (iNumPuppets * 50 / 100 would round down to 0 there). It must stay
-	// ahead of the golden-age line below, which scales the same iMod.
-	{
-		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
-		if (pCSUA != NULL)
-		{
-			int iPuppetPartial = pCSUA->IsPuppetNoTechCostPenalty() ? 0
-			                         : 100 - pCSUA->GetPuppetTechCostPartial();
-			// Guard a stored value above 100, which would drive iPuppetPartial negative and let the
-			// discount exceed the puppet share.
-			if (iPuppetPartial < 0) iPuppetPartial = 0;
-			if (iPuppetPartial < 100)
-			{
-				const int iNumPuppets = pCSUA->GetCachedPuppetCount();
-				if (iNumPuppets > 0)
-					iMod -= iModPerCity * iNumPuppets * (100 - iPuppetPartial) / 100;
-			}
-		}
-	}
-#endif
-
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	// Singapore CS UA: each owned building class lowers the city-count research threshold by TechCostMod
-	// percent. Clamp the sum at 100 so the threshold can never go negative. Must stay ahead of the
-	// golden-age line below, which scales the same iMod.
-	{
-		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
-		if (pCSUA != NULL && pCSUA->HasBuildingClassTechCostModifiers())
-		{
-			const std::vector<BuildingClassTechCostModifierEntry>& vTC = pCSUA->GetBuildingClassTechCostModifiers();
-			int iPercent = 0;
-			for (size_t i = 0; i < vTC.size(); i++)
-				iPercent += m_pPlayer->getBuildingClassCount((BuildingClassTypes)vTC[i].m_iBuildingClass) * vTC[i].m_iTechCostMod;
-			if (iPercent > 100) iPercent = 100;
-			if (iPercent > 0)
-				iMod = iMod * (100 - iPercent) / 100;
-		}
-	}
-#endif
-
-	if (m_pPlayer->isGoldenAge())
-		iMod = iMod * (m_pPlayer->GetPlayerTraits()->GetGoldenAgeResearchCityCountCostModifier() + 100) / 100; // some UA may reduce the modifier from the city count.
+	// Mod for City Count (the "research threshold"). Shared with CvPlayer::GetResearchThresholdMod so the
+	// TopPanel tooltip breakdown always matches the real math.
+	int iMod = m_pPlayer->GetResearchThresholdMod();
 
 	iResearchCost = iResearchCost * (100 + iMod) / 100;
 
