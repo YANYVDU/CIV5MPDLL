@@ -190,7 +190,12 @@ CREATE TABLE CityStateUAEffects (
     LeagueVotesPerDoF integer DEFAULT 0,
     -- Ur: global happiness per world wonder owned by the ally/friend, accumulated in GetHappinessFromMinorCivs
     -- (basis points, 100 = +1 global happiness per world wonder). Ally = 200, friend = 100.
-    WorldWonderHappiness integer DEFAULT 0
+    WorldWonderHappiness integer DEFAULT 0,
+    -- Quebec: when another civilization computes its culture-victory progress against the ally/friend, the
+    -- target's lifetime culture is inflated by this percent (50 = +50%), lowering the computed influence
+    -- percentage and thus making culture domination of the target harder. Plain percent; read by
+    -- CvPlayerCulture (GetInfluenceLevel and the other victory-progress denominators).
+    CultureVictoryProgressModifier integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
@@ -438,6 +443,19 @@ create table CityStateUAEffect_SpecialCityDamageReduction (
 -- is a plain percent cap (0 = uncapped). CvPlayer::GetCSUAYieldPercentModifier multiplies it by 100
 -- because that function accumulates basis points and divides by 100 at the end; do not pre-convert.
 create table CityStateUAEffect_WorldWonderYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType  text references Yields(Type),
+    YieldMod   integer default 0,
+    Cap        integer default 0
+);
+
+-- CityState UA (Quebec): for each met, living major civilization whose influence level toward the ally is
+-- Unknown (the lowest influence level), grant a nation-wide yield percentage modifier per YieldType.
+-- YieldMod is a PLAIN PERCENT (4 = +4% per such civilization). Cap is a plain percent cap on the
+-- accumulated sum (40 = +40% maximum); 0 = uncapped. The count is cached once per turn
+-- (CvPlayerCityStateUA::CacheUnknownInfluenceCount) because CvPlayer::GetCSUAYieldPercentModifier is a
+-- per-yield hot path.
+create table CityStateUAEffect_UnknownInfluenceYieldModifiers (
     EffectType text references CityStateUAEffects(Type),
     YieldType  text references Yields(Type),
     YieldMod   integer default 0,

@@ -448,6 +448,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCSUACityAttackIgnoreBuildingDefensePercent);
 	Method(GetCSUAImmigrationRateModifier);
 	Method(GetCSUAEmigrationRateModifier);
+	Method(GetCSUACultureVictoryProgressModifier);
 	Method(RefreshCSAlliesFriends);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
@@ -3666,6 +3667,15 @@ int CvLuaPlayer::lGetCSUAEmigrationRateModifier(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	lua_pushinteger(L, pkPlayer->GetCSUAEmigrationRateModifier());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUACultureVictoryProgressModifier() const;
+int CvLuaPlayer::lGetCSUACultureVictoryProgressModifier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUACultureVictoryProgressModifier());
 	return 1;
 }
 

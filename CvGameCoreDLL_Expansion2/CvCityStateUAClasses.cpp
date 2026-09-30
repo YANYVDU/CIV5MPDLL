@@ -5,6 +5,7 @@
 #include "CvGameCoreDLLUtil.h"
 #include "CvCityStateUAClasses.h"
 #include "CvPlayer.h"
+#include "CvCultureClasses.h"
 #include "CvDatabaseUtility.h"
 
 #include "LintFree.h"
@@ -401,6 +402,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iGreatPersonRateModifierPerNationalWonder		= kResults.GetInt("GreatPersonRateModifierPerNationalWonder");
 	m_iLeagueVotesPerDoF							= kResults.GetInt("LeagueVotesPerDoF");
 	m_iWorldWonderHappiness							= kResults.GetInt("WorldWonderHappiness");
+	m_iCultureVictoryProgressModifier				= kResults.GetInt("CultureVictoryProgressModifier");
 
 	m_iGreatMusicianConcertTourismModifier			= kResults.GetInt("GreatMusicianConcertTourismModifier");
 	m_iGreatMusicianConcertGoldPercent				= kResults.GetInt("GreatMusicianConcertGoldPercent");
@@ -884,6 +886,26 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			entry.m_iYieldMod = pResults->GetInt(1);
 			entry.m_iCap = pResults->GetInt(2);
 			m_vDiplomatAbroadYieldModifiers.push_back(entry);
+		}
+	}
+	//Quebec: for each met major civilization at Unknown influence toward the player, a yield % modifier
+	{
+		m_vUnknownInfluenceYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_UnknownInfluenceYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod, Cap from CityStateUAEffect_UnknownInfluenceYieldModifiers inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			UnknownInfluenceYieldModifierEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			entry.m_iCap = pResults->GetInt(2);
+			m_vUnknownInfluenceYieldModifiers.push_back(entry);
 		}
 	}
 	//Kiev: each League vote held grants a yield % modifier per YieldType, nation-wide
@@ -1499,6 +1521,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCachedHappyLuxuryCount(0)
 	, m_iCachedWorldWonderCount(0)
 	, m_iCachedDiplomatAbroadCount(0)
+	, m_iCultureVictoryProgressModifier(0)
+	, m_iCachedUnknownInfluenceCount(0)
 	, m_iGreatPersonRateModifierPerNationalWonder(0)
 	, m_iLeagueVotesPerDoF(0)
 	, m_iCachedNationalWonderCount(0)
@@ -1637,6 +1661,10 @@ void CvPlayerCityStateUA::Reset()
 	m_vDiplomatAbroadYieldModifiers.clear();
 	m_iCachedWorldWonderCount = 0;
 	m_iCachedDiplomatAbroadCount = 0;
+	// Quebec
+	m_iCultureVictoryProgressModifier = 0;
+	m_vUnknownInfluenceYieldModifiers.clear();
+	m_iCachedUnknownInfluenceCount = 0;
 	m_iGreatPersonRateModifierPerNationalWonder = 0;
 	m_iLeagueVotesPerDoF = 0;
 	m_vLeagueVoteYieldModifiers.clear();
@@ -1964,6 +1992,18 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			WorldWonderYieldModifierEntry entry = vWWEntries[i];
 			entry.m_iYieldMod *= iChange;
 			m_vWorldWonderYieldModifiers.push_back(entry);
+		}
+	}
+	//Quebec: when another civilization computes its culture-victory progress against the player, inflate the
+	//player's lifetime culture; also per met major civ at Unknown influence toward the player
+	m_iCultureVictoryProgressModifier += pEffect->GetCultureVictoryProgressModifier() * iChange;
+	{
+		const std::vector<UnknownInfluenceYieldModifierEntry>& vUIEntries = pEffect->GetUnknownInfluenceYieldModifiers();
+		for (size_t i = 0; i < vUIEntries.size(); i++)
+		{
+			UnknownInfluenceYieldModifierEntry entry = vUIEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vUnknownInfluenceYieldModifiers.push_back(entry);
 		}
 	}
 	//Mogadishu: each international trade route the ally runs to a city-state grants a yield % modifier
@@ -2568,6 +2608,36 @@ void CvPlayerCityStateUA::CacheWorldWonderCount()
 	if (!m_pPlayer) return;
 	if (m_vWorldWonderYieldModifiers.empty() && m_iWorldWonderHappiness == 0) return;
 	m_iCachedWorldWonderCount = m_pPlayer->GetNumWorldWonders();
+}
+// Quebec: when another civilization computes its culture-victory progress against the player, inflate the
+// player's lifetime culture by this plain percent. Read by CvPlayerCulture (victory-progress denominators).
+int CvPlayerCityStateUA::GetCultureVictoryProgressModifier() const { return m_iCultureVictoryProgressModifier; }
+bool CvPlayerCityStateUA::HasUnknownInfluenceYieldModifiers() const
+{
+	return !m_vUnknownInfluenceYieldModifiers.empty();
+}
+// Quebec: cached count of met, living major civilizations whose influence level toward the player is
+// Unknown (the lowest influence level), refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects so the
+// per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int. The scan is skipped unless the player
+// holds a Quebec Unknown-influence effect. Unmet civilizations are NO_INFLUENCE_LEVEL and do not count.
+int CvPlayerCityStateUA::GetCachedUnknownInfluenceCount() const { return m_iCachedUnknownInfluenceCount; }
+void CvPlayerCityStateUA::CacheUnknownInfluenceCount()
+{
+	m_iCachedUnknownInfluenceCount = 0;
+	if (!m_pPlayer) return;
+	if (m_vUnknownInfluenceYieldModifiers.empty()) return;
+	for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+	{
+		if (iPlayer == m_pPlayer->GetID()) continue;
+		CvPlayer& kOther = GET_PLAYER((PlayerTypes)iPlayer);
+		if (!kOther.isAlive()) continue;
+		if (!GET_TEAM(kOther.getTeam()).isHasMet(m_pPlayer->getTeam())) continue;
+		if (kOther.GetCulture() != NULL &&
+			kOther.GetCulture()->GetInfluenceLevel(m_pPlayer->GetID()) == INFLUENCE_LEVEL_UNKNOWN)
+		{
+			m_iCachedUnknownInfluenceCount++;
+		}
+	}
 }
 bool CvPlayerCityStateUA::HasDiplomatAbroadYieldModifiers() const
 {

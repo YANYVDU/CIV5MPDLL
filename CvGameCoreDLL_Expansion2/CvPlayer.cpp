@@ -18383,6 +18383,21 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			iMod += iTotal * 100;
 		}
 	}
+	// Quebec CS UA: for each met major civilization whose influence level toward this player is Unknown
+	// (the lowest level), grant a yield % modifier per YieldType, nation-wide. (YieldMod is a plain percent;
+	// the count is cached once per doTurn, so multiply by 100 here because GetCSUAYieldPercentModifier
+	// normalizes by /100 at the end. Cap is a plain percent cap; 0 = uncapped.)
+	if (m_pCityStateUA->HasUnknownInfluenceYieldModifiers())
+	{
+		const std::vector<UnknownInfluenceYieldModifierEntry>& vUI = m_pCityStateUA->GetUnknownInfluenceYieldModifiers();
+		for (size_t i = 0; i < vUI.size(); i++)
+		{
+			if (vUI[i].m_iYieldType != (int)eYield) continue;
+			int iTotal = m_pCityStateUA->GetCachedUnknownInfluenceCount() * vUI[i].m_iYieldMod;
+			if (vUI[i].m_iCap > 0 && iTotal > vUI[i].m_iCap) iTotal = vUI[i].m_iCap;
+			iMod += iTotal * 100;
+		}
+	}
 	// Kiev CS UA: each League delegate vote the player holds grants a yield % modifier per YieldType,
 	// nation-wide. (YieldMod is in basis points per vote, so no x100 conversion here; the vote count is
 	// cached once per doTurn because recomputing it walks the League.)
@@ -20139,6 +20154,11 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads flat ints.
 	m_pCityStateUA->CacheWorldWonderCount();
 	m_pCityStateUA->CacheDiplomatAbroadCount();
+
+	// Quebec UA: cache the count of met major civilizations at Unknown influence toward this player once
+	// per turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int instead of
+	// re-running the influence query against every other civilization.
+	m_pCityStateUA->CacheUnknownInfluenceCount();
 
 	// Kiev UA: cache the national-wonder count and the player's current League delegate votes once per
 	// turn so the per-city (CvCity::getGreatPeopleRateModifier) and per-yield (GetCSUAYieldPercentModifier)
@@ -32914,6 +32934,14 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	int CvPlayer::GetCSUAFaithRefundPerDonationPercent() const
 	{
 		return m_pCityStateUA ? m_pCityStateUA->GetFaithRefundPerDonationPercent() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Quebec CS UA: percent by which this player's lifetime culture is inflated when another
+	// civilization computes its culture-victory progress against this player
+	int CvPlayer::GetCSUACultureVictoryProgressModifier() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetCultureVictoryProgressModifier() : 0;
 	}
 
 	//	------------------------------------------------------------------------

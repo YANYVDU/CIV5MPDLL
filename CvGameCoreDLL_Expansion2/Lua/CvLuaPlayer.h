@@ -335,6 +335,7 @@ protected:
 	static int lGetCSUACityAttackIgnoreBuildingDefensePercent(lua_State* L);
 	static int lGetCSUAImmigrationRateModifier(lua_State* L);
 	static int lGetCSUAEmigrationRateModifier(lua_State* L);
+	static int lGetCSUACultureVictoryProgressModifier(lua_State* L);
 	static int lRefreshCSAlliesFriends(lua_State* L);
 	static int lGetExtraHappinessPerLuxury(lua_State* L);
 	static int lGetHappinessFromReligion(lua_State* L);

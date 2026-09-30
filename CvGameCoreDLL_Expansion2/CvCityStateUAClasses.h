@@ -95,6 +95,15 @@ struct WorldWonderYieldModifierEntry {
 	int m_iCap;
 };
 
+// Quebec: for each met major civilization whose influence level toward the player is Unknown, a nation-wide
+// yield % modifier per YieldType. YieldMod is a PLAIN PERCENT (4 = +4% per such civilization), NOT basis
+// points; Cap is a plain percent cap on the accumulated sum (40 = +40% maximum), 0 = uncapped.
+struct UnknownInfluenceYieldModifierEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
+	int m_iCap;
+};
+
 // Mogadishu: each international trade route the ally runs TO a city-state grants a yield % modifier per
 // YieldType, nation-wide. Mirrors the building effect Building_CityStateTradeRouteYieldModifiersGlobal.
 // YieldMod is a PLAIN PERCENT (5 = +5% per route), NOT basis points.
@@ -435,6 +444,9 @@ public:
 	// Bucharest
 	const std::vector<WorldWonderYieldModifierEntry>& GetWorldWonderYieldModifiers() const { return m_vWorldWonderYieldModifiers; }
 	const std::vector<DiplomatAbroadYieldModifierEntry>& GetDiplomatAbroadYieldModifiers() const { return m_vDiplomatAbroadYieldModifiers; }
+	// Quebec
+	int GetCultureVictoryProgressModifier() const { return m_iCultureVictoryProgressModifier; }
+	const std::vector<UnknownInfluenceYieldModifierEntry>& GetUnknownInfluenceYieldModifiers() const { return m_vUnknownInfluenceYieldModifiers; }
 	// Kiev
 	const std::vector<LeagueVoteYieldModifierEntry>& GetLeagueVoteYieldModifiers() const { return m_vLeagueVoteYieldModifiers; }
 	// Kuala Lumpur
@@ -605,6 +617,9 @@ private:
 	// Bucharest
 	std::vector<WorldWonderYieldModifierEntry> m_vWorldWonderYieldModifiers;
 	std::vector<DiplomatAbroadYieldModifierEntry> m_vDiplomatAbroadYieldModifiers;
+	// Quebec
+	int m_iCultureVictoryProgressModifier;
+	std::vector<UnknownInfluenceYieldModifierEntry> m_vUnknownInfluenceYieldModifiers;
 	// Kiev
 	int m_iGreatPersonRateModifierPerNationalWonder;
 	int m_iLeagueVotesPerDoF;
@@ -935,6 +950,18 @@ public:
 	int GetCachedDiplomatAbroadCount() const;
 	void CacheDiplomatAbroadCount();
 
+	// Quebec: when another civilization computes its culture-victory progress against the player, inflate the
+	// player's lifetime culture by this plain percent (50 = +50%). Read by CvPlayerCulture.
+	int GetCultureVictoryProgressModifier() const;
+	// Quebec: for each met major civilization whose influence level toward the player is Unknown, a
+	// nation-wide yield % modifier per YieldType (YieldMod is a plain percent, capped by Cap percent).
+	const std::vector<UnknownInfluenceYieldModifierEntry>& GetUnknownInfluenceYieldModifiers() const { return m_vUnknownInfluenceYieldModifiers; }
+	bool HasUnknownInfluenceYieldModifiers() const;
+	// Quebec: cached count of met major civilizations at Unknown influence toward the player, refreshed once
+	// per doTurn in CvPlayer::RefreshCSAllUAEffects so the per-yield hot path reads a flat int.
+	int GetCachedUnknownInfluenceCount() const;
+	void CacheUnknownInfluenceCount();
+
 	// Kiev: +X% great-person rate per national wonder the player has completed, nation-wide
 	// (GreatPersonRateModifierPerNationalWonder is a plain percent; ally 2 = +2% per national wonder).
 	int GetGreatPersonRateModifierPerNationalWonder() const;
@@ -1122,6 +1149,11 @@ protected:
 	// Cached counts for the two Bucharest effects above, refreshed once per doTurn
 	int m_iCachedWorldWonderCount;
 	int m_iCachedDiplomatAbroadCount;
+	// Quebec
+	int m_iCultureVictoryProgressModifier;
+	std::vector<UnknownInfluenceYieldModifierEntry> m_vUnknownInfluenceYieldModifiers;
+	// Quebec: cached Unknown-influence major-civ count, refreshed once per doTurn
+	int m_iCachedUnknownInfluenceCount;
 	// Kiev
 	int m_iGreatPersonRateModifierPerNationalWonder;
 	int m_iLeagueVotesPerDoF;

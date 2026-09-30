@@ -1176,6 +1176,9 @@ public:
 	// immigrant counts (applied in GetImmigrationRate).
 	int GetCSUAImmigrationRateModifier() const;
 	int GetCSUAEmigrationRateModifier() const;
+	// Quebec CS UA: percent by which this player's lifetime culture is inflated when another
+	// civilization computes its culture-victory progress against this player (0 = no effect).
+	int GetCSUACultureVictoryProgressModifier() const;
 	// Kiev CS UA: total national wonders completed by this player (used by the great-person rate modifier).
 	int GetNumNationalWonders();
 	// Kiev CS UA: great-person rate % modifier granted per national wonder completed (applied in

@@ -2812,6 +2812,24 @@ int CvPlayerCulture::GetInfluencePerTurn(PlayerTypes ePlayer) const
 
 }
 
+// Quebec CS UA: the lifetime-culture value used as the denominator of culture-victory progress. When the
+// target player is the ally/friend of Quebec, its lifetime culture is inflated by the accumulated
+// CultureVictoryProgressModifier (a plain percent, e.g. 50 = +50%). This lowers the computed influence
+// percentage, making culture domination of that player harder. Used by GetInfluenceLevel,
+// GetTurnsToInfluential and GetCivLowestInfluence. GetInfluenceTrend is deliberately left alone: it
+// compares two influence/culture ratios, so inflating both turns' culture by the same factor cancels out.
+static int GetVictoryProgressLifetimeCulture(const CvPlayer& kTarget)
+{
+	int iCulture = kTarget.GetJONSCultureEverGenerated();
+	const CvPlayerCityStateUA* pUA = GET_PLAYER(kTarget.GetID()).GetPlayerCityStateUA();
+	if (pUA == NULL)
+		return iCulture;
+	const int iMod = pUA->GetCultureVictoryProgressModifier();
+	if (iMod > 0 && iCulture > 0)
+		iCulture = iCulture * (100 + iMod) / 100;
+	return iCulture;
+}
+
 /// Current influence level on this player
 InfluenceLevelTypes CvPlayerCulture::GetInfluenceLevel(PlayerTypes ePlayer) const
 {
@@ -2827,7 +2845,7 @@ InfluenceLevelTypes CvPlayerCulture::GetInfluenceLevel(PlayerTypes ePlayer) cons
 	else
 	{
 		int iInfluenceOn = GetInfluenceOn(ePlayer);
-		int iLifetimeCulture = kOtherPlayer.GetJONSCultureEverGenerated();
+		int iLifetimeCulture = GetVictoryProgressLifetimeCulture(kOtherPlayer);
 		int iPercent = 0;
 
 		if (iLifetimeCulture > 0)
@@ -2905,7 +2923,7 @@ int CvPlayerCulture::GetTurnsToInfluential(PlayerTypes ePlayer) const
 	{
 		int iInfluence = GetInfluenceOn(ePlayer);
 		int iInflPerTurn = GetInfluencePerTurn(ePlayer);
-		int iCulture = kOtherPlayer.GetJONSCultureEverGenerated();
+		int iCulture = GetVictoryProgressLifetimeCulture(kOtherPlayer);
 		int iCultPerTurn = kOtherPlayer.GetTotalJONSCulturePerTurn();
 
 		int iNumerator = (GC.getCULTURE_LEVEL_INFLUENTIAL() * iCulture / 100) -  iInfluence;
@@ -2978,7 +2996,7 @@ PlayerTypes CvPlayerCulture::GetCivLowestInfluence(bool bCheckOpenBorders) const
 			if (!bCheckOpenBorders || kPlayer.IsAllowsOpenBordersToPlayer(m_pPlayer->GetID()))
 			{
 				int iInfluenceOn = GetInfluenceOn((PlayerTypes)iLoopPlayer);
-				int iLifetimeCulture = kPlayer.GetJONSCultureEverGenerated();
+				int iLifetimeCulture = GetVictoryProgressLifetimeCulture(kPlayer);
 				int iPercent = 0;
 
 				if (iLifetimeCulture > 0)
