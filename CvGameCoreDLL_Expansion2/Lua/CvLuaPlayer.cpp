@@ -448,6 +448,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCSUACityAttackIgnoreBuildingDefensePercent);
 	Method(GetCSUAImmigrationRateModifier);
 	Method(GetCSUAEmigrationRateModifier);
+	Method(RefreshCSAlliesFriends);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
 	Method(GetHappinessFromNaturalWonders);
@@ -3666,6 +3667,17 @@ int CvLuaPlayer::lGetCSUAEmigrationRateModifier(lua_State* L)
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	lua_pushinteger(L, pkPlayer->GetCSUAEmigrationRateModifier());
 	return 1;
+}
+
+//------------------------------------------------------------------------------
+//void RefreshCSAlliesFriends();
+// Recomputes city-state ally/friend counts and the CSUA effects derived from them.
+// Normally only runs in doTurn(); exported so Lua can force a refresh right after a game load.
+int CvLuaPlayer::lRefreshCSAlliesFriends(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	pkPlayer->RefreshCSAlliesFriends();
+	return 0;
 }
 
 //------------------------------------------------------------------------------
