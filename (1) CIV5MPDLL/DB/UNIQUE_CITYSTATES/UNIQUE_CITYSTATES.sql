@@ -412,6 +412,18 @@ create table CityStateUAEffect_SpecialCityPopulationYieldModifiers (
     YieldMod        integer default 0
 );
 
+-- CityState UA (Tyre): cities matching the special city type take Percent% less damage.
+-- Percent is a PLAIN PERCENT (40 = -40% damage taken). Applied in CvCity::changeDamage for damage-dealing
+-- (positive) changes only, so healing is unaffected. Multiple matching rows sum and the total is clamped
+-- to 90. Unlike the count/population tables above, this is per-city, not nation-wide.
+-- NOTE: only damage routed through CvCity::changeDamage is reduced. Nuclear explosions set city damage
+-- directly in CvUnitCombat::ApplyNuclearExplosionDamage and therefore BYPASS this reduction.
+create table CityStateUAEffect_SpecialCityDamageReduction (
+    EffectType      text references CityStateUAEffects(Type),
+    SpecialCityType text references CityStateUAEffect_SpecialCityTypes(Type),
+    Percent         integer default 0
+);
+
 -- CityState UA (Bucharest): each world wonder owned by the ally/friend grants a yield percentage
 -- modifier per YieldType, nation-wide. YieldMod is a PLAIN PERCENT (4 = +4% per world wonder) and Cap
 -- is a plain percent cap (0 = uncapped). CvPlayer::GetCSUAYieldPercentModifier multiplies it by 100

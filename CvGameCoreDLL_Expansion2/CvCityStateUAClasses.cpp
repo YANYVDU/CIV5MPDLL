@@ -21,6 +21,7 @@ SpecialCityConditionTypes ParseSpecialCityCondition(const char* szType)
 	if (strcmp(szType, "IS_RIVER") == 0) return SPECIAL_CITY_CONDITION_IS_RIVER;
 	if (strcmp(szType, "IS_COASTAL") == 0) return SPECIAL_CITY_CONDITION_IS_COASTAL;
 	if (strcmp(szType, "IS_PUPPET") == 0) return SPECIAL_CITY_CONDITION_IS_PUPPET;
+	if (strcmp(szType, "IS_OTHER_CONTINENT") == 0) return SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT;
 	return SPECIAL_CITY_CONDITION_NONE;
 }
 
@@ -29,7 +30,8 @@ bool IsBooleanSpecialCityCondition(SpecialCityConditionTypes eType)
 {
 	return eType == SPECIAL_CITY_CONDITION_IS_RIVER
 	    || eType == SPECIAL_CITY_CONDITION_IS_COASTAL
-	    || eType == SPECIAL_CITY_CONDITION_IS_PUPPET;
+	    || eType == SPECIAL_CITY_CONDITION_IS_PUPPET
+	    || eType == SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT;
 }
 }
 
@@ -147,6 +149,17 @@ bool CvSpecialCityTypeEntry::EvaluateCondition(const SpecialCityConditionEntry& 
 	case SPECIAL_CITY_CONDITION_IS_PUPPET:
 		// IsPuppet() is false for cities under annexation, so those are excluded as well.
 		return pCity->IsPuppet();
+	case SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT:
+	{
+		// Different landmass from the owner's original capital, the same test Panama's cross-continent
+		// trade route uses. Fails closed when the original capital is gone (GetOriginalCapitalX/Y = -1).
+		const CvPlayer& kPlayer = GET_PLAYER(pCity->getOwner());
+		if (kPlayer.GetOriginalCapitalX() < 0 || kPlayer.GetOriginalCapitalY() < 0)
+			return false;
+		CvPlot* pCapitalPlot = GC.getMap().plot(kPlayer.GetOriginalCapitalX(), kPlayer.GetOriginalCapitalY());
+		return pCity->plot() != NULL && pCapitalPlot != NULL
+			&& pCity->plot()->getLandmass() != pCapitalPlot->getLandmass();
+	}
 	default:
 		return false;
 	}
@@ -907,6 +920,25 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vSpecialCityPopulationYieldModifiers.push_back(entry);
 		}
 	}
+	//Tyre: a city matching a special city type takes Percent% less damage
+	{
+		m_vSpecialCityDamageReductions.clear();
+		std::string strKey("CityStateUAEffect_SpecialCityDamageReduction");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select SpecialCityTypes.ID as SpecialCityTypeID, Percent from CityStateUAEffect_SpecialCityDamageReduction inner join CityStateUAEffect_SpecialCityTypes as SpecialCityTypes on SpecialCityTypes.Type = SpecialCityType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			SpecialCityDamageReductionEntry entry;
+			entry.m_iSpecialCityType = pResults->GetInt(0);
+			entry.m_iPercent = pResults->GetInt(1);
+			m_vSpecialCityDamageReductions.push_back(entry);
+		}
+	}
 	//Singapore: each owned building class grants a nation-wide yield % modifier per YieldType
 	{
 		m_vBuildingClassGlobalYieldModifiers.clear();
@@ -1614,6 +1646,8 @@ void CvPlayerCityStateUA::Reset()
 	m_vSpecialCityPopulationYieldModifiers.clear();
 	m_aiCachedSpecialCityPopulation.clear();
 	m_iCachedPuppetCount = 0;
+	// Tyre
+	m_vSpecialCityDamageReductions.clear();
 	// Singapore
 	m_vBuildingClassGlobalYieldModifiers.clear();
 	m_vBuildingClassTechCostModifiers.clear();
@@ -2024,6 +2058,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			SpecialCityPopulationYieldModifierEntry entry = vEntries[i];
 			entry.m_iYieldMod *= iChange;
 			m_vSpecialCityPopulationYieldModifiers.push_back(entry);
+		}
+	}
+	//Tyre: a city matching a special city type takes Percent% less damage
+	{
+		const std::vector<SpecialCityDamageReductionEntry>& vEntries = pEffect->GetSpecialCityDamageReductions();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			SpecialCityDamageReductionEntry entry = vEntries[i];
+			entry.m_iPercent *= iChange;
+			m_vSpecialCityDamageReductions.push_back(entry);
 		}
 	}
 	//Singapore: each owned building class grants a nation-wide yield % modifier per YieldType
@@ -2596,6 +2640,10 @@ void CvPlayerCityStateUA::CacheSpecialCityMatches()
 bool CvPlayerCityStateUA::HasSpecialCityPopulationYieldModifiers() const
 {
 	return !m_vSpecialCityPopulationYieldModifiers.empty();
+}
+bool CvPlayerCityStateUA::HasSpecialCityDamageReduction() const
+{
+	return !m_vSpecialCityDamageReductions.empty();
 }
 bool CvPlayerCityStateUA::HasBuildingClassGlobalYieldModifiers() const
 {

@@ -17193,6 +17193,24 @@ void CvCity::changeDamage(int iChange)
 	VALIDATE_OBJECT
 	if(0 != iChange)
 	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// CityState UA (Tyre): cities matching a special city type take Percent% less damage. Only
+		// positive changes (damage dealt) are reduced; healing (negative) is left untouched. Evaluated
+		// live rather than from the per-turn special-city cache because this is a low-frequency path and
+		// the predicates (coastal / other-continent) are cheap. Clamped so a hit still deals at least 1.
+		// Note: nuclear explosions call setDamage directly in CvUnitCombat::ApplyNuclearExplosionDamage
+		// and so intentionally bypass this reduction.
+		if (iChange > 0)
+		{
+			int iReduction = GetCSUADamageReductionPercent();
+			if (iReduction > 0)
+			{
+				iChange = iChange * (100 - iReduction) / 100;
+				if (iChange < 1)
+					iChange = 1;
+			}
+		}
+#endif
 		setDamage(getDamage() + iChange);
 	}
 }
@@ -23869,6 +23887,28 @@ bool CvCity::IsSpecialCityType(int iSpecialCityType) const
 #else
 	return false;
 #endif
+}
+
+//CityState UA: summed percent damage reduction this city receives (matching rows add up, clamped to 90)
+int CvCity::GetCSUADamageReductionPercent() const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCityStateUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pCityStateUA && pCityStateUA->HasSpecialCityDamageReduction())
+	{
+		const std::vector<SpecialCityDamageReductionEntry>& vEntries = pCityStateUA->GetSpecialCityDamageReductions();
+		int iReduction = 0;
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			if (IsSpecialCityType(vEntries[i].m_iSpecialCityType))
+				iReduction += vEntries[i].m_iPercent;
+		}
+		if (iReduction > 90)
+			iReduction = 90;
+		return iReduction;
+	}
+#endif
+	return 0;
 }
 
 bool CvCity::HasTradeRouteTo(CvCity* pCity) const

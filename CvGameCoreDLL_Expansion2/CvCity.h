@@ -1322,6 +1322,8 @@ public:
 	bool HasTradeRouteToAnyCity() const;
 	//CityState UA: true when this city satisfies the named special city type's predicate
 	bool IsSpecialCityType(int iSpecialCityType) const;
+	//CityState UA: summed percent damage reduction this city receives from its owner's UA effects (0 if none)
+	int GetCSUADamageReductionPercent() const;
 	bool HasTradeRouteTo(CvCity* pCity) const;
 	bool HasTradeRouteFromAnyCity() const;
 	bool HasTradeRouteFrom(CvCity* pCity) const;

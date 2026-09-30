@@ -123,6 +123,7 @@ enum SpecialCityConditionTypes {
 	SPECIAL_CITY_CONDITION_IS_RIVER,       // Boolean, no Value: the city center sits on a river
 	SPECIAL_CITY_CONDITION_IS_COASTAL,     // Boolean, no Value: the city center borders the sea (lakes excluded)
 	SPECIAL_CITY_CONDITION_IS_PUPPET,      // Boolean, no Value: the city is a puppet (annexed cities do not qualify)
+	SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT, // Boolean, no Value: the city sits on a different landmass than the owner's original capital
 	NUM_SPECIAL_CITY_CONDITION_TYPES
 };
 
@@ -153,10 +154,21 @@ struct SpecialCityPopulationYieldModifierEntry {
 	int m_iYieldMod;
 };
 
-// Singapore: each owned building class grants a nation-wide yield % modifier per YieldType. The count
-// comes from CvPlayer::getBuildingClassCount (maintained live by the building system). For one-per-city
-// dummy buildings (city scale / corruption tiers) this equals the number of cities of that tier; only use
-// it with dummy building classes. YieldMod is a PLAIN PERCENT (10 = +10% per owned building class).
+// Tyre: cities matching a special city type take Percent% less damage. Percent is a PLAIN PERCENT
+// (40 = -40% damage taken); matching rows sum and the total is clamped to 90. Only damage routed through
+// CvCity::changeDamage is reduced; nuclear explosions set city damage directly in
+// CvUnitCombat::ApplyNuclearExplosionDamage and therefore bypass this reduction.
+struct SpecialCityDamageReductionEntry {
+	int m_iSpecialCityType;
+	int m_iPercent;
+};
+
+// Singapore / Tyre: each owned building class grants a nation-wide yield % modifier per YieldType. The
+// count comes from CvPlayer::getBuildingClassCount (maintained live by the building system). For
+// one-per-city dummy buildings (city scale / corruption tiers) this equals the number of cities of that
+// tier. Real buildings are also allowed and are counted per building, so a single city holding two
+// counted building classes (e.g. Tyre's Wood Dock + Shipyard) contributes twice. YieldMod is a PLAIN
+// PERCENT (10 = +10% per owned building class).
 struct BuildingClassGlobalYieldModifierEntry {
 	int m_iBuildingClass;
 	int m_iYieldType;
@@ -408,6 +420,8 @@ public:
 	const std::vector<LeagueVoteYieldModifierEntry>& GetLeagueVoteYieldModifiers() const { return m_vLeagueVoteYieldModifiers; }
 	// Kuala Lumpur
 	const std::vector<SpecialCityPopulationYieldModifierEntry>& GetSpecialCityPopulationYieldModifiers() const { return m_vSpecialCityPopulationYieldModifiers; }
+	// Tyre
+	const std::vector<SpecialCityDamageReductionEntry>& GetSpecialCityDamageReductions() const { return m_vSpecialCityDamageReductions; }
 	// Singapore
 	const std::vector<BuildingClassGlobalYieldModifierEntry>& GetBuildingClassGlobalYieldModifiers() const { return m_vBuildingClassGlobalYieldModifiers; }
 	const std::vector<BuildingClassTechCostModifierEntry>& GetBuildingClassTechCostModifiers() const { return m_vBuildingClassTechCostModifiers; }
@@ -575,6 +589,8 @@ private:
 	std::vector<LeagueVoteYieldModifierEntry> m_vLeagueVoteYieldModifiers;
 	// Kuala Lumpur
 	std::vector<SpecialCityPopulationYieldModifierEntry> m_vSpecialCityPopulationYieldModifiers;
+	// Tyre
+	std::vector<SpecialCityDamageReductionEntry> m_vSpecialCityDamageReductions;
 	// Singapore
 	std::vector<BuildingClassGlobalYieldModifierEntry> m_vBuildingClassGlobalYieldModifiers;
 	std::vector<BuildingClassTechCostModifierEntry> m_vBuildingClassTechCostModifiers;
@@ -856,6 +872,11 @@ public:
 	int GetCachedPuppetCount() const;
 	void CachePuppetStats();
 
+	// Tyre: cities matching a special city type take Percent% less damage (Percent is a plain percent).
+	// Evaluated live in CvCity::changeDamage, which is a low-frequency path, so no per-turn cache is needed.
+	const std::vector<SpecialCityDamageReductionEntry>& GetSpecialCityDamageReductions() const { return m_vSpecialCityDamageReductions; }
+	bool HasSpecialCityDamageReduction() const;
+
 	// Singapore: each owned building class grants a nation-wide yield % modifier (YieldMod is a plain
 	// percent). The count is read live from CvPlayer::getBuildingClassCount, so no per-turn cache is needed.
 	const std::vector<BuildingClassGlobalYieldModifierEntry>& GetBuildingClassGlobalYieldModifiers() const { return m_vBuildingClassGlobalYieldModifiers; }
@@ -1079,6 +1100,8 @@ protected:
 	// (in CvPlayer::RefreshCSAllUAEffects)
 	std::vector<int> m_aiCachedSpecialCityPopulation;
 	int m_iCachedPuppetCount;
+	// Tyre
+	std::vector<SpecialCityDamageReductionEntry> m_vSpecialCityDamageReductions;
 	// Singapore
 	std::vector<BuildingClassGlobalYieldModifierEntry> m_vBuildingClassGlobalYieldModifiers;
 	std::vector<BuildingClassTechCostModifierEntry> m_vBuildingClassTechCostModifiers;

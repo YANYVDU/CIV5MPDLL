@@ -234,6 +234,10 @@ protected:
 	static int lGetChangeDamageValue(lua_State* L);
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	static int lGetCSUADamageReductionPercent(lua_State* L);
+#endif
+
 	static int lGetHighestPopulation(lua_State* L);
 	static int lSetHighestPopulation(lua_State* L);
 	//static int lGetWorkingPopulation(lua_State* L);

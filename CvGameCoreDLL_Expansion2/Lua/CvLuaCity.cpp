@@ -359,6 +359,10 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(GetChangeDamageValue);
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	Method(GetCSUADamageReductionPercent);
+#endif
+
 	Method(GetHighestPopulation);
 	Method(SetHighestPopulation);
 	//Method(GetWorkingPopulation);
@@ -5249,6 +5253,18 @@ int CvLuaCity::lGetChangeDamageValue(lua_State* L)
 	CvCity* pCity = GetInstance(L);
 
 	const int iResult = pCity->getReduceDamageValue();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//int GetCSUADamageReductionPercent() const;
+int CvLuaCity::lGetCSUADamageReductionPercent(lua_State* L)
+{
+	CvCity* pCity = GetInstance(L);
+
+	const int iResult = pCity->GetCSUADamageReductionPercent();
 	lua_pushinteger(L, iResult);
 	return 1;
 }
