@@ -445,6 +445,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCityStateSpecialistPointRate);
 	Method(GetCSUAGreatPersonRateModifierFromGreatWorks);
 	Method(GetCSUAFaithRefundPerDonationPercent);
+	Method(HasCSUAGoldDonationGamble);
 	Method(GetCSUACityAttackIgnoreBuildingDefensePercent);
 	Method(GetCSUAWoundedFixedDamage);
 	Method(GetCSUAImmigrationRateModifier);
@@ -731,6 +732,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetAlliedTurns);
 	Method(IsFriends);
 	Method(IsAllies);
+	Method(GetMinorCivGoldGambleUsedThisTurn);
+	Method(GetMinorCivGoldGambleLastMultiplier);
 	Method(IsPlayerHasOpenBorders);
 	Method(IsPlayerHasOpenBordersAutomatically);
 	Method(GetFriendshipChangePerTurnTimes100);
@@ -3641,6 +3644,15 @@ int CvLuaPlayer::lGetCSUAFaithRefundPerDonationPercent(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	lua_pushinteger(L, pkPlayer->GetCSUAFaithRefundPerDonationPercent());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//bool HasCSUAGoldDonationGamble() const;
+int CvLuaPlayer::lHasCSUAGoldDonationGamble(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->HasCSUAGoldDonationGamble());
 	return 1;
 }
 
@@ -7373,6 +7385,28 @@ int CvLuaPlayer::lIsAllies(lua_State* L)
 
 	const bool bResult = pkPlayer->GetMinorCivAI()->IsAllies(ePlayer);
 	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+// Monaco CS UA: whether this city-state has already had ePlayer's first-donation wager this turn
+int CvLuaPlayer::lGetMinorCivGoldGambleUsedThisTurn(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const PlayerTypes ePlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->GetGoldGambleUsedThisTurn(ePlayer);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+// Monaco CS UA: the refund multiplier this city-state rolled for ePlayer's wager (-1 = not wagered yet)
+int CvLuaPlayer::lGetMinorCivGoldGambleLastMultiplier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const PlayerTypes ePlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	const int iResult = pkPlayer->GetMinorCivAI()->GetGoldGambleLastMultiplier(ePlayer);
+	lua_pushinteger(L, iResult);
 	return 1;
 }
 //------------------------------------------------------------------------------

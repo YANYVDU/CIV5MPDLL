@@ -1904,6 +1904,12 @@ public:
 	bool HasCSUAFaithPantheonPurchaseUA() const;
 	// Kathmandu CS UA: the first gold donation each turn refunds this % of the amount as faith
 	int GetCSUAFaithRefundPerDonationPercent() const;
+	// Monaco CS UA: does the player's activated CSUA grant the first-donation wager?
+	bool HasCSUAGoldDonationGamble() const;
+	// Monaco CS UA: roll the first-donation wager and return the refund multiplier (0 = no payout)
+	int GetCSUAGoldDonationGambleMultiplier() const;
+	// Monaco CS UA: building gold maintenance modifier while the player is in a golden age
+	int GetCSUABuildingMaintenanceMod() const;
 	// CSUA: does any city-state UA this player has activated (as ally or friend) grant the given effect id?
 	bool HasCSUAEffect(int eEffect) const;
 #endif

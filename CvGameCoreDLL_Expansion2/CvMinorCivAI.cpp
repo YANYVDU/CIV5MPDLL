@@ -1974,6 +1974,8 @@ void CvMinorCivAI::Reset()
 		m_aiEconomicAidPoints[iI] = 0;
 		m_abFaithBeliefPurchasedByMajor[iI] = false;
 		m_abFaithRefundUsedThisTurn[iI] = false;
+		m_abGoldGambleUsedThisTurn[iI] = false;
+		m_aiGoldGambleLastMultiplier[iI] = -1;
 		m_aiFaithPantheonPurchaseCount[iI] = 0;
 		m_aiMajorScratchPad[iI] = 0;
 	}
@@ -2116,6 +2118,8 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS, false);
 	// Kathmandu CS UA - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abGoldGambleUsedThisTurn, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiGoldGambleLastMultiplier, int, MAX_MAJOR_CIVS, -1);
 	// La Venta CS UA - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS, 0);
 #endif
@@ -2194,6 +2198,8 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abGoldGambleUsedThisTurn, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiGoldGambleLastMultiplier, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS);
 #endif
 }
@@ -2373,6 +2379,13 @@ void CvMinorCivAI::DoTurn()
 		// Kathmandu CS UA: reset the first-donation faith refund flag for all majors each turn
 		for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
 			m_abFaithRefundUsedThisTurn[iI] = false;
+
+		// Monaco CS UA: reset the first-donation wager flag for all majors each turn
+		for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+		{
+			m_abGoldGambleUsedThisTurn[iI] = false;
+			m_aiGoldGambleLastMultiplier[iI] = -1;
+		}
 
 #if defined(MOD_CONFIG_GAME_IN_XML)
 		m_pPlayer->GetDiplomacyAI()->DoCounters();
@@ -7835,6 +7848,22 @@ void CvMinorCivAI::SetFaithRefundUsedThisTurn(PlayerTypes eMajor, bool bUsed)
 	m_abFaithRefundUsedThisTurn[eMajor] = bUsed;
 }
 
+bool CvMinorCivAI::GetGoldGambleUsedThisTurn(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abGoldGambleUsedThisTurn[eMajor];
+}
+
+int CvMinorCivAI::GetGoldGambleLastMultiplier(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return -1;
+	return m_aiGoldGambleLastMultiplier[eMajor];
+}
+
 /// Wittenberg CS UA: the ally spends faith to add one belief to the religion the ally leads.
 bool CvMinorCivAI::DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief)
 {
@@ -10870,6 +10899,29 @@ void CvMinorCivAI::ChangeNumGoldGifted(PlayerTypes ePlayer, int iChange)
 
 
 /// Major Civ gifted some Gold to this Minor
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+// The UA effect currently granting to eMajor from pMinorAI (ally takes priority over friend), or NULL
+// if the city-state grants nothing to eMajor. Used to key donation effects to the receiving city-state
+// itself, instead of the player's aggregated CSUA state which spans every ally/friend city-state.
+static CvCityStateUAEffectEntry* GetMinorUAGrantedEffect(CvMinorCivAI* pMinorAI, PlayerTypes eMajor)
+{
+	CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+	if (!pkMinorCivInfo) return NULL;
+
+	const char* szUAType = pkMinorCivInfo->GetUAType();
+	if (!szUAType || szUAType[0] == '\0') return NULL;
+
+	CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+	if (!pUAEntry) return NULL;
+
+	if (pMinorAI->IsAllies(eMajor))
+		return GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+	if (pMinorAI->IsFriends(eMajor))
+		return GC.getCityStateUAEffectEntry(pUAEntry->GetFriendEffectID());
+	return NULL;
+}
+#endif
+
 void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 {
 	// Permanent ally: no gold gifts from anyone
@@ -10887,15 +10939,37 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 
 		ChangeNumGoldGifted(ePlayer, iGold);
 
-		// Kathmandu CS UA: the first gold donation each turn refunds a % of the amount as faith
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Kathmandu CS UA: the first gold donation each turn refunds a % of the amount as faith. The
+		// refund is granted by THIS city-state's own UA effect (ally effect), so gifting to any other
+		// city-state neither grants nor consumes it.
 		if (MOD_SP_UNIQUE_CITYSTATE && !m_abFaithRefundUsedThisTurn[ePlayer])
 		{
-			const int iRefundPercent = GET_PLAYER(ePlayer).GetCSUAFaithRefundPerDonationPercent();
+			CvCityStateUAEffectEntry* pEffect = GetMinorUAGrantedEffect(this, ePlayer);
+			const int iRefundPercent = pEffect ? pEffect->GetFaithRefundPerDonationPercent() : 0;
 			if (iRefundPercent > 0)
 			{
 				GET_PLAYER(ePlayer).ChangeFaith((iGold * iRefundPercent) / 100);
 				m_abFaithRefundUsedThisTurn[ePlayer] = true;
+			}
+		}
+
+		// Monaco CS UA: the first gold donation to Monaco each turn is a wager. Influence is granted
+		// normally; in addition a weighted roll may refund a multiple of the gifted gold to the donor.
+		// Likewise keyed to THIS city-state's own UA effect, so a donation elsewhere is not a wager and
+		// does not consume this turn's wager.
+		if (MOD_SP_UNIQUE_CITYSTATE && !m_abGoldGambleUsedThisTurn[ePlayer])
+		{
+			CvCityStateUAEffectEntry* pEffect = GetMinorUAGrantedEffect(this, ePlayer);
+			if (pEffect && !pEffect->GetGoldDonationGambleEntries().empty())
+			{
+				m_abGoldGambleUsedThisTurn[ePlayer] = true;
+
+				const int iMultiplier = GET_PLAYER(ePlayer).GetCSUAGoldDonationGambleMultiplier();
+				// Store the outcome so the UI can report this turn's wager result on this city-state's panel
+				m_aiGoldGambleLastMultiplier[ePlayer] = iMultiplier;
+				if (iMultiplier > 0)
+					GET_PLAYER(ePlayer).GetTreasury()->ChangeGold((iGold * iMultiplier) / 100);
 			}
 		}
 #endif

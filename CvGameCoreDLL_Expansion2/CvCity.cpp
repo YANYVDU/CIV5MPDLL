@@ -15323,6 +15323,20 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 			int iInBase = getBasicYieldRateTimes100((YieldTypes)iIn, false, true) / 100;
 			iResult += (iInBase * iPercent) / 100;
 		}
+
+		// Monaco: unconditional yield-to-yield conversion (no trade route required). For YIELD_TOURISM the
+		// source is the city's total tourism (incl. great works); other inputs use the standard base rate.
+		for (int iIn = 0; iIn < NUM_YIELD_TYPES; iIn++)
+		{
+			int iMod = pEffectEntry->GetYieldToYield((YieldTypes)iIn, eYield);
+			if (iMod <= 0)
+				continue;
+
+			int iInBase = ((YieldTypes)iIn == YIELD_TOURISM)
+				? GetBaseTourism()
+				: getBasicYieldRateTimes100((YieldTypes)iIn, false, true) / 100;
+			iResult += (iInBase * iMod) / 100;
+		}
 	}
 
 	return iResult;

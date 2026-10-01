@@ -80,6 +80,19 @@ struct YieldToYieldViaTRToUCSEntry {
 	bool m_bRequireRouteToThisCS;
 };
 
+// Monaco: unconditional yield-to-yield conversion (no trade route requirement)
+struct YieldToYieldEntry {
+	int m_iInYieldType;
+	int m_iOutYieldType;
+	int m_iMod;
+};
+
+// Monaco: one outcome of the first-gold-donation wager
+struct GoldDonationGambleEntry {
+	int m_iWeight;
+	int m_iMultiplier;
+};
+
 struct PurchasedBuildingXPEntry {
 	int m_iBuildingClass;
 	int m_iDomain;
@@ -387,6 +400,8 @@ public:
 	int GetLuxuryHappinessModifier() const;
 	// Ragusa: percent modifier on the city's local-happiness cap
 	int GetLocalHappinessCapModifier() const;
+	// Monaco: golden-age building maintenance modifier for the ally
+	int GetGoldenAgeBuildingMaintenanceMod() const;
 	int GetFoodKeptModifierPerLuxury() const;
 	int GetTradeRouteGoldModifierPerLuxuryType() const;
 	// Panama (BaNaMa)
@@ -426,6 +441,10 @@ public:
 	// Mogadishu: whether the YieldToYieldViaTRToUCS entry for (eInYield -> eOutYield) requires a trade
 	// route TO this city-state (true) or any international trade route originating from the city (false)
 	bool YieldToYieldViaTRToUCSRequiresRouteToThisCS(int eInYield, int eOutYield) const;
+	// Monaco: unconditional conversion, Mod% of the city's eInYield output is granted as extra eOutYield output
+	int GetYieldToYield(int eInYield, int eOutYield) const;
+	// Monaco: the outcomes of the first-gold-donation wager (empty = effect not present)
+	const std::vector<GoldDonationGambleEntry>& GetGoldDonationGambleEntries() const { return m_vGoldDonationGamble; }
 	// Valletta: enemy city besieged by >= this many of our combat units cannot heal
 	int GetEnemyCityNoHealBesiegeCount() const;
 	// Valletta: buying the specified building class grants all units of the specified domain XP
@@ -607,6 +626,8 @@ private:
 	int m_iTradeRouteGoldModifierPerLuxuryType;
 	// Ragusa
 	int m_iLocalHappinessCapModifier;
+	// Monaco
+	int m_iGoldenAgeBuildingMaintenanceMod;
 	// Panama
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
@@ -633,6 +654,9 @@ private:
 	std::vector<UnitMaintenanceByPromotionEntry> m_vUnitMaintenanceByPromotion;
 	std::vector<InternalTRToUCSPerEraYieldEntry> m_vInternalTRToUCSPerEraYield;
 	std::vector<YieldToYieldViaTRToUCSEntry> m_vYieldToYieldViaTRToUCS;
+	// Monaco
+	std::vector<YieldToYieldEntry> m_vYieldToYield;
+	std::vector<GoldDonationGambleEntry> m_vGoldDonationGamble;
 	// Valletta
 	int m_iEnemyCityNoHealBesiegeCount;
 	std::vector<PurchasedBuildingXPEntry> m_vPurchasedBuildingXP;
@@ -873,6 +897,10 @@ public:
 	int GetLocalHappinessCapModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
 	int GetTradeRouteGoldModifierPerLuxuryType() const;
+	// Monaco
+	int GetGoldenAgeBuildingMaintenanceMod() const;
+	bool HasGoldDonationGamble() const { return !m_vGoldDonationGamble.empty(); }
+	const std::vector<GoldDonationGambleEntry>& GetGoldDonationGambleEntries() const { return m_vGoldDonationGamble; }
 	// Panama
 	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
@@ -1166,6 +1194,9 @@ protected:
 	int m_iTradeRouteGoldModifierPerLuxuryType;
 	// Ragusa
 	int m_iLocalHappinessCapModifier;
+	// Monaco
+	int m_iGoldenAgeBuildingMaintenanceMod;
+	std::vector<GoldDonationGambleEntry> m_vGoldDonationGamble;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	// Manila

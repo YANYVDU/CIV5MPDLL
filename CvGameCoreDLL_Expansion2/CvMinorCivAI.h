@@ -455,6 +455,10 @@ public:
 	// Kathmandu CS UA: whether each major has already claimed this turn's first-donation faith refund
 	bool GetFaithRefundUsedThisTurn(PlayerTypes eMajor) const;
 	void SetFaithRefundUsedThisTurn(PlayerTypes eMajor, bool bUsed);
+	// Monaco CS UA: whether each major has already made this turn's first gold donation (the wager)
+	bool GetGoldGambleUsedThisTurn(PlayerTypes eMajor) const;
+	// Monaco CS UA: the refund multiplier rolled for this turn's first gold donation (-1 = not wagered yet)
+	int GetGoldGambleLastMultiplier(PlayerTypes eMajor) const;
 	// La Venta CS UA: faith-purchase an idle pantheon belief into this city-state's religion (price doubles per purchase, per major)
 	bool DoCityStateFaithPantheonPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
 	int GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMajor) const;
@@ -679,6 +683,10 @@ private:
 	bool m_abFaithBeliefPurchasedByMajor[MAX_MAJOR_CIVS];
 	// Kathmandu CS UA: whether each major has already claimed this turn's first-donation faith refund
 	bool m_abFaithRefundUsedThisTurn[MAX_MAJOR_CIVS];
+	// Monaco CS UA: whether each major has already made this turn's first gold donation (the wager)
+	bool m_abGoldGambleUsedThisTurn[MAX_MAJOR_CIVS];
+	// Monaco CS UA: the refund multiplier rolled for this turn's first gold donation (-1 = not wagered yet)
+	int m_aiGoldGambleLastMultiplier[MAX_MAJOR_CIVS];
 	// La Venta CS UA: how many times each major has faith-purchased an idle pantheon belief (drives the doubling price)
 	int m_aiFaithPantheonPurchaseCount[MAX_MAJOR_CIVS];
 	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values

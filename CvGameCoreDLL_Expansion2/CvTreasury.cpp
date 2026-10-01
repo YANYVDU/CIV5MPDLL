@@ -821,7 +821,14 @@ int CvTreasury::GetBuildingGoldMaintenance() const
 	int iMaintenance = GetBaseBuildingGoldMaintenance();
 
 	// Player modifier
-	iMaintenance *= (100 + m_pPlayer->GetBuildingGoldMaintenanceMod());
+	int iMaintenanceMod = m_pPlayer->GetBuildingGoldMaintenanceMod();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Monaco CS UA: extra (negative) maintenance modifier while the ally is in a golden age, added
+	// into the same pool as the policy modifier
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		iMaintenanceMod += m_pPlayer->GetCSUABuildingMaintenanceMod();
+#endif
+	iMaintenance *= (100 + iMaintenanceMod);
 	iMaintenance /= 100;
 
 	// Modifier for difficulty level
@@ -845,6 +852,10 @@ int CvTreasury::GetBuildingGoldMaintenance() const
 	// Start Era mod
 	iMaintenance *= GC.getGame().getStartEraInfo().getBuildingMaintenancePercent();
 	iMaintenance /= 100;
+
+	// Building maintenance can never go negative (stacking modifiers below -100% must not pay gold back)
+	if (iMaintenance < 0)
+		iMaintenance = 0;
 
 	return iMaintenance;
 }

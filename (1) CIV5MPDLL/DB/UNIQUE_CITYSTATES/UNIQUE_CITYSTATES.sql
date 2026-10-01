@@ -202,7 +202,15 @@ CREATE TABLE CityStateUAEffects (
     CultureVictoryProgressModifier integer DEFAULT 0,
     -- Ragusa: percent modifier on a city's local-happiness cap (plain percent, 50 = cap x1.5). The base cap
     -- is the city population; consumed in CvCity::GetLocalHappiness.
-    LocalHappinessCapModifier integer DEFAULT 0
+    LocalHappinessCapModifier integer DEFAULT 0,
+    -- Monaco: percent modifier on the ally's building gold maintenance while the ally is in a golden age
+    -- (plain percent, -50 = -50%). Merged into the same pool as Policies.BuildingGoldMaintenanceMod in
+    -- CvTreasury::GetBuildingGoldMaintenance; the final maintenance is floored at 0.
+    GoldenAgeBuildingMaintenanceMod integer DEFAULT 0,
+    -- Optional note appended to this city-state's gold-gift tooltip while the effect is active (e.g. a
+    -- first-gift wager or refund). A Language text key; NULL/empty = no note. Keyed to the effect (hence
+    -- the city-state), so the UI shows it only on the panel of a city-state that actually grants one.
+    GoldGiftTooltip TEXT DEFAULT NULL REFERENCES Language_en_US(Tag)
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
@@ -345,6 +353,27 @@ create table CityStateUAEffect_YieldToYieldViaTRToUCS (
     OutYieldType text references Yields(Type),
     Percent integer default 0,
     RequireRouteToThisCS integer default 1
+);
+
+-- City State UA (Monaco): a percentage (Mod, plain percent) of the city's output in InYieldType is granted
+-- as extra OutYieldType output for every ally/friend city. Unlike _YieldToYieldViaTRToUCS this conversion
+-- requires no trade route. For InYieldType = YIELD_TOURISM the source is the city's total tourism
+-- (CvCity::GetBaseTourism, incl. great works); other inputs use the standard base yield rate.
+create table CityStateUAEffect_YieldToYield (
+    EffectType text references CityStateUAEffects(Type),
+    InYieldType text references Yields(Type),
+    OutYieldType text references Yields(Type),
+    Mod integer default 0
+);
+
+-- City State UA (Monaco): the first gold donation to this city-state each turn is a wager. Each row is one
+-- outcome; an outcome is picked with probability Weight / max(sum(Weight), 10000). Any probability mass
+-- below 10000 not covered by the rows is a "no payout" outcome. Multiplier is the percent of the gifted
+-- gold refunded to the donor (100 = full refund, 200 = double, 0 = nothing). A non-empty table = enabled.
+create table CityStateUAEffect_GoldDonationGamble (
+    EffectType text references CityStateUAEffects(Type),
+    Weight integer default 0,
+    Multiplier integer default 0
 );
 
 -- CityState UA (Valletta): buying the specified building class grants all units of the specified domain XP

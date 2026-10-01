@@ -33103,6 +33103,55 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 	}
 
 	//	------------------------------------------------------------------------
+	// Monaco CS UA: does the player's activated CSUA grant the first-donation wager?
+	bool CvPlayer::HasCSUAGoldDonationGamble() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->HasGoldDonationGamble() : false;
+	}
+
+	//	------------------------------------------------------------------------
+	// Monaco CS UA: roll the first-donation wager, returning the refund multiplier (0 = no payout).
+	// Each row is one outcome with probability Weight / max(sum(Weight), 10000); any mass below 10000
+	// not covered by the rows is a "no payout" outcome.
+	int CvPlayer::GetCSUAGoldDonationGambleMultiplier() const
+	{
+		if (!m_pCityStateUA)
+			return 0;
+
+		const std::vector<GoldDonationGambleEntry>& vGamble = m_pCityStateUA->GetGoldDonationGambleEntries();
+		int iWeightTotal = 0;
+		for (size_t i = 0; i < vGamble.size(); i++)
+			iWeightTotal += vGamble[i].m_iWeight;
+
+		if (iWeightTotal <= 0)
+			return 0;
+
+		const int iDenom = (iWeightTotal > 10000) ? iWeightTotal : 10000;
+		const int iRoll = GC.getGame().getJonRandNum(iDenom, "Monaco gold donation gamble");
+
+		int iCumulative = 0;
+		for (size_t i = 0; i < vGamble.size(); i++)
+		{
+			iCumulative += vGamble[i].m_iWeight;
+			if (iRoll < iCumulative)
+				return vGamble[i].m_iMultiplier;
+		}
+
+		return 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Monaco CS UA: building gold maintenance modifier applied while this player is in a golden age
+	int CvPlayer::GetCSUABuildingMaintenanceMod() const
+	{
+		const int iMod = m_pCityStateUA ? m_pCityStateUA->GetGoldenAgeBuildingMaintenanceMod() : 0;
+		if (iMod == 0 || !isGoldenAge())
+			return 0;
+
+		return iMod;
+	}
+
+	//	------------------------------------------------------------------------
 	// Quebec CS UA: percent by which this player's lifetime culture is inflated when another
 	// civilization computes its culture-victory progress against this player
 	int CvPlayer::GetCSUACultureVictoryProgressModifier() const

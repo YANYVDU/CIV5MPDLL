@@ -332,6 +332,9 @@ protected:
 	static int lGetCityStateSpecialistPointRate(lua_State* L);
 	static int lGetCSUAGreatPersonRateModifierFromGreatWorks(lua_State* L);
 	static int lGetCSUAFaithRefundPerDonationPercent(lua_State* L);
+	static int lHasCSUAGoldDonationGamble(lua_State* L);
+	static int lGetMinorCivGoldGambleUsedThisTurn(lua_State* L);
+	static int lGetMinorCivGoldGambleLastMultiplier(lua_State* L);
 	static int lGetCSUACityAttackIgnoreBuildingDefensePercent(lua_State* L);
 	static int lGetCSUAWoundedFixedDamage(lua_State* L);
 	static int lGetCSUAImmigrationRateModifier(lua_State* L);

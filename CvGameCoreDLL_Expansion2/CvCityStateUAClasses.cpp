@@ -338,6 +338,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_piImprovementHappiness(nullptr)
 	, m_piBuildingClassHappiness(nullptr)
 	, m_iLocalHappinessCapModifier(0)
+	, m_iGoldenAgeBuildingMaintenanceMod(0)
 	, m_piTradeRouteGoldPerSurplusResource(nullptr)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
@@ -505,6 +506,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
 	//Ragusa: percent modifier on the city's local-happiness cap
 	m_iLocalHappinessCapModifier						= kResults.GetInt("LocalHappinessCapModifier");
+	//Monaco: golden-age building maintenance modifier for the ally
+	m_iGoldenAgeBuildingMaintenanceMod				= kResults.GetInt("GoldenAgeBuildingMaintenanceMod");
 	m_iFoodKeptModifierPerLuxury						= kResults.GetInt("FoodKeptModifierPerLuxury");
 	m_iTradeRouteGoldModifierPerLuxuryType			= kResults.GetInt("TradeRouteGoldModifierPerLuxuryType");
 	m_iTradeRouteGoldModifierPerDistance				= kResults.GetInt("TradeRouteGoldModifierPerDistance");
@@ -744,6 +747,43 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			entry.m_iPercent = pResults->GetInt(2);
 			entry.m_bRequireRouteToThisCS = (pResults->GetInt(3) != 0);
 			m_vYieldToYieldViaTRToUCS.push_back(entry);
+		}
+	}
+	//Monaco: unconditional conversion, Mod% of the city's input yield is granted as extra output yield
+	{
+		m_vYieldToYield.clear();
+		std::string strKey("CityStateUAEffect_YieldToYield");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select YieldsIn.ID as InYieldID, YieldsOut.ID as OutYieldID, Mod from CityStateUAEffect_YieldToYield inner join Yields as YieldsIn on YieldsIn.Type = InYieldType inner join Yields as YieldsOut on YieldsOut.Type = OutYieldType where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			YieldToYieldEntry entry;
+			entry.m_iInYieldType = pResults->GetInt(0);
+			entry.m_iOutYieldType = pResults->GetInt(1);
+			entry.m_iMod = pResults->GetInt(2);
+			m_vYieldToYield.push_back(entry);
+		}
+	}
+	//Monaco: outcomes of the first-gold-donation wager
+	{
+		m_vGoldDonationGamble.clear();
+		std::string strKey("CityStateUAEffect_GoldDonationGamble");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Weight, Multiplier from CityStateUAEffect_GoldDonationGamble where EffectType = ?");
+		}
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			GoldDonationGambleEntry entry;
+			entry.m_iWeight = pResults->GetInt(0);
+			entry.m_iMultiplier = pResults->GetInt(1);
+			m_vGoldDonationGamble.push_back(entry);
 		}
 	}
 	//Valletta: buying the specified building class grants all units of the specified domain XP
@@ -1277,6 +1317,7 @@ int CvCityStateUAEffectEntry::GetGoldenAgeThresholdPerPopulation() const { retur
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvCityStateUAEffectEntry::GetLocalHappinessCapModifier() const { return m_iLocalHappinessCapModifier; }
+int CvCityStateUAEffectEntry::GetGoldenAgeBuildingMaintenanceMod() const { return m_iGoldenAgeBuildingMaintenanceMod; }
 int CvCityStateUAEffectEntry::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerLuxuryType() const { return m_iTradeRouteGoldModifierPerLuxuryType; }
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
@@ -1437,6 +1478,18 @@ bool CvCityStateUAEffectEntry::YieldToYieldViaTRToUCSRequiresRouteToThisCS(int e
 			return m_vYieldToYieldViaTRToUCS[i].m_bRequireRouteToThisCS;
 	}
 	return true;
+}
+
+// Monaco: unconditional conversion, sum of Mod for all rows matching (eInYield -> eOutYield)
+int CvCityStateUAEffectEntry::GetYieldToYield(int eInYield, int eOutYield) const
+{
+	int iTotal = 0;
+	for (size_t i = 0; i < m_vYieldToYield.size(); i++)
+	{
+		if (m_vYieldToYield[i].m_iInYieldType == eInYield && m_vYieldToYield[i].m_iOutYieldType == eOutYield)
+			iTotal += m_vYieldToYield[i].m_iMod;
+	}
+	return iTotal;
 }
 
 int CvCityStateUAEffectEntry::GetEnemyCityNoHealBesiegeCount() const { return m_iEnemyCityNoHealBesiegeCount; }
@@ -1623,6 +1676,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iGoldenAgeThresholdPerPopulation(0)
 	, m_iLuxuryHappinessModifier(0)
 	, m_iLocalHappinessCapModifier(0)
+	, m_iGoldenAgeBuildingMaintenanceMod(0)
 	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iTradeRouteGoldModifierPerLuxuryType(0)
 	, m_iTradeRouteGoldModifierPerDistance(0)
@@ -1754,6 +1808,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iGoldenAgeThresholdPerPopulation = 0;
 	m_iLuxuryHappinessModifier = 0;
 	m_iLocalHappinessCapModifier = 0;
+	m_iGoldenAgeBuildingMaintenanceMod = 0;
+	m_vGoldDonationGamble.clear();
 	m_iFoodKeptModifierPerLuxury = 0;
 	m_iTradeRouteGoldModifierPerLuxuryType = 0;
 	m_iTradeRouteGoldModifierPerDistance = 0;
@@ -2030,6 +2086,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
 	m_iLocalHappinessCapModifier						+= pEffect->GetLocalHappinessCapModifier() * iChange;
+	//Monaco: golden-age building maintenance modifier + first-donation wager outcomes
+	m_iGoldenAgeBuildingMaintenanceMod				+= pEffect->GetGoldenAgeBuildingMaintenanceMod() * iChange;
+	{
+		const std::vector<GoldDonationGambleEntry>& vGamble = pEffect->GetGoldDonationGambleEntries();
+		for (size_t i = 0; i < vGamble.size(); i++)
+		{
+			m_vGoldDonationGamble.push_back(vGamble[i]);
+		}
+	}
 	m_iFoodKeptModifierPerLuxury						+= pEffect->GetFoodKeptModifierPerLuxury() * iChange;
 	m_iTradeRouteGoldModifierPerLuxuryType			+= pEffect->GetTradeRouteGoldModifierPerLuxuryType() * iChange;
 	m_iTradeRouteGoldModifierPerDistance			+= pEffect->GetTradeRouteGoldModifierPerDistance() * iChange;
@@ -2517,6 +2582,7 @@ int CvPlayerCityStateUA::GetPolicyYieldModifier(YieldTypes eYieldType) const
 int CvPlayerCityStateUA::GetGoldenAgeThresholdPerPopulation() const { return m_iGoldenAgeThresholdPerPopulation; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
 int CvPlayerCityStateUA::GetLocalHappinessCapModifier() const { return m_iLocalHappinessCapModifier; }
+int CvPlayerCityStateUA::GetGoldenAgeBuildingMaintenanceMod() const { return m_iGoldenAgeBuildingMaintenanceMod; }
 int CvPlayerCityStateUA::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerLuxuryType() const { return m_iTradeRouteGoldModifierPerLuxuryType; }
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
