@@ -9914,16 +9914,42 @@ bool CvUnit::createGreatWork()
 			gDLL->GameplayUnitActivate(pDllUnit.get());
 		}
 
-		if(IsGreatPerson())
+		bool bNoDeathAfterGreatWork = false;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Buenos Aires CS UA: the ally's Great Person survives creating a Great Work,
+		// loses the ability to create another one, and keeps only a fraction of its concert tourism.
+		if (MOD_SP_UNIQUE_CITYSTATE)
 		{
-#if defined(MOD_EVENTS_GREAT_PEOPLE)
-			kPlayer.DoGreatPersonExpended(getUnitType(), this);
-#else
-			kPlayer.DoGreatPersonExpended(getUnitType());
-#endif
+			CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+			// Only the Great Musician (the unit that creates a music great work) is affected;
+			// Great Artists / Great Writers still die normally after creating their great work.
+			if (pCSUA != NULL && pCSUA->IsGPNoDeathAfterGreatWork()
+				&& eClass == (GreatWorkClass)GC.getInfoTypeForString("GREAT_WORK_MUSIC"))
+			{
+				bNoDeathAfterGreatWork = true;
+				SetGreatWork(NO_GREAT_WORK);
+				int iRetention = pCSUA->GetGPConcertTourismRetentionPercent();
+				if (iRetention > 0)
+				{
+					SetTourismBlastStrength(GetTourismBlastStrength() * iRetention / 100);
+				}
+			}
 		}
+#endif
 
-		kill(true);
+		if (!bNoDeathAfterGreatWork)
+		{
+			if(IsGreatPerson())
+			{
+#if defined(MOD_EVENTS_GREAT_PEOPLE)
+				kPlayer.DoGreatPersonExpended(getUnitType(), this);
+#else
+				kPlayer.DoGreatPersonExpended(getUnitType());
+#endif
+			}
+
+			kill(true);
+		}
 
 		bool bDontShowRewardPopup = GC.GetEngineUserInterface()->IsOptionNoRewardPopups();
 		Localization::String localizedText;
