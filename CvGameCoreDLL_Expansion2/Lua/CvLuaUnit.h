@@ -592,6 +592,8 @@ protected:
 
 	static int lGetExtraCombatPercent(lua_State* L);
 	static int lGetCombatModifierFromBuilding(lua_State* L);
+	static int lGetCSUACombatModifierInBorders(lua_State* L);
+	static int lGetCSUAFixedDamageScale(lua_State* L);
 	static int lGetFriendlyLandsModifier(lua_State* L);
 	static int lGetFriendlyLandsAttackModifier(lua_State* L);
 	static int lGetOutsideFriendlyLandsModifier(lua_State* L);

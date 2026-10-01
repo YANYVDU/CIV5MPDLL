@@ -15582,26 +15582,8 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 		// Hanoi CS UA: enemy units fighting inside the territory of a player holding this effect lose
-		// Combat Strength (plain percent per declaration of war that owner has suffered, accumulated).
-		// The battle plot owner is checked against this unit's own owner, and only enemies are affected.
-		// D9: the penalty is capped at -50% (the only implementation-chosen cap for this UA).
-		if (MOD_SP_UNIQUE_CITYSTATE)
-		{
-			PlayerTypes eHanoiPlotOwner = pBattlePlot->getOwner();
-			if (eHanoiPlotOwner != NO_PLAYER && eHanoiPlotOwner != getOwner())
-			{
-				CvPlayer& kHanoiPlotOwner = GET_PLAYER(eHanoiPlotOwner);
-				CvPlayerCityStateUA* pHanoiUA = kHanoiPlotOwner.GetPlayerCityStateUA();
-				if (pHanoiUA != NULL && pHanoiUA->GetEnemyCombatModifierInBordersPerBeenDoW() != 0
-					&& atWar(getTeam(), kHanoiPlotOwner.getTeam()))
-				{
-					int iHanoiPenalty = pHanoiUA->GetEnemyCombatModifierInBordersPerBeenDoW()
-						* kHanoiPlotOwner.GetNumTimesDeclaredWarOn();
-					if (iHanoiPenalty < -50) iHanoiPenalty = -50;
-					iModifier += iHanoiPenalty;
-				}
-			}
-		}
+		// Combat Strength. See GetCSUACombatModifierInBorders (shared with the UI combat panel).
+		iModifier += GetCSUACombatModifierInBorders(pBattlePlot);
 #endif
 
 		// Capital Defense
@@ -19803,6 +19785,66 @@ int CvUnit::GetCombatModifierFromBuilding() const
     }
 
     return iModifier;
+}
+
+//	--------------------------------------------------------------------------------
+/// Hanoi CS UA: Combat Strength modifier applied to this unit when fighting on pPlot, whose owner
+/// holds the "enemy units inside the borders lose Combat Strength per declaration of war" effect.
+/// Returns a non-positive plain percent (capped at -50), or 0 when the effect does not apply.
+int CvUnit::GetCSUACombatModifierInBorders(const CvPlot* pPlot) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pPlot == NULL) return 0;
+
+	PlayerTypes eOwner = pPlot->getOwner();
+	if (eOwner == NO_PLAYER || eOwner == getOwner()) return 0;
+
+	CvPlayer& kOwner = GET_PLAYER(eOwner);
+	CvPlayerCityStateUA* pUA = kOwner.GetPlayerCityStateUA();
+	if (pUA == NULL || pUA->GetEnemyCombatModifierInBordersPerBeenDoW() == 0) return 0;
+	if (!atWar(getTeam(), kOwner.getTeam())) return 0;
+
+	int iPenalty = pUA->GetEnemyCombatModifierInBordersPerBeenDoW() * kOwner.GetNumTimesDeclaredWarOn();
+	if (iPenalty < -50) iPenalty = -50;
+	return iPenalty;
+#else
+	return 0;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Hanoi CS UA: returns the percent (0..100) of fixed damage / fixed damage reduction this unit may
+/// still apply when fighting on pPlot. If the battle plot is owned by another player who holds this
+/// CSUA effect and the unit is at war with that owner, the effect scales the unit's fixed-damage
+/// contributions down: EnemyFixedDamageModifierInBorders is a negative percent modifier
+/// (ally -100 -> scale 0, friend -50 -> 50). Returns 100 (unaffected) in every other case.
+/// This is the single gate shared by every fixed-damage contribution inside InterveneInflictDamage,
+/// and is also consumed by the UI combat panel so the preview matches the real resolution.
+/// NOTE: the criterion is BATTLE PLOT OWNERSHIP, not the unit's own location.
+int CvUnit::GetCSUAFixedDamageScale(const CvPlot* pPlot) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pPlot == NULL) return 100;
+
+	PlayerTypes eOwner = pPlot->getOwner();
+	if (eOwner == NO_PLAYER || eOwner == getOwner()) return 100;
+
+	CvPlayerCityStateUA* pUA = GET_PLAYER(eOwner).GetPlayerCityStateUA();
+	if (pUA == NULL) return 100;
+
+	const int iNullifyPercent = pUA->GetEnemyFixedDamageModifierInBorders();
+	if (iNullifyPercent >= 0) return 100;
+	if (!atWar(getTeam(), GET_PLAYER(eOwner).getTeam())) return 100;
+
+	int iScale = 100 + iNullifyPercent;
+	if (iScale < 0) iScale = 0;
+	if (iScale > 100) iScale = 100;
+	return iScale;
+#else
+	return 100;
+#endif
 }
 
 //	--------------------------------------------------------------------------------

@@ -784,6 +784,8 @@ public:
 	void ChangeRangeSuppressModifier(int iValue);
 	int GetRangeSuppressModifier(const CvUnit* pOtherUnit) const;
 	int GetCombatModifierFromBuilding() const;
+	int GetCSUACombatModifierInBorders(const CvPlot* pPlot) const;
+	int GetCSUAFixedDamageScale(const CvPlot* pPlot) const;
 	int GetPromotionMaintenanceCost() const;
 	void ChangePromotionMaintenanceCost(int iValue);
 	int GetFreeExpPerTurn() const;

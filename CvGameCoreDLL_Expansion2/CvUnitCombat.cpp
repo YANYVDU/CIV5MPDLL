@@ -4693,34 +4693,6 @@ void CvUnitCombat::ApplyPostCityCombatEffects(CvUnit* pkAttacker, CvCity* pkDefe
 }
 
 #ifdef MOD_NEW_BATTLE_EFFECTS
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-// Hanoi CS UA: returns the percent (0..100) of fixed damage / fixed damage reduction a unit may still
-// apply when fighting on pBattlePlot. If the battle plot is owned by another player who holds this CSUA
-// effect and the unit is at war with that owner, the effect scales the unit's fixed-damage contributions
-// down: EnemyFixedDamageModifierInBorders is the PERCENT NULLIFIED (ally 100 -> scale 0, friend 50 -> 50).
-// Returns 100 (unaffected) in every other case. This is the single gate shared by every fixed-damage
-// contribution inside InterveneInflictDamage, so attacker/defender behaviour never diverges.
-// NOTE: the criterion is BATTLE PLOT OWNERSHIP, not the unit's own location. A unit attacking into
-// the owner's territory is scaled even if the unit itself stands outside the border, and a unit
-// fighting outside the border is not scaled even if it stands inside. This is deliberate: it matches
-// the "defend the homeland" reading of this UA and the battlefield semantics of the companion
-// effect "enemy units inside the borders lose Combat Strength".
-static int GetCSUAFixedDamageScale(const CvUnit* pUnit, const CvPlot* pBattlePlot)
-{
-	if (pUnit == nullptr || pBattlePlot == nullptr) return 100;
-	PlayerTypes eOwner = pBattlePlot->getOwner();
-	if (eOwner == NO_PLAYER || eOwner == pUnit->getOwner()) return 100;
-	CvPlayerCityStateUA* pUA = GET_PLAYER(eOwner).GetPlayerCityStateUA();
-	if (pUA == nullptr) return 100;
-	const int iDisabledPercent = pUA->GetEnemyFixedDamageModifierInBorders();
-	if (iDisabledPercent <= 0) return 100;
-	if (!atWar(pUnit->getTeam(), GET_PLAYER(eOwner).getTeam())) return 100;
-	int iScale = 100 - iDisabledPercent;
-	if (iScale < 0) iScale = 0;
-	if (iScale > 100) iScale = 100;
-	return iScale;
-}
-#endif
 inline static CvPlayerAI& getAttackerPlayer(const CvCombatInfo& kCombatInfo)
 {
 	CvUnit* pAttackerUnit = kCombatInfo.getUnit(BATTLE_UNIT_ATTACKER);
@@ -5024,8 +4996,8 @@ void CvUnitCombat::InterveneInflictDamage(InflictDamageContext* ctx)
 	// scale of the unit that owns it (100 = unaffected, so non-Hanoi games are unchanged).
 	{
 		const CvPlot* pCSUABattlePlot = ctx->pCombatInfo ? ctx->pCombatInfo->getPlot() : nullptr;
-		ctx->iAttackerFixedDamageScale = GetCSUAFixedDamageScale(ctx->pAttackerUnit, pCSUABattlePlot);
-		ctx->iDefenderFixedDamageScale = GetCSUAFixedDamageScale(ctx->pDefenderUnit, pCSUABattlePlot);
+		ctx->iAttackerFixedDamageScale = ctx->pAttackerUnit ? ctx->pAttackerUnit->GetCSUAFixedDamageScale(pCSUABattlePlot) : 100;
+		ctx->iDefenderFixedDamageScale = ctx->pDefenderUnit ? ctx->pDefenderUnit->GetCSUAFixedDamageScale(pCSUABattlePlot) : 100;
 	}
 #endif
 	UnitDamageChangeIntervene(ctx);
