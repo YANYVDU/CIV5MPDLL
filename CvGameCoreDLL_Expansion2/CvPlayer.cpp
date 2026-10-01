@@ -18487,6 +18487,25 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 			}
 		}
 	}
+	// Milan CS UA: per point of luxury happiness the player has, a nation-wide yield % modifier per
+	// YieldType. YieldMod is already in basis points per point (50 = +0.5% per point), so it is added
+	// directly; Cap is a plain percent and is converted to basis points.
+	if (m_pCityStateUA->HasLuxuryHappinessYieldModifiers())
+	{
+		const int iHappy = m_pCityStateUA->GetCachedLuxuryHappiness();
+		if (iHappy > 0)
+		{
+			const std::vector<LuxuryHappinessYieldModifierEntry>& vLH = m_pCityStateUA->GetLuxuryHappinessYieldModifiers();
+			for (size_t i = 0; i < vLH.size(); i++)
+			{
+				if (vLH[i].m_iYieldType != (int)eYield) continue;
+				int iTotal = iHappy * vLH[i].m_iYieldMod;
+				const int iCap = vLH[i].m_iCap * 100;
+				if (iCap > 0 && iTotal > iCap) iTotal = iCap;
+				iMod += iTotal;
+			}
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -20217,6 +20236,10 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// Manila UA: cache the happy-luxury type count once per turn so the per-yield hot path
 	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
 	m_pCityStateUA->CacheHappyLuxuryCount();
+
+	// Milan UA: cache the luxury happiness total once per turn so the per-yield hot path
+	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
+	m_pCityStateUA->CacheLuxuryHappiness();
 
 	// Bucharest UA: cache the world-wonder count and the number of diplomats stationed abroad once per
 	// turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads flat ints.

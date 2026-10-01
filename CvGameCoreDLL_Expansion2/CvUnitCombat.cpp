@@ -4987,6 +4987,24 @@ static void OutsideFriendlyLandsDamageIntervene(InflictDamageContext* ctx)
 	}
 }
 
+static void MilanDamageReductionIntervene(InflictDamageContext* ctx)
+{
+	// Milan CS UA: a unit takes Percent% less damage when the opposing side's team lacks the configured
+	// tech. Runs last so it scales the FINAL damage after every flat add/subtract above.
+	if (ctx->pDefenderUnit && ctx->piAttackInflictDamage)
+	{
+		const int iScale = ctx->pDefenderUnit->GetCSUADamageTakenScale(ctx->pAttackerUnit, ctx->pAttackerCity);
+		if (iScale != 100)
+			*ctx->piAttackInflictDamage = *ctx->piAttackInflictDamage * iScale / 100;
+	}
+	if (ctx->pAttackerUnit && ctx->piDefenseInflictDamage)
+	{
+		const int iScale = ctx->pAttackerUnit->GetCSUADamageTakenScale(ctx->pDefenderUnit, ctx->pDefenderCity);
+		if (iScale != 100)
+			*ctx->piDefenseInflictDamage = *ctx->piDefenseInflictDamage * iScale / 100;
+	}
+}
+
 void CvUnitCombat::InterveneInflictDamage(InflictDamageContext* ctx)
 {
 	if (ctx == nullptr) return;
@@ -5017,6 +5035,9 @@ void CvUnitCombat::InterveneInflictDamage(InflictDamageContext* ctx)
 #ifdef MOD_TRAITS_SIEGE_BONUS_IF_SAME_RELIGION
 	SiegeDamageInterveneIfSameReligion(ctx);
 #endif
+
+	// Milan CS UA: scales the final damage; must run after every flat add/subtract above.
+	MilanDamageReductionIntervene(ctx);
 
 	if (ctx->piAttackInflictDamage && *ctx->piAttackInflictDamage <= 0)
 	{

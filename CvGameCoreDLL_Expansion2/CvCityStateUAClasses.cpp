@@ -1138,6 +1138,45 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vBuildingClassTechCostModifiers.push_back(entry);
 		}
 	}
+	//Milan: each point of luxury happiness grants a nation-wide yield % modifier per YieldType
+	{
+		m_vLuxuryHappinessYieldModifiers.clear();
+		std::string strKey("CityStateUAEffect_LuxuryHappinessYieldModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod, Cap from CityStateUAEffect_LuxuryHappinessYieldModifiers inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			LuxuryHappinessYieldModifierEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			entry.m_iCap = pResults->GetInt(2);
+			m_vLuxuryHappinessYieldModifiers.push_back(entry);
+		}
+	}
+	//Milan: a unit takes Percent% less damage when the opposing side lacks the configured tech
+	{
+		m_vCombatDamageReductionVsNoTech.clear();
+		std::string strKey("CityStateUAEffect_CombatDamageReductionVsNoTech");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Technologies.ID as TechID, Percent from CityStateUAEffect_CombatDamageReductionVsNoTech inner join Technologies on Technologies.Type = TechType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			CombatDamageReductionVsNoTechEntry entry;
+			entry.m_iTech = pResults->GetInt(0);
+			entry.m_iPercent = pResults->GetInt(1);
+			m_vCombatDamageReductionVsNoTech.push_back(entry);
+		}
+	}
 
 	return true;
 }
@@ -1860,6 +1899,10 @@ void CvPlayerCityStateUA::Reset()
 	// Singapore
 	m_vBuildingClassGlobalYieldModifiers.clear();
 	m_vBuildingClassTechCostModifiers.clear();
+	// Milan
+	m_vLuxuryHappinessYieldModifiers.clear();
+	m_iCachedLuxuryHappiness = 0;
+	m_vCombatDamageReductionVsNoTech.clear();
 }
 
 void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
@@ -2375,6 +2418,27 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			BuildingClassTechCostModifierEntry entry = vEntries[i];
 			entry.m_iTechCostMod *= iChange;
 			m_vBuildingClassTechCostModifiers.push_back(entry);
+		}
+	}
+	//Milan: each point of luxury happiness grants a nation-wide yield % modifier per YieldType
+	{
+		const std::vector<LuxuryHappinessYieldModifierEntry>& vEntries = pEffect->GetLuxuryHappinessYieldModifiers();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			LuxuryHappinessYieldModifierEntry entry = vEntries[i];
+			entry.m_iYieldMod *= iChange;
+			entry.m_iCap *= iChange;
+			m_vLuxuryHappinessYieldModifiers.push_back(entry);
+		}
+	}
+	//Milan: a unit takes Percent% less damage when the opposing side lacks the configured tech
+	{
+		const std::vector<CombatDamageReductionVsNoTechEntry>& vEntries = pEffect->GetCombatDamageReductionVsNoTech();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			CombatDamageReductionVsNoTechEntry entry = vEntries[i];
+			entry.m_iPercent *= iChange;
+			m_vCombatDamageReductionVsNoTech.push_back(entry);
 		}
 	}
 }
@@ -3000,6 +3064,25 @@ bool CvPlayerCityStateUA::HasBuildingClassGlobalYieldModifiers() const
 bool CvPlayerCityStateUA::HasBuildingClassTechCostModifiers() const
 {
 	return !m_vBuildingClassTechCostModifiers.empty();
+}
+// Milan: cached luxury happiness total, refreshed once per doTurn in CvPlayer::RefreshCSAllUAEffects.
+// GetCSUAYieldPercentModifier is a per-yield hot path, so the scan is skipped unless the player holds a
+// Milan luxury-happiness effect.
+int CvPlayerCityStateUA::GetCachedLuxuryHappiness() const { return m_iCachedLuxuryHappiness; }
+void CvPlayerCityStateUA::CacheLuxuryHappiness()
+{
+	m_iCachedLuxuryHappiness = 0;
+	if (!m_pPlayer) return;
+	if (m_vLuxuryHappinessYieldModifiers.empty()) return;
+	m_iCachedLuxuryHappiness = m_pPlayer->GetLuxuryHappinessBaseTotal();
+}
+bool CvPlayerCityStateUA::HasLuxuryHappinessYieldModifiers() const
+{
+	return !m_vLuxuryHappinessYieldModifiers.empty();
+}
+bool CvPlayerCityStateUA::HasCombatDamageReductionVsNoTech() const
+{
+	return !m_vCombatDamageReductionVsNoTech.empty();
 }
 int CvPlayerCityStateUA::GetCachedSpecialCityPopulation(int iSpecialCityType) const
 {

@@ -19863,6 +19863,45 @@ int CvUnit::GetCSUAFixedDamageScale(const CvPlot* pPlot) const
 }
 
 //	--------------------------------------------------------------------------------
+/// Milan CS UA: returns the scale percent (0..100) applied to the damage THIS unit takes when the
+/// opposing side's team has NOT researched the configured tech (Percent is a plain percent:
+/// TECH_RIFLING / 25 -> the unit takes only 75% damage). Multiple matching rows are applied in turn.
+/// The opponent is the other unit's owner, or, when there is no opposing unit, the opposing city's
+/// owner. Shared by the real resolution (CvUnitCombat::InterveneInflictDamage) and the UI combat panel
+/// (CvLuaUnit / EnemyUnitPanel.lua) so the preview matches the real result.
+int CvUnit::GetCSUADamageTakenScale(const CvUnit* pOtherUnit, const CvCity* pOtherCity) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pCSUA == NULL || !pCSUA->HasCombatDamageReductionVsNoTech())
+		return 100;
+
+	TeamTypes eOppTeam = NO_TEAM;
+	if (pOtherUnit != NULL)
+		eOppTeam = GET_PLAYER(pOtherUnit->getOwner()).getTeam();
+	else if (pOtherCity != NULL)
+		eOppTeam = GET_PLAYER(pOtherCity->getOwner()).getTeam();
+
+	if (eOppTeam == NO_TEAM)
+		return 100;
+
+	int iScale = 100;
+	const std::vector<CombatDamageReductionVsNoTechEntry>& vEntries = pCSUA->GetCombatDamageReductionVsNoTech();
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		if (GET_TEAM(eOppTeam).GetTeamTechs()->HasTech((TechTypes)vEntries[i].m_iTech))
+			continue;
+		iScale = iScale * (100 - vEntries[i].m_iPercent) / 100;
+		if (iScale < 0) iScale = 0;
+	}
+	return iScale;
+#else
+	return 100;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
 /// Get extra cost for unit maintenance in Gold from promotions
 int CvUnit::GetPromotionMaintenanceCost() const
 {

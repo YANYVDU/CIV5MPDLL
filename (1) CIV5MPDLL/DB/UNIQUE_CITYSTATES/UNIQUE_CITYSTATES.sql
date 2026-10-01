@@ -709,3 +709,28 @@ create table CityStateUAEffect_InternationalLandTradeRouteYieldPerEra (
     YieldType  text references Yields(Type),
     YieldMod   integer default 0
 );
+
+-- CityState UA (Milan): each point of luxury happiness the ally/friend has grants a nation-wide yield
+-- percentage modifier per YieldType. YieldMod is in BASIS POINTS per point of luxury happiness
+-- (ally 50 = +0.5% per point, i.e. every 2 points +1%; friend 25 = every 4 points +1%). Cap is a plain
+-- percent cap on the accumulated sum (0 = uncapped). The luxury happiness total is cached once per
+-- doTurn (CvPlayerCityStateUA::CacheLuxuryHappiness) because CvPlayer::GetCSUAYieldPercentModifier is a
+-- per-yield hot path.
+create table CityStateUAEffect_LuxuryHappinessYieldModifiers (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType  text references Yields(Type),
+    YieldMod   integer default 0,
+    Cap        integer default 0
+);
+
+-- CityState UA (Milan): a unit takes Percent% less damage when the opposing side's team has NOT
+-- researched TechType (e.g. TECH_RIFLING / 25 = -25% damage taken). Applies in both directions: when
+-- the unit is the defender being hit and when it is the attacker taking the counter-blow. Percent is a
+-- PLAIN PERCENT. Consumed by CvUnit::GetCSUADamageTakenScale, which is shared by the real resolution
+-- (CvUnitCombat::InterveneInflictDamage) and the UI combat panel (CvLuaUnit / EnemyUnitPanel.lua) so
+-- the preview matches the real result.
+create table CityStateUAEffect_CombatDamageReductionVsNoTech (
+    EffectType text references CityStateUAEffects(Type),
+    TechType   text references Technologies(Type),
+    Percent    integer default 0
+);

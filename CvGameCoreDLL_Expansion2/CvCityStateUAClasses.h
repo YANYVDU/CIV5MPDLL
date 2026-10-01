@@ -231,6 +231,25 @@ struct BuildingClassTechCostModifierEntry {
 	int m_iTechCostMod;
 };
 
+// Milan: each point of luxury happiness the player has grants a nation-wide yield % modifier per
+// YieldType. YieldMod is in BASIS POINTS per point of luxury happiness (50 = +0.5% per point, i.e.
+// every 2 points +1%); Cap is a plain percent cap on the accumulated sum (0 = uncapped). The luxury
+// happiness total is cached once per doTurn (CvPlayerCityStateUA::CacheLuxuryHappiness).
+struct LuxuryHappinessYieldModifierEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
+	int m_iCap;
+};
+
+// Milan: a unit takes Percent% less damage when the opposing side's team has NOT researched TechType
+// (Percent is a PLAIN PERCENT, 25 = -25% damage taken). Applies in both directions: when the unit is
+// the defender being hit and when it is the attacker taking the counter-blow. Consumed live by
+// CvUnit::GetCSUADamageTakenScale, which is shared by the real resolution and the UI combat panel.
+struct CombatDamageReductionVsNoTechEntry {
+	int m_iTech;
+	int m_iPercent;
+};
+
 // A city type matches when: EVERY And-row matches AND (the Or table is empty OR at least one Or-row matches).
 class CvSpecialCityTypeEntry : public CvBaseInfo
 {
@@ -498,6 +517,9 @@ public:
 	// Singapore
 	const std::vector<BuildingClassGlobalYieldModifierEntry>& GetBuildingClassGlobalYieldModifiers() const { return m_vBuildingClassGlobalYieldModifiers; }
 	const std::vector<BuildingClassTechCostModifierEntry>& GetBuildingClassTechCostModifiers() const { return m_vBuildingClassTechCostModifiers; }
+	// Milan
+	const std::vector<LuxuryHappinessYieldModifierEntry>& GetLuxuryHappinessYieldModifiers() const { return m_vLuxuryHappinessYieldModifiers; }
+	const std::vector<CombatDamageReductionVsNoTechEntry>& GetCombatDamageReductionVsNoTech() const { return m_vCombatDamageReductionVsNoTech; }
 
 private:
 	// Florence
@@ -685,6 +707,9 @@ private:
 	// Singapore
 	std::vector<BuildingClassGlobalYieldModifierEntry> m_vBuildingClassGlobalYieldModifiers;
 	std::vector<BuildingClassTechCostModifierEntry> m_vBuildingClassTechCostModifiers;
+	// Milan
+	std::vector<LuxuryHappinessYieldModifierEntry> m_vLuxuryHappinessYieldModifiers;
+	std::vector<CombatDamageReductionVsNoTechEntry> m_vCombatDamageReductionVsNoTech;
 };
 
 //======================================================================================================
@@ -1055,6 +1080,20 @@ public:
 	// Shares the world-wonder count cached for Bucharest (GetCachedWorldWonderCount).
 	int GetWorldWonderHappiness() const;
 
+	// Milan: each point of luxury happiness the player has grants a nation-wide yield % modifier per
+	// YieldType (YieldMod is basis points per point of luxury happiness, 50 = +0.5% per point).
+	const std::vector<LuxuryHappinessYieldModifierEntry>& GetLuxuryHappinessYieldModifiers() const { return m_vLuxuryHappinessYieldModifiers; }
+	bool HasLuxuryHappinessYieldModifiers() const;
+	// Milan: cached luxury happiness total, refreshed once per doTurn. GetCSUAYieldPercentModifier is a
+	// per-yield hot path, so the scan is not run there.
+	int GetCachedLuxuryHappiness() const;
+	void CacheLuxuryHappiness();
+
+	// Milan: a unit takes Percent% less damage when the opposing side's team lacks the configured tech.
+	// Evaluated live in the combat path (low frequency), so no per-turn cache is needed.
+	const std::vector<CombatDamageReductionVsNoTechEntry>& GetCombatDamageReductionVsNoTech() const { return m_vCombatDamageReductionVsNoTech; }
+	bool HasCombatDamageReductionVsNoTech() const;
+
 	void Reset();
 
 protected:
@@ -1252,6 +1291,11 @@ protected:
 	// Singapore
 	std::vector<BuildingClassGlobalYieldModifierEntry> m_vBuildingClassGlobalYieldModifiers;
 	std::vector<BuildingClassTechCostModifierEntry> m_vBuildingClassTechCostModifiers;
+	// Milan
+	std::vector<LuxuryHappinessYieldModifierEntry> m_vLuxuryHappinessYieldModifiers;
+	// Milan: cached luxury happiness total, refreshed once per doTurn (in CvPlayer::RefreshCSAllUAEffects)
+	int m_iCachedLuxuryHappiness;
+	std::vector<CombatDamageReductionVsNoTechEntry> m_vCombatDamageReductionVsNoTech;
 };
 
 #endif // CVCITYSTATEUACLASSES_H
