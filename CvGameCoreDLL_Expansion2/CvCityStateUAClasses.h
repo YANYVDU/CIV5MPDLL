@@ -185,6 +185,7 @@ enum SpecialCityConditionTypes {
 	SPECIAL_CITY_CONDITION_IS_PUPPET,      // Boolean, no Value: the city is a puppet (annexed cities do not qualify)
 	SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT, // Boolean, no Value: the city sits on a different landmass than the owner's original capital
 	SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR, // Boolean, no Value: the city is the origin of both an international land route and an international sea route
+	SPECIAL_CITY_CONDITION_NO_INTERNATIONAL_TR, // Boolean, no Value: the city is neither the origin nor the destination of any international trade route
 	NUM_SPECIAL_CITY_CONDITION_TYPES
 };
 
@@ -383,6 +384,7 @@ public:
 	int GetCapitalYieldModifierPerFollowingCity(int i) const;
 	// Kyzyl (KeZiLe)
 	int GetLandTradeRouteDistancePerTradeSlot() const;
+	int GetTradeRouteGoldPercentNonNeighbor() const;
 	// Dubai (DiBai)
 	int GetHappinessPerGoldDonated() const;
 	int GetGoldDonationInterval() const;
@@ -607,6 +609,7 @@ private:
 	int* m_piCapitalYieldModifierPerFollowingCity;
 	// Kyzyl
 	int m_iLandTradeRouteDistancePerTradeSlot;
+	int m_iTradeRouteGoldPercentNonNeighbor;
 	// Dubai
 	int m_iHappinessPerGoldDonated;
 	int m_iGoldDonationInterval;
@@ -878,6 +881,7 @@ public:
 	int GetCapitalYieldModifierPerFollowingCity(YieldTypes eYieldType) const;
 	// Kyzyl
 	int GetLandTradeRouteDistancePerTradeSlot() const;
+	int GetTradeRouteGoldPercentNonNeighbor() const;
 	// Dubai
 	int GetHappinessPerGoldDonated() const;
 	int GetGoldDonationInterval() const;
@@ -1177,6 +1181,7 @@ protected:
 	int m_iDenounceImmunityCount;
 	std::vector<int> m_aiCapitalYieldModifierPerFollowingCity;
 	int m_iLandTradeRouteDistancePerTradeSlot;
+	int m_iTradeRouteGoldPercentNonNeighbor;
 	int m_iHappinessPerGoldDonated;
 	int m_iGoldDonationInterval;
 	int m_iWonderProductionPerDonationHappiness;

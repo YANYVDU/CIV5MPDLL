@@ -24,6 +24,7 @@ SpecialCityConditionTypes ParseSpecialCityCondition(const char* szType)
 	if (strcmp(szType, "IS_PUPPET") == 0) return SPECIAL_CITY_CONDITION_IS_PUPPET;
 	if (strcmp(szType, "IS_OTHER_CONTINENT") == 0) return SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT;
 	if (strcmp(szType, "HAS_LAND_AND_SEA_INTERNATIONAL_TR") == 0) return SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR;
+	if (strcmp(szType, "NO_INTERNATIONAL_TR") == 0) return SPECIAL_CITY_CONDITION_NO_INTERNATIONAL_TR;
 	return SPECIAL_CITY_CONDITION_NONE;
 }
 
@@ -34,7 +35,8 @@ bool IsBooleanSpecialCityCondition(SpecialCityConditionTypes eType)
 	    || eType == SPECIAL_CITY_CONDITION_IS_COASTAL
 	    || eType == SPECIAL_CITY_CONDITION_IS_PUPPET
 	    || eType == SPECIAL_CITY_CONDITION_IS_OTHER_CONTINENT
-	    || eType == SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR;
+	    || eType == SPECIAL_CITY_CONDITION_HAS_LAND_AND_SEA_INTERNATIONAL_TR
+	    || eType == SPECIAL_CITY_CONDITION_NO_INTERNATIONAL_TR;
 }
 }
 
@@ -185,6 +187,23 @@ bool CvSpecialCityTypeEntry::EvaluateCondition(const SpecialCityConditionEntry& 
 		}
 		return false;
 	}
+	case SPECIAL_CITY_CONDITION_NO_INTERNATIONAL_TR:
+	{
+		// True when the city is neither the origin nor the destination of any international trade route.
+		// Mirrors the origin test in HAS_LAND_AND_SEA_INTERNATIONAL_TR and adds the destination side.
+		CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+		if (pTrade == NULL) return true;
+		for (uint iTradeRoute = 0; iTradeRoute < pTrade->m_aTradeConnections.size(); iTradeRoute++)
+		{
+			if (pTrade->IsTradeRouteIndexEmpty(iTradeRoute)) continue;
+			const TradeConnection* pConnection = &(pTrade->m_aTradeConnections[iTradeRoute]);
+			if (!pTrade->IsConnectionInternational(*pConnection)) continue;
+			if ((pConnection->m_iOriginX == pCity->getX() && pConnection->m_iOriginY == pCity->getY()) ||
+			    (pConnection->m_iDestX   == pCity->getX() && pConnection->m_iDestY   == pCity->getY()))
+				return false;
+		}
+		return true;
+	}
 	default:
 		return false;
 	}
@@ -306,6 +325,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_bDenounceImmunity(false)
 	, m_piCapitalYieldModifierPerFollowingCity(nullptr)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
+	, m_iTradeRouteGoldPercentNonNeighbor(0)
 	, m_iHappinessPerGoldDonated(0)
 	, m_iGoldDonationInterval(0)
 	, m_iWonderProductionPerDonationHappiness(0)
@@ -489,6 +509,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	kUtility.PopulateArrayByValue(m_piCapitalYieldModifierPerFollowingCity, "Yields", "CityStateUAEffect_CapitalYieldModifierPerFollowingCity", "YieldType", "EffectType", GetType(), "Modifier");
 
 	m_iLandTradeRouteDistancePerTradeSlot			= kResults.GetInt("LandTradeRouteDistancePerTradeSlot");
+	m_iTradeRouteGoldPercentNonNeighbor				= kResults.GetInt("TradeRouteGoldPercentNonNeighbor");
 
 	m_iHappinessPerGoldDonated						= kResults.GetInt("HappinessPerGoldDonated");
 	m_iGoldDonationInterval							= kResults.GetInt("GoldDonationInterval");
@@ -1292,6 +1313,7 @@ bool CvCityStateUAEffectEntry::IsDenounceImmunity() const { return m_bDenounceIm
 int CvCityStateUAEffectEntry::GetCapitalYieldModifierPerFollowingCity(int i) const { CvAssertMsg(i < NUM_YIELD_TYPES, "Index out of bounds"); CvAssertMsg(i > -1, "Index out of bounds"); return m_piCapitalYieldModifierPerFollowingCity ? m_piCapitalYieldModifierPerFollowingCity[i] : 0; }
 
 int CvCityStateUAEffectEntry::GetLandTradeRouteDistancePerTradeSlot() const { return m_iLandTradeRouteDistancePerTradeSlot; }
+int CvCityStateUAEffectEntry::GetTradeRouteGoldPercentNonNeighbor() const { return m_iTradeRouteGoldPercentNonNeighbor; }
 
 int CvCityStateUAEffectEntry::GetHappinessPerGoldDonated() const { return m_iHappinessPerGoldDonated; }
 int CvCityStateUAEffectEntry::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }
@@ -1668,6 +1690,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iReligiousPressureModifierPerHolyCity(0)
 	, m_iDenounceImmunityCount(0)
 	, m_iLandTradeRouteDistancePerTradeSlot(0)
+	, m_iTradeRouteGoldPercentNonNeighbor(0)
 	, m_iHappinessPerGoldDonated(0)
 	, m_iGoldDonationInterval(0)
 	, m_iWonderProductionPerDonationHappiness(0)
@@ -1797,6 +1820,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iDenounceImmunityCount = 0;
 	m_aiCapitalYieldModifierPerFollowingCity.assign(NUM_YIELD_TYPES, 0);
 	m_iLandTradeRouteDistancePerTradeSlot = 0;
+	m_iTradeRouteGoldPercentNonNeighbor = 0;
 	m_iHappinessPerGoldDonated = 0;
 	m_iGoldDonationInterval = 0;
 	m_iWonderProductionPerDonationHappiness = 0;
@@ -2066,6 +2090,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	}
 
 	m_iLandTradeRouteDistancePerTradeSlot			+= pEffect->GetLandTradeRouteDistancePerTradeSlot() * iChange;
+	m_iTradeRouteGoldPercentNonNeighbor				+= pEffect->GetTradeRouteGoldPercentNonNeighbor() * iChange;
 
 	m_iHappinessPerGoldDonated						+= pEffect->GetHappinessPerGoldDonated() * iChange;
 	m_iGoldDonationInterval							+= pEffect->GetGoldDonationInterval() * iChange;
@@ -2562,6 +2587,7 @@ int CvPlayerCityStateUA::GetCapitalYieldModifierPerFollowingCity(YieldTypes eYie
 	return (eYieldType >= 0 && (int)eYieldType < (int)m_aiCapitalYieldModifierPerFollowingCity.size()) ? m_aiCapitalYieldModifierPerFollowingCity[(int)eYieldType] : 0;
 }
 int CvPlayerCityStateUA::GetLandTradeRouteDistancePerTradeSlot() const { return m_iLandTradeRouteDistancePerTradeSlot; }
+int CvPlayerCityStateUA::GetTradeRouteGoldPercentNonNeighbor() const { return m_iTradeRouteGoldPercentNonNeighbor; }
 int CvPlayerCityStateUA::GetHappinessPerGoldDonated() const { return m_iHappinessPerGoldDonated; }
 int CvPlayerCityStateUA::GetGoldDonationInterval() const { return m_iGoldDonationInterval; }
 int CvPlayerCityStateUA::GetWonderProductionPerDonationHappiness() const { return m_iWonderProductionPerDonationHappiness; }

@@ -4078,6 +4078,14 @@ int CvPlayerTrade::GetTradeRouteRange (DomainTypes eDomain, CvCity* pOriginCity)
 
 	int iRangeModifier = pOriginCity->getTradeRouteDomainRangeModifier(eDomain);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Kyzyl CS UA: +X% land trade-route range per trade-route slot the player has.
+	if (eDomain == DOMAIN_LAND)
+	{
+		iRangeModifier += (int)GetNumTradeRoutesPossible() * m_pPlayer->GetCSUALandTradeRouteRangePerSlot();
+	}
+#endif
+
 	iRange = iBaseRange;
 	iRange += iTraitRange;
 	iRange += iExtendedRange;

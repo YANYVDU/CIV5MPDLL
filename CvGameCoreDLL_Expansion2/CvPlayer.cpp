@@ -18608,7 +18608,23 @@ int CvPlayer::GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnect
 		}
 	}
 
+	// Kyzyl UA: +% route gold when the destination is NOT one of our neighbors. Uses the cached
+	// distance-based proximity (city-states included); anything other than PLAYER_PROXIMITY_NEIGHBORS
+	// counts as a non-neighbor.
+	int iNonNeighborMod = m_pCityStateUA->GetTradeRouteGoldPercentNonNeighbor();
+	if (iNonNeighborMod != 0 && kTradeConnection.m_eDestOwner != NO_PLAYER
+		&& GetProximityToPlayer(kTradeConnection.m_eDestOwner) != PLAYER_PROXIMITY_NEIGHBORS)
+	{
+		iModifier += iNonNeighborMod;
+	}
+
 	return iModifier;
+}
+// Kyzyl CS UA: land trade-route range % gained per trade-route slot the player has (plain percent,
+// 10 = +10% per slot). Consumed by CvPlayerTrade::GetTradeRouteRange for DOMAIN_LAND.
+int CvPlayer::GetCSUALandTradeRouteRangePerSlot() const
+{
+	return m_pCityStateUA ? m_pCityStateUA->GetLandTradeRouteDistancePerTradeSlot() : 0;
 }
 int CvPlayer::GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const
 {

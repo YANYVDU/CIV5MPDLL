@@ -110,8 +110,10 @@ CREATE TABLE CityStateUAEffects (
     ReligiousPressureModifierPerHolyCity            integer DEFAULT 0,
     -- Jerusalem: player who is the ally of this city-state cannot be denounced
     DenounceImmunity                                boolean DEFAULT 0,
-    -- Kyzyl: trade route cap -> trade route distance
+    -- Kyzyl: trade route cap -> trade route distance (plain percent per trade-route slot; 10 = +10% per slot)
     LandTradeRouteDistancePerTradeSlot              integer DEFAULT 0,
+    -- Kyzyl: trade route gold % when the destination player is not a neighbor (plain percent, 100 = +100%; city-states included)
+    TradeRouteGoldPercentNonNeighbor                integer DEFAULT 0,
     -- Dubai: donation counting
     HappinessPerGoldDonated                         integer DEFAULT 0,
     GoldDonationInterval                            integer DEFAULT 0,
