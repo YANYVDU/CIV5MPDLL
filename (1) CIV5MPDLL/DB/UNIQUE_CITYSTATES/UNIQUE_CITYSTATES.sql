@@ -81,8 +81,6 @@ CREATE TABLE CityStateUAEffects (
     ZOCRangeBonus                                   integer DEFAULT 0,
     -- Budapest: immune to river crossing penalties
     LandUnitsImmuneRiverCrossing                    boolean DEFAULT 0,
-    -- Budapest: per light/heavy cavalry unit owned, the ally's total unit maintenance is reduced by this many gold (ally 4 / friend 2), floored at 0
-    UnitMaintenancePerCavalry                       integer DEFAULT 0,
     -- Budapest: the ally's units deal this much extra flat HP damage against a wounded target (both when attacking and when defending)
     WoundedFixedDamage                              integer DEFAULT 0,
     -- Hanoi: fixed damage in borders + peace treaty + being declared war on
@@ -227,6 +225,15 @@ create table CityStateUAEffect_GreatPersonPoints (
     EffectType text references CityStateUAEffects(Type),
     SpecialistType text references Specialists(Type),
     Points integer default 0
+);
+
+-- CityState UA (Budapest): each owned unit holding PromotionType changes the player's total unit
+-- maintenance by MaintenanceChange gold (negative = cheaper, positive = more expensive). One unit may
+-- match several rows and all matches add up; consumed in CvTreasury::CalculateUnitCost.
+create table CityStateUAEffect_UnitMaintenanceByPromotion (
+    EffectType text references CityStateUAEffects(Type),
+    PromotionType text references UnitPromotions(Type),
+    MaintenanceChange integer default 0
 );
 
 -- CityState UA: born great person grants extra specialist yield (per SpecialistType)

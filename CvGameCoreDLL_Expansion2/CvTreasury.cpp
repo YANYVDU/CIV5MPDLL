@@ -644,18 +644,20 @@ int CvTreasury::CalculateUnitCost(int& iFreeUnits, int& iPaidUnits, int& iBaseUn
 
 	//iFinalCost /= 100;
 
-	// Budapest UA: per light/heavy cavalry unit owned by the ally, reduce the total unit maintenance
-	// (ally 4 / friend 2). The std::max(0, ...) below floors the final result at 0.
+	// Budapest UA: each owned unit holding a promotion listed in the city-state UA sub-table changes the
+	// total unit maintenance by a configured amount (negative = cheaper, positive = more expensive).
+	// Promotions are matched by root promotion: PROMOTION_HITANDRUN for hit-and-run (mounted archer) units,
+	// PROMOTION_KNIGHT_COMBAT for heavy cavalry. The std::max(0, ...) below floors the final result at 0.
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (MOD_SP_UNIQUE_CITYSTATE)
 	{
 		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
-		if (pCSUA != NULL && pCSUA->GetUnitMaintenancePerCavalry() != 0)
+		if (pCSUA != NULL)
 		{
-			UnitCombatTypes eMounted = (UnitCombatTypes)GC.getInfoTypeForString("UNITCOMBAT_MOUNTED", true);
-			if (eMounted != NO_UNITCOMBAT)
+			const std::vector<UnitMaintenanceByPromotionEntry>& vEntries = pCSUA->GetUnitMaintenanceByPromotionEntries();
+			for (size_t i = 0; i < vEntries.size(); i++)
 			{
-				dFinalCost -= pCSUA->GetUnitMaintenancePerCavalry() * m_pPlayer->GetNumUnitsWithUnitCombat(eMounted);
+				dFinalCost += m_pPlayer->getUnitCountFromHasPromotion((PromotionTypes)vEntries[i].m_iPromotion) * vEntries[i].m_iChange;
 			}
 		}
 	}

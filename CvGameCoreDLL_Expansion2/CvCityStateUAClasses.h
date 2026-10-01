@@ -54,6 +54,11 @@ struct GreatWorkGreatPersonPointsEntry {
 	bool m_bCapitalOnly;
 };
 
+struct UnitMaintenanceByPromotionEntry {
+	int m_iPromotion;
+	int m_iChange;
+};
+
 struct InternalTRToUCSPerEraYieldEntry {
 	int m_iYieldType;
 	int m_iYieldValue;
@@ -284,7 +289,6 @@ public:
 	int GetZOCRangeBonus() const;
 	// Budapest (BuDaPeiSi)
 	bool IsLandUnitsImmuneRiverCrossing() const;
-	int GetUnitMaintenancePerCavalry() const;
 	int GetWoundedFixedDamage() const;
 	// Ha Noi (HeNei)
 	int GetEnemyFixedDamageModifierInBorders() const;
@@ -354,6 +358,8 @@ public:
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
 	const std::vector<BornGreatPersonAllyInfluenceModEntry>& GetBornAllyInfluenceModEntries() const { return m_vBornAllyInfluenceMod; }
+	// Budapest: per owned unit holding a promotion, changes the player's total unit maintenance
+	const std::vector<UnitMaintenanceByPromotionEntry>& GetUnitMaintenanceByPromotionEntries() const { return m_vUnitMaintenanceByPromotion; }
 	// Prague (BuLaGe) / Yerevan (AiLiWen): building-class yield percentage modifiers
 	int GetBuildingClassYieldModifiers(int i, int j) const;
 	// Brussels (BuLuSaiEr): specialist great person point accumulation rate (%)
@@ -494,7 +500,6 @@ private:
 	int m_iZOCRangeBonus;
 	// Budapest
 	bool m_bLandUnitsImmuneRiverCrossing;
-	int m_iUnitMaintenancePerCavalry;
 	int m_iWoundedFixedDamage;
 	// Ha Noi
 	int m_iEnemyFixedDamageModifierInBorders;
@@ -565,6 +570,7 @@ private:
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
+	std::vector<UnitMaintenanceByPromotionEntry> m_vUnitMaintenanceByPromotion;
 	std::vector<InternalTRToUCSPerEraYieldEntry> m_vInternalTRToUCSPerEraYield;
 	std::vector<YieldToYieldViaTRToUCSEntry> m_vYieldToYieldViaTRToUCS;
 	// Valletta
@@ -754,7 +760,6 @@ public:
 	int GetZOCRangeBonus() const;
 	// Budapest
 	bool IsLandUnitsImmuneRiverCrossing() const;
-	int GetUnitMaintenancePerCavalry() const;
 	int GetWoundedFixedDamage() const;
 	// Ha Noi
 	int GetEnemyFixedDamageModifierInBorders() const;
@@ -827,6 +832,7 @@ public:
 	int GetEnemyCityNoHealBesiegeCount() const;
 	const std::vector<PurchasedBuildingXPEntry>& GetPurchasedBuildingXPEntries() const;
 	const std::vector<UnitBornYieldEntry>& GetUnitBornYieldEntries() const;
+	const std::vector<UnitMaintenanceByPromotionEntry>& GetUnitMaintenanceByPromotionEntries() const;
 	int GetSpyGarrisonYieldModifier(YieldTypes eYieldType) const;
 	bool HasSpyGarrisonYieldModifiers() const;
 	int GetSpyKillGainSpyProgress() const;
@@ -1026,7 +1032,6 @@ protected:
 	int m_iMilitaryUnitProductionXP;
 	int m_iZOCRangeBonus;
 	int m_iLandUnitsImmuneRiverCrossingCount;
-	int m_iUnitMaintenancePerCavalry;
 	int m_iWoundedFixedDamage;
 	int m_iEnemyFixedDamageModifierInBorders;
 	int m_iCulturePerWarPeace;
@@ -1088,6 +1093,7 @@ protected:
 	std::vector<BornGreatPersonSpecialistYieldEntry> m_vBornGreatPersonSpecialistYield;
 	std::vector<BuildingGreatPersonPointsEntry> m_vBuildingGPP;
 	std::vector<BornGreatPersonAllyInfluenceModEntry> m_vBornAllyInfluenceMod;
+	std::vector<UnitMaintenanceByPromotionEntry> m_vUnitMaintenanceByPromotion;
 	// Valletta
 	int m_iEnemyCityNoHealBesiegeCount;
 	std::vector<PurchasedBuildingXPEntry> m_vPurchasedBuildingXP;

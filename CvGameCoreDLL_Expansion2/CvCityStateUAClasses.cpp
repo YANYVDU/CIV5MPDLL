@@ -282,7 +282,6 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iMilitaryUnitProductionXP(0)
 	, m_iZOCRangeBonus(0)
 	, m_bLandUnitsImmuneRiverCrossing(false)
-	, m_iUnitMaintenancePerCavalry(0)
 	, m_iWoundedFixedDamage(0)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
@@ -432,7 +431,6 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_bLandUnitsImmuneRiverCrossing				= kResults.GetBool("LandUnitsImmuneRiverCrossing");
 
-	m_iUnitMaintenancePerCavalry					= kResults.GetInt("UnitMaintenancePerCavalry");
 	m_iWoundedFixedDamage							= kResults.GetInt("WoundedFixedDamage");
 
 	m_iEnemyFixedDamageModifierInBorders			= kResults.GetInt("EnemyFixedDamageModifierInBorders");
@@ -605,6 +603,25 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			entry.m_iRate = pResults->GetInt(2);
 			entry.m_bCapitalOnly = (pResults->GetInt(3) != 0);
 			m_vGreatWorkGreatPersonPoints.push_back(entry);
+		}
+	}
+	//Budapest: each owned unit holding a promotion changes the player's total unit maintenance (negative = cheaper)
+	{
+		m_vUnitMaintenanceByPromotion.clear();
+		std::string strKey("CityStateUAEffect_UnitMaintenanceByPromotion");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select UnitPromotions.ID as PromotionID, MaintenanceChange from CityStateUAEffect_UnitMaintenanceByPromotion inner join UnitPromotions on UnitPromotions.Type = PromotionType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			UnitMaintenanceByPromotionEntry entry;
+			entry.m_iPromotion = pResults->GetInt(0);
+			entry.m_iChange = pResults->GetInt(1);
+			m_vUnitMaintenanceByPromotion.push_back(entry);
 		}
 	}
 	//Brussels: specified unit class's one-shot great person output modifier (%)
@@ -1093,7 +1110,6 @@ int CvCityStateUAEffectEntry::GetMilitaryUnitProductionXP() const { return m_iMi
 int CvCityStateUAEffectEntry::GetZOCRangeBonus() const { return m_iZOCRangeBonus; }
 
 bool CvCityStateUAEffectEntry::IsLandUnitsImmuneRiverCrossing() const { return m_bLandUnitsImmuneRiverCrossing; }
-int CvCityStateUAEffectEntry::GetUnitMaintenancePerCavalry() const { return m_iUnitMaintenancePerCavalry; }
 int CvCityStateUAEffectEntry::GetWoundedFixedDamage() const { return m_iWoundedFixedDamage; }
 
 int CvCityStateUAEffectEntry::GetEnemyFixedDamageModifierInBorders() const { return m_iEnemyFixedDamageModifierInBorders; }
@@ -1463,7 +1479,6 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iMilitaryUnitProductionXP(0)
 	, m_iZOCRangeBonus(0)
 	, m_iLandUnitsImmuneRiverCrossingCount(0)
-	, m_iUnitMaintenancePerCavalry(0)
 	, m_iWoundedFixedDamage(0)
 	, m_iEnemyFixedDamageModifierInBorders(0)
 	, m_iCulturePerWarPeace(0)
@@ -1588,7 +1603,6 @@ void CvPlayerCityStateUA::Reset()
 	m_iMilitaryUnitProductionXP = 0;
 	m_iZOCRangeBonus = 0;
 	m_iLandUnitsImmuneRiverCrossingCount = 0;
-	m_iUnitMaintenancePerCavalry = 0;
 	m_iWoundedFixedDamage = 0;
 	m_iEnemyFixedDamageModifierInBorders = 0;
 	m_iCulturePerWarPeace = 0;
@@ -1751,6 +1765,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iEnemyCityNoHealBesiegeCount = 0;
 	m_vPurchasedBuildingXP.clear();
 	m_vUnitBornYield.clear();
+	m_vUnitMaintenanceByPromotion.clear();
 	// Bogota
 	m_vSpecialCityYieldModifiers.clear();
 	m_vSpecialCityCountYieldModifiers.clear();
@@ -1809,7 +1824,15 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 	m_iLandUnitsImmuneRiverCrossingCount += (pEffect->IsLandUnitsImmuneRiverCrossing() ? iChange : 0);
 
-	m_iUnitMaintenancePerCavalry					+= pEffect->GetUnitMaintenancePerCavalry() * iChange;
+	{
+		const std::vector<UnitMaintenanceByPromotionEntry>& vEntries = pEffect->GetUnitMaintenanceByPromotionEntries();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			UnitMaintenanceByPromotionEntry entry = vEntries[i];
+			entry.m_iChange *= iChange;
+			m_vUnitMaintenanceByPromotion.push_back(entry);
+		}
+	}
 	m_iWoundedFixedDamage							+= pEffect->GetWoundedFixedDamage() * iChange;
 
 	m_iEnemyFixedDamageModifierInBorders			+= pEffect->GetEnemyFixedDamageModifierInBorders() * iChange;
@@ -2259,7 +2282,7 @@ int CvPlayerCityStateUA::GetMilitaryUnitProductionXP() const { return m_iMilitar
 
 int CvPlayerCityStateUA::GetZOCRangeBonus() const { return m_iZOCRangeBonus; }
 bool CvPlayerCityStateUA::IsLandUnitsImmuneRiverCrossing() const { return m_iLandUnitsImmuneRiverCrossingCount > 0; }
-int CvPlayerCityStateUA::GetUnitMaintenancePerCavalry() const { return m_iUnitMaintenancePerCavalry; }
+const std::vector<UnitMaintenanceByPromotionEntry>& CvPlayerCityStateUA::GetUnitMaintenanceByPromotionEntries() const { return m_vUnitMaintenanceByPromotion; }
 int CvPlayerCityStateUA::GetWoundedFixedDamage() const { return m_iWoundedFixedDamage; }
 int CvPlayerCityStateUA::GetEnemyFixedDamageModifierInBorders() const { return m_iEnemyFixedDamageModifierInBorders; }
 int CvPlayerCityStateUA::GetCulturePerWarPeace() const { return m_iCulturePerWarPeace; }
