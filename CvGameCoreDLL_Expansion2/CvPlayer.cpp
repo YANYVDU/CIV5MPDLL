@@ -32682,6 +32682,14 @@ bool CvPlayer::IsCSAMilitaryXPSeaAir() const
 }
 
 //	------------------------------------------------------------------------
+// Budapest UA: extra flat damage this player's units deal against an already-wounded target
+int CvPlayer::GetCSAWoundedFixedDamage() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) ? pCSUA->GetWoundedFixedDamage() : 0;
+}
+
+//	------------------------------------------------------------------------
 int CvPlayer::GetCSSeaTradeGoldBonus() const
 {
 	int iAllies = GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MARITIME);

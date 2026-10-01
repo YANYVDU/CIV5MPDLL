@@ -333,6 +333,7 @@ protected:
 	static int lGetCSUAGreatPersonRateModifierFromGreatWorks(lua_State* L);
 	static int lGetCSUAFaithRefundPerDonationPercent(lua_State* L);
 	static int lGetCSUACityAttackIgnoreBuildingDefensePercent(lua_State* L);
+	static int lGetCSUAWoundedFixedDamage(lua_State* L);
 	static int lGetCSUAImmigrationRateModifier(lua_State* L);
 	static int lGetCSUAEmigrationRateModifier(lua_State* L);
 	static int lGetCSUACultureVictoryProgressModifier(lua_State* L);

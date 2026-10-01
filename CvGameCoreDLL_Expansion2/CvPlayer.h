@@ -1859,6 +1859,8 @@ public:
 	int GetCSAMilitaryXPPerTurnModifier() const;
 	// Sidon CS UA: whether the militaristic per-turn XP also applies to sea and air domains
 	bool IsCSAMilitaryXPSeaAir() const;
+	// Budapest CS UA: extra flat damage this player's units deal against an already-wounded target
+	int GetCSAWoundedFixedDamage() const;
 	// Vatican CS UA: spread speed of the founder's religion (ally +50% / friend +20%)
 	int GetCSUAReligionSpreadSpeedModifier() const;
 	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
