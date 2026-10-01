@@ -199,7 +199,10 @@ CREATE TABLE CityStateUAEffects (
     -- target's lifetime culture is inflated by this percent (50 = +50%), lowering the computed influence
     -- percentage and thus making culture domination of the target harder. Plain percent; read by
     -- CvPlayerCulture (GetInfluenceLevel and the other victory-progress denominators).
-    CultureVictoryProgressModifier integer DEFAULT 0
+    CultureVictoryProgressModifier integer DEFAULT 0,
+    -- Ragusa: percent modifier on a city's local-happiness cap (plain percent, 50 = cap x1.5). The base cap
+    -- is the city population; consumed in CvCity::GetLocalHappiness.
+    LocalHappinessCapModifier integer DEFAULT 0
 );
 
 -- UA type table (shown to players): pairs a city-state's ally and friend effects
@@ -536,6 +539,14 @@ create table CityStateUAEffect_ImprovementYieldModifiers (
 create table CityStateUAEffect_ImprovementHappiness (
     EffectType text references CityStateUAEffects(Type),
     ImprovementType text references Improvements(Type),
+    Happiness integer default 0
+);
+
+-- CityState UA (Ragusa): each owned building of the specified class grants flat local happiness to the city
+-- (e.g. HOSPITAL / 2 = +2 local happiness per owned hospital). Consumed in CvCity::GetLocalHappiness.
+create table CityStateUAEffect_BuildingClassHappiness (
+    EffectType text references CityStateUAEffects(Type),
+    BuildingClassType text references BuildingClasses(Type),
     Happiness integer default 0
 );
 

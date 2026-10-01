@@ -12776,6 +12776,18 @@ int CvCity::GetLocalHappiness() const
 			}
 		}
 	}
+	// CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
+	if (pCityStateUA && pCityStateUA->HasBuildingClassHappiness())
+	{
+		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+		{
+			int iBCHappy = pCityStateUA->GetBuildingClassHappiness((BuildingClassTypes)iBC);
+			if (iBCHappy != 0)
+			{
+				iLocalHappiness += iBCHappy * GetNumBuildingClass((BuildingClassTypes)iBC);
+			}
+		}
+	}
 #endif
 
 	if (GetWeLoveTheKingDayCounter() > 0)
@@ -12792,6 +12804,18 @@ int CvCity::GetLocalHappiness() const
 		iLocalHappinessCap = (iLocalHappinessCap * 20) + 15;
 		iLocalHappinessCap /= 30;
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// CityState UA (Ragusa): percent modifier on the city's local-happiness cap
+	if (pCityStateUA)
+	{
+		int iCapMod = pCityStateUA->GetLocalHappinessCapModifier();
+		if (iCapMod != 0)
+		{
+			iLocalHappinessCap = iLocalHappinessCap * (100 + iCapMod) / 100;
+		}
+	}
+#endif
 
 	if(iLocalHappinessCap < iLocalHappiness)
 	{

@@ -351,6 +351,8 @@ public:
 	int GetGoldenAgeThresholdPerPopulation() const;
 	// Malacca (MaLiuJia)
 	int GetLuxuryHappinessModifier() const;
+	// Ragusa: percent modifier on the city's local-happiness cap
+	int GetLocalHappinessCapModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
 	int GetTradeRouteGoldModifierPerLuxuryType() const;
 	// Panama (BaNaMa)
@@ -403,6 +405,8 @@ public:
 	int GetImprovementYieldModifiers(int i, int j) const;
 	// Zanzibar: each worked plot holding the specified improvement grants flat local happiness
 	int GetImprovementHappiness(int i) const;
+	// Ragusa: each owned building of the specified class grants flat local happiness
+	int GetBuildingClassHappiness(int i) const;
 	// Hormuz: each unit of surplus strategic resource grants trade-route gold %
 	int GetTradeRouteGoldPerSurplusResource(int i) const;
 	// Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
@@ -559,6 +563,8 @@ private:
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
 	int m_iTradeRouteGoldModifierPerLuxuryType;
+	// Ragusa
+	int m_iLocalHappinessCapModifier;
 	// Panama
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
@@ -597,6 +603,8 @@ private:
 	int** m_ppiImprovementYieldModifiers;
 	// Zanzibar
 	int* m_piImprovementHappiness;
+	// Ragusa
+	int* m_piBuildingClassHappiness;
 	// Hormuz
 	int* m_piTradeRouteGoldPerSurplusResource;
 	// Gangtok
@@ -813,6 +821,8 @@ public:
 	int GetGoldenAgeThresholdPerPopulation() const;
 	// Malacca
 	int GetLuxuryHappinessModifier() const;
+	// Ragusa
+	int GetLocalHappinessCapModifier() const;
 	int GetFoodKeptModifierPerLuxury() const;
 	int GetTradeRouteGoldModifierPerLuxuryType() const;
 	// Panama
@@ -856,6 +866,9 @@ public:
 	// Zanzibar
 	int GetImprovementHappiness(ImprovementTypes eImprovement) const;
 	bool HasImprovementHappiness() const;
+	// Ragusa
+	int GetBuildingClassHappiness(BuildingClassTypes eBuildingClass) const;
+	bool HasBuildingClassHappiness() const;
 	// Hormuz
 	int GetTradeRouteGoldPerSurplusResource(ResourceTypes eResource) const;
 	bool HasTradeRouteGoldPerSurplusResource() const;
@@ -1083,6 +1096,8 @@ protected:
 	int m_iLuxuryHappinessModifier;
 	int m_iFoodKeptModifierPerLuxury;
 	int m_iTradeRouteGoldModifierPerLuxuryType;
+	// Ragusa
+	int m_iLocalHappinessCapModifier;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	// Manila
@@ -1123,6 +1138,9 @@ protected:
 	// Zanzibar
 	std::vector<int> m_aiImprovementHappiness;
 	int m_iImprovementHappinessCount;
+	// Ragusa
+	std::vector<int> m_aiBuildingClassHappiness;
+	int m_iBuildingClassHappinessCount;
 	// Hormuz
 	std::vector<int> m_aiTradeRouteGoldPerSurplusResource;
 	int m_iTradeRouteGoldPerSurplusResourceCount;

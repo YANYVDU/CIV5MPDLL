@@ -336,6 +336,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iDiplomaticPrestigePerCity(0)
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_piImprovementHappiness(nullptr)
+	, m_piBuildingClassHappiness(nullptr)
+	, m_iLocalHappinessCapModifier(0)
 	, m_piTradeRouteGoldPerSurplusResource(nullptr)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
@@ -379,6 +381,7 @@ CvCityStateUAEffectEntry::~CvCityStateUAEffectEntry(void)
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiResourceYieldModifiers);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiImprovementYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piImprovementHappiness);
+	SAFE_DELETE_ARRAY(m_piBuildingClassHappiness);
 	SAFE_DELETE_ARRAY(m_piTradeRouteGoldPerSurplusResource);
 	SAFE_DELETE_ARRAY(m_piImmigrantYieldModifiers);
 	SAFE_DELETE_ARRAY(m_piHappinessYieldModifiers);
@@ -500,6 +503,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	kUtility.PopulateArrayByValue(m_piPolicyYieldModifiers, "Yields", "CityStateUAEffect_PolicyYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 
 	m_iLuxuryHappinessModifier						= kResults.GetInt("LuxuryHappinessModifier");
+	//Ragusa: percent modifier on the city's local-happiness cap
+	m_iLocalHappinessCapModifier						= kResults.GetInt("LocalHappinessCapModifier");
 	m_iFoodKeptModifierPerLuxury						= kResults.GetInt("FoodKeptModifierPerLuxury");
 	m_iTradeRouteGoldModifierPerLuxuryType			= kResults.GetInt("TradeRouteGoldModifierPerLuxuryType");
 	m_iTradeRouteGoldModifierPerDistance				= kResults.GetInt("TradeRouteGoldModifierPerDistance");
@@ -563,6 +568,8 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
 	kUtility.PopulateArrayByValue(m_piImprovementHappiness, "Improvements", "CityStateUAEffect_ImprovementHappiness", "ImprovementType", "EffectType", GetType(), "Happiness");
+	//CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
+	kUtility.PopulateArrayByValue(m_piBuildingClassHappiness, "BuildingClasses", "CityStateUAEffect_BuildingClassHappiness", "BuildingClassType", "EffectType", GetType(), "Happiness");
 	//Gangtok
 	m_iHappinessPerFollowingCity = kResults.GetInt("HappinessPerFollowingCity");
 	m_iFaithInfluencePurchaseCostDivisor = kResults.GetInt("FaithInfluencePurchaseCostDivisor");
@@ -1192,6 +1199,7 @@ int CvCityStateUAEffectEntry::GetPolicyYieldModifier(YieldTypes eYieldType) cons
 int CvCityStateUAEffectEntry::GetGoldenAgeThresholdPerPopulation() const { return m_iGoldenAgeThresholdPerPopulation; }
 
 int CvCityStateUAEffectEntry::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvCityStateUAEffectEntry::GetLocalHappinessCapModifier() const { return m_iLocalHappinessCapModifier; }
 int CvCityStateUAEffectEntry::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerLuxuryType() const { return m_iTradeRouteGoldModifierPerLuxuryType; }
 int CvCityStateUAEffectEntry::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
@@ -1266,6 +1274,15 @@ int CvCityStateUAEffectEntry::GetImprovementHappiness(int i) const
 	if (!m_piImprovementHappiness || i < 0 || i >= GC.getNumImprovementInfos())
 		return 0;
 	return m_piImprovementHappiness[i];
+}
+
+int CvCityStateUAEffectEntry::GetBuildingClassHappiness(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	if (!m_piBuildingClassHappiness || i < 0 || i >= GC.getNumBuildingClassInfos())
+		return 0;
+	return m_piBuildingClassHappiness[i];
 }
 
 int CvCityStateUAEffectEntry::GetTradeRouteGoldPerSurplusResource(int i) const
@@ -1528,6 +1545,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iGoldDonationInfluenceModifierPerSeaRoute(0)
 	, m_iGoldenAgeThresholdPerPopulation(0)
 	, m_iLuxuryHappinessModifier(0)
+	, m_iLocalHappinessCapModifier(0)
 	, m_iFoodKeptModifierPerLuxury(0)
 	, m_iTradeRouteGoldModifierPerLuxuryType(0)
 	, m_iTradeRouteGoldModifierPerDistance(0)
@@ -1548,6 +1566,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_ppiImprovementYieldModifiers(NULL)
 	, m_iImprovementYieldModifierCount(0)
 	, m_iImprovementHappinessCount(0)
+	, m_iBuildingClassHappinessCount(0)
 	, m_iTradeRouteGoldPerSurplusResourceCount(0)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
@@ -1657,6 +1676,7 @@ void CvPlayerCityStateUA::Reset()
 	m_aiPolicyYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_iGoldenAgeThresholdPerPopulation = 0;
 	m_iLuxuryHappinessModifier = 0;
+	m_iLocalHappinessCapModifier = 0;
 	m_iFoodKeptModifierPerLuxury = 0;
 	m_iTradeRouteGoldModifierPerLuxuryType = 0;
 	m_iTradeRouteGoldModifierPerDistance = 0;
@@ -1677,6 +1697,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iImprovementYieldModifierCount = 0;
 	m_iImprovementHappinessCount = 0;
 	m_aiImprovementHappiness.assign(GC.getNumImprovementInfos(), 0);
+	m_iBuildingClassHappinessCount = 0;
+	m_aiBuildingClassHappiness.assign(GC.getNumBuildingClassInfos(), 0);
 	m_iTradeRouteGoldPerSurplusResourceCount = 0;
 	m_aiTradeRouteGoldPerSurplusResource.assign(GC.getNumResourceInfos(), 0);
 	m_iHappinessPerFollowingCity = 0;
@@ -1924,6 +1946,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iGoldenAgeThresholdPerPopulation				+= pEffect->GetGoldenAgeThresholdPerPopulation() * iChange;
 
 	m_iLuxuryHappinessModifier						+= pEffect->GetLuxuryHappinessModifier() * iChange;
+	m_iLocalHappinessCapModifier						+= pEffect->GetLocalHappinessCapModifier() * iChange;
 	m_iFoodKeptModifierPerLuxury						+= pEffect->GetFoodKeptModifierPerLuxury() * iChange;
 	m_iTradeRouteGoldModifierPerLuxuryType			+= pEffect->GetTradeRouteGoldModifierPerLuxuryType() * iChange;
 	m_iTradeRouteGoldModifierPerDistance			+= pEffect->GetTradeRouteGoldModifierPerDistance() * iChange;
@@ -1998,6 +2021,16 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		{
 			m_aiImprovementHappiness[iImp] += iHappy * iChange;
 			m_iImprovementHappinessCount += iChange;
+		}
+	}
+	//CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
+	for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+	{
+		int iHappy = pEffect->GetBuildingClassHappiness(iBC);
+		if (iHappy != 0)
+		{
+			m_aiBuildingClassHappiness[iBC] += iHappy * iChange;
+			m_iBuildingClassHappinessCount += iChange;
 		}
 	}
 	//CityState UA (Hormuz): each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
@@ -2358,6 +2391,7 @@ int CvPlayerCityStateUA::GetPolicyYieldModifier(YieldTypes eYieldType) const
 }
 int CvPlayerCityStateUA::GetGoldenAgeThresholdPerPopulation() const { return m_iGoldenAgeThresholdPerPopulation; }
 int CvPlayerCityStateUA::GetLuxuryHappinessModifier() const { return m_iLuxuryHappinessModifier; }
+int CvPlayerCityStateUA::GetLocalHappinessCapModifier() const { return m_iLocalHappinessCapModifier; }
 int CvPlayerCityStateUA::GetFoodKeptModifierPerLuxury() const { return m_iFoodKeptModifierPerLuxury; }
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerLuxuryType() const { return m_iTradeRouteGoldModifierPerLuxuryType; }
 int CvPlayerCityStateUA::GetTradeRouteGoldModifierPerDistance() const { return m_iTradeRouteGoldModifierPerDistance; }
@@ -2486,6 +2520,16 @@ int CvPlayerCityStateUA::GetImprovementHappiness(ImprovementTypes eImprovement) 
 bool CvPlayerCityStateUA::HasImprovementHappiness() const
 {
 	return m_iImprovementHappinessCount > 0;
+}
+
+int CvPlayerCityStateUA::GetBuildingClassHappiness(BuildingClassTypes eBuildingClass) const
+{
+	return (eBuildingClass >= 0 && (int)eBuildingClass < (int)m_aiBuildingClassHappiness.size()) ? m_aiBuildingClassHappiness[(int)eBuildingClass] : 0;
+}
+
+bool CvPlayerCityStateUA::HasBuildingClassHappiness() const
+{
+	return m_iBuildingClassHappinessCount > 0;
 }
 
 int CvPlayerCityStateUA::GetTradeRouteGoldPerSurplusResource(ResourceTypes eResource) const
