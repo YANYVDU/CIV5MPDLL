@@ -59,6 +59,14 @@ struct UnitMaintenanceByPromotionEntry {
 	int m_iChange;
 };
 
+struct ResourcePerCityEntry {
+	int m_iResource;
+	int m_iQuantity;
+	int m_iCityScale;
+	bool m_bLargerScaleValid;
+	bool m_bMustCoastal;
+};
+
 struct InternalTRToUCSPerEraYieldEntry {
 	int m_iYieldType;
 	int m_iYieldValue;
@@ -296,8 +304,9 @@ public:
 	int GetEnemyCombatModifierInBordersPerBeenDoW() const;
 	// Mbanza Kongo (MuBanZhaGangGuo)
 	int GetUnitProductionModifierPerCity() const;
-	int GetManpowerPerCity() const;
 	int GetCombatBonusPerTechDifference() const;
+	// Mbanza Kongo: each owned city provides the listed resource (see CityStateUAEffect_ResourcePerCity)
+	const std::vector<ResourcePerCityEntry>& GetResourcePerCityEntries() const { return m_vResourcePerCity; }
 	// Sidon (XiDun)
 	int GetCityAttackIgnoreBuildingDefensePercent() const;
 	int GetMilitaryXPPerTurnModifier() const;
@@ -507,8 +516,8 @@ private:
 	int m_iEnemyCombatModifierInBordersPerBeenDoW;
 	// Mbanza Kongo
 	int m_iUnitProductionModifierPerCity;
-	int m_iManpowerPerCity;
 	int m_iCombatBonusPerTechDifference;
+	std::vector<ResourcePerCityEntry> m_vResourcePerCity;
 	// Sidon
 	int m_iCityAttackIgnoreBuildingDefensePercent;
 	int m_iMilitaryXPPerTurnModifier;
@@ -718,8 +727,9 @@ public:
 	void Init(CvPlayer* pPlayer);
 	void Uninit();
 
-	// Add / remove an effect when friendship status changes
-	void ApplyEffect(int iEffectID, int iChange);  // iChange = +1 (apply) or -1 (remove)
+	// Add an effect. iChange is always +1: dropping an effect is done by Reset() followed by a full
+	// re-apply in CvPlayer::RefreshCSAllUAEffects, never by passing -1 here.
+	void ApplyEffect(int iEffectID, int iChange);
 
 	// Query accumulated modifier values for each effect type
 	// Sofia (spy/coup UA)
@@ -767,8 +777,8 @@ public:
 	int GetEnemyCombatModifierInBordersPerBeenDoW() const;
 	// Mbanza Kongo
 	int GetUnitProductionModifierPerCity() const;
-	int GetManpowerPerCity() const;
 	int GetCombatBonusPerTechDifference() const;
+	const std::vector<ResourcePerCityEntry>& GetResourcePerCityEntries() const;
 	// Sidon
 	int GetCityAttackIgnoreBuildingDefensePercent() const;
 	int GetMilitaryXPPerTurnModifier() const;
@@ -1037,8 +1047,8 @@ protected:
 	int m_iCulturePerWarPeace;
 	int m_iEnemyCombatModifierInBordersPerBeenDoW;
 	int m_iUnitProductionModifierPerCity;
-	int m_iManpowerPerCity;
 	int m_iCombatBonusPerTechDifference;
+	std::vector<ResourcePerCityEntry> m_vResourcePerCity;
 	int m_iCityAttackIgnoreBuildingDefensePercent;
 	int m_iMilitaryXPPerTurnModifier;
 	int m_iMilitaryXPSeaAir;

@@ -664,6 +664,7 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetExtraCombatPercent);
 	Method(GetCombatModifierFromBuilding);
 	Method(GetCSUACombatModifierInBorders);
+	Method(GetCSUACombatModifier);
 	Method(GetCSUAFixedDamageScale);
 	Method(GetFriendlyLandsModifier);
 	Method(GetFriendlyLandsAttackModifier);
@@ -5669,6 +5670,18 @@ int CvLuaUnit::lGetCSUACombatModifierInBorders(lua_State* L)
 	CvPlot* pkPlot = CvLuaPlot::GetInstance(L, 2, false);
 
 	const int iResult = pkUnit->GetCSUACombatModifierInBorders(pkPlot);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCSUACombatModifier(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot);
+int CvLuaUnit::lGetCSUACombatModifier(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkOtherUnit = GetInstance(L, 2, false);
+	CvPlot* pkPlot = CvLuaPlot::GetInstance(L, 3, false);
+
+	const int iResult = pkUnit->GetCSUACombatModifier(pkOtherUnit, pkPlot);
 	lua_pushinteger(L, iResult);
 	return 1;
 }

@@ -15722,34 +15722,8 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Mbanza Kongo CS UA: +CombatBonusPerTechDifference% Combat Strength per technology the enemy team
-	// has researched more than ours (one-way: no bonus when we are ahead). This generic modifier feeds
-	// both GetMaxAttackStrength and GetMaxDefenseStrength, so a single hook covers melee attack and all
-	// defense; ranged attack strength does not route through this function, matching the help text
-	// wording "Combat Strength". No hard cap: the help text states no limit, so the bonus grows with the
-	// tech gap. The enemy is the other unit's owner, or, when besieging a city with no defending unit,
-	// the battle plot's city owner.
-	if (MOD_SP_UNIQUE_CITYSTATE)
-	{
-		CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
-		int iPerTech = (pCSUA != NULL) ? pCSUA->GetCombatBonusPerTechDifference() : 0;
-		if (iPerTech != 0)
-		{
-			PlayerTypes eEnemy = NO_PLAYER;
-			if (pOtherUnit != NULL)
-				eEnemy = pOtherUnit->getOwner();
-			else if (pBattlePlot != NULL && pBattlePlot->isCity())
-				eEnemy = pBattlePlot->getOwner();
-
-			if (eEnemy != NO_PLAYER && eEnemy != getOwner() && GET_PLAYER(eEnemy).isAlive())
-			{
-				int iMyTechs = GET_TEAM(getTeam()).GetTeamTechs()->GetNumTechsKnown();
-				int iEnemyTechs = GET_TEAM(GET_PLAYER(eEnemy).getTeam()).GetTeamTechs()->GetNumTechsKnown();
-				int iDiff = iEnemyTechs - iMyTechs;
-				if (iDiff > 0)
-					iModifier += iDiff * iPerTech;
-			}
-		}
-	}
+	// has researched more than ours (one-way: no bonus when we are ahead). Shared with the UI combat panel.
+	iModifier += GetCSUACombatBonusPerTechDifference(pOtherUnit, pBattlePlot);
 #endif
 
 	return iModifier;
@@ -19811,6 +19785,47 @@ int CvUnit::GetCSUACombatModifierInBorders(const CvPlot* pPlot) const
 #else
 	return 0;
 #endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Mbanza Kongo CS UA: +X% Combat Strength per technology the enemy team has researched more than ours.
+/// One-way: returns 0 when we are ahead or even. The enemy is the other unit's owner, or, when besieging
+/// a city with no defending unit, the battle plot's city owner. Shared by GetGenericMaxStrengthModifier
+/// and the UI combat panel so the preview matches the real resolution.
+int CvUnit::GetCSUACombatBonusPerTechDifference(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	int iPerTech = (pCSUA != NULL) ? pCSUA->GetCombatBonusPerTechDifference() : 0;
+	if (iPerTech == 0)
+		return 0;
+
+	PlayerTypes eEnemy = NO_PLAYER;
+	if (pOtherUnit != NULL)
+		eEnemy = pOtherUnit->getOwner();
+	else if (pBattlePlot != NULL && pBattlePlot->isCity())
+		eEnemy = pBattlePlot->getOwner();
+
+	if (eEnemy == NO_PLAYER || eEnemy == getOwner() || !GET_PLAYER(eEnemy).isAlive())
+		return 0;
+
+	int iMyTechs = GET_TEAM(getTeam()).GetTeamTechs()->GetNumTechsKnown();
+	int iEnemyTechs = GET_TEAM(GET_PLAYER(eEnemy).getTeam()).GetTeamTechs()->GetNumTechsKnown();
+	int iDiff = iEnemyTechs - iMyTechs;
+	return (iDiff > 0) ? iDiff * iPerTech : 0;
+#else
+	return 0;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Sum of every CityState UA sourced Combat Strength modifier for this unit against the given enemy:
+/// the technology-difference bonus plus the inside-borders modifier. Shared with the UI combat panel.
+int CvUnit::GetCSUACombatModifier(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot) const
+{
+	VALIDATE_OBJECT
+	return GetCSUACombatBonusPerTechDifference(pOtherUnit, pBattlePlot) + GetCSUACombatModifierInBorders(pBattlePlot);
 }
 
 //	--------------------------------------------------------------------------------

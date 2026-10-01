@@ -24621,6 +24621,17 @@ inline static bool MeetCityResourceRequirement(const PolicyResourceInfo& info,  
 	return okPolicy && okCoastal && okCityScale;
 }
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+// Same condition set as MeetCityResourceRequirement, minus the policy check: a CityState UA effect is
+// already gated by the ally/friend relationship, so only the city-level conditions remain.
+inline static bool MeetCSUAResourceRequirement(const ResourcePerCityEntry& info, const CvCity* city)
+{
+	bool okCoastal = (!info.m_bMustCoastal || city->isCoastal());
+	bool okCityScale = (info.m_iCityScale == NO_CITY_SCALE || (info.m_bLargerScaleValid ? city->GetScale() >= (CityScaleTypes)info.m_iCityScale : city->GetScale() == (CityScaleTypes)info.m_iCityScale));
+	return okCoastal && okCityScale;
+}
+#endif
+
 //	--------------------------------------------------------------------------------
 int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) const
 {
@@ -24643,6 +24654,7 @@ int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) con
 		int iLoop = 0;
 		int iCityPOPResource = 0;
 		int iCityResourceFromPolicy = 0;
+		int iCityResourceFromCSUA = 0;
 		for (pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
 		{
 			if (pLoopCity != NULL)
@@ -24658,25 +24670,29 @@ int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) con
 						iCityResourceFromPolicy += info.iQuantity;
 					}
 				}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Mbanza Kongo CS UA: each owned city provides the resources listed in CityStateUAEffect_ResourcePerCity
+				if (MOD_SP_UNIQUE_CITYSTATE)
+				{
+					CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+					if (pCSUA != NULL)
+					{
+						for (const auto& info : pCSUA->GetResourcePerCityEntries())
+						{
+							if ((ResourceTypes)info.m_iResource == eIndex && MeetCSUAResourceRequirement(info, pLoopCity))
+							{
+								iCityResourceFromCSUA += info.m_iQuantity;
+							}
+						}
+					}
+				}
+#endif
 			}
 		}
 
 		iTotalNumResource += iCityPOPResource / 100;
 		iTotalNumResource += iCityResourceFromPolicy;
-
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-		// Mbanza Kongo CS UA: each owned city provides ManpowerPerCity extra Manpower. Placed before the
-		// GetStrategicResourceMod() multiplier so it scales the same way as building/policy manpower.
-		// Only the ally effect sets ManpowerPerCity (friend = 0). No serialized member is touched: this
-		// only affects the derived return value.
-		if (MOD_SP_UNIQUE_CITYSTATE && eIndex == (ResourceTypes)GC.getInfoTypeForString("RESOURCE_MANPOWER", true))
-		{
-			CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
-			int iPerCity = (pCSUA != NULL) ? pCSUA->GetManpowerPerCity() : 0;
-			if (iPerCity != 0)
-				iTotalNumResource += getNumCities() * iPerCity;
-		}
-#endif
+		iTotalNumResource += iCityResourceFromCSUA;
 
 		if(GetStrategicResourceMod() != 0)
 		{

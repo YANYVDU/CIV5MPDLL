@@ -287,7 +287,6 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iCulturePerWarPeace(0)
 	, m_iEnemyCombatModifierInBordersPerBeenDoW(0)
 	, m_iUnitProductionModifierPerCity(0)
-	, m_iManpowerPerCity(0)
 	, m_iCombatBonusPerTechDifference(0)
 	, m_iCityAttackIgnoreBuildingDefensePercent(0)
 	, m_iMilitaryXPPerTurnModifier(0)
@@ -438,8 +437,30 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iEnemyCombatModifierInBordersPerBeenDoW		= kResults.GetInt("EnemyCombatModifierInBordersPerBeenDoW");
 
 	m_iUnitProductionModifierPerCity				= kResults.GetInt("UnitProductionModifierPerCity");
-	m_iManpowerPerCity								= kResults.GetInt("ManpowerPerCity");
 	m_iCombatBonusPerTechDifference				= kResults.GetInt("CombatBonusPerTechDifference");
+
+	//Mbanza Kongo: each owned city provides the listed resource (conditions mirror Policy_CityResources)
+	{
+		m_vResourcePerCity.clear();
+		std::string strKeyResPerCity("CityStateUAEffect_ResourcePerCity");
+		Database::Results* pResultsResPerCity = kUtility.GetResults(strKeyResPerCity);
+		if(pResultsResPerCity == NULL)
+		{
+			pResultsResPerCity = kUtility.PrepareResults(strKeyResPerCity, "select Resources.ID as ResourceID, Quantity, CityScaleType, LargerScaleValid, MustCoastal from CityStateUAEffect_ResourcePerCity left join Resources on Resources.Type = ResourceType where EffectType = ?");
+		}
+
+		pResultsResPerCity->Bind(1, GetType());
+		while(pResultsResPerCity->Step())
+		{
+			ResourcePerCityEntry entry;
+			entry.m_iResource = pResultsResPerCity->GetInt(0);
+			entry.m_iQuantity = pResultsResPerCity->GetInt(1);
+			entry.m_iCityScale = GC.getInfoTypeForString(pResultsResPerCity->GetText(2));
+			entry.m_bLargerScaleValid = pResultsResPerCity->GetBool(3);
+			entry.m_bMustCoastal = pResultsResPerCity->GetBool(4);
+			m_vResourcePerCity.push_back(entry);
+		}
+	}
 
 	m_iCityAttackIgnoreBuildingDefensePercent		= kResults.GetInt("CityAttackIgnoreBuildingDefensePercent");
 	m_iMilitaryXPPerTurnModifier					= kResults.GetInt("MilitaryXPPerTurnModifier");
@@ -1117,7 +1138,6 @@ int CvCityStateUAEffectEntry::GetCulturePerWarPeace() const { return m_iCultureP
 int CvCityStateUAEffectEntry::GetEnemyCombatModifierInBordersPerBeenDoW() const { return m_iEnemyCombatModifierInBordersPerBeenDoW; }
 
 int CvCityStateUAEffectEntry::GetUnitProductionModifierPerCity() const { return m_iUnitProductionModifierPerCity; }
-int CvCityStateUAEffectEntry::GetManpowerPerCity() const { return m_iManpowerPerCity; }
 int CvCityStateUAEffectEntry::GetCombatBonusPerTechDifference() const { return m_iCombatBonusPerTechDifference; }
 
 int CvCityStateUAEffectEntry::GetCityAttackIgnoreBuildingDefensePercent() const { return m_iCityAttackIgnoreBuildingDefensePercent; }
@@ -1484,7 +1504,6 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCulturePerWarPeace(0)
 	, m_iEnemyCombatModifierInBordersPerBeenDoW(0)
 	, m_iUnitProductionModifierPerCity(0)
-	, m_iManpowerPerCity(0)
 	, m_iCombatBonusPerTechDifference(0)
 	, m_iCityAttackIgnoreBuildingDefensePercent(0)
 	, m_iMilitaryXPPerTurnModifier(0)
@@ -1608,8 +1627,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iCulturePerWarPeace = 0;
 	m_iEnemyCombatModifierInBordersPerBeenDoW = 0;
 	m_iUnitProductionModifierPerCity = 0;
-	m_iManpowerPerCity = 0;
 	m_iCombatBonusPerTechDifference = 0;
+	m_vResourcePerCity.clear();
 	m_iCityAttackIgnoreBuildingDefensePercent = 0;
 	m_iMilitaryXPPerTurnModifier = 0;
 	m_iMilitaryXPSeaAir = 0;
@@ -1840,8 +1859,17 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iEnemyCombatModifierInBordersPerBeenDoW		+= pEffect->GetEnemyCombatModifierInBordersPerBeenDoW() * iChange;
 
 	m_iUnitProductionModifierPerCity				+= pEffect->GetUnitProductionModifierPerCity() * iChange;
-	m_iManpowerPerCity								+= pEffect->GetManpowerPerCity() * iChange;
 	m_iCombatBonusPerTechDifference				+= pEffect->GetCombatBonusPerTechDifference() * iChange;
+
+	{
+		const std::vector<ResourcePerCityEntry>& vEntries = pEffect->GetResourcePerCityEntries();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			ResourcePerCityEntry entry = vEntries[i];
+			entry.m_iQuantity *= iChange;
+			m_vResourcePerCity.push_back(entry);
+		}
+	}
 
 	m_iCityAttackIgnoreBuildingDefensePercent		+= pEffect->GetCityAttackIgnoreBuildingDefensePercent() * iChange;
 	m_iMilitaryXPPerTurnModifier					+= pEffect->GetMilitaryXPPerTurnModifier() * iChange;
@@ -2288,8 +2316,8 @@ int CvPlayerCityStateUA::GetEnemyFixedDamageModifierInBorders() const { return m
 int CvPlayerCityStateUA::GetCulturePerWarPeace() const { return m_iCulturePerWarPeace; }
 int CvPlayerCityStateUA::GetEnemyCombatModifierInBordersPerBeenDoW() const { return m_iEnemyCombatModifierInBordersPerBeenDoW; }
 int CvPlayerCityStateUA::GetUnitProductionModifierPerCity() const { return m_iUnitProductionModifierPerCity; }
-int CvPlayerCityStateUA::GetManpowerPerCity() const { return m_iManpowerPerCity; }
 int CvPlayerCityStateUA::GetCombatBonusPerTechDifference() const { return m_iCombatBonusPerTechDifference; }
+const std::vector<ResourcePerCityEntry>& CvPlayerCityStateUA::GetResourcePerCityEntries() const { return m_vResourcePerCity; }
 int CvPlayerCityStateUA::GetCityAttackIgnoreBuildingDefensePercent() const { return m_iCityAttackIgnoreBuildingDefensePercent; }
 int CvPlayerCityStateUA::GetMilitaryXPPerTurnModifier() const { return m_iMilitaryXPPerTurnModifier; }
 int CvPlayerCityStateUA::GetMilitaryXPSeaAir() const { return m_iMilitaryXPSeaAir; }

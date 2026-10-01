@@ -89,7 +89,6 @@ CREATE TABLE CityStateUAEffects (
     EnemyCombatModifierInBordersPerBeenDoW          integer DEFAULT 0,
     -- Mbanza-Kongo: city-count related
     UnitProductionModifierPerCity                   integer DEFAULT 0,
-    ManpowerPerCity                                 integer DEFAULT 0,
     CombatBonusPerTechDifference                    integer DEFAULT 0,
     -- Sidon: attacker ignores this % of the defended city's building defense (30 ally / 15 friend)
     CityAttackIgnoreBuildingDefensePercent          integer DEFAULT 0,
@@ -234,6 +233,20 @@ create table CityStateUAEffect_UnitMaintenanceByPromotion (
     EffectType text references CityStateUAEffects(Type),
     PromotionType text references UnitPromotions(Type),
     MaintenanceChange integer default 0
+);
+
+-- CityState UA: each owned city provides Quantity of ResourceType (added in CvPlayer::getNumResourceTotal
+-- before the strategic resource modifier is applied). Mirrors Policy_CityResources: the optional
+-- CityScaleType / LargerScaleValid / MustCoastal conditions narrow which cities contribute.
+create table CityStateUAEffect_ResourcePerCity (
+    EffectType text references CityStateUAEffects(Type),
+    ResourceType text references Resources(Type),
+    Quantity integer not null default 0,
+
+    -- optional conditions
+    CityScaleType text null references CityScales(Type),
+    LargerScaleValid boolean not null default 0,
+    MustCoastal boolean not null default 0
 );
 
 -- CityState UA: born great person grants extra specialist yield (per SpecialistType)
