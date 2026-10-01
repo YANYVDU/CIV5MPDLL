@@ -3462,6 +3462,27 @@ int CvPlayerTrade::GetNumberOfCityStateTradeRoutes()
 	return iNumConnections;
 }
 
+//Returns the number of international land trade routes this player runs to any other player
+//(city-state destinations included). Used by the Kabul CS UA nation-wide yield modifier.
+int CvPlayerTrade::GetNumberOfInternationalLandTradeRoutes()
+{
+	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+	int iNumConnections = 0;
+	for (uint ui = 0; ui < pTrade->m_aTradeConnections.size(); ui++)
+	{
+		TradeConnection* pConnection = &(pTrade->m_aTradeConnections[ui]);
+
+		if (pConnection->m_eOriginOwner == m_pPlayer->GetID()
+			&& pConnection->m_eDomain == DOMAIN_LAND
+			&& pTrade->IsConnectionInternational(*pConnection))
+		{
+			iNumConnections++;
+		}
+	}
+
+	return iNumConnections;
+}
+
 //	--------------------------------------------------------------------------------
 //Returns the number of sea trade routes connected from this player
 int CvPlayerTrade::GetNumberOfSeaTradeRoutes()

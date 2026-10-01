@@ -125,6 +125,21 @@ struct CityStateTradeRouteYieldModifierGlobalEntry {
 	int m_iYieldMod;
 };
 
+// Kabul: each international LAND trade route the ally runs grants trade-route gold %. YieldMod is a PLAIN
+// PERCENT (50 = +50%); when the origin city sits on hills, HillsBonus is added on top (50 = an extra +50%).
+struct LandTradeRouteGoldModifierEntry {
+	int m_iYieldMod;
+	int m_iHillsBonus;
+};
+
+// Kabul: each international LAND trade route the ally runs to ANY other player, city-states included,
+// grants a nation-wide yield % modifier per YieldType, scaled by era
+// (value * (currentEra + 1)). YieldMod is a PLAIN PERCENT (1 = +1% per route in the ancient era).
+struct InternationalLandTradeRouteYieldEntry {
+	int m_iYieldType;
+	int m_iYieldMod;
+};
+
 // Bucharest: each diplomat stationed in a foreign MAJOR civilization's city grants a yield % modifier
 // per YieldType, nation-wide. Diplomats sent to city-states do NOT count. YieldMod is a PLAIN PERCENT
 // (5 = +5% per diplomat); Cap 0 = uncapped.
@@ -365,6 +380,11 @@ public:
 	int GetFoodModifierPerHappyLuxuryCap() const;
 	// Mogadishu (MoJiaDiSha)
 	const std::vector<CityStateTradeRouteYieldModifierGlobalEntry>& GetCityStateTradeRouteYieldModifiersGlobal() const { return m_vCityStateTradeRouteYieldModifiersGlobal; }
+	// Kabul (KaBuEr): each international land trade route grants trade-route gold %, plus an extra bonus
+	// when the origin city sits on hills
+	const std::vector<LandTradeRouteGoldModifierEntry>& GetLandTradeRouteGoldModifiers() const { return m_vLandTradeRouteGoldModifiers; }
+	// Kabul: per international land trade route to any other player (city-states included), a nation-wide yield % per era
+	const std::vector<InternationalLandTradeRouteYieldEntry>& GetInternationalLandTradeRouteYieldPerEra() const { return m_vInternationalLandTradeRouteYieldPerEra; }
 	int GetResearchAgreementBreakBonusPercent() const;
 	const std::vector<BornGreatPersonSpecialistYieldEntry>& GetBornGreatPersonSpecialistYieldEntries() const { return m_vBornGreatPersonSpecialistYield; }
 	const std::vector<BuildingGreatPersonPointsEntry>& GetBuildingGreatPersonPointsEntries() const { return m_vBuildingGPP; }
@@ -575,6 +595,9 @@ private:
 	int m_iFoodModifierPerHappyLuxuryCap;
 	// Mogadishu
 	std::vector<CityStateTradeRouteYieldModifierGlobalEntry> m_vCityStateTradeRouteYieldModifiersGlobal;
+	// Kabul
+	std::vector<LandTradeRouteGoldModifierEntry> m_vLandTradeRouteGoldModifiers;
+	std::vector<InternationalLandTradeRouteYieldEntry> m_vInternationalLandTradeRouteYieldPerEra;
 	int m_iResearchAgreementBreakBonusPercent;
 	// Prague / Yerevan
 	int** m_ppiBuildingClassYieldModifiers;
@@ -836,6 +859,12 @@ public:
 	// Mogadishu
 	bool HasCityStateTradeRouteYieldModifiersGlobal() const;
 	const std::vector<CityStateTradeRouteYieldModifierGlobalEntry>& GetCityStateTradeRouteYieldModifiersGlobal() const { return m_vCityStateTradeRouteYieldModifiersGlobal; }
+	// Kabul: each international land trade route grants trade-route gold %, plus an extra bonus on a hills origin
+	bool HasLandTradeRouteGoldModifiers() const;
+	const std::vector<LandTradeRouteGoldModifierEntry>& GetLandTradeRouteGoldModifiers() const { return m_vLandTradeRouteGoldModifiers; }
+	// Kabul: per international land trade route to any other player (city-states included), a nation-wide yield % per era
+	bool HasInternationalLandTradeRouteYieldPerEra() const;
+	const std::vector<InternationalLandTradeRouteYieldEntry>& GetInternationalLandTradeRouteYieldPerEra() const { return m_vInternationalLandTradeRouteYieldPerEra; }
 	int GetResearchAgreementBreakBonusPercent() const;
 	int GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const;
 	int GetBuildingGreatPersonPointsForCity(const CvCity* pCity, SpecialistTypes eSpecialist) const;
@@ -1107,6 +1136,9 @@ protected:
 	int m_iFoodModifierPerHappyLuxuryCap;
 	// Mogadishu
 	std::vector<CityStateTradeRouteYieldModifierGlobalEntry> m_vCityStateTradeRouteYieldModifiersGlobal;
+	// Kabul
+	std::vector<LandTradeRouteGoldModifierEntry> m_vLandTradeRouteGoldModifiers;
+	std::vector<InternationalLandTradeRouteYieldEntry> m_vInternationalLandTradeRouteYieldPerEra;
 	int m_iResearchAgreementBreakBonusPercent;
 	// Prague / Yerevan
 	int** m_ppiBuildingClassYieldModifiers;

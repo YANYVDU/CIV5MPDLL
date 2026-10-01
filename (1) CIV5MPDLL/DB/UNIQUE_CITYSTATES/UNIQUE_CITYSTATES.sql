@@ -687,3 +687,25 @@ create table CityStateUAEffect_AdjacentImprovementYieldChanges (
     YieldType text references Yields(Type),
     Yield integer default 0
 );
+
+-- CityState UA (Kabul): each international LAND trade route the ally runs grants trade-route gold %.
+-- YieldMod is a PLAIN PERCENT (50 = +50%); when the origin city sits on hills, HillsBonus is added on
+-- top (50 = an extra +50%, so a hills origin gets +100%). Only international land routes are affected
+-- (the consumer CvPlayer::GetCSUATradeRouteGoldModifier already returns early for non-international
+-- connections), and the modifier is applied per connection from the origin city's owner.
+create table CityStateUAEffect_LandTradeRouteGoldModifier (
+    EffectType text references CityStateUAEffects(Type),
+    YieldMod   integer default 0,
+    HillsBonus integer default 0
+);
+
+-- CityState UA (Kabul): each international LAND trade route the ally runs to ANY other player
+-- (city-state destinations included) grants a nation-wide yield percentage modifier per YieldType,
+-- scaled by era: value * (currentEra + 1). YieldMod is a PLAIN PERCENT (1 = +1% per route in the
+-- ancient era, +2% in the classical era, ...); CvPlayer::GetCSUAYieldPercentModifier multiplies it by
+-- 100 because that function accumulates basis points and divides by 100 at the end; do not pre-convert.
+create table CityStateUAEffect_InternationalLandTradeRouteYieldPerEra (
+    EffectType text references CityStateUAEffects(Type),
+    YieldType  text references Yields(Type),
+    YieldMod   integer default 0
+);

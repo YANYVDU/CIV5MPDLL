@@ -18470,6 +18470,23 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 		if (iPerPeace != 0)
 			iMod += GetNumWarPeacesCompleted() * iPerPeace * 100;
 	}
+	// Kabul CS UA: each international land trade route the player runs to any other player (city-states
+	// included) grants a nation-wide yield % modifier per YieldType, scaled by era (value * (era+1)).
+	// Mirrors Colombo's per-era handling. The route count is read live (the connection list is small),
+	// and the plain percent is converted to basis points because this function normalizes by /100.
+	if (m_pCityStateUA->HasInternationalLandTradeRouteYieldPerEra() && GetTrade() != NULL)
+	{
+		const std::vector<InternationalLandTradeRouteYieldEntry>& vML = m_pCityStateUA->GetInternationalLandTradeRouteYieldPerEra();
+		const int iRoutes = GetTrade()->GetNumberOfInternationalLandTradeRoutes();
+		if (iRoutes > 0)
+		{
+			for (size_t i = 0; i < vML.size(); i++)
+			{
+				if (vML[i].m_iYieldType != (int)eYield) continue;
+				iMod += iRoutes * vML[i].m_iYieldMod * (GetCurrentEra() + 1) * 100;
+			}
+		}
+	}
 	return iMod / 100;
 }
 // Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
@@ -18554,6 +18571,21 @@ int CvPlayer::GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnect
 			{
 				iModifier += iSurplus * iSurplusModifier / 100;
 			}
+		}
+	}
+
+	// Kabul UA: each international land trade route grants gold %, plus an extra bonus when the origin
+	// city sits on hills. Only land routes qualify; this function already returns early for
+	// non-international connections, so no international check is needed here.
+	if (m_pCityStateUA->HasLandTradeRouteGoldModifiers() && kTradeConnection.m_eDomain == DOMAIN_LAND)
+	{
+		CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
+		const bool bHillsOrigin = (pOriginPlot != NULL && pOriginPlot->isHills());
+		const std::vector<LandTradeRouteGoldModifierEntry>& vLT = m_pCityStateUA->GetLandTradeRouteGoldModifiers();
+		for (size_t i = 0; i < vLT.size(); i++)
+		{
+			iModifier += vLT[i].m_iYieldMod;
+			if (bHillsOrigin) iModifier += vLT[i].m_iHillsBonus;
 		}
 	}
 

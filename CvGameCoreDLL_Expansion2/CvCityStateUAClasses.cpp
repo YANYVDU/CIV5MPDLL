@@ -920,6 +920,44 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vCityStateTradeRouteYieldModifiersGlobal.push_back(entry);
 		}
 	}
+	//Kabul: each international land trade route grants trade-route gold %, plus a hills-origin bonus
+	{
+		m_vLandTradeRouteGoldModifiers.clear();
+		std::string strKey("CityStateUAEffect_LandTradeRouteGoldModifier");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select YieldMod, HillsBonus from CityStateUAEffect_LandTradeRouteGoldModifier where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			LandTradeRouteGoldModifierEntry entry;
+			entry.m_iYieldMod = pResults->GetInt(0);
+			entry.m_iHillsBonus = pResults->GetInt(1);
+			m_vLandTradeRouteGoldModifiers.push_back(entry);
+		}
+	}
+	//Kabul: each international land trade route to any other player (city-states included) grants a yield % per era
+	{
+		m_vInternationalLandTradeRouteYieldPerEra.clear();
+		std::string strKey("CityStateUAEffect_InternationalLandTradeRouteYieldPerEra");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select Yields.ID as YieldID, YieldMod from CityStateUAEffect_InternationalLandTradeRouteYieldPerEra inner join Yields on Yields.Type = YieldType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			InternationalLandTradeRouteYieldEntry entry;
+			entry.m_iYieldType = pResults->GetInt(0);
+			entry.m_iYieldMod = pResults->GetInt(1);
+			m_vInternationalLandTradeRouteYieldPerEra.push_back(entry);
+		}
+	}
 	//Bucharest: each diplomat stationed in a foreign major civilization's city grants a yield % modifier
 	{
 		m_vDiplomatAbroadYieldModifiers.clear();
@@ -1686,6 +1724,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iFoodModifierPerHappyLuxuryType = 0;
 	m_iFoodModifierPerHappyLuxuryCap = 0;
 	m_vCityStateTradeRouteYieldModifiersGlobal.clear();
+	m_vLandTradeRouteGoldModifiers.clear();
+	m_vInternationalLandTradeRouteYieldPerEra.clear();
 	m_iResearchAgreementBreakBonusPercent = 0;
 	m_iBuildingClassYieldModifierCount = 0;
 	m_iSpyKillGainSpyProgress = 0;
@@ -2121,6 +2161,27 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_vCityStateTradeRouteYieldModifiersGlobal.push_back(entry);
 		}
 	}
+	//Kabul: each international land trade route grants trade-route gold %, plus a hills-origin bonus
+	{
+		const std::vector<LandTradeRouteGoldModifierEntry>& vLTEntries = pEffect->GetLandTradeRouteGoldModifiers();
+		for (size_t i = 0; i < vLTEntries.size(); i++)
+		{
+			LandTradeRouteGoldModifierEntry entry = vLTEntries[i];
+			entry.m_iYieldMod *= iChange;
+			entry.m_iHillsBonus *= iChange;
+			m_vLandTradeRouteGoldModifiers.push_back(entry);
+		}
+	}
+	//Kabul: each international land trade route to any other player (city-states included) grants a yield % per era
+	{
+		const std::vector<InternationalLandTradeRouteYieldEntry>& vMLEntries = pEffect->GetInternationalLandTradeRouteYieldPerEra();
+		for (size_t i = 0; i < vMLEntries.size(); i++)
+		{
+			InternationalLandTradeRouteYieldEntry entry = vMLEntries[i];
+			entry.m_iYieldMod *= iChange;
+			m_vInternationalLandTradeRouteYieldPerEra.push_back(entry);
+		}
+	}
 	//Bucharest: each diplomat stationed in a foreign major civilization's city grants a yield % modifier
 	{
 		const std::vector<DiplomatAbroadYieldModifierEntry>& vDAEntries = pEffect->GetDiplomatAbroadYieldModifiers();
@@ -2403,6 +2464,14 @@ int CvPlayerCityStateUA::GetFoodModifierPerHappyLuxuryCap() const { return m_iFo
 bool CvPlayerCityStateUA::HasCityStateTradeRouteYieldModifiersGlobal() const
 {
 	return !m_vCityStateTradeRouteYieldModifiersGlobal.empty();
+}
+bool CvPlayerCityStateUA::HasLandTradeRouteGoldModifiers() const
+{
+	return !m_vLandTradeRouteGoldModifiers.empty();
+}
+bool CvPlayerCityStateUA::HasInternationalLandTradeRouteYieldPerEra() const
+{
+	return !m_vInternationalLandTradeRouteYieldPerEra.empty();
 }
 int CvPlayerCityStateUA::GetResearchAgreementBreakBonusPercent() const { return m_iResearchAgreementBreakBonusPercent; }
 int CvPlayerCityStateUA::GetSpecialistYieldFromBornGreatPerson(SpecialistTypes eSpecialist, YieldTypes eYield) const
