@@ -145,6 +145,8 @@ public:
 	int GetGoldMaintenance() const;
 	int GetReplacementBuildingClass() const;
 	int GetPrereqAndTech() const;
+	// CSUA: building requires the player to have activated this city-state UA effect (e.g. Kathmandu ally UA)
+	int GetPrereqEffect() const;
 	int GetTechNoPrereqClasses() const;
 	int GetPolicyBranchType() const;
 	int GetPolicyNeededType() const;
@@ -349,6 +351,7 @@ public:
 	int GetGlobalEspionageModifier() const;
 	int GetGlobalEspionageSpeedModifier() const;
 	int GetExtraSpies() const;
+	int GetSpyPoints() const;
 	int GetSpyRankChange() const;
 	int GetTradeRouteRecipientBonus() const;
 	int GetTradeRouteTargetBonus() const;
@@ -486,6 +489,7 @@ public:
 	int GetDomainFreeExperiencesPerTurnGlobal(int i) const;
 	int GetDomainEnemyCombatModifier(int i) const;
 	int GetDomainEnemyCombatModifierGlobal(int i) const;
+	int GetDomainEnemyCombatModifierPerGold(int i) const;
 	int GetDomainFriendsCombatModifierLocal(int i) const;
 	int GetDomainFriendsCombatModifierGlobal(int i) const;
 #if defined(MOD_ROG_CORE)
@@ -657,6 +661,8 @@ private:
 	int m_iGoldMaintenance;
 	int m_iReplacementBuildingClass;
 	int m_iPrereqAndTech;
+	// CSUA: prereq city-state UA effect (effect id, -1 = none)
+	int m_iPrereqEffect;
 	int m_iTechNoPrereqClasses;
 	int m_iPolicyBranchType;
 	int m_iPolicyNeededType;
@@ -838,6 +844,7 @@ private:
 	int m_iGlobalEspionageModifier;
 	int m_iGlobalEspionageSpeedModifier;
 	int m_iExtraSpies;
+	int m_iSpyPoints;
 	int m_iSpyRankChange;
 	int m_iInstantSpyRankChange;
 
@@ -965,6 +972,7 @@ private:
 	int* m_piDomainFreeExperiencesPerTurnGlobal;
 	int* m_piDomainEnemyCombatModifier;
 	int* m_piDomainEnemyCombatModifierGlobal;
+	int* m_piDomainEnemyCombatModifierPerGold;
 	int* m_piDomainFriendsCombatModifierLocal;
 	int* m_piDomainFriendsCombatModifierGlobal;
 

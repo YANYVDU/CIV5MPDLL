@@ -1967,8 +1967,20 @@ void CvMinorCivAI::Reset()
 		m_abMajorIntruding[iI] = false;
 		m_abEverFriends[iI] = false;
 		m_abPledgeToProtect[iI] = false;
+		m_abEconomicAidFromMajor[iI] = false;
+		m_abEconomicAidAutoRenew[iI] = false;
+		m_aiTurnLastQuitEconomicAid[iI] = -1;
+		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
+		m_aiEconomicAidPoints[iI] = 0;
+		m_abFaithBeliefPurchasedByMajor[iI] = false;
+		m_abFaithRefundUsedThisTurn[iI] = false;
+		m_abGoldGambleUsedThisTurn[iI] = false;
+		m_aiGoldGambleLastMultiplier[iI] = -1;
+		m_aiFaithPantheonPurchaseCount[iI] = 0;
 		m_aiMajorScratchPad[iI] = 0;
 	}
+
+	m_bEconomicAidOpenThisRound = true;
 
 	for(iI = 0; iI < REALLY_MAX_TEAMS; iI++)
 	{
@@ -2093,6 +2105,24 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	CvAssertMsg(m_QuestsGiven.size() == MAX_MAJOR_CIVS, "Number of entries in minor's quest list does not match MAX_MAJOR_CIVS when read from memory!");
 
 	kStream >> m_bDisableNotifications;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abEconomicAidFromMajor, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abEconomicAidAutoRenew, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS, -1);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS, 0);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidPoints, int, MAX_MAJOR_CIVS, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
+	// Wittenberg CS UA - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS, false);
+	// Kathmandu CS UA - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abGoldGambleUsedThisTurn, bool, MAX_MAJOR_CIVS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiGoldGambleLastMultiplier, int, MAX_MAJOR_CIVS, -1);
+	// La Venta CS UA - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS, 0);
+#endif
 }
 
 /// Serialization write
@@ -2157,6 +2187,21 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	}
 
 	kStream << m_bDisableNotifications;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - CONSTARRAY because Write() is const
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abEconomicAidFromMajor, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abEconomicAidAutoRenew, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidPoints, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abGoldGambleUsedThisTurn, bool, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiGoldGambleLastMultiplier, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiFaithPantheonPurchaseCount, int, MAX_MAJOR_CIVS);
+#endif
 }
 
 /// Pick the minor civ's personality and any special traits (ie. unique unit for Militaristic)
@@ -2331,6 +2376,17 @@ void CvMinorCivAI::DoTurn()
 	{
 		DoTurnStatus();
 
+		// Kathmandu CS UA: reset the first-donation faith refund flag for all majors each turn
+		for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+			m_abFaithRefundUsedThisTurn[iI] = false;
+
+		// Monaco CS UA: reset the first-donation wager flag for all majors each turn
+		for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+		{
+			m_abGoldGambleUsedThisTurn[iI] = false;
+			m_aiGoldGambleLastMultiplier[iI] = -1;
+		}
+
 #if defined(MOD_CONFIG_GAME_IN_XML)
 		m_pPlayer->GetDiplomacyAI()->DoCounters();
 #endif
@@ -2395,7 +2451,29 @@ void CvMinorCivAI::DoChangeAliveStatus(bool bAlive)
 			SetFriendshipWithMajor(e, vNewInfluence.at(i));
 		}
 		SetDisableNotifications(false);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Economic Aid: stop all aid immediately on death without quit settlement; the city-state will not open this round
+		for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+		{
+			DoChangeEconomicAidFromMajor((PlayerTypes)i, false, ECON_AID_TERM_NONE);
+		}
+		m_bEconomicAidOpenThisRound = false;
+#endif
 	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	else
+	{
+		// Re-founded city-state: reset all aid history; it reopens from the next global round
+		for (int i = 0; i < MAX_MAJOR_CIVS; ++i)
+		{
+			m_abEconomicAidFromMajor[i] = false;
+			m_aiTurnLastQuitEconomicAid[i] = -1;
+			m_aiEconomicAidTerminationReason[i] = (int)ECON_AID_TERM_NONE;
+		}
+		m_bEconomicAidOpenThisRound = false;
+	}
+#endif
 
 	// Apply or Remove any active bonuses
 	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
@@ -6018,6 +6096,13 @@ void CvMinorCivAI::DoFriendship()
 				DoFriendshipChangeEffects(ePlayer, iOldFriendship, iNewFriendship);
 			}
 
+			// Economic Aid points (Super Power V11): +1 per turn while this major is providing aid.
+			// Kept in sync with the aid influence delta computed above; runtime check keeps old saves safe.
+			if (GC.getGame().IsEconomicAidActive() && IsEconomicAidFromMajor(ePlayer))
+			{
+				m_aiEconomicAidPoints[ePlayer]++;
+			}
+
 			// Notification for status changes
 			if(GetPlayer()->isAlive() && IsHasMetPlayer(ePlayer))
 			{
@@ -6174,6 +6259,55 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 		}
 	}
 #endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11): add the aid influence delta on top of all other
+	// per-turn sources (trade routes, below-anchor recovery, bully, decay, etc.) instead of
+	// overriding them, so aid never swallows the other sources.
+	// The identity used is the current one (before this turn's change is applied).
+	if (GC.getGame().IsEconomicAidActive())
+	{
+		bool bAllied = IsAllies(ePlayer);
+		bool bAiding = IsEconomicAidFromMajor(ePlayer);
+		if (bAllied && bAiding)
+		{
+			// ally providing aid: 0 from the aid mechanic (keeps other sources intact)
+		}
+		else if (bAllied && !bAiding)
+		{
+			iChangeThisTurn += -100;  // ally not providing aid: -1 per turn
+		}
+		else if (!bAllied && bAiding)
+		{
+			iChangeThisTurn += 100;   // non-ally providing aid: +1 per turn
+		}
+		// non-ally, not aiding: leave natural decay untouched
+	}
+
+	// Geneva CS UA: per-turn influence with each met city-state while the player is the
+	// ally of this city-state (scaled by following cities, one unit per FollowingCityDivisor).
+	// Returned here so the bonus drives both the real DoFriendship settlement and the Lua
+	// influence-trend UI (player:GetFriendshipChangePerTurnTimes100()) from the same source.
+	if (IsHasMetPlayer(ePlayer))
+	{
+		CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+		if (pCSUA)
+		{
+			int iPerTurnMod = pCSUA->GetInfluencePerTurnPerFollowCityMod();
+			int iDivisor = pCSUA->GetFollowingCityDivisor();
+			if (iPerTurnMod > 0 && iDivisor > 0)
+			{
+				ReligionTypes eMyReligion = kPlayer.GetReligions()->GetReligionCreatedByPlayer();
+				if (eMyReligion != NO_RELIGION)
+				{
+					int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eMyReligion);
+					iChangeThisTurn += (iCities / iDivisor) * iPerTurnMod; // both Times100
+				}
+			}
+		}
+	}
+#endif
+
 	return iChangeThisTurn;
 }
 
@@ -6331,6 +6465,14 @@ int CvMinorCivAI::GetFriendshipAnchorWithMajor(PlayerTypes eMajor)
 	if (IsProtectedByMajor(eMajor))
 	{
 		iAnchor += GC.getMINOR_FRIENDSHIP_ANCHOR_MOD_PROTECTED();
+	}
+
+	// Economic Aid (Super Power V11): while granting economic aid, raise the friendship
+	// anchor so influence climbs toward a higher resting point (default +20) instead of
+	// being pinned at a low value by the convergence clamp.
+	if (IsEconomicAidFromMajor(eMajor))
+	{
+		iAnchor += GC.getMINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID();
 	}
 
 	// Wary Of?
@@ -7516,6 +7658,552 @@ bool CvMinorCivAI::IsProtectedByAnyMajor() const
 			return true;
 	return false;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+// =====================================================================================
+// Economic Aid (Super Power V11)
+// =====================================================================================
+void CvMinorCivAI::DoChangeEconomicAidFromMajor(PlayerTypes eMajor, bool bAid, EconomicAidTerminationReason eReason)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+
+	if(bAid == IsEconomicAidFromMajor(eMajor)) return;
+
+	if(bAid)
+	{
+		if(!CanMajorStartEconomicAid(eMajor))
+		{
+			return;
+		}
+	}
+	else
+	{
+		// Player quit or war: settle as mid-round quit (ally: -20 influence + locked for this round)
+		if(eReason == ECON_AID_TERM_PLAYER_QUIT || eReason == ECON_AID_TERM_WAR)
+		{
+			if(IsAllies(eMajor))
+			{
+				ChangeFriendshipWithMajorTimes100(eMajor, /*-20*/ -2000);
+			}
+			m_aiTurnLastQuitEconomicAid[eMajor] = GC.getGame().getGameTurn();
+		}
+		// ECON_AID_TERM_ALLY_PACT: terminate without penalty, no lock (can rejoin this round after peace)
+	}
+
+	m_aiEconomicAidTerminationReason[eMajor] = (int)eReason;
+	m_abEconomicAidFromMajor[eMajor] = bAid;
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
+}
+
+bool CvMinorCivAI::CanMajorEconomicAid(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	if(!GC.getGame().IsEconomicAidActive())
+		return false;
+
+	if(!GetPlayer()->isAlive())
+		return false;
+
+	// If at war with the city-state, may not aid it
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GetPlayer()->getTeam()))
+		return false;
+
+	return true;
+}
+
+bool CvMinorCivAI::CanMajorStartEconomicAid(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	if(!CanMajorEconomicAid(eMajor))
+		return false;
+
+	if(IsEconomicAidFromMajor(eMajor))
+		return false;
+
+	// Once economic aid is globally active, any living, non-warring city-state is
+	// eligible to be aided. The per-city-state isEconomicAidOpenThisRound flag is
+	// unreliable in multiplayer because player init / re-found resets it to false on
+	// non-authoritative clients (leaving a stale "closed" state that blocks gueses).
+	// Same-round re-entry after quitting is handled below via the turn-lock check.
+
+	// Locked for the remainder of this round after quitting (or war termination)
+	int iRoundStartTurn = GC.getGame().GetEconomicAidRoundStartTurn();
+	if(iRoundStartTurn >= 0 && m_aiTurnLastQuitEconomicAid[eMajor] >= iRoundStartTurn)
+		return false;
+
+	return true;
+}
+
+bool CvMinorCivAI::CanMajorWithdrawEconomicAid(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	return IsEconomicAidFromMajor(eMajor);
+}
+
+bool CvMinorCivAI::IsEconomicAidFromMajor(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	return m_abEconomicAidFromMajor[eMajor];
+}
+
+bool CvMinorCivAI::IsEconomicAidOpenThisRound() const
+{
+	return m_bEconomicAidOpenThisRound;
+}
+
+void CvMinorCivAI::SetEconomicAidOpenThisRound(bool bOpen)
+{
+	m_bEconomicAidOpenThisRound = bOpen;
+}
+
+bool CvMinorCivAI::IsEconomicAidAutoRenew(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abEconomicAidAutoRenew[eMajor];
+}
+
+void CvMinorCivAI::SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	if(m_abEconomicAidAutoRenew[eMajor] != bRenew)
+	{
+		m_abEconomicAidAutoRenew[eMajor] = bRenew;
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+}
+
+int CvMinorCivAI::GetEconomicAidPoints(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return 0;
+	return m_aiEconomicAidPoints[eMajor];
+}
+
+void CvMinorCivAI::ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	m_aiEconomicAidPoints[eMajor] += iDelta;
+	if(m_aiEconomicAidPoints[eMajor] < 0)
+	{
+		m_aiEconomicAidPoints[eMajor] = 0;
+	}
+}
+
+bool CvMinorCivAI::IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abFaithBeliefPurchasedByMajor[eMajor];
+}
+
+void CvMinorCivAI::SetFaithBeliefPurchasedByMajor(PlayerTypes eMajor, bool bPurchased)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	if(m_abFaithBeliefPurchasedByMajor[eMajor] != bPurchased)
+	{
+		m_abFaithBeliefPurchasedByMajor[eMajor] = bPurchased;
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+}
+
+bool CvMinorCivAI::GetFaithRefundUsedThisTurn(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abFaithRefundUsedThisTurn[eMajor];
+}
+
+void CvMinorCivAI::SetFaithRefundUsedThisTurn(PlayerTypes eMajor, bool bUsed)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	m_abFaithRefundUsedThisTurn[eMajor] = bUsed;
+}
+
+bool CvMinorCivAI::GetGoldGambleUsedThisTurn(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+	return m_abGoldGambleUsedThisTurn[eMajor];
+}
+
+int CvMinorCivAI::GetGoldGambleLastMultiplier(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return -1;
+	return m_aiGoldGambleLastMultiplier[eMajor];
+}
+
+/// Wittenberg CS UA: the ally spends faith to add one belief to the religion the ally leads.
+bool CvMinorCivAI::DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief)
+{
+	CvString szDbg;
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS || eBelief == NO_BELIEF)
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL bad args\n");
+		return false;
+	}
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+	CvPlayer& kMinor = GET_PLAYER(GetPlayer()->GetID());
+
+	if(!kMinor.isAlive())
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL minor not alive\n");
+		return false;
+	}
+
+	// Only the ally of this city-state may purchase.
+	if(!IsAllies(eMajor))
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL not ally\n");
+		return false;
+	}
+
+	// The city-state must grant the faith-purchase ability (Wittenberg UA).
+	if(!kMinor.HasCSUABeliefPurchaseUA())
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL no belief-purchase UA\n");
+		return false;
+	}
+
+	// One purchase per major.
+	if(IsFaithBeliefPurchasedByMajor(eMajor))
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL already purchased\n");
+		return false;
+	}
+
+	// The religion to augment is the one the major leads.
+	ReligionTypes eReligion = kMajor.GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL no religion created\n");
+		return false;
+	}
+
+	// Faith cost = base option value scaled by game speed (FaithPercent).
+	int iCost = gCustomMods.getOption("SP_FAITH_BELIEF_PURCHASE_COST", 2500);
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	// AI difficulty discount (mirrors the construct discount applied to AI faith-building purchases).
+	if(!kMajor.isHuman() && !kMajor.IsAITeammateOfHuman())
+	{
+		iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+	}
+	if(iCost <= 0)
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL cost <= 0\n");
+		return false;
+	}
+	if(kMajor.GetFaith() < iCost)
+	{
+		szDbg.Format("CSUA BeliefPurchase: FAIL faith %d < cost %d\n", kMajor.GetFaith(), iCost);
+		OutputDebugString(szDbg);
+		return false;
+	}
+
+	if(!GC.getGame().GetGameReligions()->AddBeliefToReligion(eMajor, eReligion, eBelief))
+	{
+		OutputDebugString("CSUA BeliefPurchase: FAIL AddBeliefToReligion\n");
+		return false;
+	}
+
+	kMajor.ChangeFaith(-iCost);
+	SetFaithBeliefPurchasedByMajor(eMajor, true);
+
+	// Notification (reformation-belief icon) so the ally knows the belief was added.
+	CvString szBeliefName = "";
+	CvBeliefEntry* pBelief = GC.GetGameBeliefs()->GetEntry(eBelief);
+	if(pBelief)
+	{
+		szBeliefName = Localization::Lookup(pBelief->getShortDescription()).toUTF8();
+	}
+
+	CvString szReligionName = "";
+	CvReligionEntry* pReligionInfo = GC.getReligionInfo(eReligion);
+	if(pReligionInfo)
+	{
+		szReligionName = Localization::Lookup(pReligionInfo->GetDescriptionKey()).toUTF8();
+	}
+
+	if(CvNotifications* pNotifications = kMajor.GetNotifications())
+	{
+		Localization::String localizedText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED");
+		localizedText << szBeliefName << szReligionName;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED_S");
+		pNotifications->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, localizedText.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
+	}
+
+	// Broadcast to all human players so an AI ally's belief purchase is visible.
+	for(int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kLoop = GET_PLAYER((PlayerTypes)iPlayer);
+		if(!kLoop.isHuman() || !kLoop.isAlive())
+		{
+			continue;
+		}
+		if(CvNotifications* pNotify = kLoop.GetNotifications())
+		{
+			Localization::String broadcastText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED_BROADCAST");
+			broadcastText << kMajor.getNameKey() << szReligionName << szBeliefName;
+			Localization::String broadcastSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_BELIEF_PURCHASED_S");
+			pNotify->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, broadcastText.toUTF8(), broadcastSummary.toUTF8(), -1, -1, -1);
+		}
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
+
+/// La Venta CS UA: faith cost for the given major to purchase an idle pantheon belief (0 = not available).
+int CvMinorCivAI::GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return 0;
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+	CvPlayer& kMinor = GET_PLAYER(m_pPlayer->GetID());
+
+	if(!kMinor.isAlive())
+		return 0;
+	// Only the ally of this city-state may purchase.
+	if(!IsAllies(eMajor))
+		return 0;
+	// The ability comes from the city-state's own UA (La Venta), aggregated onto the ally.
+	if(!kMinor.HasCSUAFaithPantheonPurchaseUA())
+		return 0;
+	// The religion to augment is the one the major leads.
+	if(kMajor.GetReligions()->GetReligionCreatedByPlayer() <= RELIGION_PANTHEON)
+		return 0;
+
+	// Faith cost = base option value doubled per prior purchase, scaled by game speed (FaithPercent).
+	int iCost = gCustomMods.getOption("SP_PANTHEON_BELIEF_PURCHASE_BASE_COST", 500);
+	for(int i = 0; i < m_aiFaithPantheonPurchaseCount[eMajor]; i++)
+	{
+		if(iCost > INT_MAX / 2)
+		{
+			iCost = INT_MAX;
+			break;
+		}
+		iCost *= 2;
+	}
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	return iCost;
+}
+
+/// La Venta CS UA: the ally spends faith to add one idle pantheon belief to the religion the ally leads.
+bool CvMinorCivAI::DoCityStateFaithPantheonPurchase(PlayerTypes eMajor, BeliefTypes eBelief)
+{
+	CvString szDbg;
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS || eBelief == NO_BELIEF)
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL bad args\n");
+		return false;
+	}
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+	CvPlayer& kMinor = GET_PLAYER(GetPlayer()->GetID());
+
+	if(!kMinor.isAlive())
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL minor not alive\n");
+		return false;
+	}
+
+	// Only the ally of this city-state may purchase.
+	if(!IsAllies(eMajor))
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL not ally\n");
+		return false;
+	}
+
+	// The city-state must grant the faith-pantheon-purchase ability (La Venta UA).
+	if(!kMinor.HasCSUAFaithPantheonPurchaseUA())
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL no pantheon-purchase UA\n");
+		return false;
+	}
+
+	// The religion to augment is the one the major leads.
+	ReligionTypes eReligion = kMajor.GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL no religion created\n");
+		return false;
+	}
+
+	// Faith cost = base option value doubled per prior purchase, scaled by game speed,
+	// then by the AI difficulty discount (mirrors the construct discount on AI faith purchases).
+	int iCost = gCustomMods.getOption("SP_PANTHEON_BELIEF_PURCHASE_BASE_COST", 500);
+	for(int i = 0; i < m_aiFaithPantheonPurchaseCount[eMajor]; i++)
+	{
+		if(iCost > INT_MAX / 2)
+		{
+			iCost = INT_MAX;
+			break;
+		}
+		iCost *= 2;
+	}
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	if(!kMajor.isHuman() && !kMajor.IsAITeammateOfHuman())
+	{
+		iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+	}
+	if(iCost <= 0)
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL cost <= 0\n");
+		return false;
+	}
+	if(kMajor.GetFaith() < iCost)
+	{
+		szDbg.Format("CSUA PantheonPurchase: FAIL faith %d < cost %d\n", kMajor.GetFaith(), iCost);
+		OutputDebugString(szDbg);
+		return false;
+	}
+
+	// Only idle pantheon beliefs may be purchased: a pantheon belief not yet claimed by any religion.
+	CvBeliefEntry* pBelief = GC.GetGameBeliefs()->GetEntry(eBelief);
+	if(pBelief == NULL || !pBelief->IsPantheonBelief())
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL not a pantheon belief\n");
+		return false;
+	}
+	if(GC.getGame().GetGameReligions()->IsInSomeReligion(eBelief))
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL pantheon belief already in a religion\n");
+		return false;
+	}
+
+	if(!GC.getGame().GetGameReligions()->AddBeliefToReligion(eMajor, eReligion, eBelief))
+	{
+		OutputDebugString("CSUA PantheonPurchase: FAIL AddBeliefToReligion\n");
+		return false;
+	}
+
+	kMajor.ChangeFaith(-iCost);
+	ChangeFaithPantheonPurchaseCount(eMajor, 1);
+
+	// Influence reward: after each purchase, the ally gains (excess happiness / 2) influence
+	// with every city-state it has met (including this one). No influence when happiness is negative.
+	int iInfluence = kMajor.GetExcessHappiness() / 2;
+	if(iInfluence > 0)
+	{
+		TeamTypes eMajorTeam = kMajor.getTeam();
+		for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+		{
+			CvPlayer& kMetMinor = GET_PLAYER((PlayerTypes)iMinorLoop);
+			if(!kMetMinor.isAlive() || !kMetMinor.isMinorCiv())
+			{
+				continue;
+			}
+			if(GET_TEAM(kMetMinor.getTeam()).isHasMet(eMajorTeam))
+			{
+				kMetMinor.GetMinorCivAI()->ChangeFriendshipWithMajor(eMajor, iInfluence);
+			}
+		}
+	}
+
+	// Notification (pantheon-belief icon) so the ally knows the belief was added.
+	CvString szBeliefName = "";
+	CvBeliefEntry* pBeliefInfo = GC.GetGameBeliefs()->GetEntry(eBelief);
+	if(pBeliefInfo)
+	{
+		szBeliefName = Localization::Lookup(pBeliefInfo->getShortDescription()).toUTF8();
+	}
+
+	CvString szReligionName = "";
+	CvReligionEntry* pReligionInfo = GC.getReligionInfo(eReligion);
+	if(pReligionInfo)
+	{
+		szReligionName = Localization::Lookup(pReligionInfo->GetDescriptionKey()).toUTF8();
+	}
+
+	if(CvNotifications* pNotifications = kMajor.GetNotifications())
+	{
+		Localization::String localizedText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED");
+		localizedText << szBeliefName << szReligionName;
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED_S");
+		pNotifications->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, localizedText.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
+	}
+
+	// Broadcast to all human players so an AI ally's pantheon purchase is visible.
+	for(int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kLoop = GET_PLAYER((PlayerTypes)iPlayer);
+		if(!kLoop.isHuman() || !kLoop.isAlive())
+		{
+			continue;
+		}
+		if(CvNotifications* pNotify = kLoop.GetNotifications())
+		{
+			Localization::String broadcastText = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED_BROADCAST");
+			broadcastText << kMajor.getNameKey() << szReligionName << szBeliefName;
+			Localization::String broadcastSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_CSUA_PANTHEON_PURCHASED_S");
+			pNotify->Add(NOTIFICATION_REFORMATION_BELIEF_ADDED_ACTIVE_PLAYER, broadcastText.toUTF8(), broadcastSummary.toUTF8(), -1, -1, -1);
+		}
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
+
+/// La Venta CS UA: how many times the given major has already faith-purchased an idle pantheon belief.
+int CvMinorCivAI::GetFaithPantheonPurchaseCount(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return 0;
+	return m_aiFaithPantheonPurchaseCount[eMajor];
+}
+
+void CvMinorCivAI::SetFaithPantheonPurchaseCount(PlayerTypes eMajor, int iCount)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	if(m_aiFaithPantheonPurchaseCount[eMajor] != iCount)
+	{
+		m_aiFaithPantheonPurchaseCount[eMajor] = iCount;
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+}
+
+void CvMinorCivAI::ChangeFaithPantheonPurchaseCount(PlayerTypes eMajor, int iDelta)
+{
+	SetFaithPantheonPurchaseCount(eMajor, GetFaithPantheonPurchaseCount(eMajor) + iDelta);
+}
+#endif
 
 int CvMinorCivAI::GetTurnLastPledgedProtectionByMajor(PlayerTypes eMajor) const
 {
@@ -9941,6 +10629,11 @@ void CvMinorCivAI::DoElection()
 				}
 				PlayerTypes eEspionagePlayer = (PlayerTypes)ui;
 				int iChange = GC.getESPIONAGE_INFLUENCE_GAINED_FOR_RIGGED_ELECTION();
+				if(apSpy[ui] != NULL && apSpy[ui]->m_eRank == SPY_RANK_MASTER_SPY)
+				{
+					// Master Spy diplomacy: rigging an election grants +50 influence instead of +20
+					iChange = 50;
+				}
 				iChange = (iChange*(100 + GET_PLAYER(eEspionagePlayer).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_RIGGING_ELECTION_INFLUENCE_MODIFIER))) / 100;
 				ChangeFriendshipWithMajor(ePlayer, iChange, false);
 
@@ -10206,6 +10899,29 @@ void CvMinorCivAI::ChangeNumGoldGifted(PlayerTypes ePlayer, int iChange)
 
 
 /// Major Civ gifted some Gold to this Minor
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+// The UA effect currently granting to eMajor from pMinorAI (ally takes priority over friend), or NULL
+// if the city-state grants nothing to eMajor. Used to key donation effects to the receiving city-state
+// itself, instead of the player's aggregated CSUA state which spans every ally/friend city-state.
+static CvCityStateUAEffectEntry* GetMinorUAGrantedEffect(CvMinorCivAI* pMinorAI, PlayerTypes eMajor)
+{
+	CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+	if (!pkMinorCivInfo) return NULL;
+
+	const char* szUAType = pkMinorCivInfo->GetUAType();
+	if (!szUAType || szUAType[0] == '\0') return NULL;
+
+	CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+	if (!pUAEntry) return NULL;
+
+	if (pMinorAI->IsAllies(eMajor))
+		return GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+	if (pMinorAI->IsFriends(eMajor))
+		return GC.getCityStateUAEffectEntry(pUAEntry->GetFriendEffectID());
+	return NULL;
+}
+#endif
+
 void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 {
 	// Permanent ally: no gold gifts from anyone
@@ -10220,9 +10936,44 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 			GET_PLAYER(ePlayer).GetTreasury()->LogExpenditure(GetPlayer()->GetMinorCivAI()->GetNamesListAsString(0), iGold,4);
 
 		GET_PLAYER(ePlayer).GetTreasury()->ChangeGold(-iGold);
-		
+
 		ChangeNumGoldGifted(ePlayer, iGold);
-		
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Kathmandu CS UA: the first gold donation each turn refunds a % of the amount as faith. The
+		// refund is granted by THIS city-state's own UA effect (ally effect), so gifting to any other
+		// city-state neither grants nor consumes it.
+		if (MOD_SP_UNIQUE_CITYSTATE && !m_abFaithRefundUsedThisTurn[ePlayer])
+		{
+			CvCityStateUAEffectEntry* pEffect = GetMinorUAGrantedEffect(this, ePlayer);
+			const int iRefundPercent = pEffect ? pEffect->GetFaithRefundPerDonationPercent() : 0;
+			if (iRefundPercent > 0)
+			{
+				GET_PLAYER(ePlayer).ChangeFaith((iGold * iRefundPercent) / 100);
+				m_abFaithRefundUsedThisTurn[ePlayer] = true;
+			}
+		}
+
+		// Monaco CS UA: the first gold donation to Monaco each turn is a wager. Influence is granted
+		// normally; in addition a weighted roll may refund a multiple of the gifted gold to the donor.
+		// Likewise keyed to THIS city-state's own UA effect, so a donation elsewhere is not a wager and
+		// does not consume this turn's wager.
+		if (MOD_SP_UNIQUE_CITYSTATE && !m_abGoldGambleUsedThisTurn[ePlayer])
+		{
+			CvCityStateUAEffectEntry* pEffect = GetMinorUAGrantedEffect(this, ePlayer);
+			if (pEffect && !pEffect->GetGoldDonationGambleEntries().empty())
+			{
+				m_abGoldGambleUsedThisTurn[ePlayer] = true;
+
+				const int iMultiplier = GET_PLAYER(ePlayer).GetCSUAGoldDonationGambleMultiplier();
+				// Store the outcome so the UI can report this turn's wager result on this city-state's panel
+				m_aiGoldGambleLastMultiplier[ePlayer] = iMultiplier;
+				if (iMultiplier > 0)
+					GET_PLAYER(ePlayer).GetTreasury()->ChangeGold((iGold * iMultiplier) / 100);
+			}
+		}
+#endif
+
 		ChangeFriendshipWithMajor(ePlayer, iFriendshipChange);
 
 		// In case we had a Gold Gift quest active, complete it now
@@ -10258,6 +11009,40 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 		}
 #endif
 	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+}
+
+/// Gangtok CS UA: buy influence with faith at (gold price / divisor) faith; limited per turn globally
+void CvMinorCivAI::DoFaithGiftFromMajor(PlayerTypes eMajor, int iEquivalentGold)
+{
+	// Permanent ally: no faith gifts from anyone
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return;
+
+	CvPlayer& kMajor = GET_PLAYER(eMajor);
+
+	// Gangtok CS UA: only players with an active faith-influence-purchase effect (e.g. Gangtok ally) may do this
+	int iCostDivisor = kMajor.GetCSUAFaithInfluencePurchaseCostDivisor();
+	if (iCostDivisor <= 0)
+		return;
+	if (kMajor.GetCSUAFaithInfluencePurchaseRemaining() <= 0)
+		return;
+
+	int iFaithCost = iEquivalentGold / iCostDivisor;
+	if (iFaithCost <= 0)
+		return;
+	if (kMajor.GetFaith() < iFaithCost)
+		return;
+
+	int iFriendshipChange = GetFriendshipFromGoldGift(eMajor, iEquivalentGold);
+	if (iFriendshipChange <= 0)
+		return;
+
+	kMajor.ChangeFaith(-iFaithCost);
+	kMajor.ChangeCSUAFaithInfluencePurchaseUsed(1);
+	ChangeFriendshipWithMajor(eMajor, iFriendshipChange);
 
 	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
 }

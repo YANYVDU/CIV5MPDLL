@@ -187,6 +187,8 @@ FDataStream& operator>>(FDataStream& loadFrom, CvReligion& writeTo)
 
 	MOD_SERIALIZE_READ(161, loadFrom, writeTo.m_iNumFirstConversions, 0);
 
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_vExtraBeliefs, std::vector<BeliefTypes>());
+
 	writeTo.m_Beliefs.Read(loadFrom);
 
 	return loadFrom;
@@ -210,6 +212,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvReligion& readFrom)
 	saveTo << readFrom.m_szCustomName;
 
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iNumFirstConversions);
+
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_vExtraBeliefs);
 
 	readFrom.m_Beliefs.Write(saveTo);
 
@@ -394,6 +398,18 @@ void CvGameReligions::SpreadReligionToOneCity(CvCity* pCity)
 				int iPressure = GetAdjacentCityReligiousPressure (eMajorityReligion, pLoopCity, pCity, iNumTradeRoutes, false);
 				if (iPressure > 0)
 				{
+					// Global setting: the religion led by the owner of the receiving city (pCity)
+					// exerts extra pressure on that city. E.g. the religion player A founded spreads
+					// +33% more pressure on player A's other cities (default 33, SP_RELIGION_PRESSURE_SELF_FOUNDER_MOD).
+					CvPlayer& kCityOwner = GET_PLAYER(pCity->getOwner());
+					if (kCityOwner.GetReligions()->GetReligionCreatedByPlayer() == eMajorityReligion)
+					{
+						int iSelfFounderMod = gCustomMods.getOption("SP_RELIGION_PRESSURE_SELF_FOUNDER_MOD", 33);
+						if (iSelfFounderMod > 0)
+						{
+							iPressure = iPressure * (100 + iSelfFounderMod) / 100;
+						}
+					}
 					pCity->GetCityReligions()->AddReligiousPressure(FOLLOWER_CHANGE_ADJACENT_PRESSURE, eMajorityReligion, iPressure);
 					if (iNumTradeRoutes != 0)
 					{
@@ -1630,6 +1646,61 @@ void CvGameReligions::AddReformationBelief(PlayerTypes ePlayer, ReligionTypes eR
 	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
 }
 
+/// CSUA: add a faith-purchased belief (e.g. Wittenberg) to a religion as an extra belief.
+/// Unlike normal founding/enhancing/reforming, this does not consume the religion's
+/// enhance/reform slot, so extra enhancer/reformation beliefs can coexist with the normal ones.
+bool CvGameReligions::AddBeliefToReligion(PlayerTypes ePlayer, ReligionTypes eReligion, BeliefTypes eBelief)
+{
+	if(eBelief == NO_BELIEF || ePlayer == NO_PLAYER)
+	{
+		OutputDebugString("CSUA AddBeliefToReligion: FAIL bad args\n");
+		return false;
+	}
+
+	bool bFoundIt = false;
+	ReligionList::iterator it;
+	for(it = m_CurrentReligions.begin(); it != m_CurrentReligions.end(); it++)
+	{
+		if(it->m_eReligion == eReligion)
+		{
+			bFoundIt = true;
+			break;
+		}
+	}
+	if(!bFoundIt)
+	{
+		OutputDebugString("CSUA AddBeliefToReligion: FAIL religion not found\n");
+		return false;
+	}
+
+	// Refuse to duplicate a belief the religion already owns (AddBelief does not deduplicate).
+	if(it->m_Beliefs.HasBelief(eBelief))
+	{
+		OutputDebugString("CSUA AddBeliefToReligion: FAIL belief already owned\n");
+		return false;
+	}
+
+	CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+
+	it->m_Beliefs.AddBelief(eBelief, ePlayer);
+	it->m_vExtraBeliefs.push_back(eBelief);
+
+#if defined(MOD_TRAITS_OTHER_PREREQS)
+	if (MOD_TRAITS_OTHER_PREREQS) {
+		// Update our traits (some may have become obsolete)
+		kPlayer.GetPlayerTraits()->Reset();
+		kPlayer.GetPlayerTraits()->InitPlayerTraits();
+		kPlayer.recomputePolicyCostModifier();
+	}
+#endif
+
+	// Update game systems
+	UpdateAllCitiesThisReligion(eReligion);
+	kPlayer.UpdateReligion();
+
+	return true;
+}
+
 /// Move the Holy City for a religion (useful for scenario scripting)
 void CvGameReligions::SetHolyCity(ReligionTypes eReligion, CvCity* pkHolyCity)
 {
@@ -1957,6 +2028,19 @@ bool CvGameReligions::HasAddedReformationBelief(PlayerTypes ePlayer) const
 			for(int iI = 0; iI < pMyReligion->m_Beliefs.GetNumBeliefs(); iI++)
 			{
 				const BeliefTypes eBelief = pMyReligion->m_Beliefs.GetBelief(iI);
+				// Skip beliefs added through the CSUA faith-purchase path (e.g. Wittenberg) so the
+				// religion can still be reformed through the normal policy path.
+				bool bIsExtra = false;
+				for(size_t iJ = 0; iJ < pMyReligion->m_vExtraBeliefs.size(); iJ++)
+				{
+					if(pMyReligion->m_vExtraBeliefs[iJ] == eBelief)
+					{
+						bIsExtra = true;
+						break;
+					}
+				}
+				if(bIsExtra)
+					continue;
 				CvBeliefEntry* pEntry = pkBeliefs->GetEntry((int)eBelief);
 				if (pEntry && pEntry->IsReformationBelief())
 				{
@@ -2410,6 +2494,27 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 			if (iReligiousPressureMod > 0)
 			{
 				iPressure = (iPressure * (100 + iReligiousPressureMod)) / 100;
+			}
+		}
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Jerusalem CS UA: boost pressure of the founder's religion per holy city owned by the founder
+		{
+			PlayerTypes eFounder = pReligion->m_eFounder;
+			int iCSUAReligiousPressureMod = GET_PLAYER(eFounder).GetCSUAReligiousPressureModifier();
+			if (iCSUAReligiousPressureMod > 0)
+			{
+				iPressure = (iPressure * (100 + iCSUAReligiousPressureMod)) / 100;
+			}
+		}
+		// Vatican CS UA: boost spread speed of the founder's religion (ally +50% / friend +20%)
+		{
+			PlayerTypes eFounder = pReligion->m_eFounder;
+			int iSpreadMod = GET_PLAYER(eFounder).GetCSUAReligionSpreadSpeedModifier();
+			if (iSpreadMod > 0)
+			{
+				iPressure = (iPressure * (100 + iSpreadMod)) / 100;
 			}
 		}
 #endif
@@ -3965,6 +4070,14 @@ void CvCityReligions::AddProphetSpread(ReligionTypes eReligion, int iPressure, P
 		{
 			const CvReligion *pReligion = GC.getGame().GetGameReligions()->GetReligion(it->m_eReligion, NO_PLAYER);
 			int iPressureRetention = pReligion->m_Beliefs.GetInquisitorPressureRetention();  // Normally 0
+			// CSUA (e.g. Wittenberg): the ally-led religion keeps followers when cleansed,
+			// stacking with any belief-provided retention, capped at 90% total
+			if (pReligion->m_eFounder != NO_PLAYER)
+			{
+				const int iCSUARetention = GET_PLAYER(pReligion->m_eFounder).GetCSUAInquisitorRetentionPercent();
+				iPressureRetention += iCSUARetention;
+				iPressureRetention = min(iPressureRetention, 90);
+			}
 			if (iPressureRetention > 0)
 			{
 				ePressureRetainedReligion = it->m_eReligion;
@@ -4077,6 +4190,14 @@ void CvCityReligions::SimulateProphetSpread(ReligionTypes eReligion, int iPressu
 		{
 			const CvReligion *pReligion = GC.getGame().GetGameReligions()->GetReligion(it->m_eReligion, NO_PLAYER);
 			int iPressureRetention = pReligion->m_Beliefs.GetInquisitorPressureRetention();  // Normally 0
+			// CSUA (e.g. Wittenberg): the ally-led religion keeps followers when cleansed,
+			// stacking with any belief-provided retention, capped at 90% total
+			if (pReligion->m_eFounder != NO_PLAYER)
+			{
+				const int iCSUARetention = GET_PLAYER(pReligion->m_eFounder).GetCSUAInquisitorRetentionPercent();
+				iPressureRetention += iCSUARetention;
+				iPressureRetention = min(iPressureRetention, 90);
+			}
 			if (iPressureRetention > 0)
 			{
 				ePressureRetainedReligion = it->m_eReligion;
@@ -4306,6 +4427,14 @@ void CvCityReligions::RemoveOtherReligions(ReligionTypes eReligion, PlayerTypes 
 		{
 			const CvReligion *pReligion = GC.getGame().GetGameReligions()->GetReligion(eLoopReligion, NO_PLAYER);
 			iPressureRetained = pReligion->m_Beliefs.GetInquisitorPressureRetention();  // Normally 0
+			// CSUA (e.g. Wittenberg): the ally-led religion keeps followers when cleansed,
+			// stacking with any belief-provided retention, capped at 90% total
+			if (pReligion->m_eFounder != NO_PLAYER)
+			{
+				const int iCSUARetention = GET_PLAYER(pReligion->m_eFounder).GetCSUAInquisitorRetentionPercent();
+				iPressureRetained += iCSUARetention;
+				iPressureRetained = min(iPressureRetained, 90);
+			}
 		}
 
 		if (eLoopReligion == NO_RELIGION || eLoopReligion == eReligion || iPressureRetained > 0)
@@ -6007,13 +6136,28 @@ void CvReligionAI::DoFaithPurchases()
 #endif
 		if (eProphetType != NO_UNIT && ChooseProphetConversionCity(true/*bOnlyBetterThanEnhancingReligion*/) && m_pPlayer->GetReligions()->GetNumProphetsSpawned(false) <= 5)
 		{
-			BuyGreatPerson(eProphetType);
-
-			if(GC.getLogging())
+			// Prefer a cheap Inquisitor to reclaim our cities whenever our religion still holds
+			// residual pressure; a Great Prophet is only needed when our faith has been completely
+			// wiped out, since an Inquisitor cannot restore pressure from zero.
+			if(MOD_SP_SMART_AI && HasReclaimableHereticCities(eReligion))
 			{
-				strLogMsg += ", Saving for Prophet, ";
-				strLogMsg += GC.getUnitInfo(eProphetType)->GetDescription();
-			}				
+				BuyInquisitor(eReligion);
+
+				if(GC.getLogging())
+				{
+					strLogMsg += ", Saving for Inquisitor, Reclaiming Our Cities";
+				}
+			}
+			else
+			{
+				BuyGreatPerson(eProphetType);
+
+				if(GC.getLogging())
+				{
+					strLogMsg += ", Saving for Prophet, ";
+					strLogMsg += GC.getUnitInfo(eProphetType)->GetDescription();
+				}
+			}
 		}
 
 		// Besides prophets, first priority is to convert all our non-puppet cities
@@ -6035,6 +6179,26 @@ void CvReligionAI::DoFaithPurchases()
 			if(GC.getLogging())
 			{
 				strLogMsg += ", Saving for Faith Building, For Our Non-Puppet Cities";
+			}
+		}
+
+		// CSUA (Wittenberg): buy a belief for the religion we lead from an ally city-state's ability.
+		// Placed before reformation buildings so the extra belief is secured once core faith needs are met.
+		else if(DoCityStateFaithBeliefPurchase())
+		{
+			if(GC.getLogging())
+			{
+				strLogMsg += ", CSUA Belief Purchase";
+			}
+		}
+
+		// CSUA (La Venta): buy an idle pantheon belief from an ally city-state's ability.
+		// High priority for the first three purchases, right behind the Wittenberg belief purchase.
+		else if(DoCityStateFaithPantheonPurchase(true))
+		{
+			if(GC.getLogging())
+			{
+				strLogMsg += ", CSUA Pantheon Purchase";
 			}
 		}
 
@@ -6111,6 +6275,15 @@ void CvReligionAI::DoFaithPurchases()
 			}
 		}
 
+		// CSUA (La Venta): pantheon purchases beyond the first three are the lowest-priority faith spend.
+		else if(DoCityStateFaithPantheonPurchase(false))
+		{
+			if(GC.getLogging())
+			{
+				strLogMsg += ", CSUA Pantheon Purchase (Low Priority)";
+			}
+		}
+
 		// Any faith buildings from other religions we can buy?
 		else
 		{
@@ -6125,6 +6298,234 @@ void CvReligionAI::DoFaithPurchases()
 			GC.getGame().GetGameReligions()->LogReligionMessage(strLogMsg);
 		}
 	}
+}
+
+/// Use an ally city-state's belief-purchase ability (Wittenberg UA). Returns true if a belief was bought.
+bool CvReligionAI::DoCityStateFaithBeliefPurchase()
+{
+	// We must lead a religion to add the belief to.
+	ReligionTypes eReligion = m_pPlayer->GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		return false;
+	}
+
+	// Scan all city-states for one that grants the ability, is our ally and hasn't been used by us yet.
+	for(int iMinor = 0; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iMinor;
+		CvPlayer& kMinor = GET_PLAYER(eMinor);
+		if(!kMinor.isMinorCiv() || !kMinor.isAlive())
+		{
+			continue;
+		}
+		if(!kMinor.HasCSUABeliefPurchaseUA())
+		{
+			continue;
+		}
+		CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+		if(pMinorAI == NULL || !pMinorAI->IsAllies(m_pPlayer->GetID()))
+		{
+			continue;
+		}
+		if(pMinorAI->IsFaithBeliefPurchasedByMajor(m_pPlayer->GetID()))
+		{
+			continue;
+		}
+
+		// Faith cost = base option value scaled by game speed, then by the AI difficulty discount.
+		int iCost = gCustomMods.getOption("SP_FAITH_BELIEF_PURCHASE_COST", 2500);
+		iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+		if(!m_pPlayer->isHuman() && !m_pPlayer->IsAITeammateOfHuman())
+		{
+			iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+		}
+		if(iCost <= 0 || m_pPlayer->GetFaith() < iCost)
+		{
+			continue;
+		}
+
+		// Pick a belief that breaks type limits (may hold a slot another religion already took),
+		// excluding only the ones this religion already has.
+		BeliefTypes eBelief = ChooseCSUABelief(m_pPlayer->GetID(), eReligion);
+		if(eBelief == NO_BELIEF)
+		{
+			continue;
+		}
+
+		if(pMinorAI->DoCityStateFaithBeliefPurchase(m_pPlayer->GetID(), eBelief))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/// Use an ally city-state's faith-pantheon-purchase ability (La Venta UA).
+/// bHighPriority only buys the first three purchases per ally; otherwise it only buys
+/// purchases beyond three so the (very expensive) later purchases never crowd out other faith uses.
+bool CvReligionAI::DoCityStateFaithPantheonPurchase(bool bHighPriority)
+{
+	// We must lead a religion to add the pantheon to.
+	ReligionTypes eReligion = m_pPlayer->GetReligions()->GetReligionCreatedByPlayer();
+	if(eReligion <= RELIGION_PANTHEON)
+	{
+		return false;
+	}
+
+	// Scan all city-states for one that grants the ability and is our ally.
+	for(int iMinor = 0; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iMinor;
+		CvPlayer& kMinor = GET_PLAYER(eMinor);
+		if(!kMinor.isMinorCiv() || !kMinor.isAlive())
+		{
+			continue;
+		}
+		if(!kMinor.HasCSUAFaithPantheonPurchaseUA())
+		{
+			continue;
+		}
+		CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+		if(pMinorAI == NULL || !pMinorAI->IsAllies(m_pPlayer->GetID()))
+		{
+			continue;
+		}
+
+		// Per-ally purchase count gates the priority: high priority buys the 1st..3rd,
+		// low priority only the 4th and beyond.
+		int iCount = pMinorAI->GetFaithPantheonPurchaseCount(m_pPlayer->GetID());
+		if(bHighPriority ? (iCount >= 3) : (iCount < 3))
+		{
+			continue;
+		}
+
+		// Faith cost = base option value doubled per purchase, scaled by game speed,
+		// then by the AI difficulty discount.
+		int iCost = pMinorAI->GetCityStateFaithPantheonPurchaseCost(m_pPlayer->GetID());
+		if(iCost <= 0)
+		{
+			continue;
+		}
+		if(!m_pPlayer->isHuman() && !m_pPlayer->IsAITeammateOfHuman())
+		{
+			iCost = iCost * GC.getGame().getHandicapInfo().getAIConstructPercent() / 100;
+		}
+		if(m_pPlayer->GetFaith() < iCost)
+		{
+			continue;
+		}
+
+		// Pick an idle pantheon belief (pantheon type not claimed by any religion),
+		// excluding only the ones this religion already has.
+		BeliefTypes eBelief = ChooseCSUAPantheonBelief(eReligion);
+		if(eBelief == NO_BELIEF)
+		{
+			continue;
+		}
+
+		if(pMinorAI->DoCityStateFaithPantheonPurchase(m_pPlayer->GetID(), eBelief))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/// Choose the best idle pantheon belief for a CSUA pantheon purchase (breaks type limits).
+BeliefTypes CvReligionAI::ChooseCSUAPantheonBelief(ReligionTypes eReligion)
+{
+	CvGameReligions* pGameReligions = GC.getGame().GetGameReligions();
+	CvWeightedVector<BeliefTypes, SAFE_ESTIMATE_NUM_BELIEFS, true> beliefChoices;
+
+	const CvReligion* pReligion = pGameReligions->GetReligion(eReligion, m_pPlayer->GetID());
+	CvBeliefXMLEntries* pkBeliefs = GC.GetGameBeliefs();
+	const int iNumBeliefs = pkBeliefs->GetNumBeliefs();
+	for(int iI = 0; iI < iNumBeliefs; iI++)
+	{
+		const BeliefTypes eBelief(static_cast<BeliefTypes>(iI));
+		CvBeliefEntry* pEntry = pkBeliefs->GetEntry(eBelief);
+		if(pEntry == NULL || !pEntry->IsPantheonBelief())
+		{
+			continue;
+		}
+		// Only idle pantheon beliefs: not yet claimed by any religion.
+		if(pGameReligions->IsInSomeReligion(eBelief))
+		{
+			continue;
+		}
+		// Exclude beliefs this religion already has.
+		if(pReligion && pReligion->m_Beliefs.HasBelief(eBelief))
+		{
+			continue;
+		}
+
+		int iScore = ScoreBelief(pEntry);
+		if(iScore <= 0)
+		{
+			continue;
+		}
+		beliefChoices.push_back(eBelief, iScore);
+	}
+
+	beliefChoices.SortItems();
+	int iNumChoices = MIN(beliefChoices.size(), 3);
+	RandomNumberDelegate fcn = MakeDelegate(&GC.getGame(), &CvGame::getJonRandNum);
+	BeliefTypes rtnValue = beliefChoices.ChooseFromTopChoices(iNumChoices, &fcn, "Choosing CSUA pantheon belief from Top Choices");
+	LogBeliefChoices(beliefChoices, rtnValue);
+
+	return rtnValue;
+}
+
+/// Choose the best belief for a CSUA belief purchase (breaks type limits).
+/// Weights: reformation x1.8, enhancer & founder x1.5, others at base score.
+BeliefTypes CvReligionAI::ChooseCSUABelief(PlayerTypes ePlayer, ReligionTypes eReligion)
+{
+	CvGameReligions* pGameReligions = GC.getGame().GetGameReligions();
+	CvWeightedVector<BeliefTypes, SAFE_ESTIMATE_NUM_BELIEFS, true> beliefChoices;
+
+	const CvReligion* pReligion = pGameReligions->GetReligion(eReligion, ePlayer);
+	CvBeliefXMLEntries* pkBeliefs = GC.GetGameBeliefs();
+	const int iNumBeliefs = pkBeliefs->GetNumBeliefs();
+	for(int iI = 0; iI < iNumBeliefs; iI++)
+	{
+		const BeliefTypes eBelief(static_cast<BeliefTypes>(iI));
+		CvBeliefEntry* pEntry = pkBeliefs->GetEntry(eBelief);
+		if(pEntry == NULL)
+		{
+			continue;
+		}
+		// Only exclude beliefs this religion already has; beliefs held by other religions are allowed.
+		if(pReligion && pReligion->m_Beliefs.HasBelief(eBelief))
+		{
+			continue;
+		}
+
+		int iScore = ScoreBelief(pEntry);
+		if(iScore <= 0)
+		{
+			continue;
+		}
+		if(pEntry->IsReformationBelief())
+		{
+			iScore = iScore * 18 / 10;
+		}
+		else if(pEntry->IsEnhancerBelief() || pEntry->IsFounderBelief())
+		{
+			iScore = iScore * 15 / 10;
+		}
+		beliefChoices.push_back(eBelief, iScore);
+	}
+
+	beliefChoices.SortItems();
+	int iNumChoices = MIN(beliefChoices.size(), 3);
+	RandomNumberDelegate fcn = MakeDelegate(&GC.getGame(), &CvGame::getJonRandNum);
+	BeliefTypes rtnValue = beliefChoices.ChooseFromTopChoices(iNumChoices, &fcn, "Choosing CSUA belief from Top Choices");
+	LogBeliefChoices(beliefChoices, rtnValue);
+
+	return rtnValue;
 }
 
 /// Pick the right city to purchase a missionary in
@@ -6152,6 +6553,30 @@ void CvReligionAI::BuyMissionary(ReligionTypes eReligion)
 }
 
 /// Pick the right city to purchase an inquisitor in
+/// Is there a city of ours where our religion still holds residual pressure
+/// but another religion currently has the majority? Such cities can be
+/// reclaimed cheaply with an Inquisitor instead of a Great Prophet.
+bool CvReligionAI::HasReclaimableHereticCities(ReligionTypes eReligion) const
+{
+	int iLoop;
+	CvCity* pLoopCity;
+	for(pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if(pLoopCity->GetCityReligions()->GetNumFollowers(eReligion) <= 0)
+		{
+			continue;
+		}
+
+		ReligionTypes eMajority = pLoopCity->GetCityReligions()->GetReligiousMajority();
+		if(eMajority != eReligion && eMajority > RELIGION_PANTHEON)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void CvReligionAI::BuyInquisitor(ReligionTypes eReligion)
 {
 	CvPlayer &kPlayer = GET_PLAYER(m_pPlayer->GetID());

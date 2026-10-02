@@ -4103,7 +4103,7 @@ bool CvPlot::isFriendlyCity(const CvUnit& kUnit, bool) const
 			return true;
 		}
 
-		if(GET_TEAM(ePlotTeam).IsAllowsOpenBordersToTeam(eTeam))
+		if(getOwner() != NO_PLAYER && GET_PLAYER(getOwner()).IsAllowsOpenBordersToPlayer(kUnit.getOwner()))
 		{
 			return true;
 		}
@@ -4245,7 +4245,7 @@ bool CvPlot::IsFriendlyTerritory(PlayerTypes ePlayer) const
 	}
 
 	// Major's territory we have OB with
-	if(GET_TEAM(ePlotOwner).IsAllowsOpenBordersToTeam(eTeam))
+	if(getOwner() != NO_PLAYER && GET_PLAYER(getOwner()).IsAllowsOpenBordersToPlayer(ePlayer))
 	{
 		return true;
 	}
@@ -9270,6 +9270,13 @@ int CvPlot::calculateImprovementYieldChange(ImprovementTypes eImprovement, Yield
 						eOtherImp, eImprovement, eYield);
 					iYield += kPlayer.GetAdjacentImprovementYieldChangeFromBuildingsGlobal(
 						eOtherImp, eImprovement, eYield);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					// Yerevan CS UA: a holy-site neighbour grants extra flat yield to this improvement
+					// plot (e.g. +1 culture to any improved plot next to a holy site). Mirrors the
+					// Policy/Trait/Building adjacent-improvement family (no worked-neighbour requirement):
+					// this plot itself is only shown once worked, so the bonus always lands on a worked plot.
+					iYield += kPlayer.GetCSUAAdjacentImprovementYieldChange(eImprovement, eOtherImp, eYield);
+#endif
 				}
 			}
 		}

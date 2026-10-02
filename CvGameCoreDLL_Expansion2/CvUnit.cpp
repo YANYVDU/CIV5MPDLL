@@ -2957,11 +2957,15 @@ void CvUnit::doTurn()
 		}
 	}
 	CvPlot* pPlot = plot();
-	if((GetStayCSInfluencePerTurn() != 0 || GetStayCSExpPerTurn() != 0) && pPlot && GET_PLAYER(pPlot->getOwner()).isMinorCiv() && !GET_TEAM(pPlot->getTeam()).isAtWar(getTeam()))
+	if((GetStayCSInfluencePerTurn() != 0 || GetStayCSExpPerTurn() != 0) && pPlot)
 	{
+		// Guard against plots with no owner: GET_PLAYER(NO_PLAYER) would index out of bounds.
 		PlayerTypes eMinor = pPlot->getOwner();
-		GET_PLAYER(eMinor).GetMinorCivAI()->ChangeFriendshipWithMajor(getOwner(), GetStayCSInfluencePerTurn());
-		iTotalXP += GetStayCSExpPerTurn();
+		if(CvPlayerAI::IsValid(eMinor) && GET_PLAYER(eMinor).isMinorCiv() && !GET_TEAM(pPlot->getTeam()).isAtWar(getTeam()))
+		{
+			GET_PLAYER(eMinor).GetMinorCivAI()->ChangeFriendshipWithMajor(getOwner(), GetStayCSInfluencePerTurn());
+			iTotalXP += GetStayCSExpPerTurn();
+		}
 	}
 	if(!IsCivilianUnit() && pPlot)
 	{
@@ -2976,7 +2980,18 @@ void CvUnit::doTurn()
 	if (iTotalXP > 0)
 	{
 #if defined(MOD_UNITS_XP_TIMES_100)
-		changeExperienceTimes100(iTotalXP * 100);
+#if defined(MOD_PROMOTION_NEW_EFFECT_FOR_SP)
+		// Carrier-based aircraft hand their per-turn XP over to the transport, mirroring what
+		// DoGiveEXPToCarrier does for combat XP (PROMOTION_CARRIER_FIGHTER/HELICOPTER use 100).
+		if (MOD_PROMOTION_NEW_EFFECT_FOR_SP && GetCarrierEXPGivenModifier() > 0 && getTransportUnit() != NULL)
+		{
+			getTransportUnit()->changeExperienceTimes100(iTotalXP * 100 * GetCarrierEXPGivenModifier() / 100);
+		}
+		else
+#endif
+		{
+			changeExperienceTimes100(iTotalXP * 100);
+		}
 #else
 		changeExperience(iTotalxp);
 #endif
@@ -3470,7 +3485,7 @@ void CvUnit::doCommand(CommandTypes eCommand, int iData1, int iData2)
 }
 
 //	--------------------------------------------------------------------------------
-bool CvUnit::canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage, bool bIsCity, bool bIsDeclareWarMove) const
+bool CvUnit::canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage, bool bIsCity, bool bIsDeclareWarMove, PlayerTypes ePlotOwnerPlayer) const
 {
 	VALIDATE_OBJECT
 
@@ -3560,13 +3575,25 @@ bool CvUnit::canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage, bool
 
 	if(!bIgnoreRightOfPassage)
 	{
-#if defined(MOD_GLOBAL_CS_OVERSEAS_TERRITORY)
-		if(pTheirTeam->IsAllowsOpenBordersToTeam(eMyTeam))
-#else
-		if(kTheirTeam.IsAllowsOpenBordersToTeam(eMyTeam))
-#endif
+		// Player-level open borders: only the concrete owner of the plot grants access, so that an
+		// open-border deal between A and C never lets a different player B on the same team slip in.
+		// IsAllowsOpenBordersToPlayer itself falls back to the legacy team-level rule for old saves,
+		// so a granted open border is honored exactly when the player-level system is authoritative.
+		if(ePlotOwnerPlayer != NO_PLAYER && GET_PLAYER(ePlotOwnerPlayer).IsAllowsOpenBordersToPlayer(getOwner()))
 		{
 			return true;
+		}
+		// Only when the concrete plot owner cannot be determined do we fall back to the team-level rule.
+		else if(ePlotOwnerPlayer == NO_PLAYER)
+		{
+#if defined(MOD_GLOBAL_CS_OVERSEAS_TERRITORY)
+			if(pTheirTeam->IsAllowsOpenBordersToTeam(eMyTeam))
+#else
+			if(kTheirTeam.IsAllowsOpenBordersToTeam(eMyTeam))
+#endif
+			{
+				return true;
+			}
 		}
 	}
 
@@ -3651,7 +3678,7 @@ bool CvUnit::canEnterTerrain(const CvPlot& enterPlot, byte bMoveFlags) const
 
 	TeamTypes eTeam = getTeam();
 
-	if(canEnterTerritory(enterPlot.getTeam(), false /*bIgnoreRightOfPassage*/, enterPlot.getPlotCity() != NULL, bMoveFlags & MOVEFLAG_DECLARE_WAR))
+	if(canEnterTerritory(enterPlot.getTeam(), false /*bIgnoreRightOfPassage*/, enterPlot.getPlotCity() != NULL, bMoveFlags & MOVEFLAG_DECLARE_WAR, enterPlot.getOwner()))
 	{
 		if(enterPlot.getFeatureType() != NO_FEATURE && enterPlot.getRouteType() == NO_ROUTE)  // assume that all units can use roads and rails
 		{
@@ -3858,7 +3885,7 @@ TeamTypes CvUnit::GetDeclareWarMove(const CvPlot& plot) const
 		{
 			if(!GET_TEAM(eRevealedTeam).isMinorCiv() || plot.isCity())
 			{
-				if(!canEnterTerritory(eRevealedTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), true))
+				if(!canEnterTerritory(eRevealedTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), true, plot.getOwner()))
 				{
 #if defined(MOD_EVENTS_WAR_AND_PEACE)
 					if(GET_TEAM(getTeam()).canDeclareWar(plot.getTeam(), getOwner()))
@@ -3906,7 +3933,7 @@ PlayerTypes CvUnit::GetBullyMinorMove(const CvPlot* pPlot) const
 		{
 			if(GET_PLAYER(eMinor).isMinorCiv())
 			{
-				if(!canEnterTerritory(GET_PLAYER(eMinor).getTeam(), false /*bIgnoreRightOfPassage*/, pPlot->isCity()))
+				if(!canEnterTerritory(GET_PLAYER(eMinor).getTeam(), false /*bIgnoreRightOfPassage*/, pPlot->isCity(), false, eMinor))
 				{
 					return eMinor;
 				}
@@ -4278,7 +4305,7 @@ bool CvUnit::canMoveInto(const CvPlot& plot, byte bMoveFlags) const
 
 		ePlotTeam = ((isHuman()) ? plot.getRevealedTeam(getTeam()) : plot.getTeam());
 
-		if(!canEnterTerritory(ePlotTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), bMoveFlags & MOVEFLAG_DECLARE_WAR))
+		if(!canEnterTerritory(ePlotTeam, false /*bIgnoreRightOfPassage*/, plot.isCity(), bMoveFlags & MOVEFLAG_DECLARE_WAR, plot.getOwner()))
 		{
 			CvAssert(ePlotTeam != NO_TEAM);
 
@@ -4634,7 +4661,7 @@ bool CvUnit::jumpToNearestValidPlot()
 #endif
 				{
 					// Can only jump to a plot if we can enter the territory, and it's NOT enemy territory OR we're a barb
-					if(canEnterTerritory(pLoopPlot->getTeam()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)) && !(pLoopPlot->isMountain() && !pLoopPlot->isCity()))
+					if(canEnterTerritory(pLoopPlot->getTeam(), false, false, false, pLoopPlot->getOwner()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)) && !(pLoopPlot->isMountain() && !pLoopPlot->isCity()))
 					{
 						CvAssertMsg(!atPlot(*pLoopPlot), "atPlot(pLoopPlot) did not return false as expected");
 
@@ -4764,7 +4791,7 @@ bool CvUnit::jumpToNearestValidPlotWithinRange(int iRange)
 #endif
 						{
 							// Can only jump to a plot if we can enter the territory, and it's NOT enemy territory OR we're a barb
-							if(canEnterTerritory(pLoopPlot->getTeam()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)))
+							if(canEnterTerritory(pLoopPlot->getTeam(), false, false, false, pLoopPlot->getOwner()) && (isBarbarian() || !isEnemy(pLoopPlot->getTeam(), pLoopPlot)))
 							{
 								CvAssertMsg(!atPlot(*pLoopPlot), "atPlot(pLoopPlot) did not return false as expected");
 
@@ -4864,7 +4891,7 @@ bool CvUnit::MoveToNearestValidPlotWithinRangeFromPlot(const CvPlot& pPlot, int 
 					iNumUnitLimit = GC.getPLOT_UNIT_LIMIT();
 #endif
 					if(iNumUnit >= iNumUnitLimit) continue;
-					if(canEnterTerritory(pLoopPlot->getTeam()) && pLoopPlot->isRevealed(getTeam()))
+					if(canEnterTerritory(pLoopPlot->getTeam(), false, false, false, pLoopPlot->getOwner()) && pLoopPlot->isRevealed(getTeam()))
 					{
 						if(iLoopPlotIndex != iLastValidPlotIndex)
 						{
@@ -8637,7 +8664,7 @@ void CvUnit::DoAttrition()
 	if (eOwnerTeam != NO_TEAM)
 	{
 		CvTeam &kTeam = GET_TEAM(eOwnerTeam);
-		if (!kTeam.isMinorCiv() && eOwnerTeam != getTeam() && !kTeam.IsAllowsOpenBordersToTeam(getTeam()))
+		if (!kTeam.isMinorCiv() && eOwnerTeam != getTeam() && pPlot->getOwner() != NO_PLAYER && !GET_PLAYER(pPlot->getOwner()).IsAllowsOpenBordersToPlayer(getOwner()))
 		{
 			int iReligiousStrengthLoss = GetReligiousStrengthLossRivalTerritory();
 			if (iReligiousStrengthLoss > 0)
@@ -9735,12 +9762,20 @@ bool CvUnit::canPlunderTradeRoute(const CvPlot* pPlot, bool bOnlyTestVisibility)
 
 			TeamTypes eTeam = GET_PLAYER(eTradeUnitOwner).getTeam();
 #if defined(MOD_BUGFIX_USE_GETTERS)
-			if (!GET_TEAM(GET_MY_PLAYER().getTeam()).isAtWar(eTeam))
+			bool bAtWar = GET_TEAM(GET_MY_PLAYER().getTeam()).isAtWar(eTeam);
 #else
-			if (!GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).isAtWar(eTeam))
+			bool bAtWar = GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).isAtWar(eTeam);
 #endif
+			if (!bAtWar)
 			{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Almaty CS UA: the ally's units may pillage trade routes of players they are not at war with
+				CvPlayerCityStateUA* pCSUA = GET_PLAYER(m_eOwner).GetPlayerCityStateUA();
+				if (!(MOD_SP_UNIQUE_CITYSTATE && pCSUA != NULL && pCSUA->IsCanPillageNeutralTradeRoute()))
+					return false;
+#else
 				return false;
+#endif
 			}
 		}
 
@@ -9887,16 +9922,42 @@ bool CvUnit::createGreatWork()
 			gDLL->GameplayUnitActivate(pDllUnit.get());
 		}
 
-		if(IsGreatPerson())
+		bool bNoDeathAfterGreatWork = false;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Buenos Aires CS UA: the ally's Great Person survives creating a Great Work,
+		// loses the ability to create another one, and keeps only a fraction of its concert tourism.
+		if (MOD_SP_UNIQUE_CITYSTATE)
 		{
-#if defined(MOD_EVENTS_GREAT_PEOPLE)
-			kPlayer.DoGreatPersonExpended(getUnitType(), this);
-#else
-			kPlayer.DoGreatPersonExpended(getUnitType());
-#endif
+			CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+			// Only the Great Musician (the unit that creates a music great work) is affected;
+			// Great Artists / Great Writers still die normally after creating their great work.
+			if (pCSUA != NULL && pCSUA->IsGPNoDeathAfterGreatWork()
+				&& eClass == (GreatWorkClass)GC.getInfoTypeForString("GREAT_WORK_MUSIC"))
+			{
+				bNoDeathAfterGreatWork = true;
+				SetGreatWork(NO_GREAT_WORK);
+				int iRetention = pCSUA->GetGPConcertTourismRetentionPercent();
+				if (iRetention > 0)
+				{
+					SetTourismBlastStrength(GetTourismBlastStrength() * iRetention / 100);
+				}
+			}
 		}
+#endif
 
-		kill(true);
+		if (!bNoDeathAfterGreatWork)
+		{
+			if(IsGreatPerson())
+			{
+#if defined(MOD_EVENTS_GREAT_PEOPLE)
+				kPlayer.DoGreatPersonExpended(getUnitType(), this);
+#else
+				kPlayer.DoGreatPersonExpended(getUnitType());
+#endif
+			}
+
+			kill(true);
+		}
 
 		bool bDontShowRewardPopup = GC.GetEngineUserInterface()->IsOptionNoRewardPopups();
 		Localization::String localizedText;
@@ -12190,6 +12251,8 @@ int CvUnit::getTradeInfluence(const CvPlot* pPlot) const
 		if (eMinor != NO_PLAYER)
 		{
 			iInf = /*30*/ GC.getMINOR_FRIENDSHIP_FROM_TRADE_MISSION();
+			// Amount of influence also increases with how far into the game we are
+			iInf += (m_pUnitInfo->GetNumInfluencePerEra() * GET_TEAM(getTeam()).GetCurrentEra());
 			int iInfTimes100 = iInf * (100 + GetTradeMissionInfluenceModifier());
 			iInf = iInfTimes100 / 100;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
@@ -15172,6 +15235,8 @@ int CvUnit::GetMaxHitPoints() const
 	iMaxHP += getMaxHitPointsChange();
 	// Per Kill max HP is a flat addition: kills * promotionValue / 100
 	iMaxHP += GetPerKillMaxHpBonus();
+	// Almaty: extra max HP from kills x surplus horses x percent (live, not cached at kill time)
+	iMaxHP += GetCSUAKillMaxHpBonus();
 
 	return iMaxHP;
 #else
@@ -15184,7 +15249,11 @@ int CvUnit::GetMaxHitPoints() const
 int CvUnit::GetCurrHitPoints()	const
 {
 	VALIDATE_OBJECT
-	return (GetMaxHitPoints() - getDamage());
+	// Max HP is not monotonic: losing a promotion (or, for Almaty, spending surplus strategic resources)
+	// can shrink the cap below the damage already taken. Clamp at 0 so a shrunken cap never yields a
+	// negative current HP; setDamage already expects this value to be non-negative.
+	int iCurr = GetMaxHitPoints() - getDamage();
+	return (iCurr > 0) ? iCurr : 0;
 }
 
 
@@ -15551,6 +15620,12 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 			}
 		}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Hanoi CS UA: enemy units fighting inside the territory of a player holding this effect lose
+		// Combat Strength. See GetCSUACombatModifierInBorders (shared with the UI combat panel).
+		iModifier += GetCSUACombatModifierInBorders(pBattlePlot);
+#endif
+
 		// Capital Defense
 		iTempModifier = GetCapitalDefenseModifier();
 		if(iTempModifier > 0)
@@ -15684,6 +15759,12 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 	iModifier += GC.GetIndependentPromotion()->GetHappinessCombatModifier(*this);
 	iModifier += GC.GetIndependentPromotion()->GetResourceCombatModifier(*this);
 	iModifier += GC.GetIndependentPromotion()->GetNearbyUnitPromotionBonus(*this);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Mbanza Kongo CS UA: +CombatBonusPerTechDifference% Combat Strength per technology the enemy team
+	// has researched more than ours (one-way: no bonus when we are ahead). Shared with the UI combat panel.
+	iModifier += GetCSUACombatBonusPerTechDifference(pOtherUnit, pBattlePlot);
+#endif
 
 	return iModifier;
 }
@@ -17359,7 +17440,13 @@ int CvUnit::GetAirCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bInc
 	// City is Defender
 	else
 	{
-		iDefenderStrength = pCity->getStrengthValue();
+		// Sidon UA: attackers of an allied player bypass part of the defended city's building defense
+		int iIgnoreBuildingDefense = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+			iIgnoreBuildingDefense = GET_PLAYER(getOwner()).GetCSACityAttackIgnoreBuildingDefensePercent();
+#endif
+		iDefenderStrength = pCity->getStrengthValue(false, iIgnoreBuildingDefense);
 	}
 
 	// The roll will vary damage between 30 and 40 (out of 100) for two units of identical strength
@@ -17492,7 +17579,13 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 	// City is Defender
 	else
 	{
-		iDefenderStrength = pCity->getStrengthValue();
+		// Sidon UA: attackers of an allied player bypass part of the defended city's building defense
+		int iIgnoreBuildingDefense = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+			iIgnoreBuildingDefense = GET_PLAYER(getOwner()).GetCSACityAttackIgnoreBuildingDefensePercent();
+#endif
+		iDefenderStrength = pCity->getStrengthValue(false, iIgnoreBuildingDefense);
 	}
 
 	// The roll will vary damage between 30 and 40 (out of 100) for two units of identical strength
@@ -19684,6 +19777,20 @@ int CvUnit::GetCombatModifierFromBuilding() const
 	{
         iModifier += pCity->GetDomainEnemyCombatModifier(eDomain);
         iModifier += GET_PLAYER(eCityOwner).GetDomainEnemyCombatModifierGlobal(eDomain);
+
+        // SP: City-State palace - enemy units inside CS borders lose combat based on CS treasury gold
+        int iPerGold = 0;
+        for (int iB = 0; iB < GC.getNumBuildingInfos(); iB++)
+        {
+            if (pCity->GetCityBuildings()->GetNumBuilding((BuildingTypes)iB) > 0)
+                iPerGold += GC.getBuildingInfo((BuildingTypes)iB)->GetDomainEnemyCombatModifierPerGold(eDomain);
+        }
+        if (iPerGold != 0)
+        {
+            int iGold = GET_PLAYER(eCityOwner).GetTreasury()->GetGold();
+            if (iGold > 0)
+                iModifier += iPerGold * (iGold / 100);
+        }
     }
 
     else if (eUnitTeam == eCityTeam) {
@@ -19692,6 +19799,181 @@ int CvUnit::GetCombatModifierFromBuilding() const
     }
 
     return iModifier;
+}
+
+//	--------------------------------------------------------------------------------
+/// Hanoi CS UA: Combat Strength modifier applied to this unit when fighting on pPlot, whose owner
+/// holds the "enemy units inside the borders lose Combat Strength per declaration of war" effect.
+/// Returns a non-positive plain percent (capped at -50), or 0 when the effect does not apply.
+int CvUnit::GetCSUACombatModifierInBorders(const CvPlot* pPlot) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pPlot == NULL) return 0;
+
+	PlayerTypes eOwner = pPlot->getOwner();
+	if (eOwner == NO_PLAYER || eOwner == getOwner()) return 0;
+
+	CvPlayer& kOwner = GET_PLAYER(eOwner);
+	CvPlayerCityStateUA* pUA = kOwner.GetPlayerCityStateUA();
+	if (pUA == NULL || pUA->GetEnemyCombatModifierInBordersPerBeenDoW() == 0) return 0;
+	if (!atWar(getTeam(), kOwner.getTeam())) return 0;
+
+	int iPenalty = pUA->GetEnemyCombatModifierInBordersPerBeenDoW() * kOwner.GetNumTimesDeclaredWarOn();
+	if (iPenalty < -50) iPenalty = -50;
+	return iPenalty;
+#else
+	return 0;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Mbanza Kongo CS UA: +X% Combat Strength per technology the enemy team has researched more than ours.
+/// One-way: returns 0 when we are ahead or even. The enemy is the other unit's owner, or, when besieging
+/// a city with no defending unit, the battle plot's city owner. Shared by GetGenericMaxStrengthModifier
+/// and the UI combat panel so the preview matches the real resolution.
+int CvUnit::GetCSUACombatBonusPerTechDifference(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	int iPerTech = (pCSUA != NULL) ? pCSUA->GetCombatBonusPerTechDifference() : 0;
+	if (iPerTech == 0)
+		return 0;
+
+	PlayerTypes eEnemy = NO_PLAYER;
+	if (pOtherUnit != NULL)
+		eEnemy = pOtherUnit->getOwner();
+	else if (pBattlePlot != NULL && pBattlePlot->isCity())
+		eEnemy = pBattlePlot->getOwner();
+
+	if (eEnemy == NO_PLAYER || eEnemy == getOwner() || !GET_PLAYER(eEnemy).isAlive())
+		return 0;
+
+	int iMyTechs = GET_TEAM(getTeam()).GetTeamTechs()->GetNumTechsKnown();
+	int iEnemyTechs = GET_TEAM(GET_PLAYER(eEnemy).getTeam()).GetTeamTechs()->GetNumTechsKnown();
+	int iDiff = iEnemyTechs - iMyTechs;
+	return (iDiff > 0) ? iDiff * iPerTech : 0;
+#else
+	return 0;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Sum of every CityState UA sourced Combat Strength modifier for this unit against the given enemy:
+/// the technology-difference bonus plus the inside-borders modifier. Shared with the UI combat panel.
+int CvUnit::GetCSUACombatModifier(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot) const
+{
+	VALIDATE_OBJECT
+	return GetCSUACombatBonusPerTechDifference(pOtherUnit, pBattlePlot) + GetCSUACombatModifierInBorders(pBattlePlot);
+}
+
+//	--------------------------------------------------------------------------------
+/// Hanoi CS UA: returns the percent (0..100) of fixed damage / fixed damage reduction this unit may
+/// still apply when fighting on pPlot. If the battle plot is owned by another player who holds this
+/// CSUA effect and the unit is at war with that owner, the effect scales the unit's fixed-damage
+/// contributions down: EnemyFixedDamageModifierInBorders is a negative percent modifier
+/// (ally -100 -> scale 0, friend -50 -> 50). Returns 100 (unaffected) in every other case.
+/// This is the single gate shared by every fixed-damage contribution inside InterveneInflictDamage,
+/// and is also consumed by the UI combat panel so the preview matches the real resolution.
+/// NOTE: the criterion is BATTLE PLOT OWNERSHIP, not the unit's own location.
+int CvUnit::GetCSUAFixedDamageScale(const CvPlot* pPlot) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pPlot == NULL) return 100;
+
+	PlayerTypes eOwner = pPlot->getOwner();
+	if (eOwner == NO_PLAYER || eOwner == getOwner()) return 100;
+
+	CvPlayerCityStateUA* pUA = GET_PLAYER(eOwner).GetPlayerCityStateUA();
+	if (pUA == NULL) return 100;
+
+	const int iNullifyPercent = pUA->GetEnemyFixedDamageModifierInBorders();
+	if (iNullifyPercent >= 0) return 100;
+	if (!atWar(getTeam(), GET_PLAYER(eOwner).getTeam())) return 100;
+
+	int iScale = 100 + iNullifyPercent;
+	if (iScale < 0) iScale = 0;
+	if (iScale > 100) iScale = 100;
+	return iScale;
+#else
+	return 100;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Milan CS UA: returns the scale percent (0..100) applied to the damage THIS unit takes when the
+/// opposing side's team has NOT researched the configured tech (Percent is a plain percent:
+/// TECH_RIFLING / 25 -> the unit takes only 75% damage). Multiple matching rows are applied in turn.
+/// The opponent is the other unit's owner, or, when there is no opposing unit, the opposing city's
+/// owner. Shared by the real resolution (CvUnitCombat::InterveneInflictDamage) and the UI combat panel
+/// (CvLuaUnit / EnemyUnitPanel.lua) so the preview matches the real result.
+int CvUnit::GetCSUADamageTakenScale(const CvUnit* pOtherUnit, const CvCity* pOtherCity) const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pCSUA == NULL || !pCSUA->HasCombatDamageReductionVsNoTech())
+		return 100;
+
+	TeamTypes eOppTeam = NO_TEAM;
+	if (pOtherUnit != NULL)
+		eOppTeam = GET_PLAYER(pOtherUnit->getOwner()).getTeam();
+	else if (pOtherCity != NULL)
+		eOppTeam = GET_PLAYER(pOtherCity->getOwner()).getTeam();
+
+	if (eOppTeam == NO_TEAM)
+		return 100;
+
+	int iScale = 100;
+	const std::vector<CombatDamageReductionVsNoTechEntry>& vEntries = pCSUA->GetCombatDamageReductionVsNoTech();
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		if (GET_TEAM(eOppTeam).GetTeamTechs()->HasTech((TechTypes)vEntries[i].m_iTech))
+			continue;
+		iScale = iScale * (100 - vEntries[i].m_iPercent) / 100;
+		if (iScale < 0) iScale = 0;
+	}
+	return iScale;
+#else
+	return 100;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Almaty CS UA: extra max HP while holding a configured promotion = ownerKills x ownerSurplusResource
+/// x Percent / 100. Evaluated live in GetMaxHitPoints so it follows kill changes immediately; the surplus
+/// is read from the per-turn cache (CacheKillMaxHpSurplus) because reading it live would walk every city
+/// on this very hot path. A cached deficit contributes nothing, so it never subtracts HP.
+int CvUnit::GetCSUAKillMaxHpBonus() const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pCSUA == NULL || !pCSUA->HasKillMaxHpByPromotion())
+		return 0;
+
+	int iKills = GetTotalKills();
+	if (iKills <= 0)
+		return 0;
+
+	int iBonus = 0;
+	const std::vector<KillMaxHpByPromotionEntry>& vEntries = pCSUA->GetKillMaxHpByPromotionEntries();
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		if (!isHasPromotion((PromotionTypes)vEntries[i].m_iPromotion))
+			continue;
+
+		if (vEntries[i].m_iCachedSurplus <= 0)
+			continue;
+
+		iBonus += (iKills * vEntries[i].m_iCachedSurplus * vEntries[i].m_iPercent) / 100;
+	}
+	return iBonus;
+#else
+	return 0;
+#endif
 }
 
 //	--------------------------------------------------------------------------------
@@ -22984,7 +23266,22 @@ int CvUnit::getRiverCrossingNoPenaltyCount() const
 bool CvUnit::isRiverCrossingNoPenalty() const
 {
 	VALIDATE_OBJECT
-	return (getRiverCrossingNoPenaltyCount() > 0);
+	if (getRiverCrossingNoPenaltyCount() > 0)
+	{
+		return true;
+	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Budapest UA: the ally's land units are immune to the river-crossing combat penalty (and the AI pathing penalty); the extra movement cost still applies.
+	if (MOD_SP_UNIQUE_CITYSTATE && getDomainType() == DOMAIN_LAND)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		if (pCSUA != NULL && pCSUA->IsLandUnitsImmuneRiverCrossing())
+		{
+			return true;
+		}
+	}
+#endif
+	return false;
 }
 
 

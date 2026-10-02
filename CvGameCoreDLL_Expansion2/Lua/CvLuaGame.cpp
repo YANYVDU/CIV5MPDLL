@@ -73,13 +73,21 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetVictoryValid);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetName);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetPlotExtraYield);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lSetPlotName);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetPlotName);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lRemovePlotName);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAllPlotNames);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetCombatWarned);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetAdvisorRecommenderCity);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetAdvisorRecommenderTech);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetMinimumFaithNextPantheon);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetHolyCity);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lSetFounder);
-	
+	REGIST_STATIC_FUNCTION(CvLuaGame::lEnhanceReligion);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorFaithGiftFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithBeliefPurchaseFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithPantheonPurchaseFromMajor);
+
 #if defined(MOD_NUCLEAR_WINTER_FOR_SP)
 	REGIST_STATIC_FUNCTION(CvLuaGame::lChangeNuclearWinterProcess);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lChangeNuclearWinterNaturalReduction);
@@ -165,6 +173,10 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetNumHumanPlayers);
 	Method(GetNumSequentialHumans);
 	Method(GetGameTurn);
+	Method(IsEconomicAidActive);
+	Method(GetEconomicAidWorldEra);
+	Method(GetEconomicAidRound);
+	Method(GetEconomicAidRoundTurnsLeft);
 	Method(SetGameTurn);
 	Method(GetTurnYear);
 	Method(GetGameTurnYear);
@@ -237,6 +249,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(MakeCircumnavigated);
 
 	Method(DoFromUIDiploEvent);
+	Method(DoDiplomacyBargain);
 
 	Method(IsDebugMode);
 	Method(SetDebugMode);
@@ -340,8 +353,18 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(DoControl);
 
 	Method(DoMinorPledgeProtection);
+	Method(DoMinorEconomicAid);
 	Method(DoMinorGoldGift);
 	Method(DoMinorGiftGold);
+	Method(DoMinorFaithGift);
+	Method(DoMinorFaithGiftFromMajor);
+	Method(GetCityStateFaithBeliefPurchaseCost);
+	Method(IsCityStateFaithBeliefPurchased);
+	Method(DoCityStateFaithBeliefPurchase);
+	Method(DoCityStateFaithBeliefPurchaseFromMajor);
+	Method(GetCityStateFaithPantheonPurchaseCost);
+	Method(DoCityStateFaithPantheonPurchase);
+	Method(DoCityStateFaithPantheonPurchaseFromMajor);
 	Method(DoMinorGiftTileImprovement);
 	Method(DoMinorBullyGold);
 	Method(DoMinorBullyUnit);
@@ -889,6 +912,30 @@ int CvLuaGame::lGetGameTurn(lua_State* L)
 	return BasicLuaMethod(L, &CvGame::getGameTurn);
 }
 //------------------------------------------------------------------------------
+//bool IsEconomicAidActive();
+int CvLuaGame::lIsEconomicAidActive(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::IsEconomicAidActive);
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidWorldEra();
+int CvLuaGame::lGetEconomicAidWorldEra(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::GetEconomicAidWorldEra);
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidRound();
+int CvLuaGame::lGetEconomicAidRound(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::GetEconomicAidRound);
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidRoundTurnsLeft();
+int CvLuaGame::lGetEconomicAidRoundTurnsLeft(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvGame::GetEconomicAidRoundTurnsLeft);
+}
+//------------------------------------------------------------------------------
 //void setGameTurn(int iNewValue);
 int CvLuaGame::lSetGameTurn(lua_State* L)
 {
@@ -1303,6 +1350,16 @@ int CvLuaGame::lMakeCircumnavigated(lua_State* L)
 int CvLuaGame::lDoFromUIDiploEvent(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::DoFromUIDiploEvent);
+}
+//------------------------------------------------------------------------------
+// Diplomacy Bargain (Super Power V11): broadcast a bargain attempt against eTargetPlayer.
+// It is evaluated inside the on-host authoritative command handler, so tryDiplomacyBargain's
+// getJonRandNum is consumed in lock-step across every client (safe in multiplayer).
+int CvLuaGame::lDoDiplomacyBargain(lua_State* L)
+{
+	const PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 1);
+	GC.getGame().DoFromUIDiploEvent(FROM_UI_DIPLO_EVENT_HUMAN_DIPLOMACY_BARGAIN, eTargetPlayer, (int)eTargetPlayer, -1);
+	return 0;
 }
 //------------------------------------------------------------------------------
 //bool isDebugMode();
@@ -2023,6 +2080,21 @@ int CvLuaGame::lDoMinorPledgeProtection(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//void DoMinorEconomicAid(int iMajorCivID, int iMinorCivID, bool bAid);
+// Routed through the FromUIDiploEvent channel for multiplayer synchronization
+int CvLuaGame::lDoMinorEconomicAid(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const bool bAid = lua_toboolean(L, 3);
+
+	// Routed to the city-state's DiplomacyAI (GetPlayer() there is the city-state);
+	// the acting major civ id is carried along as iArg1.
+	GC.getGame().DoFromUIDiploEvent((FromUIDiploEventTypes)(bAid ? FROM_UI_DIPLO_EVENT_HUMAN_JOIN_ECONOMIC_AID : FROM_UI_DIPLO_EVENT_HUMAN_LEAVE_ECONOMIC_AID), (PlayerTypes)iMinor, iMajor, 0);
+
+	return 1;
+}
+//------------------------------------------------------------------------------
 //void DoMinorGoldGift(int iMinorCivID, int iGold);
 // Old name, kept here for backwards compatibility
 int CvLuaGame::lDoMinorGoldGift(lua_State* L)
@@ -2034,6 +2106,96 @@ int CvLuaGame::lDoMinorGoldGift(lua_State* L)
 int CvLuaGame::lDoMinorGiftGold(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::DoMinorGiftGold);
+}
+//------------------------------------------------------------------------------
+//void DoMinorFaithGift(int iMinorCivID, int iEquivalentGold);
+// Gangtok CS UA: buy influence at this city-state with faith (gold price / divisor faith)
+int CvLuaGame::lDoMinorFaithGift(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iEquivalentGold = lua_tointeger(L, 2);
+	GC.getGame().DoMinorFaithGift((PlayerTypes)iMinor, iEquivalentGold);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//void DoMinorFaithGiftFromMajor(int iMajorCivID, int iMinorCivID, int iEquivalentGold);
+// Gangtok CS UA: network-synced variant taking an explicit major (multiplayer-safe)
+int CvLuaGame::lDoMinorFaithGiftFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iEquivalentGold = lua_tointeger(L, 3);
+	GC.getGame().DoMinorFaithGiftFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, iEquivalentGold);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetCityStateFaithBeliefPurchaseCost(int iMinorCivID);
+// Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available)
+int CvLuaGame::lGetCityStateFaithBeliefPurchaseCost(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	lua_pushinteger(L, GC.getGame().GetCityStateFaithBeliefPurchaseCost((PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsCityStateFaithBeliefPurchased(int iMinorCivID);
+// Wittenberg CS UA: has the active player already faith-purchased a belief at this city-state?
+int CvLuaGame::lIsCityStateFaithBeliefPurchased(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	lua_pushboolean(L, GC.getGame().IsCityStateFaithBeliefPurchased((PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoCityStateFaithBeliefPurchase(int iMinorCivID, int iBelief);
+// Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion
+int CvLuaGame::lDoCityStateFaithBeliefPurchase(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iBelief = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithBeliefPurchase((PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoCityStateFaithBeliefPurchaseFromMajor(int iMajorCivID, int iMinorCivID, int iBelief);
+// Wittenberg CS UA: network-synced variant taking an explicit major (multiplayer-safe)
+int CvLuaGame::lDoCityStateFaithBeliefPurchaseFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iBelief = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithBeliefPurchaseFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCityStateFaithPantheonPurchaseCost(int iMinorCivID);
+// La Venta CS UA: faith cost for the active player to purchase an idle pantheon belief at this city-state (0 = not available)
+int CvLuaGame::lGetCityStateFaithPantheonPurchaseCost(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	lua_pushinteger(L, GC.getGame().GetCityStateFaithPantheonPurchaseCost((PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoCityStateFaithPantheonPurchase(int iMinorCivID, int iBelief);
+// La Venta CS UA: faith-purchase an idle pantheon belief for the active player into this city-state's religion
+int CvLuaGame::lDoCityStateFaithPantheonPurchase(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iBelief = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithPantheonPurchase((PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoCityStateFaithPantheonPurchaseFromMajor(int iMajorCivID, int iMinorCivID, int iBelief);
+// La Venta CS UA: network-synced variant taking an explicit major (multiplayer-safe)
+int CvLuaGame::lDoCityStateFaithPantheonPurchaseFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iBelief = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoCityStateFaithPantheonPurchaseFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, (BeliefTypes)iBelief));
+	return 1;
 }
 //------------------------------------------------------------------------------
 //void DoMinorGiftTileImprovement(int iMajorCivID, int iMinorCivID, iPlotX, iPlotY);
@@ -2650,12 +2812,17 @@ int CvLuaGame::lGetBeliefsInReligion(lua_State* L)
 	const int t = lua_gettop(L);
 	int idx = 1;
 
-	CvReligionBeliefs beliefs = GC.getGame().GetGameReligions()->GetReligion(eReligion, NO_PLAYER)->m_Beliefs;
-	for(int iI = 0; iI < beliefs.GetNumBeliefs(); iI++)
+	// A religion slot that has not been founded yet returns NULL; yield an empty table instead of crashing.
+	const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion, NO_PLAYER);
+	if(pReligion != NULL)
 	{
-		const BeliefTypes eBelief = beliefs.GetBelief(iI);
-		lua_pushinteger(L, eBelief);
-		lua_rawseti(L, t, idx++);
+		CvReligionBeliefs beliefs = pReligion->m_Beliefs;
+		for(int iI = 0; iI < beliefs.GetNumBeliefs(); iI++)
+		{
+			const BeliefTypes eBelief = beliefs.GetBelief(iI);
+			lua_pushinteger(L, eBelief);
+			lua_rawseti(L, t, idx++);
+		}
 	}
 
 	return 1;
@@ -3353,23 +3520,7 @@ int CvLuaGame::lGetHappinessFromHandicap(lua_State* L)
 //------------------------------------------------------------------------------
 int CvLuaGame::lGetImmigrationRegressand(lua_State* L)
 {
-    int iRtnValue = 0;
-    if(!GC.getGame().isOption(GAMEOPTION_SP_IMMIGRATION_OFF))
-    {
-        iRtnValue = GC.getIMMIGRATION_BASE_RATE() * GC.getGame().getGameSpeedInfo().getCulturePercent();
-        PlayerTypes eActivePlayer = GC.getGame().getActivePlayer();
-        if(eActivePlayer != NO_PLAYER)
-        {
-            CvPlayer& kActivePlayer = GET_PLAYER(eActivePlayer);
-            int iModifier = kActivePlayer.GetImmigrationRegressandModifier();
-            iRtnValue = iRtnValue * (100 + iModifier) / 100;
-        }
-        
-        iRtnValue /= 100;
-        
-        if(iRtnValue < 0) iRtnValue = 0;
-    }
-    lua_pushinteger(L, iRtnValue);
+    lua_pushinteger(L, GC.getGame().GetImmigrationRegressand());
     return 1;
 }
 //------------------------------------------------------------------------------

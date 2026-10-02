@@ -1495,6 +1495,11 @@ void CvTeam::DoDeclareWar(TeamTypes eTeam, bool bDefensivePact, bool bMinorAllyP
 									ChangeNumMinorCivsAttacked(1);
 
 									GET_PLAYER((PlayerTypes) iMinorCivLoop).GetMinorCivAI()->DoTeamDeclaredWarOnMe(GetID());
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+									// Economic Aid: declaring war on a city-state settles the aid as a mid-round quit
+									GET_PLAYER((PlayerTypes) iMinorCivLoop).GetMinorCivAI()->DoChangeEconomicAidFromMajor(getLeaderID(), false, ECON_AID_TERM_WAR);
+#endif
 								}
 							}
 						}
@@ -1571,6 +1576,19 @@ void CvTeam::DoNowAtWarOrPeace(TeamTypes eTeam, bool bWar)
 						GET_TEAM(GET_PLAYER(eMinor).getTeam()).DoDeclareWar(eMinor, false, eTeam, /*bDefensivePact*/ false, /*bMinorAllyPact*/ true);
 #else
 						GET_TEAM(GET_PLAYER(eMinor).getTeam()).DoDeclareWar(eTeam, /*bDefensivePact*/ false, /*bMinorAllyPact*/ true);
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+						// Economic Aid: when a city-state joins via ally pact, terminate the aid of players on the enemy team
+						// without a quit settlement, so they may rejoin this round after peace
+						for (int iMajorOnTarget = 0; iMajorOnTarget < MAX_MAJOR_CIVS; ++iMajorOnTarget)
+						{
+							CvPlayer& kTargetMajor = GET_PLAYER((PlayerTypes)iMajorOnTarget);
+							if (kTargetMajor.isAlive() && kTargetMajor.getTeam() == eTeam)
+							{
+								GET_PLAYER(eMinor).GetMinorCivAI()->DoChangeEconomicAidFromMajor((PlayerTypes)iMajorOnTarget, false, ECON_AID_TERM_ALLY_PACT);
+							}
+						}
 #endif
 
 						// Add to vector for notification sent out
@@ -1698,6 +1716,24 @@ void CvTeam::DoMakePeace(TeamTypes eTeam, bool bBumpUnits, bool bSuppressNotific
 		int iCurrentTurn = GC.getGame().getElapsedGameTurns();
 		SetTurnMadePeaceTreatyWithTeam(eTeam, iCurrentTurn);
 		GET_TEAM(eTeam).SetTurnMadePeaceTreatyWithTeam(GetID(), iCurrentTurn);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Hanoi CS UA: count a completed war peace treaty for every major-civilization player on either
+		// side (design: "for each war peace treaty the ally has completed"). City-state peaces are excluded
+		// by requiring both teams to be major. This sits inside the isAtWar(eTeam) block, and the recursive
+		// calls below always involve a city-state team, so a single war never double-counts.
+		if (MOD_SP_UNIQUE_CITYSTATE && !isMinorCiv() && !GET_TEAM(eTeam).isMinorCiv())
+		{
+			for (int iPeacePlayer = 0; iPeacePlayer < MAX_MAJOR_CIVS; iPeacePlayer++)
+			{
+				PlayerTypes ePeacePlayer = (PlayerTypes) iPeacePlayer;
+				if (!GET_PLAYER(ePeacePlayer).isAlive()) continue;
+				TeamTypes ePeacePlayerTeam = GET_PLAYER(ePeacePlayer).getTeam();
+				if (ePeacePlayerTeam == GetID() || ePeacePlayerTeam == eTeam)
+					GET_PLAYER(ePeacePlayer).ChangeNumWarPeacesCompleted(1);
+			}
+		}
+#endif
 
 		TeamTypes eTeamWeMadePeaceWith = eTeam;
 

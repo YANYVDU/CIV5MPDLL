@@ -1158,6 +1158,22 @@ bool CvWorldBuilderMapLoader::InitMap()
 			{
 				kTeam1.SetAllowsOpenBordersToTeam(eTeam2, true);
 				kTeam2.SetAllowsOpenBordersToTeam(eTeam1, true);
+
+				// Also mirror into player-level open borders so the player-authoritative rule honors it.
+				for(int iA = 0; iA < MAX_PLAYERS; iA++)
+				{
+					if(GET_PLAYER((PlayerTypes)iA).getTeam() == eTeam1)
+					{
+						for(int iB = 0; iB < MAX_PLAYERS; iB++)
+						{
+							if(GET_PLAYER((PlayerTypes)iB).getTeam() == eTeam2)
+							{
+								GET_PLAYER((PlayerTypes)iA).SetAllowsOpenBordersToPlayer((PlayerTypes)iB, true);
+								GET_PLAYER((PlayerTypes)iB).SetAllowsOpenBordersToPlayer((PlayerTypes)iA, true);
+							}
+						}
+					}
+				}
 			}
 
 			if(sg_kSave.m_kTeamsSharingDefensivePacts.Get(uiTeam1, uiTeam2))

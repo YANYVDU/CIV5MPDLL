@@ -18,6 +18,7 @@
 #include "LintFree.h"
 #include "NetworkMessageUtil.h"
 #include "CvLuaTeamTech.h"
+#include "CvCityStateUAClasses.h"
 
 /// Constructor
 CvTechEntry::CvTechEntry(void):
@@ -1608,11 +1609,9 @@ long long CvPlayerTechs::GetResearchCost(TechTypes eTech) const
 	int iResearchMod = std::max(1, m_pPlayer->calculateResearchModifier(eTech));
 	iResearchCost = ((iResearchCost * 10000) / iResearchMod);
 
-	// Mod for City Count
-	int iMod = GC.getMap().getWorldInfo().GetNumCitiesTechCostMod();	// Default is 40, gets smaller on larger maps
-	iMod = iMod * m_pPlayer->GetMaxEffectiveCities(/*bIncludePuppets*/ true);
-	if (m_pPlayer->isGoldenAge())
-		iMod = iMod * (m_pPlayer->GetPlayerTraits()->GetGoldenAgeResearchCityCountCostModifier() + 100) / 100; // some UA may reduce the modifier from the city count.
+	// Mod for City Count (the "research threshold"). Shared with CvPlayer::GetResearchThresholdMod so the
+	// TopPanel tooltip breakdown always matches the real math.
+	int iMod = m_pPlayer->GetResearchThresholdMod();
 
 	iResearchCost = iResearchCost * (100 + iMod) / 100;
 

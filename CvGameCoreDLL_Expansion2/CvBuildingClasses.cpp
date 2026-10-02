@@ -36,6 +36,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iGoldMaintenance(0),
 	m_iReplacementBuildingClass(NO_BUILDINGCLASS),
 	m_iPrereqAndTech(NO_TECH),
+	m_iPrereqEffect(-1),
 	m_iTechNoPrereqClasses(NO_TECH),
 	m_iPolicyBranchType(NO_POLICY_BRANCH_TYPE),
 	m_iPolicyNeededType(NO_POLICY),
@@ -123,6 +124,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_iGlobalEspionageModifier(0),
 	m_iGlobalEspionageSpeedModifier(0),
 	m_iExtraSpies(0),
+	m_iSpyPoints(0),
 	m_iSpyRankChange(0),
 	m_iTradeRouteRecipientBonus(0),
 	m_iTradeRouteTargetBonus(0),
@@ -292,6 +294,7 @@ CvBuildingEntry::CvBuildingEntry(void):
 	m_piDomainFreeExperiencesPerTurnGlobal(NULL),
 	m_piDomainEnemyCombatModifier(NULL),
 	m_piDomainEnemyCombatModifierGlobal(NULL),
+	m_piDomainEnemyCombatModifierPerGold(NULL),
 	m_piDomainFriendsCombatModifierLocal(NULL),
 	m_piDomainFriendsCombatModifierGlobal(NULL),
 
@@ -427,6 +430,7 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	SAFE_DELETE_ARRAY(m_piDomainFreeExperiencesPerTurnGlobal);
 	SAFE_DELETE_ARRAY(m_piDomainEnemyCombatModifier);
 	SAFE_DELETE_ARRAY(m_piDomainEnemyCombatModifierGlobal);
+	SAFE_DELETE_ARRAY(m_piDomainEnemyCombatModifierPerGold);
 	SAFE_DELETE_ARRAY(m_piDomainFriendsCombatModifierLocal);
 	SAFE_DELETE_ARRAY(m_piDomainFriendsCombatModifierGlobal);
 #if defined(MOD_ROG_CORE)
@@ -697,6 +701,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	m_iGlobalEspionageModifier = kResults.GetInt("GlobalEspionageModifier");
 	m_iGlobalEspionageSpeedModifier = kResults.GetInt("GlobalEspionageSpeedModifier");
 	m_iExtraSpies = kResults.GetInt("ExtraSpies");
+	m_iSpyPoints = kResults.GetInt("SpyPoints");
 	m_iSpyRankChange = kResults.GetInt("SpyRankChange");
 	m_iTradeRouteRecipientBonus = kResults.GetInt("TradeRouteRecipientBonus");
 	m_iTradeRouteTargetBonus = kResults.GetInt("TradeRouteTargetBonus");
@@ -842,6 +847,9 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	szTextVal = kResults.GetText("PrereqTech");
 	m_iPrereqAndTech = GC.getInfoTypeForString(szTextVal, true);
 
+	szTextVal = kResults.GetText("PrereqEffect");
+	m_iPrereqEffect = GC.getInfoTypeForString(szTextVal, true);
+
 	szTextVal = kResults.GetText("TechNoPrereqClasses");
 	m_iTechNoPrereqClasses = GC.getInfoTypeForString(szTextVal, true);
 
@@ -932,6 +940,7 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 	kUtility.PopulateArrayByValue(m_piDomainFreeExperiencesPerTurnGlobal, "Domains", "Building_DomainFreeExperiencesPerTurnGlobal", "DomainType", "BuildingType", szBuildingType, "Value", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainEnemyCombatModifier, "Domains", "Building_DomainEnemyCombatModifier", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainEnemyCombatModifierGlobal, "Domains", "Building_DomainEnemyCombatModifierGlobal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
+	kUtility.PopulateArrayByValue(m_piDomainEnemyCombatModifierPerGold, "Domains", "Building_DomainEnemyCombatModifierPerGold", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainFriendsCombatModifierLocal, "Domains", "Building_DomainFriendsCombatModifierLocal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 	kUtility.PopulateArrayByValue(m_piDomainFriendsCombatModifierGlobal, "Domains", "Building_DomainFriendsCombatModifierGlobal", "DomainType", "BuildingType", szBuildingType, "Modifier", 0, NUM_DOMAIN_TYPES);
 
@@ -2089,6 +2098,12 @@ int CvBuildingEntry::GetPrereqAndTech() const
 	return m_iPrereqAndTech;
 }
 
+/// City-state UA effect required to construct this building (CSUA special buildings)
+int CvBuildingEntry::GetPrereqEffect() const
+{
+	return m_iPrereqEffect;
+}
+
 int CvBuildingEntry::GetTechNoPrereqClasses() const
 {
 	return m_iTechNoPrereqClasses;
@@ -2921,6 +2936,12 @@ int CvBuildingEntry::GetGlobalEspionageSpeedModifier() const
 int CvBuildingEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
+}
+
+/// Spy points this building provides per turn
+int CvBuildingEntry::GetSpyPoints() const
+{
+	return m_iSpyPoints;
 }
 
 /// Increase in rank of all starting spies
@@ -3860,6 +3881,14 @@ int CvBuildingEntry::GetDomainEnemyCombatModifierGlobal(int i) const
 	CvAssertMsg(i < NUM_DOMAIN_TYPES, "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
 	return m_piDomainEnemyCombatModifierGlobal ? m_piDomainEnemyCombatModifierGlobal[i] : -1;
+}
+
+/// Enemy combat punishment per 100 CS treasury gold from this building
+int CvBuildingEntry::GetDomainEnemyCombatModifierPerGold(int i) const
+{
+	CvAssertMsg(i < NUM_DOMAIN_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_piDomainEnemyCombatModifierPerGold ? m_piDomainEnemyCombatModifierPerGold[i] : -1;
 }
 
 /// Our units' combat bonus in this city from this building
@@ -5364,6 +5393,12 @@ void CvCityBuildings::SetNumRealBuildingTimed(BuildingTypes eIndex, int iNewValu
 		pPlayer->GetTreasury()->ChangeBaseBuildingGoldMaintenance(buildingEntry->GetGoldMaintenance() * iChangeNumRealBuilding);
 	}
 
+	// Spy points per turn contribution
+	if (buildingEntry->GetSpyPoints() != 0)
+	{
+		pPlayer->ChangeSpyPointsPerTurn(buildingEntry->GetSpyPoints() * iChangeNumRealBuilding);
+	}
+
 #if !defined(NO_ACHIEVEMENTS)
 	// Achievement for Temples
 	const char *szBuildingTypeC = buildingEntry->GetType();
@@ -5583,6 +5618,10 @@ void CvCityBuildings::SetNumFreeBuilding(BuildingTypes eIndex, int iNewValue)
 		m_pCity->processBuilding(eIndex, iChangeNumFreeBuilding, true);
 
 		CvBuildingEntry* buildingEntry = GC.getBuildingInfo(eIndex);
+		if(buildingEntry->GetSpyPoints() != 0)
+		{
+			GET_PLAYER(m_pCity->getOwner()).ChangeSpyPointsPerTurn(buildingEntry->GetSpyPoints() * iChangeNumFreeBuilding);
+		}
 		if(buildingEntry->IsCityWall())
 		{
 			auto_ptr<ICvPlot1> pDllPlot(new CvDllPlot(m_pCity->plot()));

@@ -519,7 +519,7 @@ bool CvTacticalAnalysisMap::PopulateCell(int iIndex, CvPlot* pPlot)
 		TeamTypes eMyTeam = m_pPlayer->getTeam();
 		TeamTypes ePlotTeam = pPlot->getTeam();
 
-		if(eMyTeam != ePlotTeam && !GET_TEAM(eMyTeam).isAtWar(ePlotTeam) && !GET_TEAM(ePlotTeam).IsAllowsOpenBordersToTeam(eMyTeam))
+		if(eMyTeam != ePlotTeam && !GET_TEAM(eMyTeam).isAtWar(ePlotTeam) && !GET_PLAYER(pPlot->getOwner()).IsAllowsOpenBordersToPlayer(m_pPlayer->GetID()))
 		{
 			bImpassableTerritory = true;
 		}

@@ -336,6 +336,7 @@ public:
 	int GetFreePopulation() const;
 	int GetFreePopulationCapital() const;
 	int GetExtraSpies() const;
+	int GetSpyPoints() const;
 	int GetGreatPersonPoints(int i) const;
 	int GetGreatScientistBeakerPolicyModifier() const;
 	int GetInstantTourismBombWhenFirstConquerMajorCapital() const;
@@ -599,6 +600,7 @@ private:
 	int m_iFreePopulation;
 	int m_iFreePopulationCapital;
 	int m_iExtraSpies;
+	int m_iSpyPoints;
 	int m_iGreatScientistBeakerPolicyModifier;
 	int* m_piGreatPersonPoints;
 	int m_iInstantTourismBombWhenFirstConquerMajorCapital;

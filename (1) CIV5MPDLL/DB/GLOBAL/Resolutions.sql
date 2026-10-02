@@ -16,3 +16,14 @@ ALTER TABLE Resolutions ADD COLUMN 'VassalTaxGold'    BOOLEAN DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalForcePeace'  BOOLEAN DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalNoDenounce'  BOOLEAN DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalGetUC'       BOOLEAN DEFAULT 0;
+-- Vassal suzerain condition: whether to count allied city-state / vassal stats when checking the 2x requirement
+ALTER TABLE Resolutions ADD COLUMN 'VassalCountPermanentAllyCities'      BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalCountVassalCities'             BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalCountPermanentAllyPopulation'  BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalCountVassalPopulation'         BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalCountVassalMilitaryMight'      BOOLEAN DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalPermanentAllyCitiesPercent'     INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalVassalCitiesPercent'            INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalPermanentAllyPopulationPercent' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalVassalPopulationPercent'        INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'VassalVassalMilitaryMightPercent'     INTEGER DEFAULT 0;

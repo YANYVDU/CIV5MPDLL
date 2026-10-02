@@ -538,6 +538,11 @@
       <Action>
         <Set>OnModActivated</Set>
         <Type>UpdateDatabase</Type>
+        <FileName>DB/RESOURCES/HappinessDecayEra.sql</FileName>
+      </Action>
+      <Action>
+        <Set>OnModActivated</Set>
+        <Type>UpdateDatabase</Type>
         <FileName>DB/GLOBAL/ExcessHappinessEffects.sql</FileName>
       </Action>
       <Action>
@@ -994,6 +999,10 @@
       <ImportIntoVFS>False</ImportIntoVFS>
     </Content>
     <Content Include="DB\RESOURCES\ResourceExtraBuff.sql">
+      <SubType>Lua</SubType>
+      <ImportIntoVFS>False</ImportIntoVFS>
+    </Content>
+    <Content Include="DB\RESOURCES\HappinessDecayEra.sql">
       <SubType>Lua</SubType>
       <ImportIntoVFS>False</ImportIntoVFS>
     </Content>

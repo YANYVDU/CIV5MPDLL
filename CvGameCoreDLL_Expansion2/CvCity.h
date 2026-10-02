@@ -1086,7 +1086,8 @@ public:
 	void changeSpecialistFreeExperience(int iChange);
 
 	void updateStrengthValue();
-	int getStrengthValue(bool bForRangeStrike = false) const;
+	// iIgnoreBuildingDefensePercent: portion (in %) of this city's building defense the attacker bypasses (0 = none)
+	int getStrengthValue(bool bForRangeStrike = false, int iIgnoreBuildingDefensePercent = 0) const;
 	int GetPower() const;
 
 	int getDamage() const;
@@ -1319,6 +1320,10 @@ public:
 	bool HasAnyDomesticTradeRoute() const;
 	bool HasAnyInternationalTradeRoute() const;
 	bool HasTradeRouteToAnyCity() const;
+	//CityState UA: true when this city satisfies the named special city type's predicate
+	bool IsSpecialCityType(int iSpecialCityType) const;
+	//CityState UA: summed percent damage reduction this city receives from its owner's UA effects (0 if none)
+	int GetCSUADamageReductionPercent() const;
 	bool HasTradeRouteTo(CvCity* pCity) const;
 	bool HasTradeRouteFromAnyCity() const;
 	bool HasTradeRouteFrom(CvCity* pCity) const;
@@ -1374,6 +1379,10 @@ public:
 	bool CanImmigrantOut() const;
 	bool CanAllScaleImmigrantIn() const;
 	void ChangeNumAllScaleImmigrantIn(int iChange);
+	int GetTotalImmigrantsReceived() const;
+	void ChangeTotalImmigrantsReceived(int iChange);
+	int GetTotalImmigrantsEmigrated() const;
+	void ChangeTotalImmigrantsEmigrated(int iChange);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	CityScaleTypes GetScale() const { return m_eCityScale; }
@@ -1410,6 +1419,7 @@ public:
 	int CalculateCorruptionScoreFromReligion() const;
 	int CalculateCorruptionScoreFromTrait() const;
 	int CalculateCorruptionScoreModifierFromSpy() const;
+	int CalculateCorruptionScoreModifierFromMasterSpy() const;
 	int CalculateCorruptionScoreModifierFromTrait() const;
 
 	CvCorruptionLevel* DecideCorruptionLevelForNormalCity(const int score) const;
@@ -1767,6 +1777,8 @@ protected:
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	bool m_bCanDoImmigration = true;
 	int m_iNumAllScaleImmigrantIn = 0;
+	int m_iTotalImmigrantsReceived = 0;
+	int m_iTotalImmigrantsEmigrated = 0;
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	CityScaleTypes m_eCityScale = NO_CITY_SCALE;

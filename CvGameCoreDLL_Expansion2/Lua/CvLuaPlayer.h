@@ -64,6 +64,7 @@ protected:
 	static int lKillUnits(lua_State* L);
 	static int lIsHuman(lua_State* L);
 	static int lIsBarbarian(lua_State* L);
+	static int lIsAllowsOpenBordersToPlayer(lua_State* L);
 	static int lGetName(lua_State* L);
 	static int lGetNameKey(lua_State* L);
 	static int lGetNickName(lua_State* L);
@@ -173,6 +174,7 @@ protected:
 	static int lGetResearchCost(lua_State* L);
 	static int lGetResearchProgress(lua_State* L);
 	static int lGetResearchProgressExceptOverflow(lua_State* L);
+	static int lGetResearchThresholdMod(lua_State* L);
 
 	static int lUnitsRequiredForGoldenAge(lua_State* L);
 	static int lUnitsGoldenAgeCapable(lua_State* L);
@@ -328,6 +330,17 @@ protected:
 	static int lGetTotalLuxuryHappinessValue(lua_State* L);
 	static int lGetCrossContinentRouteUnhappinessReduction(lua_State* L);
 	static int lGetCityStateSpecialistPointRate(lua_State* L);
+	static int lGetCSUAGreatPersonRateModifierFromGreatWorks(lua_State* L);
+	static int lGetCSUAFaithRefundPerDonationPercent(lua_State* L);
+	static int lHasCSUAGoldDonationGamble(lua_State* L);
+	static int lGetMinorCivGoldGambleUsedThisTurn(lua_State* L);
+	static int lGetMinorCivGoldGambleLastMultiplier(lua_State* L);
+	static int lGetCSUACityAttackIgnoreBuildingDefensePercent(lua_State* L);
+	static int lGetCSUAWoundedFixedDamage(lua_State* L);
+	static int lGetCSUAImmigrationRateModifier(lua_State* L);
+	static int lGetCSUAEmigrationRateModifier(lua_State* L);
+	static int lGetCSUACultureVictoryProgressModifier(lua_State* L);
+	static int lRefreshCSAlliesFriends(lua_State* L);
 	static int lGetExtraHappinessPerLuxury(lua_State* L);
 	static int lGetHappinessFromReligion(lua_State* L);
 	static int lGetHappinessFromNaturalWonders(lua_State* L);
@@ -638,6 +651,8 @@ protected:
 	static int lGetTurnsSinceThreatenedByBarbarians(lua_State* L); // DEPRECATED, use lGetTurnsSinceThreatenedAnnouncement instead
 	static int lGetTurnsSinceThreatenedAnnouncement(lua_State* L);
 	static int lGetFriendshipFromGoldGift(lua_State* L);
+	static int lGetCSUAFaithInfluencePurchaseRemaining(lua_State* L);
+	static int lGetCSUAFaithInfluencePurchaseCostDivisor(lua_State* L);
 	static int lGetMinorCivFavoriteMajor(lua_State* L);
 	static int lGetMinorCivScienceFriendshipBonus(lua_State* L);
 	static int lGetMinorCivCultureFriendshipBonus(lua_State* L); // DEPRECATED
@@ -662,6 +677,16 @@ protected:
 	static int lCanMajorProtect(lua_State* L);
 	static int lCanMajorStartProtection(lua_State* L);
 	static int lCanMajorWithdrawProtection(lua_State* L);
+	static int lIsEconomicAidFromMajor(lua_State* L);
+	static int lCanMajorStartEconomicAid(lua_State* L);
+	static int lCanMajorWithdrawEconomicAid(lua_State* L);
+	static int lIsEconomicAidOpenThisRound(lua_State* L);
+	static int lIsEconomicAidAutoRenew(lua_State* L);
+	static int lSetEconomicAidAutoRenew(lua_State* L);
+	static int lTryBuyFoodFromVenice(lua_State* L);
+	static int lGetLastVeniceBuyFoodTurn(lua_State* L);
+	static int lGetEconomicAidPoints(lua_State* L);
+	static int lChangeEconomicAidPoints(lua_State* L);
 	static int lGetTurnLastPledgedProtectionByMajor(lua_State* L);
 	static int lGetTurnLastPledgeBrokenByMajor(lua_State* L);
 	static int lGetMinorCivBullyGoldAmount(lua_State* L);
@@ -1069,6 +1094,7 @@ protected:
 	static int lGetDealValue(lua_State* L);
 	static int lGetDealMyValue(lua_State* L);
 	static int lGetDealTheyreValue(lua_State* L);
+	static int lGetDiplomatTradeAdvice(lua_State* L);
 
 	static int lMayNotAnnex(lua_State* L);
 
@@ -1076,7 +1102,12 @@ protected:
 	static int lGetEspionageCityStatus(lua_State* L);
 	static int lGetNumSpies(lua_State* L);
 	static int lGetNumUnassignedSpies(lua_State* L);
+	static int lGetSpyPoints(lua_State* L);
+	static int lGetSpyPointsThreshold(lua_State* L);
+	static int lGetSpyPointsCreated(lua_State* L);
+	static int lGetSpyPointsPerTurn(lua_State* L);
 	static int lGetEspionageSpies(lua_State* L);
+	static int lGetEspionageGatheringIntelInfo(lua_State* L);
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_ESPIONAGE)
 	LUAAPIEXTN(EspionageCreateSpy, void);
 	LUAAPIEXTN(EspionagePromoteSpy, void, iSpyIndex);
@@ -1095,6 +1126,11 @@ protected:
 	static int lGetCoupChanceOfSuccess(lua_State* L);
 	static int lIsMyDiplomatVisitingThem(lua_State* L);
 	static int lIsOtherDiplomatVisitingMe(lua_State* L);
+	static int lGetSpyRankVisitingThem(lua_State* L);
+	static int lHasDiplomacyBargainBuff(lua_State* L);
+	static int lGetDiplomacyBargainCooldown(lua_State* L);
+	static int lGetDiplomacyBargainChance(lua_State* L);
+	static int lTryDiplomacyBargain(lua_State* L);
 	// end Espionage Methods
 
 	// International Trade
@@ -1123,6 +1159,10 @@ protected:
 	static int lGetInternationalTradeRouteDomainModifier(lua_State* L);
 	static int lGetInternationalTradeRouteTotal(lua_State* L);
 	static int lGetInternationalTradeRouteScience(lua_State* L);
+	static int lGetInternationalTradeRouteBaseValueDetail(lua_State* L);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	static int lGetCSUATradeRouteGoldModifier(lua_State* L);
+#endif
 	static int lGetPotentialTradeUnitNewHomeCity(lua_State* L);
 	static int lGetPotentialAdmiralNewPort(lua_State* L);
 	static int lGetNumAvailableTradeUnits(lua_State* L);
@@ -1300,6 +1340,10 @@ protected:
 	LUAAPIEXTN(GetImmigrationRate, int, eTargetPlayer);
 	LUAAPIEXTN(GetImmigrationInRateFromPolicy, int);
 	LUAAPIEXTN(GetImmigrationOutRateFromPolicy, int);
+	LUAAPIEXTN(GetTotalImmigrantsReceived, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsReceived, void, iChange);
+	LUAAPIEXTN(GetTotalImmigrantsEmigrated, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsEmigrated, void, iChange);
 #endif
 
 	LUAAPIEXTN(GetScienceTimes100FromFriendsTable);

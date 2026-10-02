@@ -894,6 +894,12 @@ CvCity* CvEconomicAI::GetBestGreatWorkCity(CvPlot *pStartPlot, GreatWorkType eGr
 	int iLoop;
 	int iBestDistance = MAX_INT;
 
+	// A unit that already created its Great Work (eg. Buenos Aires CS UA keeps it alive) has none left
+	if (eGreatWork == NO_GREAT_WORK)
+	{
+		return NULL;
+	}
+
 	// Make sure there is an undamaged city with a Great Work slot
 	GreatWorkSlotType eGreatWorkSlot = CultureHelpers::GetGreatWorkSlot(eGreatWork);
 	if (m_pPlayer->GetCulture()->HasAvailableGreatWorkSlot(eGreatWorkSlot))

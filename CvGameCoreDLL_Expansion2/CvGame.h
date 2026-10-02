@@ -145,6 +145,18 @@ public:
 
 	bool canTrainNukes() const;
 	EraTypes getCurrentEra() const;
+	EraTypes getCurrentEraCached() const;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - all city-states share a single global round
+	void DoEconomicAidRoundTurn();
+	void StartNewEconomicAidRound();
+	bool IsEconomicAidActive() const;
+	int GetEconomicAidRound() const;
+	int GetEconomicAidRoundStartTurn() const;
+	int GetEconomicAidWorldEra() const;
+	int GetEconomicAidRoundTurnsLeft() const;
+#endif
 
 	TeamTypes getActiveTeam();
 	CivilizationTypes getActiveCivilizationType();
@@ -456,6 +468,8 @@ public:
 	int getJonRandNumVA(int iNum, const char* pszLog, ...);
 	int getAsyncRandNum(int iNum, const char* pszLog);
 
+	int GetImmigrationRegressand(PlayerTypes ePlayer = NO_PLAYER) const;
+
 
 	uint randCore(const CvSeeder& extraSeed) const;
 	uint urandLimitExclusive(uint limit, const CvSeeder& extraSeed) const;
@@ -565,6 +579,23 @@ public:
 
 	void DoMinorPledgeProtection(PlayerTypes eMajor, PlayerTypes eMinor, bool bProtect, bool bPledgeNowBroken = false);
 	void DoMinorGiftGold(PlayerTypes eMinor, int iNumGold);
+	void DoMinorFaithGift(PlayerTypes eMinor, int iEquivalentGold);
+	// Gangtok CS UA: network-synced variant taking an explicit eMajor (multiplayer-safe)
+	void DoMinorFaithGiftFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iEquivalentGold);
+	// Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion
+	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMinor, BeliefTypes eBelief);
+	// Wittenberg CS UA: network-synced variant taking an explicit eMajor (multiplayer-safe)
+	bool DoCityStateFaithBeliefPurchaseFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, BeliefTypes eBelief);
+	// Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available)
+	int GetCityStateFaithBeliefPurchaseCost(PlayerTypes eMinor);
+	// Wittenberg CS UA: has the active player already faith-purchased a belief at this city-state?
+	bool IsCityStateFaithBeliefPurchased(PlayerTypes eMinor);
+	// La Venta CS UA: faith-purchase an idle pantheon belief for the active player into this city-state's religion
+	bool DoCityStateFaithPantheonPurchase(PlayerTypes eMinor, BeliefTypes eBelief);
+	// La Venta CS UA: network-synced variant taking an explicit eMajor (multiplayer-safe)
+	bool DoCityStateFaithPantheonPurchaseFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, BeliefTypes eBelief);
+	// La Venta CS UA: faith cost for the active player to purchase an idle pantheon belief at this city-state (0 = not available)
+	int GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMinor);
 	void DoMinorGiftTileImprovement(PlayerTypes eMajor, PlayerTypes eMinor, int iPlotX, int iPlotY);
 	void DoMinorBullyGold(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor);
@@ -696,6 +727,14 @@ protected:
 	int m_iEndTurnMessagesSent;
 	int m_iElapsedGameTurns;
 	int m_iStartTurn;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iEconomicAidRound;
+	int m_iEconomicAidRoundStartTurn;
+	int m_iEconomicAidWorldEra;
+	bool m_bEconomicAidActive;
+#endif
+	mutable EraTypes m_eCurrentEraCache;
+	mutable int m_iCurrentEraCacheTurn;
 	int m_iWinningTurn;
 	int m_iStartYear;
 	int m_iEstimateEndTurn;

@@ -1461,7 +1461,7 @@ CvPlot* CvPlayerAI::FindBestMerchantTargetPlot(CvUnit* pGreatMerchant, bool bOnl
 		return NULL;
 	}
 
-	int iBestTurnsToReach = MAX_INT;
+	int iBestScore = -1;
 	CvPlot* pBestTargetPlot = NULL;
 	int iPathTurns;
 	UnitHandle pMerchant = UnitHandle(pGreatMerchant);
@@ -1523,10 +1523,18 @@ CvPlot* CvPlayerAI::FindBestMerchantTargetPlot(CvUnit* pGreatMerchant, bool bOnl
 					if(bRightOwner && bIsRevealed)
 					{
 						iPathTurns = TurnsToReachTarget(pMerchant, pAdjacentPlot, true /*bReusePaths*/, !bOnlySafePaths/*bIgnoreUnits*/);
-						if(iPathTurns < iBestTurnsToReach)
+						if(iPathTurns > 0)
 						{
-							iBestTurnsToReach = iPathTurns;
-							pBestTargetPlot = pAdjacentPlot;
+							// Trade mission value: influence x2 weight (influence is the primary value) plus gold,
+							// normalized to per-turn gain so the AI weighs value against travel distance.
+							int iInf = pGreatMerchant->getTradeInfluence(pAdjacentPlot);
+							int iGold = pGreatMerchant->getTradeGold(pAdjacentPlot);
+							int iScore = ((iGold + iInf * 2) * 100) / iPathTurns;
+							if(iScore > iBestScore)
+							{
+								iBestScore = iScore;
+								pBestTargetPlot = pAdjacentPlot;
+							}
 						}
 					}
 				}

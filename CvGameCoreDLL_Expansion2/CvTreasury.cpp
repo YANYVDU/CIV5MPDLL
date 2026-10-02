@@ -9,6 +9,7 @@
 #include "CvGameCoreDLLPCH.h"
 #include "CvGameCoreUtils.h"
 #include "ICvDLLUserInterface.h"
+#include "CvCityStateUAClasses.h"
 
 #include "LintFree.h"
 
@@ -643,6 +644,25 @@ int CvTreasury::CalculateUnitCost(int& iFreeUnits, int& iPaidUnits, int& iBaseUn
 
 	//iFinalCost /= 100;
 
+	// Budapest UA: each owned unit holding a promotion listed in the city-state UA sub-table changes the
+	// total unit maintenance by a configured amount (negative = cheaper, positive = more expensive).
+	// Promotions are matched by root promotion: PROMOTION_HITANDRUN for hit-and-run (mounted archer) units,
+	// PROMOTION_KNIGHT_COMBAT for heavy cavalry. The std::max(0, ...) below floors the final result at 0.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+		if (pCSUA != NULL)
+		{
+			const std::vector<UnitMaintenanceByPromotionEntry>& vEntries = pCSUA->GetUnitMaintenanceByPromotionEntries();
+			for (size_t i = 0; i < vEntries.size(); i++)
+			{
+				dFinalCost += m_pPlayer->getUnitCountFromHasPromotion((PromotionTypes)vEntries[i].m_iPromotion) * vEntries[i].m_iChange;
+			}
+		}
+	}
+#endif
+
 	return std::max(0, int(dFinalCost));
 }
 
@@ -801,7 +821,14 @@ int CvTreasury::GetBuildingGoldMaintenance() const
 	int iMaintenance = GetBaseBuildingGoldMaintenance();
 
 	// Player modifier
-	iMaintenance *= (100 + m_pPlayer->GetBuildingGoldMaintenanceMod());
+	int iMaintenanceMod = m_pPlayer->GetBuildingGoldMaintenanceMod();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Monaco CS UA: extra (negative) maintenance modifier while the ally is in a golden age, added
+	// into the same pool as the policy modifier
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		iMaintenanceMod += m_pPlayer->GetCSUABuildingMaintenanceMod();
+#endif
+	iMaintenance *= (100 + iMaintenanceMod);
 	iMaintenance /= 100;
 
 	// Modifier for difficulty level
@@ -825,6 +852,10 @@ int CvTreasury::GetBuildingGoldMaintenance() const
 	// Start Era mod
 	iMaintenance *= GC.getGame().getStartEraInfo().getBuildingMaintenancePercent();
 	iMaintenance /= 100;
+
+	// Building maintenance can never go negative (stacking modifiers below -100% must not pay gold back)
+	if (iMaintenance < 0)
+		iMaintenance = 0;
 
 	return iMaintenance;
 }

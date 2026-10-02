@@ -8,6 +8,7 @@
 #include "CustomMods.h"
 #include "CvGameCoreDLLPCH.h"
 #include "CvGameCoreDLLUtil.h"
+#include "CvCityStateUAClasses.h"
 #include "ICvDLLUserInterface.h"
 #include "CvGameCoreUtils.h"
 #include "CvDiplomacyAI.h"
@@ -46,6 +47,10 @@ CvEspionageSpy::CvEspionageSpy()
 #if defined(MOD_API_ESPIONAGE)
 	, m_bPassive(false)
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	, m_bHasStolenTech(false)
+	, m_bHasKilledSpy(false)
+	, m_bHasCoupSuccess(false)
 {
 }
 
@@ -114,6 +119,10 @@ FDataStream& operator>>(FDataStream& loadFrom, CvEspionageSpy& writeTo)
 #if defined(MOD_API_ESPIONAGE)
 	MOD_SERIALIZE_READ(23, loadFrom, writeTo.m_bPassive, false);
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bHasStolenTech, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bHasKilledSpy, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bHasCoupSuccess, false);
 
 	return loadFrom;
 }
@@ -140,6 +149,10 @@ FDataStream& operator<<(FDataStream& saveTo, const CvEspionageSpy& readFrom)
 #if defined(MOD_API_ESPIONAGE)
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bPassive);
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bHasStolenTech);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bHasKilledSpy);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bHasCoupSuccess);
 
 	return saveTo;
 }
@@ -218,6 +231,9 @@ void CvPlayerEspionage::Reset()
 	{
 		m_aiMaxTechCost[ui] = -1;
 		m_aHeistLocations[ui].clear();
+		m_aiDiplomacyBargainCooldown[ui] = 0;
+		m_aiDiplomacyBargainBuffTurn[ui] = -1;
+		m_abDiplomacyBargainDeal[ui] = false;
 	}
 }
 
@@ -231,6 +247,18 @@ void CvPlayerEspionage::DoTurn()
 	for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
 	{
 		m_aHeistLocations[ui].clear();
+
+		// Diplomacy Bargain cooldown ticks down at the start of each of our turns.
+		if(m_aiDiplomacyBargainCooldown[ui] > 0)
+		{
+			m_aiDiplomacyBargainCooldown[ui]--;
+		}
+
+		// A Diplomacy Bargain buff only lasts for the current turn. Clear it once a new turn begins.
+		if(m_aiDiplomacyBargainBuffTurn[ui] != -1 && m_aiDiplomacyBargainBuffTurn[ui] < GC.getGame().getGameTurn())
+		{
+			m_aiDiplomacyBargainBuffTurn[ui] = -1;
+		}
 	}
 
 	for(uint uiSpy = 0; uiSpy < m_aSpyList.size(); uiSpy++)
@@ -556,8 +584,23 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 				iSpyResult = GC.getGame().getJonRandNum(300, "Random roll for the result of a spy mission with a counterspy in the city");
 				int iCounterspyIndex = GET_PLAYER(eCityOwner).GetEspionage()->GetSpyIndexInCity(pCity);
 				iSpyResult += GET_PLAYER(eCityOwner).GetEspionage()->m_aSpyList[iCounterspyIndex].m_eRank * 30;
-				iSpyResult *= (100 + GET_PLAYER(pCity->getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Sofia: each alive spy of the city owner raises the chance to catch/kill enemy spies
+				int iCatchSpiesModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER);
+				CvPlayerCityStateUA* pCatchCSUA = GET_PLAYER(eCityOwner).GetPlayerCityStateUA();
+				if (pCatchCSUA)
+					iCatchSpiesModifier += pCatchCSUA->GetSpyKillChancePerSpy() * GET_PLAYER(eCityOwner).GetEspionage()->GetNumAliveSpies();
+				iSpyResult *= (100 + iCatchSpiesModifier);
+#else
+				iSpyResult *= (100 + GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#endif
 				iSpyResult /= 100;
+				// Master Spy abilities (H counter-intel / G escape) adjust the detection roll
+				iSpyResult += GET_PLAYER(eCityOwner).GetEspionage()->GetNumMasterSpyCounterIntel() * 10;
+				if(m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+				{
+					iSpyResult -= 100;
+				}
 				if(iSpyResult < 100)
 				{
 #if defined(MOD_EVENTS_ESPIONAGE)
@@ -603,8 +646,23 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 			else
 			{
 				iSpyResult = GC.getGame().getJonRandNum(300, "Random roll for the result of a spying mission without a counterspy in the city");
-				iSpyResult *= (100 + GET_PLAYER(pCity->getOwner()).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Sofia: each alive spy of the city owner raises the chance to catch enemy spies
+				int iCatchSpiesModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER);
+				CvPlayerCityStateUA* pCatchCSUA = GET_PLAYER(eCityOwner).GetPlayerCityStateUA();
+				if (pCatchCSUA)
+					iCatchSpiesModifier += pCatchCSUA->GetSpyKillChancePerSpy() * GET_PLAYER(eCityOwner).GetEspionage()->GetNumAliveSpies();
+				iSpyResult *= (100 + iCatchSpiesModifier);
+#else
+				iSpyResult *= (100 + GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CATCH_SPIES_MODIFIER));
+#endif
 				iSpyResult /= 100;
+				// Master Spy abilities (H counter-intel / G escape) adjust the detection roll
+				iSpyResult += GET_PLAYER(eCityOwner).GetEspionage()->GetNumMasterSpyCounterIntel() * 10;
+				if(m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+				{
+					iSpyResult -= 100;
+				}
 				if(iSpyResult < 100)
 				{
 #if defined(MOD_EVENTS_ESPIONAGE)
@@ -704,6 +762,8 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 					CvAssertMsg(iDefendingSpy >= 0, "No defending spy. This is ok if debugging and killing a spy without having a defending spy present, but should not occur when playing the game normally.");
 					if(iDefendingSpy >= 0)
 					{
+						// Master Spy promotion: this spy has killed an enemy spy
+						pDefendingPlayerEspionage->m_aSpyList[iDefendingSpy].m_bHasKilledSpy = true;
 						pDefendingPlayerEspionage->LevelUpSpy(iDefendingSpy);
 					}
 				}
@@ -802,6 +862,9 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 					gDLL->UnlockAchievement(ACHIEVEMENT_XP1_12);
 				}
 #endif
+
+				// Master Spy promotion: this spy has stolen a tech
+				m_aSpyList[uiSpyIndex].m_bHasStolenTech = true;
 
 				LevelUpSpy(uiSpyIndex);
 
@@ -1655,6 +1718,16 @@ void CvPlayerEspionage::LevelUpSpy(uint uiSpyIndex)
 	if(m_aSpyList[uiSpyIndex].m_eRank < NUM_SPY_RANKS - 1 && m_aSpyList[uiSpyIndex].m_eSpyState != SPY_STATE_DEAD)
 #endif
 	{
+		// Master Spy (rank 2 -> 3) requires all three promotion conditions, no other path
+		if (m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_SPECIAL_AGENT)
+		{
+			const CvEspionageSpy& spy = m_aSpyList[uiSpyIndex];
+			if(!(spy.m_bHasStolenTech && spy.m_bHasKilledSpy && spy.m_bHasCoupSuccess))
+			{
+				return;
+			}
+		}
+
 		CvSpyRank eOriginalRank = m_aSpyList[uiSpyIndex].m_eRank;
 
 		// announce promotion through notification
@@ -1825,33 +1898,7 @@ int CvPlayerEspionage::CalcPerTurn(int iSpyState, CvCity* pCity, int iSpyIndex)
 	break;
 	case SPY_STATE_GATHERING_INTEL:
 	{
-		if(pCity)
-		{
-			PlayerTypes eCityOwner = pCity->getOwner();
-			int iBaseYieldRate = pCity->getYieldRateTimes100(YIELD_SCIENCE, false);
-			iBaseYieldRate *= GC.getESPIONAGE_GATHERING_INTEL_RATE_BASE_PERCENT();
-			iBaseYieldRate /= 100;
-			iBaseYieldRate *= GC.getGame().getGameSpeedInfo().getSpyRatePercent();
-			iBaseYieldRate /= 100;
-			int iCityEspionageModifier = pCity->GetEspionageModifier();
-			int iPlayerEspionageModifier = GET_PLAYER(eCityOwner).GetEspionageModifier();
-			int iTheirPoliciesEspionageModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_SLOWER_MODIFIER);
-			int iMyPoliciesEspionageModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_FASTER_MODIFIER);
-			int iFinalModifier = (iBaseYieldRate * (100 + iCityEspionageModifier + iPlayerEspionageModifier + iTheirPoliciesEspionageModifier + iMyPoliciesEspionageModifier)) / 100;
-
-			int iResult = max(iFinalModifier, 1);
-			if(iSpyIndex >= 0)
-			{
-				int iSpyRank = m_aSpyList[iSpyIndex].m_eRank;
-				iSpyRank += m_pPlayer->GetCulture()->GetInfluenceMajorCivSpyRankBonus(eCityOwner);
-				iResult *= 100 + (GC.getESPIONAGE_GATHERING_INTEL_RATE_BY_SPY_RANK_PERCENT() * iSpyRank);
-				iResult /= 100;
-				iResult *= 100 + (GET_PLAYER(m_pPlayer->GetID()).GetEspionageSpeedModifier());
-				iResult /= 100;
-			}
-
-			return iResult;
-		}
+		return CalcGatheringIntelPerTurn(pCity, iSpyIndex, NULL);
 	}
 	break;
 	case SPY_STATE_RIG_ELECTION:
@@ -1888,6 +1935,82 @@ int CvPlayerEspionage::CalcPerTurn(int iSpyState, CvCity* pCity, int iSpyIndex)
 
 	CvAssertMsg(false, "CalcPerTurn cannot handle that iSpyState");
 	return -1;
+}
+
+/// CalcGatheringIntelPerTurn - per-turn steal tech production, also fills the modifier breakdown for UI tooltips
+int CvPlayerEspionage::CalcGatheringIntelPerTurn(CvCity* pCity, int iSpyIndex, SpyGatheringIntelInfo* pkInfo)
+{
+	if(!pCity)
+	{
+		if(pkInfo)
+		{
+			pkInfo->iBaseRate = 0;
+			pkInfo->iCityMod = 0;
+			pkInfo->iPlayerMod = 0;
+			pkInfo->iTheirPolicyMod = 0;
+			pkInfo->iMyPolicyMod = 0;
+			pkInfo->iCSUAMod = 0;
+			pkInfo->iSpyRank = 0;
+			pkInfo->iSpyRankMod = 0;
+			pkInfo->iSpeedMod = 0;
+			pkInfo->iResult = 0;
+		}
+		return 0;
+	}
+
+	PlayerTypes eCityOwner = pCity->getOwner();
+	int iBaseYieldRate = pCity->getYieldRateTimes100(YIELD_SCIENCE, false);
+	iBaseYieldRate *= GC.getESPIONAGE_GATHERING_INTEL_RATE_BASE_PERCENT();
+	iBaseYieldRate /= 100;
+	iBaseYieldRate *= GC.getGame().getGameSpeedInfo().getSpyRatePercent();
+	iBaseYieldRate /= 100;
+	int iCityEspionageModifier = pCity->GetEspionageModifier();
+	int iPlayerEspionageModifier = GET_PLAYER(eCityOwner).GetEspionageModifier();
+	int iTheirPoliciesEspionageModifier = GET_PLAYER(eCityOwner).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_SLOWER_MODIFIER);
+	int iMyPoliciesEspionageModifier = m_pPlayer->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_STEAL_TECH_FASTER_MODIFIER);
+	int iCSUAModifier = 0;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Sofia: each alive spy speeds up stealing tech by the configured percentage
+	CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+	if (pCSUA)
+	{
+		iCSUAModifier = pCSUA->GetStealTechSpeedPerSpy() * m_pPlayer->GetEspionage()->GetNumAliveSpies();
+		iMyPoliciesEspionageModifier += iCSUAModifier;
+	}
+#endif
+	int iFinalModifier = (iBaseYieldRate * (100 + iCityEspionageModifier + iPlayerEspionageModifier + iTheirPoliciesEspionageModifier + iMyPoliciesEspionageModifier)) / 100;
+
+	int iResult = max(iFinalModifier, 1);
+	int iSpyRank = 0;
+	int iSpyRankMod = 0;
+	int iEspionageSpeedModifier = 0;
+	if(iSpyIndex >= 0)
+	{
+		iSpyRank = m_aSpyList[iSpyIndex].m_eRank;
+		iSpyRank += m_pPlayer->GetCulture()->GetInfluenceMajorCivSpyRankBonus(eCityOwner);
+		iSpyRankMod = GC.getESPIONAGE_GATHERING_INTEL_RATE_BY_SPY_RANK_PERCENT() * iSpyRank;
+		iResult *= 100 + iSpyRankMod;
+		iResult /= 100;
+		iEspionageSpeedModifier = GET_PLAYER(m_pPlayer->GetID()).GetEspionageSpeedModifier();
+		iResult *= 100 + iEspionageSpeedModifier;
+		iResult /= 100;
+	}
+
+	if(pkInfo)
+	{
+		pkInfo->iBaseRate = iBaseYieldRate;
+		pkInfo->iCityMod = iCityEspionageModifier;
+		pkInfo->iPlayerMod = iPlayerEspionageModifier;
+		pkInfo->iTheirPolicyMod = iTheirPoliciesEspionageModifier;
+		pkInfo->iMyPolicyMod = iMyPoliciesEspionageModifier - iCSUAModifier;
+		pkInfo->iCSUAMod = iCSUAModifier;
+		pkInfo->iSpyRank = iSpyRank;
+		pkInfo->iSpyRankMod = iSpyRankMod;
+		pkInfo->iSpeedMod = iEspionageSpeedModifier;
+		pkInfo->iResult = iResult;
+	}
+
+	return iResult;
 }
 
 /// CalcRequired - How much the spy is needed to do to accomplish this task
@@ -1966,6 +2089,9 @@ const char* CvPlayerEspionage::GetSpyRankName(int iRank) const
 		break;
 	case SPY_RANK_SPECIAL_AGENT:
 		return "TXT_KEY_SPY_RANK_2";
+		break;
+	case SPY_RANK_MASTER_SPY:
+		return "TXT_KEY_SPY_RANK_3";
 		break;
 	}
 
@@ -2221,9 +2347,25 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 		bNoAllySpy = true;
 	}
 
+	// Master Spy defence: a Master Spy guarding the ally's city-state makes enemy coups always fail
+	if(eAllyPlayer != m_pPlayer->GetID() && pCityEspionage->m_aiSpyAssignment[eAllyPlayer] != -1)
+	{
+		int iAllySpyIndex = pCityEspionage->m_aiSpyAssignment[eAllyPlayer];
+		const CvEspionageSpy& kAllySpy = GET_PLAYER(eAllyPlayer).GetEspionage()->m_aSpyList[iAllySpyIndex];
+		if(kAllySpy.m_eRank == SPY_RANK_MASTER_SPY && kAllySpy.m_eSpyState == SPY_STATE_COUNTER_INTEL)
+		{
+			return 0;
+		}
+	}
+
 	int iAllyInfluence = pMinorCivAI->GetEffectiveFriendshipWithMajorTimes100(eAllyPlayer);
 	int iMyInfluence = pMinorCivAI->GetEffectiveFriendshipWithMajorTimes100(m_pPlayer->GetID());
 	int iDeltaInfluence = iAllyInfluence - iMyInfluence;
+	if(m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+	{
+		// Master Spy coup: the attacker's influence deficit is halved
+		iDeltaInfluence /= 2;
+	}
 
 	//float fNobodyBonus = 0.5;
 	//float fMultiplyConstant = 3.0f;
@@ -2294,6 +2436,16 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 		iResultPercentage = 0;
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Sofia: add the coup-success modifier after the base cap so it can exceed 85% (up to a guaranteed 100%)
+	CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+	if (pCSUA && pCSUA->GetCoupChanceModifier() != 0)
+	{
+		iResultPercentage += pCSUA->GetCoupChanceModifier();
+		iResultPercentage = iResultPercentage > 100 ? 100 : (iResultPercentage < 0 ? 0 : iResultPercentage);
+	}
+#endif
+
 	//int iAdjustedAllyInfluenceTimes100 = iAllyInfluence * (100 + m_aSpyList[uiSpyIndex].m_eRank * 100);
 	//int iAdjustedAllyInfluence = iAdjustedAllyInfluenceTimes100 / 100;
 	//int iResultPercentage = 0;
@@ -2309,6 +2461,9 @@ int CvPlayerEspionage::GetCoupChanceOfSuccess(uint uiSpyIndex)
 /// AttemptCoup - Have a spy try to overthrow a city state. If success, the spy's owner becomes the ally. If failure, the spy dies.
 bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 {
+	// Sofia: whether a failed coup keeps the spy alive (returned to the safe house)
+	bool bCoupSpySurvives = false;
+
 	// if you're not allowed to stage a coup here, the coup fails
 	if(!CanStageCoup(uiSpyIndex))
 	{
@@ -2384,6 +2539,10 @@ bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 		}
 
 		bAttemptSuccess = true;
+
+		// Master Spy promotion: this spy has succeeded a coup, then level up
+		m_aSpyList[uiSpyIndex].m_bHasCoupSuccess = true;
+		LevelUpSpy(uiSpyIndex);
 	}
 	else
 	{
@@ -2392,12 +2551,16 @@ bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 		aiNewInfluenceValueTimes100[m_pPlayer->GetID()] = (-10 * 100);
 		bAttemptSuccess = false;
 
-		// kill the spy
-		ExtractSpyFromCity(uiSpyIndex); // move the dead body out so that someone else can move in
+		// kill the spy (Sofia: a surviving spy is returned to the safe house instead)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+		bCoupSpySurvives = (pCSUA && pCSUA->GetCoupFailSpySurvives());
+#endif
+		ExtractSpyFromCity(uiSpyIndex); // move the spy out so that someone else can move in
 #if defined(MOD_API_ESPIONAGE)
-		m_aSpyList[uiSpyIndex].SetSpyState(m_pPlayer->GetID(), uiSpyIndex, SPY_STATE_DEAD); // have to official kill him after the extraction
+		m_aSpyList[uiSpyIndex].SetSpyState(m_pPlayer->GetID(), uiSpyIndex, bCoupSpySurvives ? SPY_STATE_UNASSIGNED : SPY_STATE_DEAD);
 #else
-		m_aSpyList[uiSpyIndex].m_eSpyState = SPY_STATE_DEAD; // have to official kill him after the extraction
+		m_aSpyList[uiSpyIndex].m_eSpyState = bCoupSpySurvives ? SPY_STATE_UNASSIGNED : SPY_STATE_DEAD;
 #endif
 	}
 
@@ -2497,9 +2660,9 @@ bool CvPlayerEspionage::AttemptCoup(uint uiSpyIndex)
 		else
 		{
 			eNotification = NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE;
-			strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_S");
+			strSummary = Localization::Lookup(bCoupSpySurvives ? "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED_S" : "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_S");
 			strSummary << pCity->getNameKey();
-			strNotification = Localization::Lookup("TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE");
+			strNotification = Localization::Lookup(bCoupSpySurvives ? "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED" : "TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE");
 			strNotification << GetSpyRankName(m_aSpyList[uiSpyIndex].m_eRank);
 #if defined(MOD_BUGFIX_SPY_NAMES)
 			strNotification << m_aSpyList[uiSpyIndex].GetSpyName(m_pPlayer);
@@ -2829,6 +2992,231 @@ bool CvPlayerEspionage::IsMyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncl
 bool CvPlayerEspionage::IsOtherDiplomatVisitingMe(PlayerTypes ePlayer)
 {
 	return GET_PLAYER(ePlayer).GetEspionage()->IsMyDiplomatVisitingThem(m_pPlayer->GetID());
+}
+
+/// GetSpyRankVisitingThem - The rank of our spy stationed as a diplomat in ePlayer's capital, or -1 if none
+int CvPlayerEspionage::GetSpyRankVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling)
+{
+	if(!IsMyDiplomatVisitingThem(ePlayer, bIncludeTravelling))
+	{
+		return -1;
+	}
+
+	CvCity* pTheirCapital = GET_PLAYER(ePlayer).getCapitalCity();
+	if(!pTheirCapital)
+	{
+		return -1;
+	}
+
+	int iSpyIndex = GetSpyIndexInCity(pTheirCapital);
+	if(iSpyIndex < 0)
+	{
+		return -1;
+	}
+
+	return m_aSpyList[iSpyIndex].m_eRank;
+}
+
+/// HasDiplomacyBargainBuff - Has our diplomat triggered a Diplomacy Bargain buff against eTargetPlayer for this turn?
+bool CvPlayerEspionage::HasDiplomacyBargainBuff(PlayerTypes eTargetPlayer) const
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return false;
+	}
+	return m_aiDiplomacyBargainBuffTurn[eTargetPlayer] == GC.getGame().getGameTurn();
+}
+
+/// GetDiplomacyBargainCooldown - Remaining cooldown turns before our diplomat can attempt a Diplomacy Bargain against eTargetPlayer
+int CvPlayerEspionage::GetDiplomacyBargainCooldown(PlayerTypes eTargetPlayer) const
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return 0;
+	}
+	return m_aiDiplomacyBargainCooldown[eTargetPlayer];
+}
+
+/// GetDiplomacyBargainChance - Success chance (0-100) of a Diplomacy Bargain against eTargetPlayer, or -1 if no diplomat is stationed
+int CvPlayerEspionage::GetDiplomacyBargainChance(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return -1;
+	}
+
+	int iRank = GetSpyRankVisitingThem(eTargetPlayer, false);
+	if(iRank < 0)
+	{
+		return -1;
+	}
+
+	switch(iRank)
+	{
+	case SPY_RANK_RECRUIT:
+		return 15;
+	case SPY_RANK_AGENT:
+		return 30;
+	case SPY_RANK_SPECIAL_AGENT:
+		return 45;
+	case SPY_RANK_MASTER_SPY:
+		return 60;
+	default:
+		return 15;
+	}
+}
+
+/// TryDiplomacyBargain - Attempt a Diplomacy Bargain using our diplomat stationed in eTargetPlayer's capital.
+/// Returns: >0 = buff activated (value = duration in turns), 0 = attempt failed (cooldown started), -1 = on cooldown, -2 = no diplomat
+int CvPlayerEspionage::TryDiplomacyBargain(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return -2;
+	}
+
+	if(m_aiDiplomacyBargainCooldown[eTargetPlayer] > 0)
+	{
+		return -1;
+	}
+
+	int iRank = GetSpyRankVisitingThem(eTargetPlayer, false);
+	if(iRank < 0)
+	{
+		return -2;
+	}
+
+	// Success chance and cooldown per spy rank (Recruit / Agent / Special Agent / Master Spy)
+	int iChance;
+	int iCooldown;
+	switch(iRank)
+	{
+	case SPY_RANK_RECRUIT:
+		iChance = 15; iCooldown = 20; break;
+	case SPY_RANK_AGENT:
+		iChance = 30; iCooldown = 18; break;
+	case SPY_RANK_SPECIAL_AGENT:
+		iChance = 45; iCooldown = 16; break;
+	case SPY_RANK_MASTER_SPY:
+		iChance = 60; iCooldown = 14; break;
+	default:
+		iChance = 15; iCooldown = 20; break;
+	}
+
+	// Cooldown starts regardless of the outcome.
+	m_aiDiplomacyBargainCooldown[eTargetPlayer] = iCooldown;
+
+	if(GC.getGame().getJonRandNum(100, "Diplomacy Bargain") < iChance)
+	{
+		m_aiDiplomacyBargainBuffTurn[eTargetPlayer] = GC.getGame().getGameTurn();
+		return 1;
+	}
+
+	return 0;
+}
+
+/// ClearDiplomacyBargainBuff - Remove the active Diplomacy Bargain buff against eTargetPlayer (used when a trade succeeds)
+void CvPlayerEspionage::ClearDiplomacyBargainBuff(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return;
+	}
+	m_aiDiplomacyBargainBuffTurn[eTargetPlayer] = -1;
+}
+
+/// MarkDiplomacyBargainOnDeal - Remember that a deal was struck while our bargaining buff was active on eTargetPlayer.
+/// Used by the dishonesty punishment to decide whether the stationed diplomat should be demoted.
+void CvPlayerEspionage::MarkDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return;
+	}
+	m_abDiplomacyBargainDeal[eTargetPlayer] = true;
+}
+
+/// HasDiplomacyBargainOnDeal - Did a deal get struck while our bargaining buff was active on eTargetPlayer?
+bool CvPlayerEspionage::HasDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer) const
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return false;
+	}
+	return m_abDiplomacyBargainDeal[eTargetPlayer];
+}
+
+/// DemoteDiplomatToRecruit - Demote the diplomat stationed in eTargetPlayer's capital to a level-1 recruit
+/// (dishonesty punishment). Returns true if a diplomat was actually demoted.
+bool CvPlayerEspionage::DemoteDiplomatToRecruit(PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer < 0 || eTargetPlayer >= MAX_MAJOR_CIVS)
+	{
+		return false;
+	}
+	if(!IsMyDiplomatVisitingThem(eTargetPlayer, false))
+	{
+		return false;
+	}
+	CvCity* pTheirCapital = GET_PLAYER(eTargetPlayer).getCapitalCity();
+	if(!pTheirCapital)
+	{
+		return false;
+	}
+	int iSpyIndex = GetSpyIndexInCity(pTheirCapital);
+	if(iSpyIndex < 0)
+	{
+		return false;
+	}
+	if(m_aSpyList[iSpyIndex].m_eRank == SPY_RANK_RECRUIT)
+	{
+		return false;
+	}
+	m_aSpyList[iSpyIndex].m_eRank = SPY_RANK_RECRUIT;
+	// A freshly demoted spy loses the espionage achievements that a Master Spy had earned.
+	m_aSpyList[iSpyIndex].m_bHasStolenTech = false;
+	m_aSpyList[iSpyIndex].m_bHasKilledSpy = false;
+	m_aSpyList[iSpyIndex].m_bHasCoupSuccess = false;
+	// Consume the recorded bargain-boosted deal so this punishment fires only once.
+	m_abDiplomacyBargainDeal[eTargetPlayer] = false;
+	return true;
+}
+
+/// GetNumMasterSpyCounterIntel - How many of our Master Spies are currently on counter-intel duty?
+int CvPlayerEspionage::GetNumMasterSpyCounterIntel() const
+{
+	int iCount = 0;
+	for(uint ui = 0; ui < m_aSpyList.size(); ui++)
+	{
+		if(m_aSpyList[ui].m_eRank == SPY_RANK_MASTER_SPY && m_aSpyList[ui].m_eSpyState == SPY_STATE_COUNTER_INTEL)
+		{
+			iCount++;
+		}
+	}
+	return iCount;
+}
+
+/// HasMasterSpyDiplomatVisitingThem - Is one of our Master Spies a diplomat stationed in ePlayer's capital?
+bool CvPlayerEspionage::HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling)
+{
+	if(!IsMyDiplomatVisitingThem(ePlayer, bIncludeTravelling))
+	{
+		return false;
+	}
+
+	CvCity* pTheirCapital = GET_PLAYER(ePlayer).getCapitalCity();
+	if (!pTheirCapital)
+	{
+		return false;
+	}
+
+	int iSpyIndex = GetSpyIndexInCity(pTheirCapital);
+	if (iSpyIndex < 0)
+	{
+		return false;
+	}
+
+	return m_aSpyList[iSpyIndex].m_eRank == SPY_RANK_MASTER_SPY;
 }
 
 /// AddMessage - This function is called by another player's PlayerEspionage class. It records the spy activity to be played back at the beginning
@@ -4339,6 +4727,14 @@ FDataStream& operator>>(FDataStream& loadFrom, CvPlayerEspionage& writeTo)
 		writeTo.m_aIntrigueNotificationMessages.push_back(kMessage);
 	}
 
+	// Diplomacy Bargain state (added in build 164)
+	for(int ui = 0; ui < MAX_MAJOR_CIVS; ui++)
+	{
+		MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_aiDiplomacyBargainCooldown[ui], 0);
+		MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_aiDiplomacyBargainBuffTurn[ui], -1);
+		MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_abDiplomacyBargainDeal[ui], false);
+	}
+
 	return loadFrom;
 }
 
@@ -4420,6 +4816,14 @@ FDataStream& operator<<(FDataStream& saveTo, const CvPlayerEspionage& readFrom)
 		saveTo << readFrom.m_aIntrigueNotificationMessages[ui].m_iCityY;
 		saveTo << readFrom.m_aIntrigueNotificationMessages[ui].m_strSpyName;
 		saveTo << readFrom.m_aIntrigueNotificationMessages[ui].m_bShared;
+	}
+
+	// Diplomacy Bargain state
+	for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
+	{
+		saveTo << readFrom.m_aiDiplomacyBargainCooldown[ui];
+		saveTo << readFrom.m_aiDiplomacyBargainBuffTurn[ui];
+		saveTo << readFrom.m_abDiplomacyBargainDeal[ui];
 	}
 
 	return saveTo;
@@ -5680,12 +6084,12 @@ void CvEspionageAI::BuildOffenseCityList(EspionageCityList& aOffenseCityList)
 					iDiploModifier *= 50;
 				}
 
-				if (GET_TEAM(eTeam).IsAllowsOpenBordersToTeam(eTargetTeam))
+				if (GET_PLAYER(ePlayer).IsAllowsOpenBordersToPlayer(eTargetPlayer))
 				{
 					iDiploModifier *= 2;
 				}
 
-				if (GET_TEAM(eTargetTeam).IsAllowsOpenBordersToTeam(eTeam))
+				if (GET_PLAYER(eTargetPlayer).IsAllowsOpenBordersToPlayer(ePlayer))
 				{
 					iDiploModifier *= 2;
 				}

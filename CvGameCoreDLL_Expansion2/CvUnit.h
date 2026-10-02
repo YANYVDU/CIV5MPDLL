@@ -204,7 +204,7 @@ public:
 	int  UnitPathTo(int iX, int iY, int iFlags, int iPrevETA = -1, bool bBuildingRoute = false); // slewis'd the iPrevETA
 	bool UnitRoadTo(int iX, int iY, int iFlags);
 	bool UnitBuild(BuildTypes eBuild);
-	bool canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage = false, bool bIsCity = false, bool bIsDeclareWarMove = false) const;
+	bool canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage = false, bool bIsCity = false, bool bIsDeclareWarMove = false, PlayerTypes ePlotOwnerPlayer = NO_PLAYER) const;
 	bool canEnterTerrain(const CvPlot& pPlot, byte bMoveFlags = 0) const;
 	TeamTypes GetDeclareWarMove(const CvPlot& pPlot) const;
 	PlayerTypes GetBullyMinorMove(const CvPlot* pPlot) const;
@@ -784,6 +784,13 @@ public:
 	void ChangeRangeSuppressModifier(int iValue);
 	int GetRangeSuppressModifier(const CvUnit* pOtherUnit) const;
 	int GetCombatModifierFromBuilding() const;
+	int GetCSUACombatModifierInBorders(const CvPlot* pPlot) const;
+	int GetCSUACombatBonusPerTechDifference(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot) const;
+	int GetCSUACombatModifier(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot) const;
+	int GetCSUAFixedDamageScale(const CvPlot* pPlot) const;
+	int GetCSUADamageTakenScale(const CvUnit* pOtherUnit, const CvCity* pOtherCity) const;
+	// Almaty: extra max HP from kills x surplus resource x percent, evaluated live (not cached at kill time)
+	int GetCSUAKillMaxHpBonus() const;
 	int GetPromotionMaintenanceCost() const;
 	void ChangePromotionMaintenanceCost(int iValue);
 	int GetFreeExpPerTurn() const;
