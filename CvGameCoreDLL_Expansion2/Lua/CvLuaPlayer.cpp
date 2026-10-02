@@ -8019,7 +8019,7 @@ int CvLuaPlayer::lIsEconomicAidOpenThisRound(lua_State* L)
 int CvLuaPlayer::lIsEconomicAidAutoRenew(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
-	const int eMajor = lua_tointeger(L, 1);
+	const int eMajor = lua_tointeger(L, 2);
 
 	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidAutoRenew((PlayerTypes)eMajor);
 	lua_pushboolean(L, bResult);
@@ -8030,8 +8030,8 @@ int CvLuaPlayer::lIsEconomicAidAutoRenew(lua_State* L)
 int CvLuaPlayer::lSetEconomicAidAutoRenew(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
-	const int eMajor = lua_tointeger(L, 1);
-	const bool bRenew = lua_toboolean(L, 2);
+	const int eMajor = lua_tointeger(L, 2);
+	const bool bRenew = lua_toboolean(L, 3);
 
 	pkPlayer->GetMinorCivAI()->SetEconomicAidAutoRenew((PlayerTypes)eMajor, bRenew);
 	return 0;
@@ -8043,8 +8043,8 @@ int CvLuaPlayer::lSetEconomicAidAutoRenew(lua_State* L)
 int CvLuaPlayer::lTryBuyFoodFromVenice(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
-	const int iFood = lua_tointeger(L, 1);
-	const int iGold = lua_tointeger(L, 2);
+	const int iFood = lua_tointeger(L, 2);
+	const int iGold = lua_tointeger(L, 3);
 
 	const int iResult = pkPlayer->TryBuyFoodFromVenice(iFood, iGold);
 	lua_pushinteger(L, iResult);

@@ -20015,7 +20015,11 @@ void CvDiplomacyAI::DoFromUIDiploEvent(PlayerTypes eFromPlayer, FromUIDiploEvent
 				const int iNoticeX = pBargainCity ? pBargainCity->getX() : -1;
 				const int iNoticeY = pBargainCity ? pBargainCity->getY() : -1;
 				CvNotifications* pkNotifications = GET_PLAYER(eFromPlayer).GetNotifications();
-				const char* szBargainTitle = Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_BUTTON").toUTF8();
+				// Keep the composed String alive for the whole block: toUTF8() returns a pointer
+				// into the String's own buffer, which dies with the temporary at the end of the
+				// statement it was created in.
+				Localization::String strBargainTitle = Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_BUTTON");
+				const char* szBargainTitle = strBargainTitle.toUTF8();
 
 				if(iBargainResult == 1)
 				{

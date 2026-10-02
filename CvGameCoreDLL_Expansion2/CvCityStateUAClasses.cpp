@@ -614,8 +614,27 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iFollowingCityDivisor = kResults.GetInt("FollowingCityDivisor");
 	// Sydney: per immigrant received yield % modifier per YieldType (Modifier=100 => +1%); cash reward per immigrant
 	kUtility.PopulateArrayByValue(m_piImmigrantYieldModifiers, "Yields", "CityStateUAEffect_ImmigrantYieldModifiers", "YieldType", "EffectType", GetType(), "Modifier");
-	m_iImmigrantCashPercent = kResults.GetInt("ImmigrantCashPercent");
-	m_iImmigrantCashCapBase = kResults.GetInt("ImmigrantCashCapBase");
+	// Sydney: the cash-per-immigrant reward lives in its own sub-table, not in CityStateUAEffects
+	m_iImmigrantCashPercent = 0;
+	m_iImmigrantCashCapBase = 0;
+	{
+		std::string strKeyImmCash("CityStateUAEffect_ImmigrantCashReward");
+		Database::Results* pResultsImmCash = kUtility.GetResults(strKeyImmCash);
+		if(pResultsImmCash == NULL)
+		{
+			pResultsImmCash = kUtility.PrepareResults(strKeyImmCash, "select CashPercent, CashCapBase from CityStateUAEffect_ImmigrantCashReward where EffectType = ?");
+		}
+
+		if(pResultsImmCash != NULL)
+		{
+			pResultsImmCash->Bind(1, GetType());
+			if(pResultsImmCash->Step())
+			{
+				m_iImmigrantCashPercent = pResultsImmCash->GetInt(0);
+				m_iImmigrantCashCapBase = pResultsImmCash->GetInt(1);
+			}
+		}
+	}
 
 	//BuildingClassYieldModifiers (Prague / Yerevan)
 	{
@@ -2926,16 +2945,24 @@ void CvPlayerCityStateUA::CacheGreatWorkCounts()
 			iMaxClass = m_vGreatWorkYieldModifiers[i].m_iGreatWorkClassType;
 	if (iMaxClass < 0) return;
 	m_aiCachedGreatWorkCount.assign(iMaxClass + 1, 0);
+	// Mark referenced classes first: a class carrying several rows (e.g. GREAT_WORK_MUSIC is
+	// shared by Ife, Ur and Buenos Aires) must contribute its real count only once, otherwise
+	// the cached count would be multiplied by the number of rows referencing that class.
+	std::vector<bool> abReferenced(iMaxClass + 1, false);
+	for (size_t i = 0; i < m_vGreatWorkYieldModifiers.size(); i++)
+	{
+		const int iClass = m_vGreatWorkYieldModifiers[i].m_iGreatWorkClassType;
+		if (iClass >= 0 && iClass <= iMaxClass)
+			abReferenced[iClass] = true;
+	}
 	// Accumulate the player's great works of each referenced class across all cities.
 	for (int iCityIdx = 0; iCityIdx < m_pPlayer->getNumCities(); iCityIdx++)
 	{
 		const CvCity* pCity = m_pPlayer->getCity(iCityIdx);
 		if (!pCity || !pCity->GetCityBuildings()) continue;
-		for (size_t i = 0; i < m_vGreatWorkYieldModifiers.size(); i++)
+		for (int iClass = 0; iClass <= iMaxClass; iClass++)
 		{
-			const GreatWorkYieldModifierEntry& e = m_vGreatWorkYieldModifiers[i];
-			const int iClass = e.m_iGreatWorkClassType;
-			if (iClass < (int)m_aiCachedGreatWorkCount.size())
+			if (abReferenced[iClass])
 				m_aiCachedGreatWorkCount[iClass] += pCity->GetCityBuildings()->GetNumGreatWorks((GreatWorkClass)iClass);
 		}
 	}
