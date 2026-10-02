@@ -36598,7 +36598,14 @@ int CvPlayer::GetHappinessFromFaith() const
 		return 0;
 	}
 
-	return m_iGlobalHappinessFromFaithPercent * GetCachedTotalFaithPerTurn() / 100;
+	// Faith income can go negative (e.g. faith tribute to an overlord), which would invert this conversion into a happiness penalty.
+	if (GetCachedTotalFaithPerTurn() <= 0)
+	{
+		return 0;
+	}
+
+	// This conversion is a bonus only - clamp to non-negative so a negative percent can never invert it either.
+	return std::max(0, m_iGlobalHappinessFromFaithPercent * GetCachedTotalFaithPerTurn() / 100);
 }
 
 LuaFormulaTypes CvPlayer::GetCaptureCityResistanceTurnsChangeFormula() const
