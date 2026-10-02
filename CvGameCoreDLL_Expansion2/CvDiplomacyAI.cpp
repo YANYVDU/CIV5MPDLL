@@ -90,6 +90,7 @@ CvDiplomacyAI::DiplomacyAIData::DiplomacyAIData() :
 	, m_aiNumTimesNuked()
 	, m_aiNumTimesRobbedBy()
 	, m_aiNumTimesIntrigueSharedBy()
+	, m_aiCSUAPlunderedNeutralTradeRoute()
 	, m_abPlayerMadeMilitaryPromise()
 	, m_abPlayerBrokenMilitaryPromise()
 	, m_abPlayerIgnoredMilitaryPromise()
@@ -259,6 +260,7 @@ CvDiplomacyAI::CvDiplomacyAI():
 	m_paiNumTimesNuked(NULL),
 	m_paiNumTimesRobbedBy(NULL),
 	m_paiNumTimesIntrigueSharedBy(NULL),
+	m_paiCSUAPlunderedNeutralTradeRoute(NULL),
 
 	m_paiBrokenExpansionPromiseValue(NULL),
 	m_paiIgnoredExpansionPromiseValue(NULL),
@@ -459,6 +461,7 @@ void CvDiplomacyAI::Init(CvPlayer* pPlayer)
 	m_paiNumTimesNuked = &m_pDiploData->m_aiNumTimesNuked[0];
 	m_paiNumTimesRobbedBy = &m_pDiploData->m_aiNumTimesRobbedBy[0];
 	m_paiNumTimesIntrigueSharedBy = &m_pDiploData->m_aiNumTimesIntrigueSharedBy[0];
+	m_paiCSUAPlunderedNeutralTradeRoute = &m_pDiploData->m_aiCSUAPlunderedNeutralTradeRoute[0];
 
 	m_paiBrokenExpansionPromiseValue = &m_pDiploData->m_aiBrokenExpansionPromiseValue[0];
 	m_paiIgnoredExpansionPromiseValue = &m_pDiploData->m_aiIgnoredExpansionPromiseValue[0];
@@ -713,6 +716,7 @@ void CvDiplomacyAI::Uninit()
 	m_paiNumTimesNuked = NULL;
 	m_paiNumTimesRobbedBy = NULL;
 	m_paiNumTimesIntrigueSharedBy = NULL;
+	m_paiCSUAPlunderedNeutralTradeRoute = NULL;
 
 	m_paiBrokenExpansionPromiseValue = NULL;
 	m_paiIgnoredExpansionPromiseValue = NULL;
@@ -912,6 +916,7 @@ void CvDiplomacyAI::Reset()
 		m_paiNumTimesNuked[iI] = 0;
 		m_paiNumTimesRobbedBy[iI] = 0;
 		m_paiNumTimesIntrigueSharedBy[iI] = 0;
+		m_paiCSUAPlunderedNeutralTradeRoute[iI] = 0;
 
 		m_paiBrokenExpansionPromiseValue[iI] = 0;
 		m_paiIgnoredExpansionPromiseValue[iI] = 0;
@@ -1594,6 +1599,9 @@ void CvDiplomacyAI::Read(FDataStream& kStream)
 	ArrayWrapper<DeclarationLogData> wrapm_paDeclarationsLog(MAX_DIPLO_LOG_STATEMENTS, m_paDeclarationsLog);
 	kStream >> wrapm_paDeclarationsLog;
 	kStream >> m_eStateAllWars;
+
+	// Almaty CSUA: opinion weight from neutral trade-route plundering (appended so older saves skip it)
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_paiCSUAPlunderedNeutralTradeRoute, short, MAX_MAJOR_CIVS, 0);
 }
 
 /// Serialization write
@@ -1826,6 +1834,9 @@ void CvDiplomacyAI::Write(FDataStream& kStream) const
 
 	kStream << ArrayWrapper<DeclarationLogData>(MAX_DIPLO_LOG_STATEMENTS, m_paDeclarationsLog);
 	kStream << m_eStateAllWars;
+
+	// Almaty CSUA: opinion weight from neutral trade-route plundering (mirrors the read appended above)
+	MOD_SERIALIZE_WRITE_ARRAY(kStream, m_paiCSUAPlunderedNeutralTradeRoute, short, MAX_MAJOR_CIVS);
 }
 
 //	-----------------------------------------------------------------------------------------------
@@ -2027,6 +2038,13 @@ void CvDiplomacyAI::DoTurn(PlayerTypes eTargetPlayer)
 #endif
 	AI_PERF_FORMAT("AI-perf.csv", ("DiplomacyAI DoTurn, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription()) );
 		m_eTargetPlayer = eTargetPlayer;
+	// Almaty CSUA: the neutral trade-route plunder opinion penalty decays by 1 per turn and is never
+	// reset (not by peace). Runs for every major civ each turn regardless of the target-player scope.
+	for (int iDecayLoop = 0; iDecayLoop < MAX_MAJOR_CIVS; iDecayLoop++)
+	{
+		if (m_paiCSUAPlunderedNeutralTradeRoute[iDecayLoop] > 0)
+			m_paiCSUAPlunderedNeutralTradeRoute[iDecayLoop]--;
+	}
 	// Military Stuff
 	DoWarDamageDecay();
 	DoUpdateWarDamageLevel();
@@ -2552,6 +2570,8 @@ int CvDiplomacyAI::GetMajorCivOpinionWeight(PlayerTypes ePlayer)
 	
 	//iOpinionWeight += GetTimesNukedScore(ePlayer); DUPLICATE of GetNukedScore below. Removing this from scoring.
 	iOpinionWeight += GetTimesRobbedScore(ePlayer);
+	// Almaty CSUA: neutral trade-route plundering (decays 1/turn, never reset)
+	iOpinionWeight += GetCSUAPlunderedTradeRouteScore(ePlayer);
 
 	//////////////////////////////////////
 	// BROKEN PROMISES ;_;
@@ -23611,6 +23631,36 @@ void CvDiplomacyAI::ChangeNumTimesRobbedBy(PlayerTypes ePlayer, int iChange)
 		m_paiNumTimesRobbedBy[ePlayer] += iChange;
 		CvAssertMsg(m_paiNumTimesRobbedBy[ePlayer] >= 0, "DIPLOMACY_AI: Invalid # of Robbed By returned. Please send slewis this with your last 5 autosaves and what changelist # you're playing.");
 	}
+}
+
+/// Almaty CSUA: opinion weight accumulated from ePlayer plundering our trade routes while neutral.
+int CvDiplomacyAI::GetCSUAPlunderedNeutralTradeRoute(PlayerTypes ePlayer) const
+{
+	CvAssertMsg(ePlayer >= 0, "DIPLOMACY_AI: Invalid Player Index.");
+	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "DIPLOMACY_AI: Invalid Player Index.");
+
+	return m_paiCSUAPlunderedNeutralTradeRoute[ePlayer];
+}
+
+/// Almaty CSUA: add to the accumulated neutral-plunder opinion weight for ePlayer.
+void CvDiplomacyAI::ChangeCSUAPlunderedNeutralTradeRoute(PlayerTypes ePlayer, int iChange)
+{
+	if(iChange != 0)
+	{
+		CvAssertMsg(ePlayer >= 0, "DIPLOMACY_AI: Invalid Player Index.");
+		CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "DIPLOMACY_AI: Invalid Player Index.");
+
+		m_paiCSUAPlunderedNeutralTradeRoute[ePlayer] += iChange;
+		if(m_paiCSUAPlunderedNeutralTradeRoute[ePlayer] < 0)
+			m_paiCSUAPlunderedNeutralTradeRoute[ePlayer] = 0;
+	}
+}
+
+/// Almaty CSUA: opinion score from neutral trade-route plundering by ePlayer (positive = worse opinion).
+/// The stored value is already in opinion-weight units and decays by 1 per turn, never reset.
+int CvDiplomacyAI::GetCSUAPlunderedTradeRouteScore(PlayerTypes ePlayer) const
+{
+	return GetCSUAPlunderedNeutralTradeRoute(ePlayer);
 }
 
 /// Intrigue was shared by the player?

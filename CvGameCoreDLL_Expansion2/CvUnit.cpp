@@ -9762,12 +9762,20 @@ bool CvUnit::canPlunderTradeRoute(const CvPlot* pPlot, bool bOnlyTestVisibility)
 
 			TeamTypes eTeam = GET_PLAYER(eTradeUnitOwner).getTeam();
 #if defined(MOD_BUGFIX_USE_GETTERS)
-			if (!GET_TEAM(GET_MY_PLAYER().getTeam()).isAtWar(eTeam))
+			bool bAtWar = GET_TEAM(GET_MY_PLAYER().getTeam()).isAtWar(eTeam);
 #else
-			if (!GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).isAtWar(eTeam))
+			bool bAtWar = GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).isAtWar(eTeam);
 #endif
+			if (!bAtWar)
 			{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Almaty CS UA: the ally's units may pillage trade routes of players they are not at war with
+				CvPlayerCityStateUA* pCSUA = GET_PLAYER(m_eOwner).GetPlayerCityStateUA();
+				if (!(MOD_SP_UNIQUE_CITYSTATE && pCSUA != NULL && pCSUA->IsCanPillageNeutralTradeRoute()))
+					return false;
+#else
 				return false;
+#endif
 			}
 		}
 
@@ -15227,6 +15235,8 @@ int CvUnit::GetMaxHitPoints() const
 	iMaxHP += getMaxHitPointsChange();
 	// Per Kill max HP is a flat addition: kills * promotionValue / 100
 	iMaxHP += GetPerKillMaxHpBonus();
+	// Almaty: extra max HP from kills x surplus horses x percent (live, not cached at kill time)
+	iMaxHP += GetCSUAKillMaxHpBonus();
 
 	return iMaxHP;
 #else
@@ -15239,7 +15249,11 @@ int CvUnit::GetMaxHitPoints() const
 int CvUnit::GetCurrHitPoints()	const
 {
 	VALIDATE_OBJECT
-	return (GetMaxHitPoints() - getDamage());
+	// Max HP is not monotonic: losing a promotion (or, for Almaty, spending surplus strategic resources)
+	// can shrink the cap below the damage already taken. Clamp at 0 so a shrunken cap never yields a
+	// negative current HP; setDamage already expects this value to be non-negative.
+	int iCurr = GetMaxHitPoints() - getDamage();
+	return (iCurr > 0) ? iCurr : 0;
 }
 
 
@@ -19924,6 +19938,41 @@ int CvUnit::GetCSUADamageTakenScale(const CvUnit* pOtherUnit, const CvCity* pOth
 	return iScale;
 #else
 	return 100;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+/// Almaty CS UA: extra max HP while holding a configured promotion = ownerKills x ownerSurplusResource
+/// x Percent / 100. Evaluated live in GetMaxHitPoints so it follows kill changes immediately; the surplus
+/// is read from the per-turn cache (CacheKillMaxHpSurplus) because reading it live would walk every city
+/// on this very hot path. A cached deficit contributes nothing, so it never subtracts HP.
+int CvUnit::GetCSUAKillMaxHpBonus() const
+{
+	VALIDATE_OBJECT
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pCSUA == NULL || !pCSUA->HasKillMaxHpByPromotion())
+		return 0;
+
+	int iKills = GetTotalKills();
+	if (iKills <= 0)
+		return 0;
+
+	int iBonus = 0;
+	const std::vector<KillMaxHpByPromotionEntry>& vEntries = pCSUA->GetKillMaxHpByPromotionEntries();
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		if (!isHasPromotion((PromotionTypes)vEntries[i].m_iPromotion))
+			continue;
+
+		if (vEntries[i].m_iCachedSurplus <= 0)
+			continue;
+
+		iBonus += (iKills * vEntries[i].m_iCachedSurplus * vEntries[i].m_iPercent) / 100;
+	}
+	return iBonus;
+#else
+	return 0;
 #endif
 }
 

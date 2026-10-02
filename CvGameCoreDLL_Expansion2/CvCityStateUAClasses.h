@@ -59,6 +59,17 @@ struct UnitMaintenanceByPromotionEntry {
 	int m_iChange;
 };
 
+// Almaty: a unit holding the given promotion gains extra max HP equal to
+// (the owner's total kills) x (the owner's surplus resource) x Percent / 100, evaluated live in
+// CvUnit::GetMaxHitPoints. The surplus is cached once per turn (see CacheKillMaxHpSurplus) because
+// reading it walks every city; the kill count stays live (a plain member read).
+struct KillMaxHpByPromotionEntry {
+	int m_iPromotion;
+	int m_iResource;
+	int m_iPercent;
+	int m_iCachedSurplus = 0;
+};
+
 struct ResourcePerCityEntry {
 	int m_iResource;
 	int m_iQuantity;
@@ -339,6 +350,11 @@ public:
 	int GetPuppetTechCostPartial() const;
 	// Almaty (ALaMuTu)
 	bool IsCanPillageNeutralTradeRoute() const;
+	int GetPlunderTradeRouteGold() const;
+	int GetPlunderTradeRouteXP() const;
+	int GetPlunderTradeRouteOpinionPenalty() const;
+	// Almaty: extra max HP per kill per surplus resource while holding a promotion (live in GetMaxHitPoints)
+	const std::vector<KillMaxHpByPromotionEntry>& GetKillMaxHpByPromotionEntries() const { return m_vKillMaxHpByPromotion; }
 	// Belgrade (BeiErGeLaiDe)
 	int GetGarrisonCityDefenseModifier() const;
 	int GetMilitaryUnitProductionXP() const;
@@ -570,6 +586,10 @@ private:
 	int m_iPuppetTechCostPartial;
 	// Almaty
 	bool m_bCanPillageNeutralTradeRoute;
+	int m_iPlunderTradeRouteGold;
+	int m_iPlunderTradeRouteXP;
+	int m_iPlunderTradeRouteOpinionPenalty;
+	std::vector<KillMaxHpByPromotionEntry> m_vKillMaxHpByPromotion;
 	// Belgrade
 	int m_iGarrisonCityDefenseModifier;
 	int m_iMilitaryUnitProductionXP;
@@ -847,6 +867,11 @@ public:
 	int GetPuppetTechCostPartial() const;
 	// Almaty
 	bool IsCanPillageNeutralTradeRoute() const;
+	int GetPlunderTradeRouteGold() const;
+	int GetPlunderTradeRouteXP() const;
+	int GetPlunderTradeRouteOpinionPenalty() const;
+	bool HasKillMaxHpByPromotion() const;
+	const std::vector<KillMaxHpByPromotionEntry>& GetKillMaxHpByPromotionEntries() const;
 	// Belgrade
 	int GetGarrisonCityDefenseModifier() const;
 	int GetMilitaryUnitProductionXP() const;
@@ -1121,6 +1146,10 @@ public:
 	int GetCachedLuxuryHappiness() const;
 	void CacheLuxuryHappiness();
 
+	// Almaty: cache the surplus of each configured resource once per turn so CvUnit::GetMaxHitPoints
+	// (an extremely hot path) does not scan every city on each call. The kill count is read live.
+	void CacheKillMaxHpSurplus();
+
 	// Milan: a unit takes Percent% less damage when the opposing side's team lacks the configured tech.
 	// Evaluated live in the combat path (low frequency), so no per-turn cache is needed.
 	const std::vector<CombatDamageReductionVsNoTechEntry>& GetCombatDamageReductionVsNoTech() const { return m_vCombatDamageReductionVsNoTech; }
@@ -1151,6 +1180,10 @@ protected:
 	int m_iPuppetNoTechCostPenaltyCount;
 	int m_iPuppetTechCostPartial;
 	int m_iCanPillageNeutralTradeRouteCount;
+	int m_iPlunderTradeRouteGold;
+	int m_iPlunderTradeRouteXP;
+	int m_iPlunderTradeRouteOpinionPenalty;
+	std::vector<KillMaxHpByPromotionEntry> m_vKillMaxHpByPromotion;
 	int m_iGarrisonCityDefenseModifier;
 	int m_iMilitaryUnitProductionXP;
 	int m_iZOCRangeBonus;

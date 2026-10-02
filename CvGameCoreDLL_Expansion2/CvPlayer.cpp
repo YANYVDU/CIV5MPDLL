@@ -20273,6 +20273,10 @@ void CvPlayer::RefreshCSAllUAEffects()
 	m_pCityStateUA->CacheNationalWonderCount();
 	m_pCityStateUA->CacheLeagueVotes();
 
+	// Almaty UA: cache the surplus of each configured resource once per turn so the very hot
+	// CvUnit::GetMaxHitPoints path reads a flat int instead of walking every city.
+	m_pCityStateUA->CacheKillMaxHpSurplus();
+
 	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
 	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.
 	RefreshCoastalCityCount();

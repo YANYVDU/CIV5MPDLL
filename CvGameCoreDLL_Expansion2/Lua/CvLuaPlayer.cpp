@@ -11940,6 +11940,16 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 		aOpinions.push_back(kOpinion);
 	}
 
+	// Almaty CSUA: neutral trade-route plundering (decays 1/turn, never reset)
+	iValue = pDiploAI->GetCSUAPlunderedTradeRouteScore(eWithPlayer);
+	if (iValue != 0)
+	{
+		Opinion kOpinion;
+		kOpinion.m_iValue = iValue;
+		kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_CSUA_PLUNDERED_TRADE_ROUTE");
+		aOpinions.push_back(kOpinion);
+	}
+
 	iValue = pDiploAI->GetTimesIntrigueSharedScore(eWithPlayer);
 	if (iValue != 0)
 	{

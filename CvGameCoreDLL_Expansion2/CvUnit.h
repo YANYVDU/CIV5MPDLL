@@ -789,6 +789,8 @@ public:
 	int GetCSUACombatModifier(const CvUnit* pOtherUnit, const CvPlot* pBattlePlot) const;
 	int GetCSUAFixedDamageScale(const CvPlot* pPlot) const;
 	int GetCSUADamageTakenScale(const CvUnit* pOtherUnit, const CvCity* pOtherCity) const;
+	// Almaty: extra max HP from kills x surplus resource x percent, evaluated live (not cached at kill time)
+	int GetCSUAKillMaxHpBonus() const;
 	int GetPromotionMaintenanceCost() const;
 	void ChangePromotionMaintenanceCost(int iValue);
 	int GetFreeExpPerTurn() const;

@@ -12,6 +12,7 @@
 #include "CvInfosSerializationHelper.h" 
 #include "CvCitySpecializationAI.h"
 #include "CvCityStateUAClasses.h"
+#include "CvDiplomacyAI.h"
 
 #include "CvBarbarians.h"
 
@@ -3830,11 +3831,59 @@ bool CvPlayerTrade::PlunderTradeRoute(int iTradeConnectionID)
 	iPlunderGoldValue /= 100;
 	m_pPlayer->GetTreasury()->ChangeGold(iPlunderGoldValue);
 
+	// Almaty CS UA pays extra gold on top of the vanilla amount. Track the sum separately so the floating
+	// popup and the notification below report what the player actually received, while iPlunderGoldValue
+	// keeps meaning "vanilla gold".
+	int iPlunderGoldTotal = iPlunderGoldValue;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Almaty CS UA: the ally/friend gains extra gold and XP for plundering ANY trade route. Plundering a
+	// player the plunderer is NOT at war with (a "neutral" plunder) adds an opinion penalty to that player
+	// that decays over time; plundering a player already at war adds none. The extra gold is era-scaled via
+	// the unified era coefficient (设计全局规则 14): GetCurrentEra() + 1.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+		if (pCSUA != NULL)
+		{
+			int iCSUAGold = pCSUA->GetPlunderTradeRouteGold();
+			if (iCSUAGold > 0)
+			{
+				iCSUAGold *= (m_pPlayer->GetCurrentEra() + 1);
+				m_pPlayer->GetTreasury()->ChangeGold(iCSUAGold);
+				iPlunderGoldTotal += iCSUAGold;
+			}
+
+#if defined(MOD_API_EXTENSIONS)
+			int iCSUAXP = pCSUA->GetPlunderTradeRouteXP();
+			if (iCSUAXP > 0 && pUnit != NULL)
+			{
+#if defined(MOD_UNITS_XP_TIMES_100)
+				pUnit->changeExperienceTimes100(iCSUAXP * 100);
+#else
+				pUnit->changeExperience(iCSUAXP);
+#endif
+			}
+#endif
+
+			int iOpinionPenalty = pCSUA->GetPlunderTradeRouteOpinionPenalty();
+			if (iOpinionPenalty > 0 && !GET_TEAM(m_pPlayer->getTeam()).isAtWar(eOwningTeam))
+			{
+				CvPlayer& kPlundered = GET_PLAYER(eOwningPlayer);
+				if (kPlundered.isMajorCiv() && kPlundered.GetDiplomacyAI() != NULL)
+				{
+					kPlundered.GetDiplomacyAI()->ChangeCSUAPlunderedNeutralTradeRoute(m_pPlayer->GetID(), iOpinionPenalty);
+				}
+			}
+		}
+	}
+#endif
+
 	// do the floating popup
 	if (GC.getGame().getActivePlayer() == m_pPlayer->GetID())
 	{
 		char text[256] = {0};
-		sprintf_s(text, "[COLOR_YELLOW]+%d[ENDCOLOR][ICON_GOLD]", iPlunderGoldValue);
+		sprintf_s(text, "[COLOR_YELLOW]+%d[ENDCOLOR][ICON_GOLD]", iPlunderGoldTotal);
 #if defined(SHOW_PLOT_POPUP)
 		SHOW_PLOT_POPUP(pPlunderPlot, m_pPlayer->GetID(), text, 0.0f);
 #else
@@ -3844,15 +3893,15 @@ bool CvPlayerTrade::PlunderTradeRoute(int iTradeConnectionID)
 		CvString strBuffer;
 
 #if defined(MOD_BUGFIX_UNITCLASS_NOT_UNIT)
-		strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldValue, GC.getUnitInfo(GetTradeUnit(eDomain, m_pPlayer))->GetDescriptionKey());
+		strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldTotal, GC.getUnitInfo(GetTradeUnit(eDomain, m_pPlayer))->GetDescriptionKey());
 #else
 		if (eDomain == DOMAIN_LAND)
 		{
-			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldValue, "TXT_KEY_UNIT_CARAVAN");
+			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldTotal, "TXT_KEY_UNIT_CARAVAN");
 		}
 		else
 		{
-			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldValue, "TXT_KEY_UNIT_CARGO_SHIP");
+			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldTotal, "TXT_KEY_UNIT_CARGO_SHIP");
 		}
 #endif
 		

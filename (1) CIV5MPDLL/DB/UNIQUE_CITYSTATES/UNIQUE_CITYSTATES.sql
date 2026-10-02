@@ -70,8 +70,18 @@ CREATE TABLE CityStateUAEffects (
     -- Kuala Lumpur: puppet city science threshold
     PuppetNoTechCostPenalty                         boolean DEFAULT 0,
     PuppetTechCostPartial                           integer DEFAULT 0,
-    -- Almaty: can pillage neutral trade routes
+    -- Almaty: the ally/friend's units may pillage trade routes of players they are NOT at war with
     CanPillageNeutralTradeRoute                     boolean DEFAULT 0,
+    -- Almaty: extra gold granted to the ally/friend for plundering ANY trade route, on top of the vanilla
+    -- plunder gold. This is the per-era base value (200); the actual amount is multiplied by the unified
+    -- era coefficient (设计全局规则 14): GetCurrentEra() + 1 (Ancient x1 ... Future x10).
+    PlunderTradeRouteGold                           integer DEFAULT 0,
+    -- Almaty: extra XP granted to the ally/friend's unit that plunders a trade route.
+    PlunderTradeRouteXP                             integer DEFAULT 0,
+    -- Almaty: opinion weight penalty (visible red face) applied to the plundered player per NEUTRAL plunder
+    -- only (plundering a player currently at war adds none). The penalty is a flat sum that decays by 1 per
+    -- turn; it is never reset by peace or by anything else. 10 = -10 per plunder.
+    PlunderTradeRouteOpinionPenalty                 integer DEFAULT 0,
     -- Belgrade: garrison city defense
     GarrisonCityDefenseModifier                     integer DEFAULT 0,
     -- Belgrade: ally-built military units gain XP (purchases do not apply)
@@ -246,6 +256,19 @@ create table CityStateUAEffect_UnitMaintenanceByPromotion (
     EffectType text references CityStateUAEffects(Type),
     PromotionType text references UnitPromotions(Type),
     MaintenanceChange integer default 0
+);
+
+-- CityState UA (Almaty): a unit holding PromotionType gains extra max HP equal to
+-- (the owner's total kills) x (the owner's surplus ResourceType) x Percent / 100. It is evaluated live in
+-- CvUnit::GetMaxHitPoints (like the promotion per-kill bonus), NOT cached at kill time, so the value
+-- follows kills and resource changes automatically. Surplus = getNumResourceAvailable (the count shown in
+-- the top UI), clamped at 0 so a resource deficit never reduces HP. Percent is a plain percent (20 = 20%).
+-- One unit may match several rows and all matches add up.
+create table CityStateUAEffect_KillMaxHpByPromotion (
+    EffectType text references CityStateUAEffects(Type),
+    PromotionType text references UnitPromotions(Type),
+    ResourceType text references Resources(Type),
+    Percent integer default 0
 );
 
 -- CityState UA: each owned city provides Quantity of ResourceType (added in CvPlayer::getNumResourceTotal

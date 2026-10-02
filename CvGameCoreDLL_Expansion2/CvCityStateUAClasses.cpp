@@ -297,6 +297,9 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_bPuppetNoTechCostPenalty(false)
 	, m_iPuppetTechCostPartial(0)
 	, m_bCanPillageNeutralTradeRoute(false)
+	, m_iPlunderTradeRouteGold(0)
+	, m_iPlunderTradeRouteXP(0)
+	, m_iPlunderTradeRouteOpinionPenalty(0)
 	, m_iGarrisonCityDefenseModifier(0)
 	, m_iMilitaryUnitProductionXP(0)
 	, m_iZOCRangeBonus(0)
@@ -447,6 +450,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iPuppetTechCostPartial						= kResults.GetInt("PuppetTechCostPartial");
 
 	m_bCanPillageNeutralTradeRoute					= kResults.GetBool("CanPillageNeutralTradeRoute");
+	m_iPlunderTradeRouteGold						= kResults.GetInt("PlunderTradeRouteGold");
+	m_iPlunderTradeRouteXP							= kResults.GetInt("PlunderTradeRouteXP");
+	m_iPlunderTradeRouteOpinionPenalty				= kResults.GetInt("PlunderTradeRouteOpinionPenalty");
 
 	m_iGarrisonCityDefenseModifier					= kResults.GetInt("GarrisonCityDefenseModifier");
 	m_iMilitaryUnitProductionXP						= kResults.GetInt("MilitaryUnitProductionXP");
@@ -674,6 +680,26 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			entry.m_iPromotion = pResults->GetInt(0);
 			entry.m_iChange = pResults->GetInt(1);
 			m_vUnitMaintenanceByPromotion.push_back(entry);
+		}
+	}
+	//Almaty: a unit holding a promotion gains extra max HP = ownerKills * ownerSurplusResource * Percent/100
+	{
+		m_vKillMaxHpByPromotion.clear();
+		std::string strKey("CityStateUAEffect_KillMaxHpByPromotion");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select UnitPromotions.ID as PromotionID, Resources.ID as ResourceID, Percent from CityStateUAEffect_KillMaxHpByPromotion inner join UnitPromotions on UnitPromotions.Type = PromotionType inner join Resources on Resources.Type = ResourceType where EffectType = ?");
+		}
+
+		pResults->Bind(1, GetType());
+		while(pResults->Step())
+		{
+			KillMaxHpByPromotionEntry entry;
+			entry.m_iPromotion = pResults->GetInt(0);
+			entry.m_iResource = pResults->GetInt(1);
+			entry.m_iPercent = pResults->GetInt(2);
+			m_vKillMaxHpByPromotion.push_back(entry);
 		}
 	}
 	//Brussels: specified unit class's one-shot great person output modifier (%)
@@ -1268,6 +1294,9 @@ bool CvCityStateUAEffectEntry::IsPuppetNoTechCostPenalty() const { return m_bPup
 int CvCityStateUAEffectEntry::GetPuppetTechCostPartial() const { return m_iPuppetTechCostPartial; }
 
 bool CvCityStateUAEffectEntry::IsCanPillageNeutralTradeRoute() const { return m_bCanPillageNeutralTradeRoute; }
+int CvCityStateUAEffectEntry::GetPlunderTradeRouteGold() const { return m_iPlunderTradeRouteGold; }
+int CvCityStateUAEffectEntry::GetPlunderTradeRouteXP() const { return m_iPlunderTradeRouteXP; }
+int CvCityStateUAEffectEntry::GetPlunderTradeRouteOpinionPenalty() const { return m_iPlunderTradeRouteOpinionPenalty; }
 
 int CvCityStateUAEffectEntry::GetGarrisonCityDefenseModifier() const { return m_iGarrisonCityDefenseModifier; }
 
@@ -1664,6 +1693,9 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iPuppetNoTechCostPenaltyCount(0)
 	, m_iPuppetTechCostPartial(0)
 	, m_iCanPillageNeutralTradeRouteCount(0)
+	, m_iPlunderTradeRouteGold(0)
+	, m_iPlunderTradeRouteXP(0)
+	, m_iPlunderTradeRouteOpinionPenalty(0)
 	, m_iGarrisonCityDefenseModifier(0)
 	, m_iMilitaryUnitProductionXP(0)
 	, m_iZOCRangeBonus(0)
@@ -1791,6 +1823,10 @@ void CvPlayerCityStateUA::Reset()
 	m_iPuppetNoTechCostPenaltyCount = 0;
 	m_iPuppetTechCostPartial = 0;
 	m_iCanPillageNeutralTradeRouteCount = 0;
+	m_iPlunderTradeRouteGold = 0;
+	m_iPlunderTradeRouteXP = 0;
+	m_iPlunderTradeRouteOpinionPenalty = 0;
+	m_vKillMaxHpByPromotion.clear();
 	m_iGarrisonCityDefenseModifier = 0;
 	m_iMilitaryUnitProductionXP = 0;
 	m_iZOCRangeBonus = 0;
@@ -2021,6 +2057,18 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iPuppetTechCostPartial						+= pEffect->GetPuppetTechCostPartial() * iChange;
 
 	m_iCanPillageNeutralTradeRouteCount += (pEffect->IsCanPillageNeutralTradeRoute() ? iChange : 0);
+
+	m_iPlunderTradeRouteGold						+= pEffect->GetPlunderTradeRouteGold() * iChange;
+	m_iPlunderTradeRouteXP							+= pEffect->GetPlunderTradeRouteXP() * iChange;
+	m_iPlunderTradeRouteOpinionPenalty				+= pEffect->GetPlunderTradeRouteOpinionPenalty() * iChange;
+	{
+		const std::vector<KillMaxHpByPromotionEntry>& vEntries = pEffect->GetKillMaxHpByPromotionEntries();
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			KillMaxHpByPromotionEntry entry = vEntries[i];
+			m_vKillMaxHpByPromotion.push_back(entry);
+		}
+	}
 
 	m_iGarrisonCityDefenseModifier					+= pEffect->GetGarrisonCityDefenseModifier() * iChange;
 	m_iMilitaryUnitProductionXP						+= pEffect->GetMilitaryUnitProductionXP() * iChange;
@@ -2552,6 +2600,11 @@ int CvPlayerCityStateUA::GetEmigrationRateMax() const { return m_iEmigrationRate
 bool CvPlayerCityStateUA::IsPuppetNoTechCostPenalty() const { return m_iPuppetNoTechCostPenaltyCount > 0; }
 int CvPlayerCityStateUA::GetPuppetTechCostPartial() const { return m_iPuppetTechCostPartial; }
 bool CvPlayerCityStateUA::IsCanPillageNeutralTradeRoute() const { return m_iCanPillageNeutralTradeRouteCount > 0; }
+int CvPlayerCityStateUA::GetPlunderTradeRouteGold() const { return m_iPlunderTradeRouteGold; }
+int CvPlayerCityStateUA::GetPlunderTradeRouteXP() const { return m_iPlunderTradeRouteXP; }
+int CvPlayerCityStateUA::GetPlunderTradeRouteOpinionPenalty() const { return m_iPlunderTradeRouteOpinionPenalty; }
+bool CvPlayerCityStateUA::HasKillMaxHpByPromotion() const { return !m_vKillMaxHpByPromotion.empty(); }
+const std::vector<KillMaxHpByPromotionEntry>& CvPlayerCityStateUA::GetKillMaxHpByPromotionEntries() const { return m_vKillMaxHpByPromotion; }
 int CvPlayerCityStateUA::GetGarrisonCityDefenseModifier() const { return m_iGarrisonCityDefenseModifier; }
 
 int CvPlayerCityStateUA::GetMilitaryUnitProductionXP() const { return m_iMilitaryUnitProductionXP; }
@@ -3167,6 +3220,21 @@ void CvPlayerCityStateUA::CacheLuxuryHappiness()
 	if (!m_pPlayer) return;
 	if (m_vLuxuryHappinessYieldModifiers.empty()) return;
 	m_iCachedLuxuryHappiness = m_pPlayer->GetLuxuryHappinessBaseTotal();
+}
+// Almaty: refresh the cached surplus of each configured resource once per turn. GetMaxHitPoints reads
+// the cached value so it never has to walk every city, while the kill count is read live.
+void CvPlayerCityStateUA::CacheKillMaxHpSurplus()
+{
+	for (size_t i = 0; i < m_vKillMaxHpByPromotion.size(); i++)
+	{
+		m_vKillMaxHpByPromotion[i].m_iCachedSurplus = 0;
+	}
+	if (!m_pPlayer) return;
+	for (size_t i = 0; i < m_vKillMaxHpByPromotion.size(); i++)
+	{
+		m_vKillMaxHpByPromotion[i].m_iCachedSurplus =
+			m_pPlayer->getNumResourceAvailable((ResourceTypes)m_vKillMaxHpByPromotion[i].m_iResource, true);
+	}
 }
 bool CvPlayerCityStateUA::HasLuxuryHappinessYieldModifiers() const
 {
