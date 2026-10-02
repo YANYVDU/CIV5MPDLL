@@ -38,6 +38,14 @@ alter table Buildings add column MinorCivAlliesThresholdModifier int default 0;
 alter table Policies  add column MinorCivAlliesThresholdModifier int default 0;
 alter table Traits    add column MinorCivAlliesThresholdModifier int default 0;
 
+-- GainConqueredCityStateUA: the player PERMANENTLY keeps the ally-tier UA effect of any city-state
+-- whose ORIGINAL capital they have ever conquered. The conquest is recorded once (CvPlayer::
+-- m_abConqueredCityStateUA, set in acquireCity) and is independent of later city ownership, of the
+-- city-state still being alive and of the current diplomatic relationship. Judged on the original
+-- capital's coordinates (not bCapital), so a city-state that owns a second city is not misdetected.
+-- Only genuine conquest counts; gifts and the Austria/Venice buyout do not trigger it.
+alter table Traits add column GainConqueredCityStateUA boolean default 0;
+
 -- ==================== Unique CityState UA System (Rule 1-18) ====================
 
 -- Effects definition table (internal data, not shown to players): one row per ally or friend effect

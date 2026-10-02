@@ -41,6 +41,7 @@ CvTraitEntry::CvTraitEntry() :
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige(0),
 	m_iMinorCivAlliesThresholdModifier(0),
+	m_bGainConqueredCityStateUA(false),
 #endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iLandBarbarianConversionExtraUnits(0),
@@ -418,6 +419,13 @@ int CvTraitEntry::GetCityStateCombatModifier() const
 	int CvTraitEntry::GetMinorCivAlliesThresholdModifier() const
 	{
 		return m_iMinorCivAlliesThresholdModifier;
+	}
+
+	//	--------------------------------------------------------------------------
+	/// Accessor:: keep conquered city-states' ally-tier UA effects
+	bool CvTraitEntry::IsGainConqueredCityStateUA() const
+	{
+		return m_bGainConqueredCityStateUA;
 	}
 #endif
 
@@ -1822,6 +1830,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige					= kResults.GetInt("DiplomaticPrestige");
 	m_iMinorCivAlliesThresholdModifier					= kResults.GetInt("MinorCivAlliesThresholdModifier");
+	m_bGainConqueredCityStateUA							= kResults.GetBool("GainConqueredCityStateUA");
 #endif
 	m_iCityStateCombatModifier				= kResults.GetInt("CityStateCombatModifier");
 	m_iLandBarbarianConversionPercent       = kResults.GetInt("LandBarbarianConversionPercent");
@@ -2853,6 +2862,7 @@ CvPlayerTraits::CvPlayerTraits()
 {
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iMinorCivAlliesThresholdModifier = 0;
+	m_bGainConqueredCityStateUA = false;
 #endif
 }
 
@@ -2910,6 +2920,8 @@ void CvPlayerTraits::InitPlayerTraits()
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 			m_iDiplomaticPrestige += trait->GetDiplomaticPrestige();
 			m_iMinorCivAlliesThresholdModifier += trait->GetMinorCivAlliesThresholdModifier();
+			if (trait->IsGainConqueredCityStateUA())
+				m_bGainConqueredCityStateUA = true;
 #endif
 			m_iLandBarbarianConversionPercent += trait->GetLandBarbarianConversionPercent();
 			m_iLandBarbarianConversionExtraUnits += trait->GetLandBarbarianConversionExtraUnits();
@@ -3539,6 +3551,7 @@ void CvPlayerTraits::Reset()
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
 	m_iMinorCivAlliesThresholdModifier = 0;
+	m_bGainConqueredCityStateUA = false;
 #endif
 	m_iLandBarbarianConversionPercent = 0;
 	m_iLandBarbarianConversionExtraUnits = 0;

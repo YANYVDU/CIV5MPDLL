@@ -646,6 +646,9 @@ CvPlayer::CvPlayer() :
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	memset(m_abConqueredCityStateUA, 0, sizeof(m_abConqueredCityStateUA));
+#endif
 	m_bfEverConqueredBy.ClearAll();
 	m_aiGreatWorkYieldChange.clear();
 	m_aiSiphonLuxuryCount.clear();
@@ -1449,6 +1452,15 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 		m_abPlayerOpenBorders[iI] = false;
 	}
 	m_bPlayerOBsValid = false;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Rome trait (GainConqueredCityStateUA): permanent per-city-state conquest record
+	// (array is MAX_CIV_PLAYERS wide; init the whole range)
+	for(int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+	{
+		m_abConqueredCityStateUA[iI] = false;
+	}
+#endif
 
 	m_aiCityYieldChange.clear();
 	m_aiCityYieldChange.resize(NUM_YIELD_TYPES, 0);
@@ -2477,6 +2489,9 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 	CvCityReligions tempReligions;
 	bool bIsMinorCivBuyout = (pOldCity->GetPlayer()->isMinorCiv() && bGift && (IsAbleToAnnexCityStates() || GetPlayerTraits()->IsNoAnnexing())); // Austria and Venice UA
 	if(bIsMinorCivBuyout) bNoKillPunishment = true;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bool bRefreshCSUAAfterConquest = false; // Rome trait: set when we conquer a CS original capital
+#endif
 
 	strPerfCityName = pOldCity->getName();
 
@@ -3144,6 +3159,24 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 		GET_PLAYER(eOldOwner).SetHasLostCapital(true, m_eID);
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Rome trait (GainConqueredCityStateUA): permanently unlock the ally-tier UA of a city-state
+	// whose ORIGINAL capital we conquer. Only genuine conquest counts - bConquest excludes gifts
+	// and the Austria/Venice buyout. The coordinate check is used instead of bCapital so a
+	// city-state that owns a 2nd city (and has already moved its capital there) still registers
+	// the ORIGINAL capital correctly. The explicit range check keeps the m_abConqueredCityStateUA
+	// index (MAX_CIV_PLAYERS wide) in bounds even if eOldOwner is the barbarian slot.
+	if (bConquest && GetPlayerTraits()->IsGainConqueredCityStateUA()
+		&& eOldOwner >= MAX_MAJOR_CIVS && eOldOwner < MAX_CIV_PLAYERS
+		&& GET_PLAYER(eOldOwner).isMinorCiv()
+		&& pOldCity->getX() == GET_PLAYER(eOldOwner).GetOriginalCapitalX()
+		&& pOldCity->getY() == GET_PLAYER(eOldOwner).GetOriginalCapitalY())
+	{
+		m_abConqueredCityStateUA[eOldOwner] = true;
+		bRefreshCSUAAfterConquest = true;
+	}
+#endif
+
 #if !defined(NO_ACHIEVEMENTS)
 	if(bConquest && !GC.getGame().isGameMultiPlayer() && isHuman())
 	{
@@ -3806,6 +3839,14 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 		DWORD dwStage2 = dwElapsed - dwStage1;
 		NET_MESSAGE_DEBUG_OSTR_ALWAYS("[PERF] acquireCity total=" << dwElapsed << "ms pre=" << dwStage1 << "ms post=" << dwStage2 << "ms city=" << strPerfCityName.c_str() << " old=" << (int)eOldOwner << "->new=" << (int)GetID());
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Rome trait: refresh the permanent conquer-UA state immediately so a freshly unlocked
+	// ally-tier effect applies this turn instead of waiting for the next doTurn. acquireCity runs
+	// deterministically on every client, so a plain local call is multiplayer-safe (no broadcast).
+	if (bRefreshCSUAAfterConquest)
+		RefreshCSAllUAEffects();
+#endif
 
 #if defined(MOD_API_EXTENSIONS)
 		return pNewCity;
@@ -20226,6 +20267,47 @@ void CvPlayer::RefreshCSAllUAEffects()
 		}
 	}
 
+	// Trait (GainConqueredCityStateUA, Rome): a player with this trait permanently keeps the
+	// ally-tier UA effect of every city-state whose ORIGINAL capital they have EVER conquered.
+	// The permanent record lives in m_abConqueredCityStateUA (written in acquireCity), so the
+	// effect no longer depends on currently owning the city, on the city-state being alive, or on
+	// any current diplomatic relationship.
+	if (GetPlayerTraits()->IsGainConqueredCityStateUA())
+	{
+		for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+		{
+			PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
+			if (!m_abConqueredCityStateUA[eMinor])
+				continue;
+			if (!GET_PLAYER(eMinor).isMinorCiv())
+				continue;
+
+			CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+			if (!pMinorAI)
+				continue;
+
+			// Only skip when the loop above already applied this city-state's ALLY effect, i.e. it
+			// is currently our ally. Friendship there only contributes the friend-tier effect,
+			// which stacks with our permanent ally effect from conquest - both should apply.
+			if (GET_PLAYER(eMinor).isAlive() && pMinorAI->IsAllies(GetID()))
+				continue;
+
+			CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+			if (!pkMinorCivInfo)
+				continue;
+
+			const char* szUAType = pkMinorCivInfo->GetUAType();
+			if (!szUAType || szUAType[0] == '\0')
+				continue;
+
+			CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+			if (!pUAEntry)
+				continue;
+
+			m_pCityStateUA->ApplyEffect(pUAEntry->GetAllyEffectID(), 1);
+		}
+	}
+
 	// Born-yield contribution is dynamic (per-specialist extra yield). Re-sync all cities so
 	// the rebuilt effect list takes effect idempotently (delta-based, never stacks per turn).
 	updateExtraSpecialistYield();
@@ -31101,6 +31183,12 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(164, kStream, m_bPlayerOBsValid, false);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, &m_abPlayerOpenBorders[0], bool, REALLY_MAX_PLAYERS, false);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Rome trait (GainConqueredCityStateUA): permanent per-city-state record of whose ORIGINAL
+	// capital we have conquered. Uses the same 164 gate as the other in-development members.
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abConqueredCityStateUA, bool, MAX_CIV_PLAYERS, false);
+#endif
+
 	if(GetID() < MAX_MAJOR_CIVS)
 	{
 		if(!m_pDiplomacyRequests)
@@ -31868,6 +31956,11 @@ void CvPlayer::Write(FDataStream& kStream) const
 		MOD_SERIALIZE_WRITE(kStream, m_bPlayerOBsValid);
 		MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, &m_abPlayerOpenBorders[0], bool, REALLY_MAX_PLAYERS);
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Rome trait (GainConqueredCityStateUA): must stay positionally paired with the read above.
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abConqueredCityStateUA, bool, MAX_CIV_PLAYERS);
+#endif
 }
 
 //	--------------------------------------------------------------------------------

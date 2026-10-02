@@ -2920,6 +2920,10 @@ protected:
 	int m_iExtraDiplomaticPrestige;
 	int m_iCityStateAllyCount;
 	int m_iMinorCivAlliesThresholdModifier;
+	// Rome trait (GainConqueredCityStateUA): indexed by city-state player id, true once we have
+	// conquered that city-state's ORIGINAL capital. Permanent - survives later city loss, the
+	// city-state's death and any later alliance. Rebuilt into UA effects each turn.
+	bool m_abConqueredCityStateUA[MAX_CIV_PLAYERS];
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
