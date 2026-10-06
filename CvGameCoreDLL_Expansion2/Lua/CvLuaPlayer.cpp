@@ -272,6 +272,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetImprovementGoldMaintenance);
 	Method(CalculateGoldRate);
 	Method(CalculateGoldRateTimes100);
+	Method(GetEconomicAidExpensePerTurn);
+	Method(GetTradableGoldRate);
 	Method(CalculateGrossGoldTimes100);
 	Method(CalculateInflatedCosts);
 	Method(CalculateResearchModifier);
@@ -2379,6 +2381,18 @@ int CvLuaPlayer::lCalculateGoldRate(lua_State* L)
 int CvLuaPlayer::lCalculateGoldRateTimes100(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::calculateGoldRateTimes100);
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidExpensePerTurn();
+int CvLuaPlayer::lGetEconomicAidExpensePerTurn(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetEconomicAidExpensePerTurn);
+}
+//------------------------------------------------------------------------------
+//int GetTradableGoldRate();
+int CvLuaPlayer::lGetTradableGoldRate(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetTradableGoldRate);
 }
 //------------------------------------------------------------------------------
 //int CalculateGrossGoldTimes100();

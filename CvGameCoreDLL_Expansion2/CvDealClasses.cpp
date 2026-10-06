@@ -354,8 +354,11 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 	else if(eItem == TRADE_ITEM_GOLD_PER_TURN)
 	{
 		// Can't trade more GPT than you're making
+		// GetTradableGoldRate() nets out the Economic Aid this player pays (Super Power V11). Without
+		// it the AI would offer its full gross rate and then also pay the aid, draining the treasury
+		// twice.
 		int iGoldPerTurn = iData1;
-		if(iGoldPerTurn != -1 && pFromPlayer->calculateGoldRate() < iGoldPerTurn)
+		if(iGoldPerTurn != -1 && pFromPlayer->GetTradableGoldRate() < iGoldPerTurn)
 			return false;
 
 		//int iDuration = iData2;

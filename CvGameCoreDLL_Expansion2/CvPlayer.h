@@ -330,6 +330,9 @@ public:
 	int calculateResearchModifier(TechTypes eTech);
 	int calculateGoldRate() const;
 	int calculateGoldRateTimes100() const;
+	int GetEconomicAidExpensePerTurn() const;
+	int GetTradableGoldRate() const;
+	bool IsAidingCityState(PlayerTypes eMinor) const;
 
 	int unitsRequiredForGoldenAge() const;
 	int unitsGoldenAgeCapable() const;

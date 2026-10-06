@@ -3101,7 +3101,7 @@ void CvDealAI::DoAddGPTToThem(CvDeal* pDeal, PlayerTypes eThem, bool bDontChange
 	{
 		if(iTotalValue < 0)
 		{
-			if(GET_PLAYER(eThem).calculateGoldRate() > 0)
+			if(GET_PLAYER(eThem).GetTradableGoldRate() > 0)
 			{
 				PlayerTypes eMyPlayer = GetPlayer()->GetID();
 
@@ -3111,7 +3111,7 @@ void CvDealAI::DoAddGPTToThem(CvDeal* pDeal, PlayerTypes eThem, bool bDontChange
 					int iNumGPT = GetGPTforForValueExchange(-iTotalValue, /*bNumGPTFromValue*/ true, iDealDuration, /*bFromMe*/ false, eThem, bUseEvenValue, /*bRoundUp*/ false);
 					int iNumGPTAlreadyInTrade = pDeal->GetGoldPerTurnTrade(eThem);
 					iNumGPT += iNumGPTAlreadyInTrade;
-					iNumGPT = min(iNumGPT, GET_PLAYER(eThem).calculateGoldRate());
+					iNumGPT = min(iNumGPT, GET_PLAYER(eThem).GetTradableGoldRate());
 
 					if(iNumGPT != iNumGPTAlreadyInTrade && !pDeal->ChangeGoldPerTurnTrade(eThem, iNumGPT, iDealDuration))
 					{
@@ -3138,7 +3138,7 @@ void CvDealAI::DoAddGPTToUs(CvDeal* pDeal, PlayerTypes eThem, bool bDontChangeMy
 		{
 			PlayerTypes eMyPlayer = GetPlayer()->GetID();
 
-			if(GET_PLAYER(eMyPlayer).calculateGoldRate() > 0)
+			if(GET_PLAYER(eMyPlayer).GetTradableGoldRate() > 0)
 			{
 				// Can't already be GPT from the other player in the Deal
 				if(pDeal->GetGoldPerTurnTrade(eThem) == 0)
@@ -3146,7 +3146,7 @@ void CvDealAI::DoAddGPTToUs(CvDeal* pDeal, PlayerTypes eThem, bool bDontChangeMy
 					int iNumGPT = GetGPTforForValueExchange(iTotalValue, /*bNumGPTFromValue*/ true, iDealDuration, /*bFromMe*/ true, eThem, bUseEvenValue, /*bRoundUp*/ false);
 					int iNumGPTAlreadyInTrade = pDeal->GetGoldPerTurnTrade(eMyPlayer);
 					iNumGPT += iNumGPTAlreadyInTrade;
-					iNumGPT = min(iNumGPT, GET_PLAYER(eMyPlayer).calculateGoldRate());
+					iNumGPT = min(iNumGPT, GET_PLAYER(eMyPlayer).GetTradableGoldRate());
 
 					if(iNumGPT != iNumGPTAlreadyInTrade && !pDeal->ChangeGoldPerTurnTrade(eMyPlayer, iNumGPT, iDealDuration))
 					{
@@ -3565,7 +3565,9 @@ void CvDealAI::DoAddItemsToDealForPeaceTreaty(PlayerTypes eOtherPlayer, CvDeal* 
 	int iGPT = 0;
 	if (iPercentGPTToGive > 0)
 	{
-		iGPT = min(pLosingPlayer->calculateGoldRate(), pWinningPlayer->calculateGoldRate() / /*3*/ GC.getARMISTICE_GPT_DIVISOR());
+		// The loser pays, so cap its side by the tradable rate; the winner's share is only a
+		// reference for how large a payment it would accept, so it stays on the gross rate.
+		iGPT = min(pLosingPlayer->GetTradableGoldRate(), pWinningPlayer->calculateGoldRate() / /*3*/ GC.getARMISTICE_GPT_DIVISOR());
 		if (iGPT > 0)
 		{
 			iGPT = iGPT * iPercentGPTToGive / 100;

@@ -5664,21 +5664,17 @@ void CvPlayer::doTurnPostDiplomacy()
 	// Economic Aid (Super Power V11): per-turn gold transfer from aiding majors to city-states.
 	// Deliberately NOT routed through DoGoldGiftFromMajor so the gold is not counted as a donation
 	// and the influence gain is not affected by donation modifiers.
-	// Runtime check: skip entirely when the SP_UNIQUE_CITYSTATE option is disabled (covers
-	// pre-existing aid relations carried over from older save games).
-	if (GC.getGame().IsEconomicAidActive() && !isMinorCiv() && !isBarbarian())
+	// The eligibility test lives in IsAidingCityState(), shared with GetEconomicAidExpensePerTurn(),
+	// so the gold withdrawn here and the amount reported to the UI can never drift apart.
+	int iAidGold = GC.getGame().GetEconomicAidWorldEra();
+	if (iAidGold > 0)
 	{
-		int iAidGold = GC.getGame().GetEconomicAidWorldEra();
-		if (iAidGold > 0)
+		for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
 		{
-			for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+			if (IsAidingCityState((PlayerTypes)iMinor))
 			{
-				CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
-				if (kMinor.isAlive() && kMinor.isMinorCiv() && kMinor.GetMinorCivAI()->IsEconomicAidFromMajor(GetID()))
-				{
-					GetTreasury()->ChangeGold(-iAidGold);
-					kMinor.GetTreasury()->ChangeGold(iAidGold);
-				}
+				GetTreasury()->ChangeGold(-iAidGold);
+				GET_PLAYER((PlayerTypes)iMinor).GetTreasury()->ChangeGold(iAidGold);
 			}
 		}
 	}
@@ -11471,6 +11467,88 @@ int CvPlayer::calculateGoldRateTimes100() const
 	iRate = GetTreasury()->CalculateBaseNetGoldTimes100();
 
 	return iRate;
+}
+
+//	--------------------------------------------------------------------------------
+// Economic Aid (Super Power V11): true when this player currently pays aid to eMinor.
+// Single source of truth for the eligibility test, shared by the turn-start transfer in
+// doTurnPostDiplomacy() and by GetEconomicAidExpensePerTurn(), so the gold actually
+// withdrawn and the amount reported to the UI cannot drift apart.
+bool CvPlayer::IsAidingCityState(PlayerTypes eMinor) const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Guard the index before GET_PLAYER(): this is a public helper, and an out-of-range
+	// PlayerTypes would index m_apPlayers out of bounds in release builds.
+	if (eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+	{
+		return false;
+	}
+
+	if (isMinorCiv() || isBarbarian())
+	{
+		return false;
+	}
+
+	// Runtime check: covers pre-existing aid relations carried over from older save games
+	// when the SP_UNIQUE_CITYSTATE option is disabled.
+	if (!GC.getGame().IsEconomicAidActive())
+	{
+		return false;
+	}
+
+	CvPlayer& kMinor = GET_PLAYER(eMinor);
+	if (!kMinor.isAlive() || !kMinor.isMinorCiv())
+	{
+		return false;
+	}
+
+	return kMinor.GetMinorCivAI()->IsEconomicAidFromMajor(GetID());
+#else
+	return false;
+#endif
+}
+
+//	--------------------------------------------------------------------------------
+// Economic Aid (Super Power V11): the per-turn gold this player pays to the city-states
+// it aids. Deliberately kept out of calculateGoldRateTimes100(): DoGold() settles the
+// treasury from that function, so folding the expense in would also shift deficit
+// science, vassal taxation and every AI heuristic built on the gold rate. Callers that
+// need the player's real disposable income subtract this explicitly.
+// Returns the expense as a positive number, or 0 when nothing is paid.
+int CvPlayer::GetEconomicAidExpensePerTurn() const
+{
+	int iAidGold = GC.getGame().GetEconomicAidWorldEra();
+	if (iAidGold <= 0)
+	{
+		return 0;
+	}
+
+	int iAidCount = 0;
+	for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		if (IsAidingCityState((PlayerTypes)iMinor))
+		{
+			iAidCount++;
+		}
+	}
+
+	return iAidGold * iAidCount;
+}
+
+//	--------------------------------------------------------------------------------
+// Economic Aid (Super Power V11): the gold per turn this player can actually commit to a deal.
+// Aid is withdrawn from the treasury at turn start and is deliberately not part of
+// calculateGoldRate(), so the deal code has to net it out itself. Kept in one place so the AI's
+// offers (CvDealAI) and the engine's validity check (CvDeal::IsPossibleToTradeItem) agree on how
+// much GPT is available.
+// Floored at 0: a player whose aid expense exceeds their gold rate has nothing to trade. The Lua
+// side floors the same way, and CvDeal::ChangeGoldPerTurnTrade rejects anything above this value,
+// so an unfloored negative would make the trade screen display 0 while the deal silently kept the
+// amount it already held.
+int CvPlayer::GetTradableGoldRate() const
+{
+	const int iTradable = calculateGoldRate() - GetEconomicAidExpensePerTurn();
+	return std::max(0, iTradable);
 }
 
 //	--------------------------------------------------------------------------------
