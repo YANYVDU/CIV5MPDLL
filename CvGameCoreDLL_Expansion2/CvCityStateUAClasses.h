@@ -332,14 +332,9 @@ public:
 	bool IsGPNoDeathAfterGreatWork() const;
 	int GetGPConcertTourismRetentionPercent() const;
 	// Brussels (BuLuSaiEr)
-	int GetGreatMusicianConcertTourismModifier() const;
 	int GetGreatMusicianConcertGoldPercent() const;
 	// Bratislava (BuLaDiSiLaFa)
 	int GetCapitalAndSecondCapitalCultureModifier() const;
-	// Kiev (JiFu)
-	int GetCapitalCultureModifierPerTurn() const;
-	int GetCapitalFaithModifierPerTurn() const;
-	int GetCapitalPerTurnYieldModifierMax() const;
 	// Bucharest (BuJiaLeSiTe)
 	int GetImmigrationRatePerImmigrant() const;
 	int GetImmigrationRateMax() const;
@@ -375,10 +370,6 @@ public:
 	int GetCityAttackIgnoreBuildingDefensePercent() const;
 	int GetMilitaryXPPerTurnModifier() const;
 	int GetMilitaryXPSeaAir() const;
-	// Sofia (SuoFeiYa)
-	int GetHillsCityDamageReduction() const;
-	int GetHillsMovementModifier() const;
-	int GetHillsCityRangeBonus() const;
 	// Sofia (SuoFeiYa) spy/coup UA
 	int GetCoupChanceModifier() const;
 	bool GetCoupFailSpySurvives() const;
@@ -568,14 +559,9 @@ private:
 	bool m_bGPNoDeathAfterGreatWork;
 	int m_iGPConcertTourismRetentionPercent;
 	// Brussels
-	int m_iGreatMusicianConcertTourismModifier;
 	int m_iGreatMusicianConcertGoldPercent;
 	// Bratislava
 	int m_iCapitalAndSecondCapitalCultureModifier;
-	// Kiev
-	int m_iCapitalCultureModifierPerTurn;
-	int m_iCapitalFaithModifierPerTurn;
-	int m_iCapitalPerTurnYieldModifierMax;
 	// Bucharest
 	int m_iImmigrationRatePerImmigrant;
 	int m_iImmigrationRateMax;
@@ -609,10 +595,6 @@ private:
 	int m_iCityAttackIgnoreBuildingDefensePercent;
 	int m_iMilitaryXPPerTurnModifier;
 	int m_iMilitaryXPSeaAir;
-	// Sofia
-	int m_iHillsCityDamageReduction;
-	int m_iHillsMovementModifier;
-	int m_iHillsCityRangeBonus;
 	// Sofia (spy/coup UA)
 	int m_iCoupChanceModifier;
 	bool m_bCoupFailSpySurvives;
@@ -849,14 +831,9 @@ public:
 	bool IsGPNoDeathAfterGreatWork() const;
 	int GetGPConcertTourismRetentionPercent() const;
 	// Brussels
-	int GetGreatMusicianConcertTourismModifier() const;
 	int GetGreatMusicianConcertGoldPercent() const;
 	// Bratislava
 	int GetCapitalAndSecondCapitalCultureModifier() const;
-	// Kiev
-	int GetCapitalCultureModifierPerTurn() const;
-	int GetCapitalFaithModifierPerTurn() const;
-	int GetCapitalPerTurnYieldModifierMax() const;
 	// Bucharest
 	int GetImmigrationRatePerImmigrant() const;
 	int GetImmigrationRateMax() const;
@@ -891,10 +868,6 @@ public:
 	int GetCityAttackIgnoreBuildingDefensePercent() const;
 	int GetMilitaryXPPerTurnModifier() const;
 	int GetMilitaryXPSeaAir() const;
-	// Sofia
-	int GetHillsCityDamageReduction() const;
-	int GetHillsMovementModifier() const;
-	int GetHillsCityRangeBonus() const;
 	// Vatican
 	int GetReligionSpreadSpeedModifier() const;
 	int GetPapalRecognitionVotes() const;
@@ -1167,12 +1140,8 @@ protected:
 	int m_iFaithPurchaseAllGreatPeopleCount;
 	int m_iGPNoDeathAfterGreatWorkCount;
 	int m_iGPConcertTourismRetentionPercent;
-	int m_iGreatMusicianConcertTourismModifier;
 	int m_iGreatMusicianConcertGoldPercent;
 	int m_iCapitalAndSecondCapitalCultureModifier;
-	int m_iCapitalCultureModifierPerTurn;
-	int m_iCapitalFaithModifierPerTurn;
-	int m_iCapitalPerTurnYieldModifierMax;
 	int m_iImmigrationRatePerImmigrant;
 	int m_iImmigrationRateMax;
 	int m_iEmigrationRatePerImmigrant;
@@ -1198,9 +1167,6 @@ protected:
 	int m_iCityAttackIgnoreBuildingDefensePercent;
 	int m_iMilitaryXPPerTurnModifier;
 	int m_iMilitaryXPSeaAir;
-	int m_iHillsCityDamageReduction;
-	int m_iHillsMovementModifier;
-	int m_iHillsCityRangeBonus;
 	// Sofia (spy/coup UA, main-table columns)
 	int m_iCoupChanceModifier;
 	int m_iCoupFailSpySurvives;

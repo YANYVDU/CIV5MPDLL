@@ -284,12 +284,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_bFaithPurchaseAllGreatPeople(false)
 	, m_bGPNoDeathAfterGreatWork(false)
 	, m_iGPConcertTourismRetentionPercent(0)
-	, m_iGreatMusicianConcertTourismModifier(0)
 	, m_iGreatMusicianConcertGoldPercent(0)
 	, m_iCapitalAndSecondCapitalCultureModifier(0)
-	, m_iCapitalCultureModifierPerTurn(0)
-	, m_iCapitalFaithModifierPerTurn(0)
-	, m_iCapitalPerTurnYieldModifierMax(0)
 	, m_iImmigrationRatePerImmigrant(0)
 	, m_iImmigrationRateMax(0)
 	, m_iEmigrationRatePerImmigrant(0)
@@ -313,9 +309,6 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iCityAttackIgnoreBuildingDefensePercent(0)
 	, m_iMilitaryXPPerTurnModifier(0)
 	, m_iMilitaryXPSeaAir(0)
-	, m_iHillsCityDamageReduction(0)
-	, m_iHillsMovementModifier(0)
-	, m_iHillsCityRangeBonus(0)
 	, m_iCoupChanceModifier(0)
 	, m_bCoupFailSpySurvives(false)
 	, m_iStealTechSpeedPerSpy(0)
@@ -432,14 +425,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iWorldWonderHappiness							= kResults.GetInt("WorldWonderHappiness");
 	m_iCultureVictoryProgressModifier				= kResults.GetInt("CultureVictoryProgressModifier");
 
-	m_iGreatMusicianConcertTourismModifier			= kResults.GetInt("GreatMusicianConcertTourismModifier");
 	m_iGreatMusicianConcertGoldPercent				= kResults.GetInt("GreatMusicianConcertGoldPercent");
 
 	m_iCapitalAndSecondCapitalCultureModifier		= kResults.GetInt("CapitalAndSecondCapitalCultureModifier");
-
-	m_iCapitalCultureModifierPerTurn				= kResults.GetInt("CapitalCultureModifierPerTurn");
-	m_iCapitalFaithModifierPerTurn					= kResults.GetInt("CapitalFaithModifierPerTurn");
-	m_iCapitalPerTurnYieldModifierMax				= kResults.GetInt("CapitalPerTurnYieldModifierMax");
 
 	m_iImmigrationRatePerImmigrant					= kResults.GetInt("ImmigrationRatePerImmigrant");
 	m_iImmigrationRateMax							= kResults.GetInt("ImmigrationRateMax");
@@ -496,9 +484,6 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iMilitaryXPPerTurnModifier					= kResults.GetInt("MilitaryXPPerTurnModifier");
 	m_iMilitaryXPSeaAir								= kResults.GetInt("MilitaryXPSeaAir");
 
-	m_iHillsCityDamageReduction						= kResults.GetInt("HillsCityDamageReduction");
-	m_iHillsMovementModifier						= kResults.GetInt("HillsMovementModifier");
-	m_iHillsCityRangeBonus							= kResults.GetInt("HillsCityRangeBonus");
 	m_iCoupChanceModifier							= kResults.GetInt("CoupChanceModifier");
 	m_bCoupFailSpySurvives							= kResults.GetBool("CoupFailSpySurvives");
 	m_iStealTechSpeedPerSpy							= kResults.GetInt("StealTechSpeedPerSpy");
@@ -1295,14 +1280,9 @@ bool CvCityStateUAEffectEntry::IsFaithPurchaseAllGreatPeople() const { return m_
 bool CvCityStateUAEffectEntry::IsGPNoDeathAfterGreatWork() const { return m_bGPNoDeathAfterGreatWork; }
 int CvCityStateUAEffectEntry::GetGPConcertTourismRetentionPercent() const { return m_iGPConcertTourismRetentionPercent; }
 
-int CvCityStateUAEffectEntry::GetGreatMusicianConcertTourismModifier() const { return m_iGreatMusicianConcertTourismModifier; }
 int CvCityStateUAEffectEntry::GetGreatMusicianConcertGoldPercent() const { return m_iGreatMusicianConcertGoldPercent; }
 
 int CvCityStateUAEffectEntry::GetCapitalAndSecondCapitalCultureModifier() const { return m_iCapitalAndSecondCapitalCultureModifier; }
-
-int CvCityStateUAEffectEntry::GetCapitalCultureModifierPerTurn() const { return m_iCapitalCultureModifierPerTurn; }
-int CvCityStateUAEffectEntry::GetCapitalFaithModifierPerTurn() const { return m_iCapitalFaithModifierPerTurn; }
-int CvCityStateUAEffectEntry::GetCapitalPerTurnYieldModifierMax() const { return m_iCapitalPerTurnYieldModifierMax; }
 
 int CvCityStateUAEffectEntry::GetImmigrationRatePerImmigrant() const { return m_iImmigrationRatePerImmigrant; }
 int CvCityStateUAEffectEntry::GetImmigrationRateMax() const { return m_iImmigrationRateMax; }
@@ -1337,9 +1317,6 @@ int CvCityStateUAEffectEntry::GetCityAttackIgnoreBuildingDefensePercent() const 
 int CvCityStateUAEffectEntry::GetMilitaryXPPerTurnModifier() const { return m_iMilitaryXPPerTurnModifier; }
 int CvCityStateUAEffectEntry::GetMilitaryXPSeaAir() const { return m_iMilitaryXPSeaAir; }
 
-int CvCityStateUAEffectEntry::GetHillsCityDamageReduction() const { return m_iHillsCityDamageReduction; }
-int CvCityStateUAEffectEntry::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
-int CvCityStateUAEffectEntry::GetHillsCityRangeBonus() const { return m_iHillsCityRangeBonus; }
 int CvCityStateUAEffectEntry::GetCoupChanceModifier() const { return m_iCoupChanceModifier; }
 bool CvCityStateUAEffectEntry::GetCoupFailSpySurvives() const { return m_bCoupFailSpySurvives; }
 int CvCityStateUAEffectEntry::GetStealTechSpeedPerSpy() const { return m_iStealTechSpeedPerSpy; }
@@ -1699,12 +1676,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iFaithPurchaseAllGreatPeopleCount(0)
 	, m_iGPNoDeathAfterGreatWorkCount(0)
 	, m_iGPConcertTourismRetentionPercent(0)
-	, m_iGreatMusicianConcertTourismModifier(0)
 	, m_iGreatMusicianConcertGoldPercent(0)
 	, m_iCapitalAndSecondCapitalCultureModifier(0)
-	, m_iCapitalCultureModifierPerTurn(0)
-	, m_iCapitalFaithModifierPerTurn(0)
-	, m_iCapitalPerTurnYieldModifierMax(0)
 	, m_iImmigrationRatePerImmigrant(0)
 	, m_iImmigrationRateMax(0)
 	, m_iEmigrationRatePerImmigrant(0)
@@ -1728,9 +1701,6 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCityAttackIgnoreBuildingDefensePercent(0)
 	, m_iMilitaryXPPerTurnModifier(0)
 	, m_iMilitaryXPSeaAir(0)
-	, m_iHillsCityDamageReduction(0)
-	, m_iHillsMovementModifier(0)
-	, m_iHillsCityRangeBonus(0)
 	, m_iCoupChanceModifier(0)
 	, m_iCoupFailSpySurvives(0)
 	, m_iStealTechSpeedPerSpy(0)
@@ -1829,12 +1799,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iFaithPurchaseAllGreatPeopleCount = 0;
 	m_iGPNoDeathAfterGreatWorkCount = 0;
 	m_iGPConcertTourismRetentionPercent = 0;
-	m_iGreatMusicianConcertTourismModifier = 0;
 	m_iGreatMusicianConcertGoldPercent = 0;
 	m_iCapitalAndSecondCapitalCultureModifier = 0;
-	m_iCapitalCultureModifierPerTurn = 0;
-	m_iCapitalFaithModifierPerTurn = 0;
-	m_iCapitalPerTurnYieldModifierMax = 0;
 	m_iImmigrationRatePerImmigrant = 0;
 	m_iImmigrationRateMax = 0;
 	m_iEmigrationRatePerImmigrant = 0;
@@ -1860,9 +1826,6 @@ void CvPlayerCityStateUA::Reset()
 	m_iCityAttackIgnoreBuildingDefensePercent = 0;
 	m_iMilitaryXPPerTurnModifier = 0;
 	m_iMilitaryXPSeaAir = 0;
-	m_iHillsCityDamageReduction = 0;
-	m_iHillsMovementModifier = 0;
-	m_iHillsCityRangeBonus = 0;
 	m_iCoupChanceModifier = 0;
 	m_iCoupFailSpySurvives = 0;
 	m_iStealTechSpeedPerSpy = 0;
@@ -2058,14 +2021,9 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iGPNoDeathAfterGreatWorkCount += (pEffect->IsGPNoDeathAfterGreatWork() ? iChange : 0);
 	m_iGPConcertTourismRetentionPercent				+= pEffect->GetGPConcertTourismRetentionPercent() * iChange;
 
-	m_iGreatMusicianConcertTourismModifier			+= pEffect->GetGreatMusicianConcertTourismModifier() * iChange;
 	m_iGreatMusicianConcertGoldPercent				+= pEffect->GetGreatMusicianConcertGoldPercent() * iChange;
 
 	m_iCapitalAndSecondCapitalCultureModifier		+= pEffect->GetCapitalAndSecondCapitalCultureModifier() * iChange;
-
-	m_iCapitalCultureModifierPerTurn				+= pEffect->GetCapitalCultureModifierPerTurn() * iChange;
-	m_iCapitalFaithModifierPerTurn					+= pEffect->GetCapitalFaithModifierPerTurn() * iChange;
-	m_iCapitalPerTurnYieldModifierMax				+= pEffect->GetCapitalPerTurnYieldModifierMax() * iChange;
 
 	m_iImmigrationRatePerImmigrant					+= pEffect->GetImmigrationRatePerImmigrant() * iChange;
 	m_iImmigrationRateMax							+= pEffect->GetImmigrationRateMax() * iChange;
@@ -2127,9 +2085,6 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iMilitaryXPPerTurnModifier					+= pEffect->GetMilitaryXPPerTurnModifier() * iChange;
 	m_iMilitaryXPSeaAir								+= pEffect->GetMilitaryXPSeaAir() * iChange;
 
-	m_iHillsCityDamageReduction						+= pEffect->GetHillsCityDamageReduction() * iChange;
-	m_iHillsMovementModifier						+= pEffect->GetHillsMovementModifier() * iChange;
-	m_iHillsCityRangeBonus							+= pEffect->GetHillsCityRangeBonus() * iChange;
 	// Sofia (spy/coup UA)
 	m_iCoupChanceModifier							+= pEffect->GetCoupChanceModifier() * iChange;
 	m_iCoupFailSpySurvives							+= (pEffect->GetCoupFailSpySurvives() ? iChange : 0);
@@ -2606,12 +2561,8 @@ int CvPlayerCityStateUA::GetGreatPersonPoints(int i) const { CvAssertMsg(i < GC.
 bool CvPlayerCityStateUA::IsFaithPurchaseAllGreatPeople() const { return m_iFaithPurchaseAllGreatPeopleCount > 0; }
 bool CvPlayerCityStateUA::IsGPNoDeathAfterGreatWork() const { return m_iGPNoDeathAfterGreatWorkCount > 0; }
 int CvPlayerCityStateUA::GetGPConcertTourismRetentionPercent() const { return m_iGPConcertTourismRetentionPercent; }
-int CvPlayerCityStateUA::GetGreatMusicianConcertTourismModifier() const { return m_iGreatMusicianConcertTourismModifier; }
 int CvPlayerCityStateUA::GetGreatMusicianConcertGoldPercent() const { return m_iGreatMusicianConcertGoldPercent; }
 int CvPlayerCityStateUA::GetCapitalAndSecondCapitalCultureModifier() const { return m_iCapitalAndSecondCapitalCultureModifier; }
-int CvPlayerCityStateUA::GetCapitalCultureModifierPerTurn() const { return m_iCapitalCultureModifierPerTurn; }
-int CvPlayerCityStateUA::GetCapitalFaithModifierPerTurn() const { return m_iCapitalFaithModifierPerTurn; }
-int CvPlayerCityStateUA::GetCapitalPerTurnYieldModifierMax() const { return m_iCapitalPerTurnYieldModifierMax; }
 int CvPlayerCityStateUA::GetImmigrationRatePerImmigrant() const { return m_iImmigrationRatePerImmigrant; }
 int CvPlayerCityStateUA::GetImmigrationRateMax() const { return m_iImmigrationRateMax; }
 int CvPlayerCityStateUA::GetEmigrationRatePerImmigrant() const { return m_iEmigrationRatePerImmigrant; }
@@ -2641,9 +2592,6 @@ const std::vector<ResourcePerCityEntry>& CvPlayerCityStateUA::GetResourcePerCity
 int CvPlayerCityStateUA::GetCityAttackIgnoreBuildingDefensePercent() const { return m_iCityAttackIgnoreBuildingDefensePercent; }
 int CvPlayerCityStateUA::GetMilitaryXPPerTurnModifier() const { return m_iMilitaryXPPerTurnModifier; }
 int CvPlayerCityStateUA::GetMilitaryXPSeaAir() const { return m_iMilitaryXPSeaAir; }
-int CvPlayerCityStateUA::GetHillsCityDamageReduction() const { return m_iHillsCityDamageReduction; }
-int CvPlayerCityStateUA::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
-int CvPlayerCityStateUA::GetHillsCityRangeBonus() const { return m_iHillsCityRangeBonus; }
 int CvPlayerCityStateUA::GetCoupChanceModifier() const { return m_iCoupChanceModifier; }
 bool CvPlayerCityStateUA::GetCoupFailSpySurvives() const { return m_iCoupFailSpySurvives > 0; }
 int CvPlayerCityStateUA::GetStealTechSpeedPerSpy() const { return m_iStealTechSpeedPerSpy; }

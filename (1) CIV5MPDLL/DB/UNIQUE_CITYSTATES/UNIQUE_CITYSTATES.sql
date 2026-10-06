@@ -62,14 +62,9 @@ CREATE TABLE CityStateUAEffects (
     GPNoDeathAfterGreatWork                         boolean DEFAULT 0,
     GPConcertTourismRetentionPercent                integer DEFAULT 0,
     -- Brussels: special great musician concert modifiers
-    GreatMusicianConcertTourismModifier             integer DEFAULT 0,
     GreatMusicianConcertGoldPercent                 integer DEFAULT 0,
     -- Bratislava: capital and second capital
     CapitalAndSecondCapitalCultureModifier          integer DEFAULT 0,
-    -- Kyiv: capital accumulates per turn
-    CapitalCultureModifierPerTurn                   integer DEFAULT 0,
-    CapitalFaithModifierPerTurn                     integer DEFAULT 0,
-    CapitalPerTurnYieldModifierMax                  integer DEFAULT 0,
     -- Bucharest: international migration
     ImmigrationRatePerImmigrant                     integer DEFAULT 0,
     ImmigrationRateMax                              integer DEFAULT 0,
@@ -114,10 +109,6 @@ CREATE TABLE CityStateUAEffects (
     MilitaryXPPerTurnModifier                       integer DEFAULT 0,
     -- Sidon: when non-zero, the militaristic city-state per-turn XP also applies to sea and air domains
     MilitaryXPSeaAir                                integer DEFAULT 0,
-    -- Sofia: hills cities
-    HillsCityDamageReduction                        integer DEFAULT 0,
-    HillsMovementModifier                           integer DEFAULT 0,
-    HillsCityRangeBonus                             integer DEFAULT 0,
     -- Vatican City: religion spread speed
     ReligionSpreadSpeedModifier                     integer DEFAULT 0,
     -- Vatican City: Papal Recognition - league delegate votes granted to each civilization with a majority of cities following the ally's religion (mainstream votes, 1 = +1 vote)
