@@ -2276,8 +2276,17 @@ void CvPlayerCulture::DoArchaeologyChoice (ArchaeologyChoiceType eChoice)
 	BuildingClassTypes eBuildingToHouse;
 	int iSlot;
 	CvCity *pHousingCity;
-	CvPlot *pPlot;
+	CvPlot *pPlot = NULL;
 	CvUnit *pUnit = GetNextDigCompleteArchaeologist(&pPlot);
+
+	// pPlot is NULL when the dig-complete plot queue is empty (a duplicated
+	// archaeology notification click, or desynced state in multiplayer).
+	// Bail out instead of dereferencing a NULL plot.
+	if (pPlot == NULL)
+	{
+		return;
+	}
+
 	ImprovementTypes eImprovement = pPlot->getImprovementType();
 	if (pUnit && eImprovement != NO_IMPROVEMENT && GC.getImprovementInfo(eImprovement)->IsPromptWhenComplete())
 	{
