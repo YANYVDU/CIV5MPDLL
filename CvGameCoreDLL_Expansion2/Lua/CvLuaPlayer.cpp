@@ -530,6 +530,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(SetHasPolicy);
 	Method(GetNextPolicyCost);
+	Method(GetPolicyCostModifierBreakdown);
 	Method(CanAdoptPolicy);
 	Method(DoAdoptPolicy);
 	Method(CanUnlockPolicyBranch);
@@ -5904,6 +5905,82 @@ int CvLuaPlayer::lSetHasPolicy(lua_State* L)
 int CvLuaPlayer::lGetNextPolicyCost(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::getNextPolicyCost);
+}
+//------------------------------------------------------------------------------
+//int GetPolicyCostModifierBreakdown(); returns the policy cost modifier split into its sources.
+// Returns: totalPct, policiesPct, buildingsPct, minorCivsPct, traitsPct, culturedCSPct,
+//          corruptionPct, uncappedTotalPct, discountCapPct.
+// totalPct is what the real math (CvPlayer::recomputePolicyCostModifier) ends up applying; the
+// individual sources are re-summed from the same getters so the tooltip can never disagree with
+// the amount actually charged. Sources that are inactive in this build report 0.
+// Keep this in sync with CvPlayer::recomputePolicyCostModifier().
+int CvLuaPlayer::lGetPolicyCostModifierBreakdown(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+
+	int iPoliciesPct = 0;
+	int iBuildingsPct = 0;
+	int iMinorCivsPct = 0;
+	int iTraitsPct = 0;
+	int iCulturedCSPct = 0;
+	int iCorruptionPct = 0;
+	int iUncappedTotalPct = 0;
+	int iTotalPctApplied = 0;
+	const int iDiscountCapPct = GC.getPOLICY_COST_DISCOUNT_MAX();
+
+	if (pkPlayer)
+	{
+		CvPlayerPolicies* pPolicies = pkPlayer->GetPlayerPolicies();
+		if (pPolicies)
+		{
+			iPoliciesPct = pPolicies->GetNumericModifier(POLICYMOD_POLICY_COST_MODIFIER);
+		}
+
+		iBuildingsPct = pkPlayer->GetPolicyCostBuildingModifier();
+		iMinorCivsPct = pkPlayer->GetPolicyCostMinorCivModifier();
+		iTraitsPct = pkPlayer->GetPlayerTraits()->GetPolicyCostModifier();
+
+#if defined(MOD_SP_CITYSTATE_BASIC)
+		// SP: allied Cultured city-states lower the policy cost (CvPlayer::GetCSPolicyCostModifier)
+		iCulturedCSPct = pkPlayer->GetCSPolicyCostModifier();
+#endif
+
+#ifdef MOD_GLOBAL_CORRUPTION
+		// Corruption: per-city corruption levels plus the player-wide corruption modifier
+		if (MOD_GLOBAL_CORRUPTION && pkPlayer->EnableCorruption())
+		{
+			int iSum = 0;
+			CvCity* pLoopCity = nullptr;
+			int iLoop = 0;
+			for(pLoopCity = pkPlayer->firstCity(&iLoop); pLoopCity != nullptr; pLoopCity = pkPlayer->nextCity(&iLoop))
+			{
+				auto level = pLoopCity->GetCorruptionLevel();
+				iSum += pkPlayer->GetCorruptionLevelPolicyCostModifier(level);
+			}
+			iSum += pkPlayer->GetCorruptionPolicyCostModifier();
+			if(MOD_GLOBAL_CORRUPTION_POLICY_COST_MIN_ZERO) iSum = iSum < 0 ? 0 : iSum;
+			iCorruptionPct = iSum;
+		}
+#endif
+
+		iUncappedTotalPct = iPoliciesPct + iBuildingsPct + iMinorCivsPct + iTraitsPct
+			+ iCulturedCSPct + iCorruptionPct;
+
+		iTotalPctApplied = iUncappedTotalPct;
+		if(iTotalPctApplied < iDiscountCapPct)
+			iTotalPctApplied = iDiscountCapPct;
+	}
+
+	lua_pushinteger(L, iTotalPctApplied);
+	lua_pushinteger(L, iPoliciesPct);
+	lua_pushinteger(L, iBuildingsPct);
+	lua_pushinteger(L, iMinorCivsPct);
+	lua_pushinteger(L, iTraitsPct);
+	lua_pushinteger(L, iCulturedCSPct);
+	lua_pushinteger(L, iCorruptionPct);
+	lua_pushinteger(L, iUncappedTotalPct);
+	lua_pushinteger(L, iDiscountCapPct);
+	return 9;
 }
 //------------------------------------------------------------------------------
 //bool canAdoptPolicy(PolicyTypes  iIndex);

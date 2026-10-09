@@ -177,6 +177,7 @@ protected:
 	static int lGetResearchProgress(lua_State* L);
 	static int lGetResearchProgressExceptOverflow(lua_State* L);
 	static int lGetResearchThresholdMod(lua_State* L);
+	static int lGetPolicyCostModifierBreakdown(lua_State* L);
 
 	static int lUnitsRequiredForGoldenAge(lua_State* L);
 	static int lUnitsGoldenAgeCapable(lua_State* L);
