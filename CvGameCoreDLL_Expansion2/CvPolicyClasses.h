@@ -199,6 +199,9 @@ public:
 	int GetMinorLocalBullyScoreModifier() const;
 	int GetMinorAllyBullyScoreModifier() const;
 	int GetMinorBullyInfluenceLossModifier() const;
+	int GetSameReligionMinorFriendshipMinimum() const;
+	int GetFoundedReligionMinorPerTurnInfluence() const;
+	int GetMinorCivTraitFriendshipMinimum(int i) const;
 	int GetThemingBonusMultiplier() const;
 	int GetInternalTradeRouteYieldModifier() const;
 	int GetSharedReligionTourismModifier() const;
@@ -547,6 +550,8 @@ private:
 	int m_iMinorLocalBullyScoreModifier;
 	int m_iMinorAllyBullyScoreModifier;
 	int m_iMinorBullyInfluenceLossModifier;
+	int m_iSameReligionMinorFriendshipMinimum;
+	int m_iFoundedReligionMinorPerTurnInfluence;
 	int m_iThemingBonusMultiplier;
 	int m_iInternalTradeRouteYieldModifier;
 	int m_iSharedReligionTourismModifier;
@@ -619,6 +624,7 @@ private:
 
 	// Arrays
 	std::multimap<int, int> m_FreePromotionUnitCombats;
+	std::vector<int> m_viMinorCivTraitFriendshipMinimum;
 #if defined(MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 	std::multimap<int, int> m_FaithPurchaseUnitClasses;
 #endif

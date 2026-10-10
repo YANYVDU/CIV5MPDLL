@@ -29107,6 +29107,12 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changePolicyModifiers(POLICYMOD_MINOR_LOCAL_BULLY_SCORE_MODIFIER, pPolicy->GetMinorLocalBullyScoreModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_MINOR_ALLY_BULLY_SCORE_MODIFIER, pPolicy->GetMinorAllyBullyScoreModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_MINOR_BULLY_INFLUENCE_LOSS_MODIFIER, pPolicy->GetMinorBullyInfluenceLossModifier() * iChange);
+	changePolicyModifiers(POLICYMOD_SAME_RELIGION_MINOR_ANCHOR, pPolicy->GetSameReligionMinorFriendshipMinimum() * iChange);
+	changePolicyModifiers(POLICYMOD_FOUNDED_RELIGION_MINOR_PER_TURN_INFLUENCE, pPolicy->GetFoundedReligionMinorPerTurnInfluence() * iChange);
+	for (int iTraitLoop = 0; iTraitLoop < NUM_MINOR_CIV_TRAIT_TYPES; iTraitLoop++)
+	{
+		changePolicyModifiers((PolicyModifierType)(POLICYMOD_MINOR_ANCHOR_TRAIT_CULTURED + iTraitLoop), pPolicy->GetMinorCivTraitFriendshipMinimum(iTraitLoop) * iChange);
+	}
 	changePolicyModifiers(POLICYMOD_STEAL_TECH_FASTER_MODIFIER, pPolicy->GetStealTechFasterModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_THEMING_BONUS, pPolicy->GetThemingBonusMultiplier() * iChange);
 	changePolicyModifiers(POLICYMOD_CITY_STATE_TRADE_CHANGE, pPolicy->GetCityStateTradeChange() * iChange);

@@ -6238,6 +6238,12 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 		{
 			iShift += kPlayer.GetPlayerTraits()->GetGoldenAgeMinorPerTurnInfluence();
 		}
+
+		// Social Policies: per-turn influence while the city-state follows the player's founded religion
+		if (IsSameReligionAsMajor(ePlayer))
+		{
+			iShift += kPlayer.GetPlayerPolicies()->GetNumericModifier(POLICYMOD_FOUNDED_RELIGION_MINOR_PER_TURN_INFLUENCE);
+		}
 		
 		if (iShift != 0)
 		{
@@ -6484,6 +6490,13 @@ int CvMinorCivAI::GetFriendshipAnchorWithMajor(PlayerTypes eMajor)
 	// Social Policies
 	iAnchor += pMajor->GetMinorFriendshipAnchorMod();
 
+	// Social Policies: trait-specific anchor bonus
+	MinorCivTraitTypes eTrait = GetTrait();
+	if (eTrait >= 0 && eTrait < NUM_MINOR_CIV_TRAIT_TYPES)
+	{
+		iAnchor += pMajor->GetPlayerPolicies()->GetNumericModifier((PolicyModifierType)(POLICYMOD_MINOR_ANCHOR_TRAIT_CULTURED + (int)eTrait));
+	}
+
 	// Religion
 	CvPlayerReligions* pMajorReligions = pMajor->GetReligions();
 	CvAssertMsg(pMajorReligions, "MINOR CIV AI: pMajorReligions not expected to be NULL.  Please send Anton your save file and version.");
@@ -6494,6 +6507,14 @@ int CvMinorCivAI::GetFriendshipAnchorWithMajor(PlayerTypes eMajor)
 	CvAssertMsg(pMinorCapitalReligions, "MINOR CIV AI: pMinorCapitalReligions not expected to be NULL.  Please send Anton your save file and version.");
 	if (!pMinorCapitalReligions) return iAnchor;
 	iAnchor += pMajorReligions->GetCityStateMinimumInfluence(pMinorCapitalReligions->GetReligiousMajority());
+
+	// Social Policies: anchor bonus while the city-state shares the player's religion
+	// (the player does not need to be the founder of that religion)
+	ReligionTypes eMinorReligion = pMinorCapitalReligions->GetReligiousMajority();
+	if (eMinorReligion != NO_RELIGION && eMinorReligion == pMajorReligions->GetReligionInMostCities())
+	{
+		iAnchor += pMajor->GetPlayerPolicies()->GetNumericModifier(POLICYMOD_SAME_RELIGION_MINOR_ANCHOR);
+	}
 
 	return iAnchor;
 }

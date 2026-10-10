@@ -162,3 +162,19 @@ create table Policy_ImprovementHappinessWhenWorked (
     ImprovementType text references Improvements(Type),
     Happiness integer default 0
 );
+
+--******************** City-State Influence ********************--
+-- SameReligionMinorFriendshipMinimum: friendship anchor bonus against a city-state whose majority
+-- religion matches the religion the player follows in most of their cities (the player does NOT
+-- need to be the founder of that religion)
+alter table Policies add SameReligionMinorFriendshipMinimum integer default 0;
+-- FoundedReligionMinorPerTurnInfluence: per-turn influence with a city-state following the religion
+-- founded by the player
+alter table Policies add FoundedReligionMinorPerTurnInfluence integer default 0;
+
+-- Minimum is the friendship anchor bonus against city-states of the given trait
+create table Policy_MinorCivTraitFriendshipMinimum (
+    PolicyType text references Policies(Type),
+    MinorCivTraitType text,
+    Minimum integer default 0
+);

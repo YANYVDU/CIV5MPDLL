@@ -176,6 +176,8 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iMinorLocalBullyScoreModifier(0),
 	m_iMinorAllyBullyScoreModifier(0),
 	m_iMinorBullyInfluenceLossModifier(0),
+	m_iSameReligionMinorFriendshipMinimum(0),
+	m_iFoundedReligionMinorPerTurnInfluence(0),
 	m_iThemingBonusMultiplier(0),
 	m_iInternalTradeRouteYieldModifier(0),
 	m_iSharedReligionTourismModifier(0),
@@ -540,6 +542,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iMinorLocalBullyScoreModifier = kResults.GetInt("MinorLocalBullyScoreModifier");
 	m_iMinorAllyBullyScoreModifier = kResults.GetInt("MinorAllyBullyScoreModifier");
 	m_iMinorBullyInfluenceLossModifier = kResults.GetInt("MinorBullyInfluenceLossModifier");
+	m_iSameReligionMinorFriendshipMinimum = kResults.GetInt("SameReligionMinorFriendshipMinimum");
+	m_iFoundedReligionMinorPerTurnInfluence = kResults.GetInt("FoundedReligionMinorPerTurnInfluence");
 	m_iThemingBonusMultiplier = kResults.GetInt("ThemingBonusMultiplier");
 	m_iInternalTradeRouteYieldModifier = kResults.GetInt("InternalTradeRouteYieldModifier");
 	m_iSharedReligionTourismModifier = kResults.GetInt("SharedReligionTourismModifier");
@@ -1161,6 +1165,33 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 		//Trim capacity
 		std::multimap<int, int>(m_FreePromotionUnitCombats).swap(m_FreePromotionUnitCombats);
+
+		pResults->Reset();
+	}
+
+	//MinorCivTraitFriendshipMinimum
+	{
+		m_viMinorCivTraitFriendshipMinimum.clear();
+		m_viMinorCivTraitFriendshipMinimum.resize(NUM_MINOR_CIV_TRAIT_TYPES, 0);
+
+		std::string sqlKey = "m_viMinorCivTraitFriendshipMinimum";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if(pResults == NULL)
+		{
+			const char* szSQL = "select MinorCivTraitType, Minimum from Policy_MinorCivTraitFriendshipMinimum where PolicyType = ?";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while(pResults->Step())
+		{
+			const int iTrait = GC.getInfoTypeForString(pResults->GetText("MinorCivTraitType"));
+			const int iValue = pResults->GetInt("Minimum");
+
+			if (iTrait >= 0 && iTrait < NUM_MINOR_CIV_TRAIT_TYPES)
+				m_viMinorCivTraitFriendshipMinimum[iTrait] += iValue;
+		}
 
 		pResults->Reset();
 	}
@@ -2319,6 +2350,26 @@ int CvPolicyEntry::GetMinorAllyBullyScoreModifier() const
 int CvPolicyEntry::GetMinorBullyInfluenceLossModifier() const
 {
 	return m_iMinorBullyInfluenceLossModifier;
+}
+
+/// Friendship anchor bonus against a city-state sharing the player's religion
+int CvPolicyEntry::GetSameReligionMinorFriendshipMinimum() const
+{
+	return m_iSameReligionMinorFriendshipMinimum;
+}
+
+/// Per-turn influence with a city-state following the player's founded religion
+int CvPolicyEntry::GetFoundedReligionMinorPerTurnInfluence() const
+{
+	return m_iFoundedReligionMinorPerTurnInfluence;
+}
+
+/// Friendship anchor bonus against city-states of the given trait
+int CvPolicyEntry::GetMinorCivTraitFriendshipMinimum(int i) const
+{
+	CvAssertMsg(i < NUM_MINOR_CIV_TRAIT_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_viMinorCivTraitFriendshipMinimum[i];
 }
 
 /// Boost to museum theming
