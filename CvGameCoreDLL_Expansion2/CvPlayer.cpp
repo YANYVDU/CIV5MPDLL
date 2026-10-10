@@ -8439,10 +8439,37 @@ void CvPlayer::doGoody(CvPlot* pPlot, CvUnit* pUnit)
 			// Any valid Goodies?
 			if(avValidGoodies.size() > 0)
 			{
-				if (pUnit && pUnit->isHasPromotion((PromotionTypes)GC.getPROMOTION_GOODY_HUT_PICKER()) && GC.getGame().getActivePlayer() == GetID())
+				bool bOwnerWillChoose = (GC.getGame().getActivePlayer() == GetID());
+				GoodyTypes eFallback = NO_GOODY;
+#if defined(MOD_BUGFIX_GOODY_HUT_CHOICE_MP)
+				// getActivePlayer() is each client's own local player in network MP, so it differs between
+				// clients; branching on it made the owner's client open the choice popup while the other
+				// clients rolled a random reward, diverging state. Use isHuman() (synchronised session
+				// state) for the branch and keep getActivePlayer() only as a local guard for the popup.
+				if (MOD_BUGFIX_GOODY_HUT_CHOICE_MP && GC.getGame().isNetworkMultiPlayer())
 				{
+					bOwnerWillChoose = isHuman();
+				}
+#endif
+				if (pUnit && pUnit->isHasPromotion((PromotionTypes)GC.getPROMOTION_GOODY_HUT_PICKER()) && bOwnerWillChoose)
+				{
+#if defined(MOD_BUGFIX_GOODY_HUT_CHOICE_MP)
+					// Network MP: every client burns the same roll here so they all compute the same
+					// fallback reward. It is only used if the owner never confirms (popup timeout or
+					// disconnect), in which case the owner's client broadcasts it through
+					// Network.SendGoodyChoice. The roll is synchronous and avValidGoodies is identical on
+					// every client, so the value is never sent on its own - it rides along as popup Data3.
+					if (MOD_BUGFIX_GOODY_HUT_CHOICE_MP && GC.getGame().isNetworkMultiPlayer())
 					{
-						CvPopupInfo kPopupInfo(BUTTONPOPUP_CHOOSE_GOODY_HUT_REWARD, GetID(), pUnit->GetID());
+						int iRand = GC.getGame().getJonRandNum(avValidGoodies.size(), "Picking a Goody result");
+						eFallback = (GoodyTypes) avValidGoodies[iRand];
+					}
+#endif
+					// Only the owner's client has the UI to show the popup; every other client waits for
+					// the choice to arrive via Network.SendGoodyChoice -> ResponseGoodyChoice.
+					if (GC.getGame().getActivePlayer() == GetID())
+					{
+						CvPopupInfo kPopupInfo(BUTTONPOPUP_CHOOSE_GOODY_HUT_REWARD, GetID(), pUnit->GetID(), (int)eFallback);
 						GC.GetEngineUserInterface()->AddPopup(kPopupInfo);
 						// We are adding a popup that the player must make a choice in, make sure they are not in the end-turn phase.
 						CancelActivePlayerEndTurn();

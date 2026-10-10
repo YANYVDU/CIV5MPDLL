@@ -772,6 +772,10 @@
 #define MOD_BUGFIX_CITY_STACKING                    gCustomMods.isBUGFIX_CITY_STACKING()
 // Fixes the bug in goody hut messages that have parameters (v38)
 #define MOD_BUGFIX_GOODY_HUT_MESSAGES               (true)
+// Fixes the MP desync where the goody hut reward pick branched on getActivePlayer() (each client's
+// own local player); a client without the popup rolled a random reward instead of waiting for the
+// owner's choice. The branch now uses isHuman() and only gates the popup locally.
+#define MOD_BUGFIX_GOODY_HUT_CHOICE_MP              (true)
 // Fixes the bug where Barb Camps ignore the ValidTerrains and ValidFeatures tables
 #define MOD_BUGFIX_BARB_CAMP_TERRAINS               gCustomMods.isBUGFIX_BARB_CAMP_TERRAINS()
 // Fixes the bug where Barb Camps won't spawn units if they are added via pPlot:SetImprovementType() (v21)
