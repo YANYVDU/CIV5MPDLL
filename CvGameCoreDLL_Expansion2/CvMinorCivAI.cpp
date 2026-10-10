@@ -10589,7 +10589,8 @@ void CvMinorCivAI::DoElection()
 		fcn = MakeDelegate(&GC.getGame(), &CvGame::getJonRandNum);
 		PlayerTypes eElectionWinner = wvVotes.ChooseByWeight(&fcn, "Choosing CS election winner by weight");
 
-		// Permanent ally city-states are immune to rigged elections: no influence change, no notification
+		// Permanent ally city-states are immune to rigged elections: the entire election is skipped,
+		// so nobody gains or loses influence and no notification is sent
 		bool bHasPermanentAlly = false;
 		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 		{
@@ -10600,18 +10601,21 @@ void CvMinorCivAI::DoElection()
 			}
 		}
 
+		// Spy rank of the election winner, used to scale how much influence the losing riggers lose
+		int iWinnerRank = (apSpy[eElectionWinner] != NULL) ? (int)apSpy[eElectionWinner]->m_eRank : 0;
+
 		for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
 		{
+			// Permanent ally city-states are immune to rigged elections: bail out before anyone gains or loses influence
+			if (bHasPermanentAlly)
+			{
+				break;
+			}
+
 			PlayerTypes ePlayer = (PlayerTypes)ui;
 
 			if(ePlayer == eElectionWinner)
 			{
-				// Permanent ally city-states are immune to rigged elections
-				if (bHasPermanentAlly)
-				{
-					continue;
-				}
-
 				CvNotifications* pNotifications = GET_PLAYER(ePlayer).GetNotifications();
 				if(pNotifications)
 				{
@@ -10629,10 +10633,12 @@ void CvMinorCivAI::DoElection()
 				}
 				PlayerTypes eEspionagePlayer = (PlayerTypes)ui;
 				int iChange = GC.getESPIONAGE_INFLUENCE_GAINED_FOR_RIGGED_ELECTION();
-				if(apSpy[ui] != NULL && apSpy[ui]->m_eRank == SPY_RANK_MASTER_SPY)
+				if(apSpy[ui] != NULL)
 				{
-					// Master Spy diplomacy: rigging an election grants +50 influence instead of +20
-					iChange = 50;
+					// Higher spy ranks win a larger share of the election spoils:
+					// bonus = rank^2 * ESPIONAGE_RIGGED_ELECTION_WIN_RANK_SQUARE_BONUS
+					int iRank = (int)apSpy[ui]->m_eRank;
+					iChange += iRank * iRank * GC.getESPIONAGE_RIGGED_ELECTION_WIN_RANK_SQUARE_BONUS();
 				}
 				iChange = (iChange*(100 + GET_PLAYER(eEspionagePlayer).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_RIGGING_ELECTION_INFLUENCE_MODIFIER))) / 100;
 				ChangeFriendshipWithMajor(ePlayer, iChange, false);
@@ -10688,8 +10694,14 @@ void CvMinorCivAI::DoElection()
 
 				if (GetEffectiveFriendshipWithMajorTimes100(ePlayer) > 0)
 				{
-					int iDiminishAmount = min(GC.getESPIONAGE_INFLUENCE_LOST_FOR_RIGGED_ELECTION() * 100, GetEffectiveFriendshipWithMajorTimes100(ePlayer));
-					ChangeFriendshipWithMajorTimes100(ePlayer, -iDiminishAmount, false);
+					int iFriendshipTimes100 = GetEffectiveFriendshipWithMajorTimes100(ePlayer);
+					// Losers lose the flat baseline plus a share of their own influence, scaled by the winner's spy rank:
+					// loss = ESPIONAGE_INFLUENCE_LOST_FOR_RIGGED_ELECTION
+					//      + influence * ESPIONAGE_RIGGED_ELECTION_LOSS_PERCENT_PER_RANK% * winnerRank
+					int iDiminishAmountTimes100 = GC.getESPIONAGE_INFLUENCE_LOST_FOR_RIGGED_ELECTION() * 100
+						+ (iFriendshipTimes100 * GC.getESPIONAGE_RIGGED_ELECTION_LOSS_PERCENT_PER_RANK() * iWinnerRank) / 100;
+					iDiminishAmountTimes100 = min(iDiminishAmountTimes100, iFriendshipTimes100);
+					ChangeFriendshipWithMajorTimes100(ePlayer, -iDiminishAmountTimes100, false);
 				}
 			}
 		}
