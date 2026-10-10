@@ -201,7 +201,9 @@ public:
 	int GetMinorBullyInfluenceLossModifier() const;
 	int GetSameReligionMinorFriendshipMinimum() const;
 	int GetFoundedReligionMinorPerTurnInfluence() const;
+	int GetCityStateGiftUnitExperience() const;
 	int GetMinorCivTraitFriendshipMinimum(int i) const;
+	const std::multimap<int, int>& GetCityStateGiftUnitFreePromotions() const;
 	int GetThemingBonusMultiplier() const;
 	int GetInternalTradeRouteYieldModifier() const;
 	int GetSharedReligionTourismModifier() const;
@@ -552,6 +554,7 @@ private:
 	int m_iMinorBullyInfluenceLossModifier;
 	int m_iSameReligionMinorFriendshipMinimum;
 	int m_iFoundedReligionMinorPerTurnInfluence;
+	int m_iCityStateGiftUnitExperience;
 	int m_iThemingBonusMultiplier;
 	int m_iInternalTradeRouteYieldModifier;
 	int m_iSharedReligionTourismModifier;
@@ -625,6 +628,7 @@ private:
 	// Arrays
 	std::multimap<int, int> m_FreePromotionUnitCombats;
 	std::vector<int> m_viMinorCivTraitFriendshipMinimum;
+	std::multimap<int, int> m_CityStateGiftUnitFreePromotions;
 #if defined(MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 	std::multimap<int, int> m_FaithPurchaseUnitClasses;
 #endif

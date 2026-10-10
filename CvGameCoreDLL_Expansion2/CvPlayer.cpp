@@ -1384,6 +1384,9 @@ void CvPlayer::uninit()
 #if defined(MOD_PROMOTION_AURA_PROMOTION)
 	m_mAuraPromotionUnits.clear();
 #endif
+
+	m_mCityStateGiftUnitFreePromotions.clear();
+
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	m_iNumCropsTotal = 0;
 	m_iNumCropsUsed = 0;
@@ -19537,6 +19540,13 @@ void CvPlayer::RemoveAuraUnit(int iUnitID)
 #endif
 //	--------------------------------------------------------------------------------
 
+//	--------------------------------------------------------------------------------
+const std::multimap<int, int>& CvPlayer::GetCityStateGiftUnitFreePromotions() const
+{
+	return m_mCityStateGiftUnitFreePromotions;
+}
+//	--------------------------------------------------------------------------------
+
 
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 //	--------------------------------------------------------------------------------
@@ -29109,9 +29119,40 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changePolicyModifiers(POLICYMOD_MINOR_BULLY_INFLUENCE_LOSS_MODIFIER, pPolicy->GetMinorBullyInfluenceLossModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_SAME_RELIGION_MINOR_ANCHOR, pPolicy->GetSameReligionMinorFriendshipMinimum() * iChange);
 	changePolicyModifiers(POLICYMOD_FOUNDED_RELIGION_MINOR_PER_TURN_INFLUENCE, pPolicy->GetFoundedReligionMinorPerTurnInfluence() * iChange);
+	changePolicyModifiers(POLICYMOD_CITY_STATE_GIFT_UNIT_EXPERIENCE, pPolicy->GetCityStateGiftUnitExperience() * iChange);
 	for (int iTraitLoop = 0; iTraitLoop < NUM_MINOR_CIV_TRAIT_TYPES; iTraitLoop++)
 	{
 		changePolicyModifiers((PolicyModifierType)(POLICYMOD_MINOR_ANCHOR_TRAIT_CULTURED + iTraitLoop), pPolicy->GetMinorCivTraitFriendshipMinimum(iTraitLoop) * iChange);
+	}
+
+	// City-state gift unit free promotions, aggregated across the player's adopted policies
+	// (promotionID -> unitCombatID) so that gifting a unit only needs a single lookup
+	{
+		const std::multimap<int, int>& kGiftPromotions = pPolicy->GetCityStateGiftUnitFreePromotions();
+
+		if (iChange > 0)
+		{
+			for (auto it = kGiftPromotions.begin(); it != kGiftPromotions.end(); ++it)
+			{
+				m_mCityStateGiftUnitFreePromotions.insert(std::make_pair(it->first, it->second));
+			}
+		}
+		else if (iChange < 0)
+		{
+			for (auto it = kGiftPromotions.begin(); it != kGiftPromotions.end(); ++it)
+			{
+				auto kRange = m_mCityStateGiftUnitFreePromotions.equal_range(it->first);
+				for (auto itFind = kRange.first; itFind != kRange.second; ++itFind)
+				{
+					if (itFind->second == it->second)
+					{
+						m_mCityStateGiftUnitFreePromotions.erase(itFind);
+						// only remove once
+						break;
+					}
+				}
+			}
+		}
 	}
 	changePolicyModifiers(POLICYMOD_STEAL_TECH_FASTER_MODIFIER, pPolicy->GetStealTechFasterModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_THEMING_BONUS, pPolicy->GetThemingBonusMultiplier() * iChange);
@@ -31272,6 +31313,37 @@ void CvPlayer::Read(FDataStream& kStream)
 	// capital we have conquered. Uses the same 164 gate as the other in-development members.
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abConqueredCityStateUA, bool, MAX_CIV_PLAYERS, false);
 #endif
+
+	// City-state gift unit free promotions are a derived cache rebuilt from the adopted policies
+	// (kept in sync by CvPlayer::processPolicies), so they are not serialized. Rebuilding on load
+	// also makes the effect work for saves written before the feature existed, instead of leaving
+	// the map empty until the player next changes a policy.
+	m_mCityStateGiftUnitFreePromotions.clear();
+	{
+		CvPlayerPolicies* pRebuildPolicies = GetPlayerPolicies();
+		CvPolicyXMLEntries* pRebuildEntries = pRebuildPolicies ? pRebuildPolicies->GetPolicies() : NULL;
+
+		if (pRebuildEntries != NULL)
+		{
+			const int iNumRebuildPolicies = pRebuildEntries->GetNumPolicies();
+
+			for (int iRebuildLoop = 0; iRebuildLoop < iNumRebuildPolicies; iRebuildLoop++)
+			{
+				if (!pRebuildPolicies->HasPolicy((PolicyTypes)iRebuildLoop))
+					continue;
+
+				CvPolicyEntry* pRebuildPolicy = pRebuildEntries->GetPolicyEntry(iRebuildLoop);
+				if (!pRebuildPolicy)
+					continue;
+
+				const std::multimap<int, int>& kRebuildPromotions = pRebuildPolicy->GetCityStateGiftUnitFreePromotions();
+				for (auto it = kRebuildPromotions.begin(); it != kRebuildPromotions.end(); ++it)
+				{
+					m_mCityStateGiftUnitFreePromotions.insert(std::make_pair(it->first, it->second));
+				}
+			}
+		}
+	}
 
 	if(GetID() < MAX_MAJOR_CIVS)
 	{

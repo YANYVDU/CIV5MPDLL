@@ -171,10 +171,19 @@ alter table Policies add SameReligionMinorFriendshipMinimum integer default 0;
 -- FoundedReligionMinorPerTurnInfluence: per-turn influence with a city-state following the religion
 -- founded by the player
 alter table Policies add FoundedReligionMinorPerTurnInfluence integer default 0;
+-- CityStateGiftUnitExperience: extra experience granted to military units gifted by a city-state
+alter table Policies add CityStateGiftUnitExperience integer default 0;
 
 -- Minimum is the friendship anchor bonus against city-states of the given trait
 create table Policy_MinorCivTraitFriendshipMinimum (
     PolicyType text references Policies(Type),
     MinorCivTraitType text,
     Minimum integer default 0
+);
+
+-- Free promotions granted to city-state gifted units of the given unit combat type
+create table Policy_CityStateGiftUnitFreePromotion (
+    PolicyType text references Policies(Type),
+    UnitCombatType text references UnitCombatInfos(Type),
+    PromotionType text references UnitPromotions(Type)
 );

@@ -2494,6 +2494,11 @@ public:
 	void RemoveUnitAuraPromotion(int iUnitID, PromotionTypes ePromotion);
 	void RemoveAuraUnit(int iUnitID);
 #endif
+
+	// City-state gift unit free promotions aggregated from the player's adopted policies
+	// (promotionID -> unitCombatID), so gifting only needs a single lookup
+	const std::multimap<int, int>& GetCityStateGiftUnitFreePromotions() const;
+
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	int GetDomainTroopsTotalTimes100(DomainTypes eDomain = DOMAIN_SEA) const;
 	void ChangeDomainTroopsTotalTimes100(int iChange, DomainTypes eDomain = DOMAIN_SEA);
@@ -3372,6 +3377,10 @@ protected:
 #if defined(MOD_PROMOTION_AURA_PROMOTION)
 	std::multimap<PromotionTypes, int> m_mAuraPromotionUnits;
 #endif
+
+	// City-state gift unit free promotions aggregated from the player's adopted policies
+	// (promotionID -> unitCombatID)
+	std::multimap<int, int> m_mCityStateGiftUnitFreePromotions;
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	std::vector<int> m_aiDomainTroopsTotal;
 	std::vector<int> m_aiDomainTroopsUsed;

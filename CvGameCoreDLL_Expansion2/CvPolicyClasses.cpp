@@ -178,6 +178,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iMinorBullyInfluenceLossModifier(0),
 	m_iSameReligionMinorFriendshipMinimum(0),
 	m_iFoundedReligionMinorPerTurnInfluence(0),
+	m_iCityStateGiftUnitExperience(0),
 	m_iThemingBonusMultiplier(0),
 	m_iInternalTradeRouteYieldModifier(0),
 	m_iSharedReligionTourismModifier(0),
@@ -544,6 +545,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iMinorBullyInfluenceLossModifier = kResults.GetInt("MinorBullyInfluenceLossModifier");
 	m_iSameReligionMinorFriendshipMinimum = kResults.GetInt("SameReligionMinorFriendshipMinimum");
 	m_iFoundedReligionMinorPerTurnInfluence = kResults.GetInt("FoundedReligionMinorPerTurnInfluence");
+	m_iCityStateGiftUnitExperience = kResults.GetInt("CityStateGiftUnitExperience");
 	m_iThemingBonusMultiplier = kResults.GetInt("ThemingBonusMultiplier");
 	m_iInternalTradeRouteYieldModifier = kResults.GetInt("InternalTradeRouteYieldModifier");
 	m_iSharedReligionTourismModifier = kResults.GetInt("SharedReligionTourismModifier");
@@ -1192,6 +1194,34 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 			if (iTrait >= 0 && iTrait < NUM_MINOR_CIV_TRAIT_TYPES)
 				m_viMinorCivTraitFriendshipMinimum[iTrait] += iValue;
 		}
+
+		pResults->Reset();
+	}
+
+	//CityStateGiftUnitFreePromotions
+	{
+		m_CityStateGiftUnitFreePromotions.clear();
+
+		std::string sqlKey = "m_CityStateGiftUnitFreePromotions";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if(pResults == NULL)
+		{
+			const char* szSQL = "select UnitPromotions.ID, UnitCombatInfos.ID from Policy_CityStateGiftUnitFreePromotion, UnitPromotions, UnitCombatInfos where PolicyType = ? and PromotionType = UnitPromotions.Type and UnitCombatType = UnitCombatInfos.Type";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while(pResults->Step())
+		{
+			const int iPromotionID = pResults->GetInt(0);
+			const int iUnitCombatID = pResults->GetInt(1);
+
+			m_CityStateGiftUnitFreePromotions.insert(std::pair<int, int>(iPromotionID, iUnitCombatID));
+		}
+
+		//Trim capacity
+		std::multimap<int, int>(m_CityStateGiftUnitFreePromotions).swap(m_CityStateGiftUnitFreePromotions);
 
 		pResults->Reset();
 	}
@@ -2364,6 +2394,12 @@ int CvPolicyEntry::GetFoundedReligionMinorPerTurnInfluence() const
 	return m_iFoundedReligionMinorPerTurnInfluence;
 }
 
+/// Extra experience for military units gifted by a city-state
+int CvPolicyEntry::GetCityStateGiftUnitExperience() const
+{
+	return m_iCityStateGiftUnitExperience;
+}
+
 /// Friendship anchor bonus against city-states of the given trait
 int CvPolicyEntry::GetMinorCivTraitFriendshipMinimum(int i) const
 {
@@ -2890,6 +2926,11 @@ bool CvPolicyEntry::IsFreePromotionUnitCombat(const int promotionID, const int u
 	}
 
 	return false;
+}
+
+const std::multimap<int, int>& CvPolicyEntry::GetCityStateGiftUnitFreePromotions() const
+{
+	return m_CityStateGiftUnitFreePromotions;
 }
 
 #if defined(MOD_RELIGION_POLICY_BRANCH_FAITH_GP)

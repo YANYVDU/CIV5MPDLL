@@ -9378,6 +9378,17 @@ void CvMinorCivAI::DoSpawnUnit(PlayerTypes eMajor)
 #endif
 			}
 
+			// Social Policies: extra experience for units gifted by a city-state
+			int iGiftUnitExperience = GET_PLAYER(eMajor).GetPlayerPolicies()->GetNumericModifier(POLICYMOD_CITY_STATE_GIFT_UNIT_EXPERIENCE);
+			if (iGiftUnitExperience != 0)
+			{
+#if defined(MOD_UNITS_XP_TIMES_100)
+				pNewUnit->changeExperienceTimes100(100 * iGiftUnitExperience);
+#else
+				pNewUnit->changeExperience(iGiftUnitExperience);
+#endif
+			}
+
 			if (pNewUnit->jumpToNearestValidPlot())
 			{
 #if defined(MOD_BUGFIX_MINOR)
@@ -9392,6 +9403,19 @@ void CvMinorCivAI::DoSpawnUnit(PlayerTypes eMajor)
 				if(GetPlayer()->getCapitalCity())
 					GetPlayer()->getCapitalCity()->addProductionExperience(pNewUnit);
 #endif
+
+				// Social Policies: free promotions for city-state gifted units of the matching combat type.
+				// The player-level map is aggregated in CvPlayer::processPolicies, so this is a single lookup.
+				UnitCombatTypes eGiftUnitCombat = pNewUnit->getUnitCombatType();
+				if (eGiftUnitCombat != NO_UNITCOMBAT)
+				{
+					const std::multimap<int, int>& kGiftPromotions = GET_PLAYER(eMajor).GetCityStateGiftUnitFreePromotions();
+					for (std::multimap<int, int>::const_iterator it = kGiftPromotions.begin(); it != kGiftPromotions.end(); ++it)
+					{
+						if (it->second == eGiftUnitCombat)
+							pNewUnit->setHasPromotion((PromotionTypes)it->first, true);
+					}
+				}
 
 				Localization::String strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_UNIT_SPAWN");
 				strMessage << GetPlayer()->getNameKey();
