@@ -2426,7 +2426,7 @@ void CvMinorCivAI::DoChangeAliveStatus(bool bAlive)
 			// Calculate new influence levels (don't set here, since that could create a false temporary ally)
 			int iOldInfluence = GetBaseFriendshipWithMajor(e);
 			int iNewInfluence = iOldInfluence;
-			if (IsFriendshipAboveAlliesThreshold(iOldInfluence))
+			if (IsFriendshipAboveAlliesThresholdForPlayer(e, iOldInfluence))
 			{
 				iNewInfluence = GC.getFRIENDSHIP_ALLIES_ON_DEATH();
 			}
@@ -6870,7 +6870,7 @@ int CvMinorCivAI::GetFriendshipNeededForNextLevel(PlayerTypes ePlayer)
 	}
 	else if(!IsAllies(ePlayer))
 	{
-		return GetAlliesThreshold();
+		return GetAlliesThresholdForPlayer(ePlayer);
 	}
 
 	return 0;
@@ -7074,7 +7074,7 @@ bool CvMinorCivAI::IsFriendshipAboveAlliesThresholdForPlayer(PlayerTypes ePlayer
 	return false;
 }
 
-/// What is the allies threshold (global)?
+/// What is the allies threshold (global, era/CSUA-independent)? Prefer IsFriendshipAboveAlliesThresholdForPlayer().
 bool CvMinorCivAI::IsFriendshipAboveAlliesThreshold(int iFriendship) const
 {
 	int iFriendshipThresholdAllies = GetAlliesThreshold();
@@ -7516,7 +7516,7 @@ void CvMinorCivAI::DoLiberationByMajor(PlayerTypes eLiberator, TeamTypes eConque
 
 	// Influence for liberator - raise to ally status
 	int iNewInfluence = max(iHighestOtherMajorInfluence + GC.getMINOR_LIBERATION_FRIENDSHIP(), GetBaseFriendshipWithMajor(eLiberator) + GC.getMINOR_LIBERATION_FRIENDSHIP());
-	iNewInfluence = max(GetAlliesThreshold(), iNewInfluence); // Must be at least enough to make us allies
+	iNewInfluence = max(GetAlliesThresholdForPlayer(eLiberator), iNewInfluence); // Must be at least enough to make us allies
 
 	SetFriendshipWithMajor(eLiberator, iNewInfluence);
 
