@@ -3885,6 +3885,12 @@ int CvCityReligions::GetPressurePerTurn(ReligionTypes eReligion, int& iNumTradeR
 {
 	int iPressure = 0;
 	iNumTradeRoutesInvolved = 0;
+
+	// Global setting: the religion founded by this city's owner takes extra pressure from adjacent
+	// cities (SP_RELIGION_PRESSURE_SELF_FOUNDER_MOD, default 33). SpreadReligionToOneCity applies the
+	// very same boost when the pressure is actually dealt; mirror it here so the UI readout matches.
+	const bool bSelfFounderBoost = (GET_PLAYER(m_pCity->getOwner()).GetReligions()->GetReligionCreatedByPlayer() == eReligion);
+	const int iSelfFounderMod = bSelfFounderBoost ? gCustomMods.getOption("SP_RELIGION_PRESSURE_SELF_FOUNDER_MOD", 33) : 0;
 	
 	// Loop through all the players
 	for(int iI = 0; iI < MAX_PLAYERS; iI++)
@@ -3908,7 +3914,12 @@ int CvCityReligions::GetPressurePerTurn(ReligionTypes eReligion, int& iNumTradeR
 				if(eMajorityReligion == eReligion)
 				{
 					int iNumTradeRoutes;
-					iPressure += GC.getGame().GetGameReligions()->GetAdjacentCityReligiousPressure (eMajorityReligion, pLoopCity, m_pCity, iNumTradeRoutes, false);
+					int iAdjacentPressure = GC.getGame().GetGameReligions()->GetAdjacentCityReligiousPressure (eMajorityReligion, pLoopCity, m_pCity, iNumTradeRoutes, false);
+					if (iAdjacentPressure > 0 && iSelfFounderMod > 0)
+					{
+						iAdjacentPressure = iAdjacentPressure * (100 + iSelfFounderMod) / 100;
+					}
+					iPressure += iAdjacentPressure;
 					iNumTradeRoutesInvolved += iNumTradeRoutes;
 				}
 			}
