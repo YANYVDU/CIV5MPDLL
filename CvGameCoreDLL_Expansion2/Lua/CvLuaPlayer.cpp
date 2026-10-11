@@ -12976,8 +12976,15 @@ int CvLuaPlayer::lGetEspionageSpies(lua_State* L)
 		case SPY_RANK_SPECIAL_AGENT:
 			lua_pushstring(L, "TXT_KEY_SPY_RANK_2");
 			break;
+		// SP: the master spy rank is handed out by the "capture an original capital" quest reward
+		case SPY_RANK_MASTER_SPY:
+			lua_pushstring(L, "TXT_KEY_SPY_RANK_3");
+			break;
 		default:
 			CvAssertMsg(false, "pSpy->m_eRank not in case statement");
+			// Always push something - lua_setfield below pops the stack, so leaving the value
+			// unpushed would unbalance the stack and corrupt every later field of this spy
+			lua_pushstring(L, "");
 			break;
 		}
 		lua_setfield(L, t, "Rank");
@@ -13018,6 +13025,8 @@ int CvLuaPlayer::lGetEspionageSpies(lua_State* L)
 #endif
 		default:
 			CvAssertMsg(false, "pSpy->m_eSpyState not in case statement");
+			// Same stack balance requirement as the rank switch above
+			lua_pushstring(L, "");
 			break;
 		}
 		lua_setfield(L, t, "State");

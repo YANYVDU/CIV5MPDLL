@@ -113,6 +113,7 @@ CvGame::CvGame() :
 	, m_iEconomicAidRoundStartTurn(-1)
 	, m_iEconomicAidWorldEra(1)
 	, m_bEconomicAidActive(false)
+	, m_bMasterSpyQuestAwarded(false)
 #endif
 	, m_eCurrentEraCache(NO_ERA)
 	, m_iCurrentEraCacheTurn(-1)
@@ -4606,6 +4607,18 @@ bool CvGame::IsEconomicAidActive() const
 	// disabling the option disables economic aid entirely, even for save games that
 	// had it activated before (m_bEconomicAidActive is read back from the save).
 	return m_bEconomicAidActive && MOD_SP_UNIQUE_CITYSTATE;
+}
+
+//	--------------------------------------------------------------------------------
+bool CvGame::IsMasterSpyQuestAwarded() const
+{
+	return m_bMasterSpyQuestAwarded;
+}
+
+//	--------------------------------------------------------------------------------
+void CvGame::SetMasterSpyQuestAwarded(bool bValue)
+{
+	m_bMasterSpyQuestAwarded = bValue;
 }
 
 //	--------------------------------------------------------------------------------
@@ -10240,6 +10253,7 @@ void CvGame::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidRoundStartTurn, -1);
 	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidWorldEra, 1);
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidActive, false);
+	MOD_SERIALIZE_READ(164, kStream, m_bMasterSpyQuestAwarded, false);
 #endif
 	kStream >> m_iWinningTurn;
 	kStream >> m_iStartYear;
@@ -10506,6 +10520,7 @@ void CvGame::Write(FDataStream& kStream) const
 	kStream << m_iEconomicAidRoundStartTurn;
 	kStream << m_iEconomicAidWorldEra;
 	kStream << m_bEconomicAidActive;
+	kStream << m_bMasterSpyQuestAwarded;
 #endif
 	kStream << m_iWinningTurn;
 	kStream << m_iStartYear;

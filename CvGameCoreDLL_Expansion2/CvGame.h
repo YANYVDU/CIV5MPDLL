@@ -156,6 +156,11 @@ public:
 	int GetEconomicAidRoundStartTurn() const;
 	int GetEconomicAidWorldEra() const;
 	int GetEconomicAidRoundTurnsLeft() const;
+
+	// SP extended quests: the master spy reward for the capture-original-capital quest
+	// is unique for the whole game, so the first player to finish it claims it
+	bool IsMasterSpyQuestAwarded() const;
+	void SetMasterSpyQuestAwarded(bool bValue);
 #endif
 
 	TeamTypes getActiveTeam();
@@ -749,6 +754,7 @@ protected:
 	int m_iEconomicAidRoundStartTurn;
 	int m_iEconomicAidWorldEra;
 	bool m_bEconomicAidActive;
+	bool m_bMasterSpyQuestAwarded;
 #endif
 	mutable EraTypes m_eCurrentEraCache;
 	mutable int m_iCurrentEraCacheTurn;

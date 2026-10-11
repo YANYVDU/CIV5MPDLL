@@ -22,6 +22,11 @@ public:
 	int getMinPlayers() const;
 	int getDuration() const;
 	int getFriendship() const;
+	int getRewardGold() const;
+	int getRewardCulture() const;
+	int getRewardSpy() const;
+	int getRewardLeagueVotes() const;
+	int getRewardAidPoints() const;
 	int getBiasFriendly() const;
 	int getBiasNeutral() const;
 	int getBiasHostile() const;
@@ -50,6 +55,11 @@ protected:
 	int m_iMinPlayers;
 	int m_iDuration;
 	int m_iFriendship;
+	int m_iRewardGold;
+	int m_iRewardCulture;
+	int m_iRewardSpy;
+	int m_iRewardLeagueVotes;
+	int m_iRewardAidPoints;
 	int m_iBiasFriendly;
 	int m_iBiasNeutral;
 	int m_iBiasHostile;

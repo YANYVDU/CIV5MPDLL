@@ -30,6 +30,15 @@
 		<!-- Friendship/Influence gained on completion of the quest -->
 		<Column name="Friendship" type="integer" default="0"/>
 
+		<!-- Extra rewards granted on completion, on top of the influence. Gold and Culture are
+		     scaled by (current era + 1) and the game speed in the DLL; Spy, LeagueVotes and
+		     AidPoints are flat -->
+		<Column name="RewardGold" type="integer" default="0"/>
+		<Column name="RewardCulture" type="integer" default="0"/>
+		<Column name="RewardSpy" type="integer" default="0"/>
+		<Column name="RewardLeagueVotes" type="integer" default="0"/>
+		<Column name="RewardAidPoints" type="integer" default="0"/>
+
 		<!-- Notification text pairs, set to NULL to force a QuestSendNotification event -->
 		<Column name="StartSummary" type="text" default="NULL" reference="Language_en_US(Tag)"/>
 		<Column name="StartMessage" type="text" default="NULL" reference="Language_en_US(Tag)"/>
@@ -289,123 +298,182 @@
 			<Tooltip>TXT_KEY_CITY_STATE_QUEST_TRADE_ROUTE_FORMAL</Tooltip>
 		</Row>
 		
-		<!-- CSD Placeholders -->
+		<!-- SP extended quests (IDs must match MinorCivQuestTypes in the DLL) -->
 		<Row>
-			<Type>MINOR_CIV_QUEST_WAR</Type>
+			<ID>18</ID>
+			<Type>MINOR_CIV_QUEST_RESEARCH_TECH</Type>
 			<Internal>true</Internal>
 			<Enabled>false</Enabled>
-			<Friendship>35</Friendship>
-			<BiasHostile>600</BiasHostile>
-			<BiasMaritime>125</BiasMaritime>
-			<BiasMercantile>125</BiasMercantile>
-			<BiasCultured>500</BiasCultured>
-			<BiasMilitaristic>800</BiasMilitaristic>
-			<BiasReligious>125</BiasReligious>
+			<Duration>30</Duration>
+			<Friendship>60</Friendship>
+			<BiasFriendly>150</BiasFriendly>
+			<BiasNeutral>150</BiasNeutral>
+			<BiasHostile>150</BiasHostile>
+			<BiasIrrational>150</BiasIrrational>
+			<BiasMaritime>100</BiasMaritime>
+			<BiasMercantile>100</BiasMercantile>
+			<BiasCultured>150</BiasCultured>
+			<BiasMilitaristic>100</BiasMilitaristic>
+			<BiasReligious>100</BiasReligious>
+			<Priority>30</Priority>
+			<Icon>[ICON_RESEARCH]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_RESEARCH_TECH_FORMAL</Tooltip>
 		</Row>
 		<Row>
+			<ID>19</ID>
 			<Type>MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER</Type>
 			<Internal>true</Internal>
 			<Enabled>false</Enabled>
+			<Duration>30</Duration>
 			<Friendship>40</Friendship>
-			<BiasMaritime>75</BiasMaritime>
-			<BiasMercantile>75</BiasMercantile>
 			<BiasCultured>300</BiasCultured>
-			<BiasMilitaristic>75</BiasMilitaristic>
-			<BiasReligious>75</BiasReligious>
+			<Priority>56</Priority>
+			<Icon>[ICON_GOLDEN_AGE]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_CONSTRUCT_NATIONAL_WONDER_FORMAL</Tooltip>
 		</Row>
 		<Row>
+			<ID>20</ID>
+			<Type>MINOR_CIV_QUEST_SPREAD_BUILDING</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<Duration>30</Duration>
+			<Friendship>50</Friendship>
+			<Priority>57</Priority>
+			<Icon>[ICON_INVEST]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_SPREAD_BUILDING_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>21</ID>
 			<Type>MINOR_CIV_QUEST_FIND_CITY_STATE</Type>
 			<Internal>true</Internal>
 			<Enabled>false</Enabled>
-			<Friendship>25</Friendship>
-			<BiasMaritime>115</BiasMaritime>
-			<BiasMercantile>120</BiasMercantile>
-		</Row>
-		<Row>
-			<Type>MINOR_CIV_QUEST_INFLUENCE</Type>
-			<Internal>true</Internal>
-			<Enabled>false</Enabled>
-			<Global>true</Global>
-			<MinPlayers>2</MinPlayers>
 			<Duration>30</Duration>
-			<Friendship>0</Friendship>
-			<BiasFriendly>70</BiasFriendly>
-			<BiasNeutral>70</BiasNeutral>
-			<BiasHostile>50</BiasHostile>
-			<BiasIrrational>70</BiasIrrational>
+			<Friendship>35</Friendship>
+			<BiasMaritime>300</BiasMaritime>
+			<BiasMercantile>200</BiasMercantile>
+			<Priority>38</Priority>
+			<Icon>[ICON_CITY_STATE]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_FIND_CITY_STATE_FORMAL</Tooltip>
 		</Row>
 		<Row>
-			<Type>MINOR_CIV_QUEST_CONTEST_TOURISM</Type>
+			<ID>22</ID>
+			<Type>MINOR_CIV_QUEST_DISCONNECT_TRADE_ROUTE</Type>
 			<Internal>true</Internal>
 			<Enabled>false</Enabled>
-			<DisabledOnOption>GAMEOPTION_NO_POLICIES</DisabledOnOption>
+			<Duration>30</Duration>
+			<Friendship>40</Friendship>
+			<BiasMaritime>200</BiasMaritime>
+			<BiasMercantile>200</BiasMercantile>
+			<Priority>21</Priority>
+			<Icon>[ICON_TRADE]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_DISCONNECT_TRADE_ROUTE_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>23</ID>
+			<Type>MINOR_CIV_QUEST_BECOME_ALLY</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<Duration>30</Duration>
+			<Friendship>50</Friendship>
+			<Priority>24</Priority>
+			<Icon>[ICON_INFLUENCE]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_BECOME_ALLY_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>24</ID>
+			<Type>MINOR_CIV_QUEST_RIG_ELECTION</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<Duration>30</Duration>
+			<Friendship>50</Friendship>
+			<Priority>28</Priority>
+			<Icon>[ICON_SPY]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_RIG_ELECTION_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>25</ID>
+			<Type>MINOR_CIV_QUEST_DECLARE_WAR</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<!-- SP: not a regular global quest - it is triggered by being attacked and never takes a quest slot -->
+			<Global>false</Global>
+			<Duration>30</Duration>
+			<Friendship>50</Friendship>
+			<BiasMilitaristic>200</BiasMilitaristic>
+			<Priority>8</Priority>
+			<Icon>[ICON_WAR]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_DECLARE_WAR_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>26</ID>
+			<Type>MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
 			<Global>true</Global>
-			<RevokeOnBully>false</RevokeOnBully>
-			<Contest>true</Contest>
-			<MinPlayers>3</MinPlayers>
+			<Duration>60</Duration>
+			<Friendship>80</Friendship>
+			<BiasMilitaristic>200</BiasMilitaristic>
+			<Priority>6</Priority>
+			<Icon>[ICON_CAPITAL]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_CAPTURE_ORIGINAL_CAPITAL_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>27</ID>
+			<Type>MINOR_CIV_QUEST_LEAGUE_PROTECT_CITY_STATE</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<Duration>30</Duration>
+			<Friendship>40</Friendship>
+			<Priority>9</Priority>
+			<Icon>[ICON_PEACE]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_LEAGUE_PROTECT_CITY_STATE_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>28</ID>
+			<Type>MINOR_CIV_QUEST_LEAGUE_SANCTION</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<Global>true</Global>
+			<Duration>30</Duration>
+			<Friendship>40</Friendship>
+			<Priority>11</Priority>
+			<Icon>[ICON_DENOUNCE]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_LEAGUE_SANCTION_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>29</ID>
+			<Type>MINOR_CIV_QUEST_LEAGUE_REPEAL_EMBARGO</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<Duration>30</Duration>
+			<Friendship>40</Friendship>
+			<Priority>12</Priority>
+			<Icon>[ICON_INTERNATIONAL_TRADE]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_LEAGUE_REPEAL_EMBARGO_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>30</ID>
+			<Type>MINOR_CIV_QUEST_DONATE_GOLD</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
 			<Duration>30</Duration>
 			<Friendship>20</Friendship>
-			<BiasFriendly>130</BiasFriendly>
+			<BiasMaritime>300</BiasMaritime>
+			<BiasMercantile>350</BiasMercantile>
+			<Priority>14</Priority>
+			<Icon>[ICON_GOLD]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_DONATE_GOLD_FORMAL</Tooltip>
 		</Row>
 		<Row>
-			<Type>MINOR_CIV_QUEST_ARCHAEOLOGY</Type>
+			<ID>31</ID>
+			<Type>MINOR_CIV_QUEST_RESEARCH_AGREEMENT</Type>
 			<Internal>true</Internal>
 			<Enabled>false</Enabled>
-			<Global>true</Global>
-			<RevokeOnBully>false</RevokeOnBully>
+			<Duration>30</Duration>
 			<Friendship>40</Friendship>
-			<BiasMaritime>75</BiasMaritime>
-			<BiasMercantile>75</BiasMercantile>
-			<BiasCultured>75</BiasCultured>
-			<BiasMilitaristic>250</BiasMilitaristic>
-			<BiasReligious>300</BiasReligious>
-		</Row>
-		<Row>
-			<Type>MINOR_CIV_QUEST_CIRCUMNAVIGATION</Type>
-			<Internal>true</Internal>
-			<Enabled>false</Enabled>
-			<Global>true</Global>
-			<Friendship>35</Friendship>
-			<BiasMaritime>250</BiasMaritime>
-		</Row>
-		<Row>
-			<Type>MINOR_CIV_QUEST_LIBERATION</Type>
-			<Internal>true</Internal>
-			<Enabled>false</Enabled>
-			<RevokeOnBully>false</RevokeOnBully>
-			<Friendship>80</Friendship>
-			<BiasFriendly>400</BiasFriendly>
-			<BiasMaritime>50</BiasMaritime>
-			<BiasMercantile>50</BiasMercantile>
-			<BiasCultured>50</BiasCultured>
-			<BiasMilitaristic>600</BiasMilitaristic>
-			<BiasReligious>500</BiasReligious>
-		</Row>
-		<Row>
-			<Type>MINOR_CIV_QUEST_HORDE</Type>
-			<Internal>true</Internal>
-			<Enabled>false</Enabled>
-			<Global>true</Global>
-			<RevokeOnBully>false</RevokeOnBully>
-			<Duration>20</Duration>
-			<Friendship>0</Friendship>
-			<BiasFriendly>300</BiasFriendly>
-			<BiasNeutral>300</BiasNeutral>
-			<BiasHostile>300</BiasHostile>
-			<BiasIrrational>300</BiasIrrational>
-		</Row>
-		<Row>
-			<Type>MINOR_CIV_QUEST_REBELLION</Type>
-			<Internal>true</Internal>
-			<Enabled>false</Enabled>
-			<Global>true</Global>
-			<RevokeOnBully>false</RevokeOnBully>
-			<Duration>20</Duration>
-			<Friendship>0</Friendship>
-			<BiasFriendly>700</BiasFriendly>
-			<BiasNeutral>700</BiasNeutral>
-			<BiasHostile>700</BiasHostile>
-			<BiasIrrational>700</BiasIrrational>
+			<Priority>15</Priority>
+			<Icon>[ICON_DIPLOMAT]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_RESEARCH_AGREEMENT_FORMAL</Tooltip>
 		</Row>
 	</Quests>
 

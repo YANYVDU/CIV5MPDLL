@@ -680,6 +680,192 @@ bool CvMinorCivQuest::IsComplete()
 		if(GC.getGame().GetGameTrade()->IsPlayerConnectedToPlayer(m_eMinor,m_eAssignedPlayer))
 			return true;
 	}
+	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_TECH)
+	{
+		TechTypes eTech = (TechTypes) m_iData1;
+
+		// Player researched the tech?
+		if(pAssignedPlayer->HasTech(eTech))
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER)
+	{
+		BuildingTypes eWonder = (BuildingTypes) m_iData1;
+
+		// Player built the national wonder?
+		if(pAssignedPlayer->countNumBuildings(eWonder) > 0)
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_SPREAD_BUILDING)
+	{
+		BuildingTypes eBuilding = (BuildingTypes) m_iData1;
+		int iTargetCities = m_iData2;
+		int iCount = 0;
+
+		int iCityLoop;
+		for(CvCity* pLoopCity = pAssignedPlayer->firstCity(&iCityLoop); pLoopCity != NULL; pLoopCity = pAssignedPlayer->nextCity(&iCityLoop))
+		{
+			if(pLoopCity->GetCityBuildings()->GetNumRealBuilding(eBuilding) > 0)
+				iCount++;
+		}
+
+		// Player spread the building to enough cities?
+		if(iCount >= iTargetCities)
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_FIND_CITY_STATE)
+	{
+		PlayerTypes eCityState = (PlayerTypes) m_iData1;
+
+		// Player found the target city-state's territory?
+		if(GET_TEAM(pAssignedPlayer->getTeam()).IsHasFoundPlayersTerritory(eCityState))
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_DISCONNECT_TRADE_ROUTE)
+	{
+		PlayerTypes eTarget = (PlayerTypes) m_iData1;
+
+		// Player is no longer connected to the rival city-state?
+		if(!GC.getGame().GetGameTrade()->IsPlayerConnectedToPlayer(eTarget, m_eAssignedPlayer))
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_BECOME_ALLY)
+	{
+		// Player is now our ally?
+		if(pMinor->GetMinorCivAI()->IsAllies(m_eAssignedPlayer))
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_DECLARE_WAR)
+	{
+		PlayerTypes eTarget = (PlayerTypes) m_iData1;
+		CvPlayer* pTarget = &GET_PLAYER(eTarget);
+
+		if(pTarget)
+		{
+			// Player declared war on the target?
+			if(GET_TEAM(pAssignedPlayer->getTeam()).isAtWar(pTarget->getTeam()))
+			{
+				return true;
+			}
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_DONATE_GOLD)
+	{
+		int iTargetAmount = m_iData1;
+		int iGoldGiftedBefore = m_iData2;
+
+		// Has the player gifted enough gold since the quest began?
+		if(pMinor->GetMinorCivAI()->GetNumGoldGifted(m_eAssignedPlayer) - iGoldGiftedBefore >= iTargetAmount)
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_RIG_ELECTION)
+	{
+		// Player resolved an election rig here since the quest began? (success or failure both count)
+		int iRigTurn = pMinor->GetMinorCivAI()->GetTurnLastRiggedElectionByMajor(m_eAssignedPlayer);
+
+		if(iRigTurn >= 0 && iRigTurn >= GetStartTurn())
+		{
+			return true;
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+	{
+		PlayerTypes eTarget = (PlayerTypes) m_iData1;
+
+		// Does the player now own the target's original capital?
+		if(GET_PLAYER(eTarget).GetOriginalCapitalX() >= 0 && GET_PLAYER(eTarget).GetOriginalCapitalY() >= 0)
+		{
+			CvPlot* pPlot = GC.getMap().plot(GET_PLAYER(eTarget).GetOriginalCapitalX(), GET_PLAYER(eTarget).GetOriginalCapitalY());
+
+			if(pPlot != NULL)
+			{
+				CvCity* pCity = pPlot->getPlotCity();
+
+				// The player now owns the target's original capital...
+				if(pCity != NULL && pCity->getOriginalOwner() == eTarget && pCity->getOwner() == m_eAssignedPlayer)
+				{
+					return true;
+				}
+
+				// ...or the original capital has been razed - it was still standing when the
+				// quest was handed out, so an empty plot means somebody wiped it off the map
+				if(pCity == NULL)
+				{
+					return true;
+				}
+			}
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_PROTECT_CITY_STATE)
+	{
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+
+		if(pLeagues != NULL)
+		{
+			CvLeague* pLeague = pLeagues->GetActiveLeague();
+
+			// Is our city-state now under international law protection?
+			if(pLeague != NULL && pLeague->IsCityStateUnderInternationalProtection(m_eMinor))
+			{
+				return true;
+			}
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_SANCTION)
+	{
+		PlayerTypes eTarget = (PlayerTypes) m_iData1;
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+
+		if(pLeagues != NULL)
+		{
+			CvLeague* pLeague = pLeagues->GetActiveLeague();
+
+			// Is the target civilization now under trade sanction?
+			if(pLeague != NULL && pLeague->IsPlayerEmbargoed(eTarget))
+			{
+				return true;
+			}
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_REPEAL_EMBARGO)
+	{
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+
+		if(pLeagues != NULL)
+		{
+			CvLeague* pLeague = pLeagues->GetActiveLeague();
+
+			// Was the city-state embargo active when the quest began and is it gone now?
+			if(m_iData1 == 1 && (pLeague == NULL || !pLeague->IsPlayerEmbargoed(m_eMinor)))
+			{
+				return true;
+			}
+		}
+	}
+	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		PlayerTypes eTarget = (PlayerTypes) m_iData1;
+
+		// Has the player signed a research agreement with the target?
+		if(GET_TEAM(pAssignedPlayer->getTeam()).IsHasResearchAgreement(GET_PLAYER(eTarget).getTeam()))
+		{
+			return true;
+		}
+	}
 #if defined(MOD_EVENTS_QUESTS)
 	}
 #endif
@@ -945,6 +1131,88 @@ bool CvMinorCivQuest::IsExpired()
 	else if(m_eType == MINOR_CIV_QUEST_TRADE_ROUTE)
 	{
 	}
+
+	// Find a City-State
+	else if(m_eType == MINOR_CIV_QUEST_FIND_CITY_STATE)
+	{
+		PlayerTypes eCityState = (PlayerTypes) GetPrimaryData();
+		CvPlayer* pTargetCityState = &GET_PLAYER(eCityState);
+
+		if(pTargetCityState)
+		{
+			// Someone killed the City-State
+			if(!pTargetCityState->isAlive())
+				return true;
+		}
+	}
+
+	// Declare war on target
+	else if(m_eType == MINOR_CIV_QUEST_DECLARE_WAR)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		CvPlayer* pTarget = &GET_PLAYER(eTarget);
+
+		if(pTarget)
+		{
+			// Someone killed the target, or we are no longer at war with them
+			if(!pTarget->isAlive())
+				return true;
+
+			if(!GET_TEAM(GET_PLAYER(m_eMinor).getTeam()).isAtWar(pTarget->getTeam()))
+				return true;
+		}
+	}
+
+	// Capture the target's original capital
+	else if(m_eType == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		CvPlayer* pTarget = &GET_PLAYER(eTarget);
+
+		if(pTarget)
+		{
+			// Someone killed the target, or we are no longer at war with them
+			if(!pTarget->isAlive())
+				return true;
+
+			if(!GET_TEAM(GET_PLAYER(m_eMinor).getTeam()).isAtWar(pTarget->getTeam()))
+				return true;
+		}
+	}
+
+	// League: sanction the target civilization
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_SANCTION)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		CvPlayer* pTarget = &GET_PLAYER(eTarget);
+
+		if(pTarget)
+		{
+			// Someone killed the target, or we are no longer at war with them
+			if(!pTarget->isAlive())
+				return true;
+
+			if(!GET_TEAM(GET_PLAYER(m_eMinor).getTeam()).isAtWar(pTarget->getTeam()))
+				return true;
+		}
+	}
+
+	// Sign a research agreement with the target
+	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		CvPlayer* pTarget = &GET_PLAYER(eTarget);
+
+		if(pTarget)
+		{
+			// Someone killed the target, or the player is now at war with them
+			if(!pTarget->isAlive())
+				return true;
+
+			if(GET_TEAM(GET_PLAYER(m_eAssignedPlayer).getTeam()).isAtWar(pTarget->getTeam()))
+				return true;
+		}
+	}
 #if defined(MOD_EVENTS_QUESTS)
 	}
 #endif
@@ -971,7 +1239,7 @@ void CvMinorCivQuest::SetHandled(bool bValue)
 // Initializes data to track quest progress and sends notification to player.
 // NOTE: Some types initialize data using randomness here. So two otherwise equivalent quests may be initialized with different data.
 // NOTE: Should only be called once.
-void CvMinorCivQuest::DoStartQuest(int iStartTurn)
+void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 {
 	m_iStartTurn = iStartTurn;
 
@@ -1320,6 +1588,211 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn)
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_START_TRADE_ROUTE");
 		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_START_TRADE_ROUTE");
 	}
+	// Research a Tech
+	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_TECH)
+	{
+		TechTypes eTech = pMinor->GetMinorCivAI()->GetBestTechForQuest(m_eAssignedPlayer);
+
+		FAssertMsg(eTech != NO_TECH, "MINOR CIV AI: For some reason we got NO_TECH when starting a quest for a major to research a Tech. Bad things are probably going to happen.");
+
+		m_iData1 = eTech;
+
+		const char* strTechName = GC.getTechInfo(eTech)->GetDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_RESEARCH_TECH");
+		strMessage << strTechName;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_RESEARCH_TECH");
+		strSummary << strTechName;
+	}
+	// Construct a National Wonder
+	else if(m_eType == MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER)
+	{
+		BuildingTypes eWonder = pMinor->GetMinorCivAI()->GetBestNationalWonderForQuest(m_eAssignedPlayer);
+
+		FAssertMsg(eWonder != NO_BUILDING, "MINOR CIV AI: For some reason we got NO_BUILDING when starting a quest for a major to construct a National Wonder.");
+
+		m_iData1 = eWonder;
+
+		const char* strBuildingName = GC.getBuildingInfo(eWonder)->GetDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_CONSTRUCT_NATIONAL_WONDER");
+		strMessage << strBuildingName;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_CONSTRUCT_NATIONAL_WONDER");
+		strSummary << strBuildingName;
+	}
+	// Spread a Building
+	else if(m_eType == MINOR_CIV_QUEST_SPREAD_BUILDING)
+	{
+		BuildingTypes eBuilding = pMinor->GetMinorCivAI()->GetBestBuildingForQuest(m_eAssignedPlayer);
+		int iTargetCities = 3;
+
+		FAssertMsg(eBuilding != NO_BUILDING, "MINOR CIV AI: For some reason we got NO_BUILDING when starting a quest for a major to spread a Building.");
+
+		m_iData1 = eBuilding;
+		m_iData2 = iTargetCities;
+
+		const char* strBuildingName = GC.getBuildingInfo(eBuilding)->GetDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_SPREAD_BUILDING");
+		strMessage << strBuildingName;
+		strMessage << iTargetCities;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_SPREAD_BUILDING");
+		strSummary << strBuildingName;
+		strSummary << iTargetCities;
+	}
+	// Find a City-State
+	else if(m_eType == MINOR_CIV_QUEST_FIND_CITY_STATE)
+	{
+		PlayerTypes eCityState = pMinor->GetMinorCivAI()->GetBestCityStateToFind(m_eAssignedPlayer);
+
+		FAssertMsg(eCityState != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to find a City-State.");
+
+		m_iData1 = eCityState;
+
+		const char* strCivKey = GET_PLAYER(eCityState).getNameKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_FIND_CITY_STATE");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_FIND_CITY_STATE");
+		strSummary << strCivKey;
+	}
+	// Disconnect a Trade Route (to a rival city-state, not to us)
+	else if(m_eType == MINOR_CIV_QUEST_DISCONNECT_TRADE_ROUTE)
+	{
+		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestTradeRouteTargetForQuest(m_eAssignedPlayer);
+
+		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to disconnect a trade route.");
+
+		m_iData1 = eTarget;
+
+		const char* strCivKey = GET_PLAYER(eTarget).getNameKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_DISCONNECT_TRADE_ROUTE");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_DISCONNECT_TRADE_ROUTE");
+		strSummary << strCivKey;
+	}
+	// Become our Ally
+	else if(m_eType == MINOR_CIV_QUEST_BECOME_ALLY)
+	{
+		PlayerTypes eCurrentAlly = pMinor->GetMinorCivAI()->GetAlly();
+		const char* strCivKey = "Nobody";
+		if(eCurrentAlly != NO_PLAYER)
+			strCivKey = GET_PLAYER(eCurrentAlly).getCivilizationShortDescriptionKey();
+
+		m_iData1 = eCurrentAlly;
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_BECOME_ALLY");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_BECOME_ALLY");
+		strSummary << strCivKey;
+	}
+	// Declare War on a Target
+	else if(m_eType == MINOR_CIV_QUEST_DECLARE_WAR)
+	{
+		// SP extended quests: when the quest is triggered by us being attacked the aggressor is
+		// passed in, so the quest always points at the civ that actually declared war on us.
+		// The regular path (no forced target) falls back to a random civ we are at war with.
+		PlayerTypes eTarget = eForcedTarget;
+
+		if(eTarget == NO_PLAYER)
+		{
+			eTarget = pMinor->GetMinorCivAI()->GetBestWarTargetForQuest(m_eAssignedPlayer);
+		}
+
+		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to declare war.");
+
+		m_iData1 = eTarget;
+
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_DECLARE_WAR");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_DECLARE_WAR");
+		strSummary << strCivKey;
+	}
+	// Donate a large sum of gold
+	else if(m_eType == MINOR_CIV_QUEST_DONATE_GOLD)
+	{
+		int iTargetAmount = 5000;
+		int iGoldAlreadyGiven = pMinor->GetMinorCivAI()->GetNumGoldGifted(m_eAssignedPlayer);
+
+		m_iData1 = iTargetAmount;
+		m_iData2 = iGoldAlreadyGiven;
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_DONATE_GOLD");
+		strMessage << iTargetAmount;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_DONATE_GOLD");
+		strSummary << iTargetAmount;
+	}
+	// Rig an election in our capital
+	else if(m_eType == MINOR_CIV_QUEST_RIG_ELECTION)
+	{
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_RIG_ELECTION");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_RIG_ELECTION");
+	}
+	// Capture a civilization's original capital
+	else if(m_eType == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+	{
+		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestOriginalCapitalTargetForQuest(m_eAssignedPlayer);
+
+		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to capture an original capital.");
+
+		m_iData1 = eTarget;
+
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_CAPTURE_ORIGINAL_CAPITAL");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_CAPTURE_ORIGINAL_CAPITAL");
+		strSummary << strCivKey;
+	}
+	// League: declare our city-state under international protection
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_PROTECT_CITY_STATE)
+	{
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_LEAGUE_PROTECT_CITY_STATE");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_LEAGUE_PROTECT_CITY_STATE");
+	}
+	// League: sanction a civilization
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_SANCTION)
+	{
+		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestWarTargetForQuest(m_eAssignedPlayer);
+
+		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to sanction a civilization.");
+
+		m_iData1 = eTarget;
+
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_LEAGUE_SANCTION");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_LEAGUE_SANCTION");
+		strSummary << strCivKey;
+	}
+	// League: repeal the city-state embargo
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_REPEAL_EMBARGO)
+	{
+		m_iData1 = 1; // flag: the embargo was in effect when the quest began
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_LEAGUE_REPEAL_EMBARGO");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_LEAGUE_REPEAL_EMBARGO");
+	}
+	// Sign a research agreement with another civilization
+	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestResearchAgreementTargetForQuest(m_eAssignedPlayer);
+
+		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to sign a research agreement.");
+
+		m_iData1 = eTarget;
+
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_RESEARCH_AGREEMENT");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_RESEARCH_AGREEMENT");
+		strSummary << strCivKey;
+	}
 
 	strMessage << pMinor->getNameKey();
 	strSummary << pMinor->getNameKey();
@@ -1444,6 +1917,86 @@ bool CvMinorCivQuest::DoFinishQuest()
 	int iOldInf = pMinor->GetMinorCivAI()->GetEffectiveFriendshipWithMajor(m_eAssignedPlayer);
 
 	pMinor->GetMinorCivAI()->ChangeFriendshipWithMajor(m_eAssignedPlayer, GetInfluenceReward(), /*bFromQuest*/ true);
+
+#if defined(MOD_EVENTS_QUESTS)
+	// Extra rewards defined in the Quests table (gold/culture scale with era and game speed)
+	if (UseEvents() && m_pQuestInfo)
+	{
+		CvPlayer* pRewardPlayer = &GET_PLAYER(m_eAssignedPlayer);
+		int iEraMult = (int) pRewardPlayer->GetCurrentEra() + 1;
+		int iSpeedMult = GC.getGame().getGameSpeedInfo().getGreatPeoplePercent();
+
+		int iRewardGold = m_pQuestInfo->getRewardGold();
+		if (iRewardGold > 0)
+		{
+			iRewardGold = iRewardGold * iEraMult * iSpeedMult / 100;
+			pRewardPlayer->GetTreasury()->ChangeGold(iRewardGold);
+		}
+
+		int iRewardCulture = m_pQuestInfo->getRewardCulture();
+		if (iRewardCulture > 0)
+		{
+			iRewardCulture = iRewardCulture * iEraMult * iSpeedMult / 100;
+			pRewardPlayer->changeJONSCulture(iRewardCulture);
+		}
+
+		int iRewardVotes = m_pQuestInfo->getRewardLeagueVotes();
+		if (iRewardVotes > 0)
+		{
+			pRewardPlayer->ChangeExtraLeagueVotes(iRewardVotes);
+		}
+
+		// Economic aid points are flat - the minor civ aid system has no era or speed scaling
+		int iRewardAidPoints = m_pQuestInfo->getRewardAidPoints();
+		if (iRewardAidPoints > 0)
+		{
+			pMinor->GetMinorCivAI()->ChangeEconomicAidPoints(m_eAssignedPlayer, iRewardAidPoints);
+		}
+
+		if (m_eType == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+		{
+			// The master spy is unique for the whole game: the first player to capture an
+			// original capital claims it, and every other pending quest of this type is dropped
+			if (!GC.getGame().IsMasterSpyQuestAwarded())
+			{
+				GC.getGame().SetMasterSpyQuestAwarded(true);
+
+				if (pRewardPlayer->GetEspionage() != NULL)
+				{
+					pRewardPlayer->GetEspionage()->CreateSpyWithRank(SPY_RANK_MASTER_SPY);
+				}
+
+				for (int iMinorLoop = 0; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+				{
+					CvPlayer* pLoopMinor = &GET_PLAYER((PlayerTypes) iMinorLoop);
+					if (pLoopMinor->isAlive() && pLoopMinor->isMinorCiv() && pLoopMinor->GetMinorCivAI() != NULL)
+					{
+						for (int iMajorLoop = 0; iMajorLoop < MAX_MAJOR_CIVS; iMajorLoop++)
+						{
+							// Never touch the list the caller is iterating right now
+							if (iMinorLoop == m_eMinor && iMajorLoop == m_eAssignedPlayer)
+								continue;
+
+							pLoopMinor->GetMinorCivAI()->CancelQuestForPlayer((PlayerTypes) iMajorLoop, MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL);
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			// A free spy (generic table-driven reward)
+			int iRewardSpy = m_pQuestInfo->getRewardSpy();
+			if (iRewardSpy > 0 && pRewardPlayer->GetEspionage() != NULL)
+			{
+				for (int iSpy = 0; iSpy < iRewardSpy; iSpy++)
+				{
+					pRewardPlayer->GetEspionage()->CreateSpy();
+				}
+			}
+		}
+	}
+#endif
 	
 	bool bNowFriends = pMinor->GetMinorCivAI()->IsFriends(m_eAssignedPlayer);
 	bool bNowAllies = pMinor->GetMinorCivAI()->IsAllies(m_eAssignedPlayer);
@@ -1677,6 +2230,148 @@ bool CvMinorCivQuest::DoFinishQuest()
 	{
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_TRADE_ROUTE");
 		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_TRADE_ROUTE");
+	}
+	// Research a Tech
+	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_TECH)
+	{
+		TechTypes eTech = (TechTypes) GetPrimaryData();
+		const char* strTechName = GC.getTechInfo(eTech)->GetDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_RESEARCH_TECH");
+		strMessage << strTechName;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_RESEARCH_TECH");
+		strSummary << strTechName;
+	}
+
+	// CONSTRUCT A NATIONAL WONDER
+	else if(m_eType == MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER)
+	{
+		BuildingTypes eWonder = (BuildingTypes) GetPrimaryData();
+		const char* strBuildingName = GC.getBuildingInfo(eWonder)->GetDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_CONSTRUCT_NATIONAL_WONDER");
+		strMessage << strBuildingName;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_CONSTRUCT_NATIONAL_WONDER");
+		strSummary << strBuildingName;
+	}
+
+	// SPREAD A BUILDING
+	else if(m_eType == MINOR_CIV_QUEST_SPREAD_BUILDING)
+	{
+		BuildingTypes eBuilding = (BuildingTypes) GetPrimaryData();
+		const char* strBuildingName = GC.getBuildingInfo(eBuilding)->GetDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_SPREAD_BUILDING");
+		strMessage << strBuildingName;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_SPREAD_BUILDING");
+		strSummary << strBuildingName;
+	}
+
+	// FIND A CITY-STATE
+	else if(m_eType == MINOR_CIV_QUEST_FIND_CITY_STATE)
+	{
+		PlayerTypes eCityState = (PlayerTypes) GetPrimaryData();
+		const char* strCivKey = GET_PLAYER(eCityState).getNameKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_FIND_CITY_STATE");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_FIND_CITY_STATE");
+		strSummary << strCivKey;
+	}
+
+	// DISCONNECT A TRADE ROUTE
+	else if(m_eType == MINOR_CIV_QUEST_DISCONNECT_TRADE_ROUTE)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		const char* strCivKey = GET_PLAYER(eTarget).getNameKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_DISCONNECT_TRADE_ROUTE");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_DISCONNECT_TRADE_ROUTE");
+		strSummary << strCivKey;
+	}
+
+	// BECOME OUR ALLY
+	else if(m_eType == MINOR_CIV_QUEST_BECOME_ALLY)
+	{
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_BECOME_ALLY");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_BECOME_ALLY");
+	}
+
+	// DECLARE WAR ON A TARGET
+	else if(m_eType == MINOR_CIV_QUEST_DECLARE_WAR)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_DECLARE_WAR");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_DECLARE_WAR");
+		strSummary << strCivKey;
+	}
+
+	// DONATE A LARGE SUM OF GOLD
+	else if(m_eType == MINOR_CIV_QUEST_DONATE_GOLD)
+	{
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_DONATE_GOLD");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_DONATE_GOLD");
+	}
+
+	// RIG AN ELECTION IN OUR CAPITAL
+	else if(m_eType == MINOR_CIV_QUEST_RIG_ELECTION)
+	{
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_RIG_ELECTION");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_RIG_ELECTION");
+	}
+
+	// CAPTURE A CIVILIZATION'S ORIGINAL CAPITAL
+	else if(m_eType == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_CAPTURE_ORIGINAL_CAPITAL");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_CAPTURE_ORIGINAL_CAPITAL");
+		strSummary << strCivKey;
+	}
+
+	// LEAGUE: PROTECT OUR CITY-STATE
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_PROTECT_CITY_STATE)
+	{
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_LEAGUE_PROTECT_CITY_STATE");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_LEAGUE_PROTECT_CITY_STATE");
+	}
+
+	// LEAGUE: SANCTION A CIVILIZATION
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_SANCTION)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_LEAGUE_SANCTION");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_LEAGUE_SANCTION");
+		strSummary << strCivKey;
+	}
+
+	// LEAGUE: REPEAL THE CITY-STATE EMBARGO
+	else if(m_eType == MINOR_CIV_QUEST_LEAGUE_REPEAL_EMBARGO)
+	{
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_LEAGUE_REPEAL_EMBARGO");
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_LEAGUE_REPEAL_EMBARGO");
+	}
+
+	// SIGN A RESEARCH AGREEMENT
+	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		PlayerTypes eTarget = (PlayerTypes) GetPrimaryData();
+		const char* strCivKey = GET_PLAYER(eTarget).getCivilizationShortDescriptionKey();
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_RESEARCH_AGREEMENT");
+		strMessage << strCivKey;
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_RESEARCH_AGREEMENT");
+		strSummary << strCivKey;
 	}
 #if defined(MOD_EVENTS_QUESTS)
 	}
@@ -1961,6 +2656,7 @@ void CvMinorCivAI::Reset()
 		m_aiNumUnitsGifted[iI] = 0;
 		m_aiNumGoldGifted[iI] = 0;
 		m_aiTurnLastBullied[iI] = -1;
+		m_aiTurnLastRiggedElection[iI] = -1;
 		m_aiTurnLastPledged[iI] = -1;
 		m_aiTurnLastBrokePledge[iI] = -1;
 		m_abUnitSpawningDisabled[iI] = false;
@@ -2068,6 +2764,11 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 
 	kStream >> m_aiTurnLastBullied;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// SP extended quests - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastRiggedElection, int, MAX_MAJOR_CIVS, -1);
+#endif
+
 	kStream >> m_aiTurnLastPledged;
 	kStream >> m_aiTurnLastBrokePledge;
 
@@ -2164,6 +2865,11 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	kStream << m_aiNumUnitsGifted;
 	kStream << m_aiNumGoldGifted;
 	kStream << m_aiTurnLastBullied;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// SP extended quests
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastRiggedElection, int, MAX_MAJOR_CIVS);
+#endif
 	kStream << m_aiTurnLastPledged;
 	kStream << m_aiTurnLastBrokePledge;
 	kStream << m_abUnitSpawningDisabled;
@@ -3828,7 +4534,7 @@ void CvMinorCivAI::DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vect
 }
 
 /// Begin a quest, initializing it with data
-void CvMinorCivAI::AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn)
+void CvMinorCivAI::AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn, PlayerTypes eForcedTarget)
 {
 	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
 	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "ePlayer is expected to be within maximum bounds (invalid Index)");
@@ -3849,7 +4555,7 @@ void CvMinorCivAI::AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eTy
 	if(IsActiveQuestForPlayer(ePlayer, eType)) return;
 
 	CvMinorCivQuest newQuest(GetPlayer()->GetID(), ePlayer, eType);
-	newQuest.DoStartQuest(iStartTurn);
+	newQuest.DoStartQuest(iStartTurn, eForcedTarget);
 	m_QuestsGiven[ePlayer].push_back(newQuest);
 
 	// Log quest received
@@ -4583,6 +5289,238 @@ bool CvMinorCivAI::IsValidQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes
 			!GC.getGame().GetGameTrade()->CanCreateTradeRoute(ePlayer,GetPlayer()->GetID(), DOMAIN_SEA))
 			return false;
 	}
+	// RESEARCH A TECH
+	else if(eQuest == MINOR_CIV_QUEST_RESEARCH_TECH)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		TechTypes eTech = GetBestTechForQuest(ePlayer);
+
+		if(eTech == NO_TECH)
+			return false;
+	}
+	// CONSTRUCT A NATIONAL WONDER
+	else if(eQuest == MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		BuildingTypes eWonder = GetBestNationalWonderForQuest(ePlayer);
+
+		if(eWonder == NO_BUILDING)
+			return false;
+	}
+	// SPREAD A BUILDING
+	else if(eQuest == MINOR_CIV_QUEST_SPREAD_BUILDING)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		BuildingTypes eBuilding = GetBestBuildingForQuest(ePlayer);
+
+		if(eBuilding == NO_BUILDING)
+			return false;
+	}
+	// FIND A CITY-STATE
+	else if(eQuest == MINOR_CIV_QUEST_FIND_CITY_STATE)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		// Only before the industrial era
+		if(GET_PLAYER(ePlayer).GetCurrentEra() >= (EraTypes) GC.getInfoTypeForString("ERA_INDUSTRIAL", true))
+			return false;
+
+		PlayerTypes eCityState = GetBestCityStateToFind(ePlayer);
+
+		if(eCityState == NO_PLAYER)
+			return false;
+	}
+	// DISCONNECT A TRADE ROUTE
+	else if(eQuest == MINOR_CIV_QUEST_DISCONNECT_TRADE_ROUTE)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		// This player must currently trade with some other city-state - that is the route we
+		// want them to cut. A route to us does not count, since we are the one asking
+		if(GetBestTradeRouteTargetForQuest(ePlayer) == NO_PLAYER)
+			return false;
+	}
+	// BECOME OUR ALLY
+	else if(eQuest == MINOR_CIV_QUEST_BECOME_ALLY)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		// This player must not already be our ally
+		if(IsAllies(ePlayer))
+			return false;
+
+		// Somebody else must currently be our ally
+		if(GetAlly() == NO_PLAYER)
+			return false;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// The whole point of the quest is to grow our alliance, so only ask a major who can
+		// actually afford another ally: diplomatic prestige must have at least 2 points to spare
+		CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+		int iSparePrestige = kPlayer.GetDiplomaticPrestige() - (kPlayer.GetNumCityStateAllies() - kPlayer.GetPrestigeExemptAllyCount());
+		if (iSparePrestige < 2)
+			return false;
+#endif
+	}
+	// DECLARE WAR ON A TARGET
+	else if(eQuest == MINOR_CIV_QUEST_DECLARE_WAR)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		PlayerTypes eTarget = GetBestWarTargetForQuest(ePlayer);
+
+		if(eTarget == NO_PLAYER)
+			return false;
+	}
+	// DONATE A LARGE SUM OF GOLD
+	else if(eQuest == MINOR_CIV_QUEST_DONATE_GOLD)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		// This player must be able to afford the donation
+		if(GET_PLAYER(ePlayer).GetTreasury()->GetGold() < 5000)
+			return false;
+	}
+	// RIG AN ELECTION IN OUR CAPITAL
+	else if(eQuest == MINOR_CIV_QUEST_RIG_ELECTION)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		// This player must have at least one spy
+		if(GET_PLAYER(ePlayer).GetEspionage() == NULL || GET_PLAYER(ePlayer).GetEspionage()->GetNumSpies() <= 0)
+			return false;
+
+		// This player must not already be our ally
+		if(IsAllies(ePlayer))
+			return false;
+
+		// Elections only start mattering once the world reaches the Enlightenment era
+		if(GET_PLAYER(ePlayer).GetCurrentEra() < (EraTypes) GC.getInfoTypeForString("ERA_ENLIGHTENMENT", true))
+			return false;
+	}
+	// CAPTURE A CIVILIZATION'S ORIGINAL CAPITAL
+	else if(eQuest == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		// The master spy reward is unique for the whole game - never hand this quest out again
+		if(GC.getGame().IsMasterSpyQuestAwarded())
+			return false;
+
+		PlayerTypes eTarget = GetBestOriginalCapitalTargetForQuest(ePlayer);
+
+		if(eTarget == NO_PLAYER)
+			return false;
+	}
+	// LEAGUE: DECLARE OUR CITY-STATE UNDER INTERNATIONAL PROTECTION
+	else if(eQuest == MINOR_CIV_QUEST_LEAGUE_PROTECT_CITY_STATE)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+		if(pLeagues == NULL)
+			return false;
+
+		CvLeague* pLeague = pLeagues->GetActiveLeague();
+		if(pLeague == NULL)
+			return false;
+
+		// This player must be a member of the League
+		if(!pLeague->IsMember(ePlayer))
+			return false;
+
+		// We must not already be protected
+		if(pLeague->IsCityStateUnderInternationalProtection(GetPlayer()->GetID()))
+			return false;
+	}
+	// LEAGUE: SANCTION A CIVILIZATION
+	else if(eQuest == MINOR_CIV_QUEST_LEAGUE_SANCTION)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+		if(pLeagues == NULL)
+			return false;
+
+		CvLeague* pLeague = pLeagues->GetActiveLeague();
+		if(pLeague == NULL)
+			return false;
+
+		// This player must be a member of the League
+		if(!pLeague->IsMember(ePlayer))
+			return false;
+
+		PlayerTypes eTarget = GetBestWarTargetForQuest(ePlayer);
+
+		if(eTarget == NO_PLAYER)
+			return false;
+
+		// The target must not already be sanctioned
+		if(pLeague->IsPlayerEmbargoed(eTarget))
+			return false;
+	}
+	// LEAGUE: REPEAL THE CITY-STATE EMBARGO
+	else if(eQuest == MINOR_CIV_QUEST_LEAGUE_REPEAL_EMBARGO)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+		if(pLeagues == NULL)
+			return false;
+
+		CvLeague* pLeague = pLeagues->GetActiveLeague();
+		if(pLeague == NULL)
+			return false;
+
+		// This player must be a member of the League
+		if(!pLeague->IsMember(ePlayer))
+			return false;
+
+		// The city-state embargo must currently be in effect
+		if(!pLeague->IsPlayerEmbargoed(GetPlayer()->GetID()))
+			return false;
+	}
+	// SIGN A RESEARCH AGREEMENT WITH ANOTHER CIVILIZATION
+	else if(eQuest == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		// This player must not have bullied us recently
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		PlayerTypes eTarget = GetBestResearchAgreementTargetForQuest(ePlayer);
+
+		if(eTarget == NO_PLAYER)
+			return false;
+	}
 #if defined(MOD_EVENTS_QUESTS)
 	}
 #endif
@@ -4666,6 +5604,24 @@ bool CvMinorCivAI::IsValidQuestCopyForPlayer(PlayerTypes ePlayer, CvMinorCivQues
 		if(IsRecentlyBulliedByMajor(ePlayer))
 			return false;
 	}
+	// CAPTURE A CIVILIZATION'S ORIGINAL CAPITAL
+	else if(eQuestType == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+	{
+		// Full validity check, which also enforces the unique master spy reward
+		return IsValidQuestForPlayer(ePlayer, eQuestType);
+	}
+	// DECLARE WAR ON A PLAYER
+	else if(eQuestType == MINOR_CIV_QUEST_DECLARE_WAR)
+	{
+		// Full validity check (target selection is not re-rolled, the copy keeps the same target)
+		return IsValidQuestForPlayer(ePlayer, eQuestType);
+	}
+	// LEAGUE: SANCTION A PLAYER
+	else if(eQuestType == MINOR_CIV_QUEST_LEAGUE_SANCTION)
+	{
+		// Full validity check (target selection is not re-rolled, the copy keeps the same target)
+		return IsValidQuestForPlayer(ePlayer, eQuestType);
+	}
 	// Personal quests - This should not be done, just create a new quest from scratch!!
 	else
 	{
@@ -4703,6 +5659,13 @@ bool CvMinorCivAI::IsGlobalQuest(MinorCivQuestTypes eQuest) const
 	if(eQuest == MINOR_CIV_QUEST_INVEST)
 		return true;
 
+	// SP extended quests
+	if(eQuest == MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL)
+		return true;
+
+	if(eQuest == MINOR_CIV_QUEST_LEAGUE_SANCTION)
+		return true;
+
 #if defined(MOD_EVENTS_QUESTS)
 	}
 #endif
@@ -4712,6 +5675,11 @@ bool CvMinorCivAI::IsGlobalQuest(MinorCivQuestTypes eQuest) const
 
 bool CvMinorCivAI::IsPersonalQuest(MinorCivQuestTypes eQuest) const
 {
+	// SP extended quests: the declare war quest belongs to neither pool. Triggered by being
+	// attacked rather than by the quest countdown, it must not occupy a personal quest slot
+	if(eQuest == MINOR_CIV_QUEST_DECLARE_WAR)
+		return false;
+
 	return (!IsGlobalQuest(eQuest));
 }
 
@@ -5197,6 +6165,24 @@ void CvMinorCivAI::EndAllActiveQuestsForPlayer(PlayerTypes ePlayer)
 	//antonjs: todo: instead, call for cancel quest (with flag for no notif)
 	if(GetNumActiveQuestsForPlayer(ePlayer) > 0)
 		m_QuestsGiven[ePlayer].clear();
+}
+
+// SP extended quests: silently drop a single active quest of the given type (no notification, no reward)
+void CvMinorCivAI::CancelQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType)
+{
+	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
+	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "ePlayer is expected to be within maximum bounds (invalid Index)");
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS) return;
+
+	QuestListForPlayer::iterator itr_quest;
+	for (itr_quest = m_QuestsGiven[ePlayer].begin(); itr_quest != m_QuestsGiven[ePlayer].end(); itr_quest++)
+	{
+		if (itr_quest->GetType() == eType)
+		{
+			m_QuestsGiven[ePlayer].erase(itr_quest);
+			return;
+		}
+	}
 }
 
 int CvMinorCivAI::GetNumDisplayedQuestsForPlayer(PlayerTypes ePlayer)
@@ -5820,6 +6806,328 @@ BuildingTypes CvMinorCivAI::GetBestWonderForQuest(PlayerTypes ePlayer)
 	eBestWonder = veValidBuildings[iRandIndex];
 
 	return eBestWonder;
+}
+
+/// Find a tech that a Minor would want a major to research
+TechTypes CvMinorCivAI::GetBestTechForQuest(PlayerTypes ePlayer)
+{
+	TechTypes eBestTech = NO_TECH;
+
+	FStaticVector<TechTypes, 100, true, c_eCiv5GameplayDLL, 0> veValidTechs;
+
+	// Loop through all Techs and see if they're useful
+	for(int iTechLoop = 0; iTechLoop < GC.getNumTechInfos(); iTechLoop++)
+	{
+		const TechTypes eTech = static_cast<TechTypes>(iTechLoop);
+		CvTechEntry* pkTechInfo = GC.getTechInfo(eTech);
+
+		// Skip if NULL
+		if(pkTechInfo == NULL)
+			continue;
+
+		// Player must not already have it
+		if(GET_PLAYER(ePlayer).HasTech(eTech))
+			continue;
+
+		// SP extended quests: the quest asks for a breakthrough in the next era, so only techs
+		// from the era immediately after the player's current one are valid targets. The target
+		// does not have to be researchable yet - a tech still behind its own prerequisites is
+		// still a fair target, since the quest is meant to make the player work toward it.
+		if(pkTechInfo->GetEra() != GET_PLAYER(ePlayer).GetCurrentEra() + 1)
+			continue;
+
+		veValidTechs.push_back(eTech);
+	}
+
+	// Didn't find any valid Techs
+	if(veValidTechs.size() == 0)
+	{
+		return NO_TECH;
+	}
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidTechs.size(), "Finding random Tech for Minor to give out a quest to research.");
+	eBestTech = veValidTechs[iRandIndex];
+
+	return eBestTech;
+}
+
+/// Best national wonder for a Quest given to ePlayer?
+BuildingTypes CvMinorCivAI::GetBestNationalWonderForQuest(PlayerTypes ePlayer)
+{
+	FStaticVector<BuildingTypes, 50, true, c_eCiv5GameplayDLL, 0> veValidBuildings;
+
+	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+
+		if(pkBuildingInfo == NULL)
+			continue;
+
+		// Must be a national wonder
+		if(!isNationalWonderClass(pkBuildingInfo->GetBuildingClassInfo()))
+			continue;
+
+		// Must be able to build it
+		if(!GET_PLAYER(ePlayer).canConstruct(eBuilding))
+			continue;
+
+		veValidBuildings.push_back(eBuilding);
+	}
+
+	if(veValidBuildings.size() == 0)
+		return NO_BUILDING;
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidBuildings.size(), "Finding random National Wonder for Minor to give out a quest to construct.");
+	return veValidBuildings[iRandIndex];
+}
+
+/// Best ordinary building for a Quest given to ePlayer (one that any city could construct)?
+BuildingTypes CvMinorCivAI::GetBestBuildingForQuest(PlayerTypes ePlayer)
+{
+	FStaticVector<BuildingTypes, 100, true, c_eCiv5GameplayDLL, 0> veValidBuildings;
+
+	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+
+		if(pkBuildingInfo == NULL)
+			continue;
+
+		// No wonders of any kind
+		if(isWorldWonderClass(pkBuildingInfo->GetBuildingClassInfo()) || isNationalWonderClass(pkBuildingInfo->GetBuildingClassInfo()))
+			continue;
+
+		// Must be constructible in any city - no water/river/capital-only requirements
+		if(pkBuildingInfo->IsWater() || pkBuildingInfo->IsRiver() || pkBuildingInfo->IsCapital() || pkBuildingInfo->IsCapitalOnly())
+			continue;
+
+		// Must not require a local resource
+		if(!pkBuildingInfo->GetLocalResourceAnd().empty() || !pkBuildingInfo->GetLocalResourceOr().empty())
+			continue;
+
+		// Must not require an empire resource
+		if(!pkBuildingInfo->GetEmpireResourceAnd().empty() || !pkBuildingInfo->GetEmpireResourceOr().empty())
+			continue;
+
+		// Must be able to build it
+		if(!GET_PLAYER(ePlayer).canConstruct(eBuilding))
+			continue;
+
+		veValidBuildings.push_back(eBuilding);
+	}
+
+	if(veValidBuildings.size() == 0)
+		return NO_BUILDING;
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidBuildings.size(), "Finding random Building for Minor to give out a quest to construct.");
+	return veValidBuildings[iRandIndex];
+}
+
+/// Best city-state for a "find" Quest given to ePlayer (one whose territory they have not yet discovered)?
+PlayerTypes CvMinorCivAI::GetBestCityStateToFind(PlayerTypes ePlayer)
+{
+	FStaticVector<PlayerTypes, MAX_CIV_PLAYERS, true, c_eCiv5GameplayDLL, 0> veValidMinors;
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_CIV_PLAYERS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
+		CvPlayer* pLoopPlayer = &GET_PLAYER(eLoopPlayer);
+
+		if(!pLoopPlayer->isAlive() || !pLoopPlayer->isMinorCiv())
+			continue;
+
+		// Skip ourselves
+		if(eLoopPlayer == GetPlayer()->GetID())
+			continue;
+
+		// Must not have found their territory yet
+		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).IsHasFoundPlayersTerritory(eLoopPlayer))
+			continue;
+
+		veValidMinors.push_back(eLoopPlayer);
+	}
+
+	if(veValidMinors.size() == 0)
+		return NO_PLAYER;
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidMinors.size(), "Finding random City-State for Minor to give out a quest to find.");
+	return veValidMinors[iRandIndex];
+}
+
+/// SP extended quests: find a city-state the major currently trades with, other than us.
+/// We resent seeing a rival's economy propped up by the major's caravans, so the quest asks
+/// the major to cut that route - not the route to us (the original quest did the latter).
+PlayerTypes CvMinorCivAI::GetBestTradeRouteTargetForQuest(PlayerTypes ePlayer)
+{
+	FStaticVector<PlayerTypes, MAX_CIV_PLAYERS, true, c_eCiv5GameplayDLL, 0> veValidMinors;
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_CIV_PLAYERS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
+		CvPlayer* pLoopPlayer = &GET_PLAYER(eLoopPlayer);
+
+		if(!pLoopPlayer->isAlive() || !pLoopPlayer->isMinorCiv())
+			continue;
+
+		// Skip ourselves - asking the major to cut the route to the very civ asking makes no sense
+		if(eLoopPlayer == GetPlayer()->GetID())
+			continue;
+
+		// The major must currently run a trade route to them
+		if(!GC.getGame().GetGameTrade()->IsPlayerConnectedToPlayer(ePlayer, eLoopPlayer))
+			continue;
+
+		veValidMinors.push_back(eLoopPlayer);
+	}
+
+	if(veValidMinors.size() == 0)
+		return NO_PLAYER;
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidMinors.size(), "Finding random City-State the major trades with for a disconnect trade route quest.");
+	return veValidMinors[iRandIndex];
+}
+
+/// Find a player who is at war with us, so we can ask a major to declare war on them
+PlayerTypes CvMinorCivAI::GetBestWarTargetForQuest(PlayerTypes ePlayer)
+{
+	FStaticVector<PlayerTypes, MAX_CIV_PLAYERS, true, c_eCiv5GameplayDLL, 0> veValidPlayers;
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
+		CvPlayer* pLoopPlayer = &GET_PLAYER(eLoopPlayer);
+
+		if(!pLoopPlayer->isAlive())
+			continue;
+
+		// Skip the player we are asking
+		if(eLoopPlayer == ePlayer)
+			continue;
+
+		// Must be at war with us
+		if(!GET_TEAM(GetPlayer()->getTeam()).isAtWar(pLoopPlayer->getTeam()))
+			continue;
+
+		// The player we ask must have met them
+		if(!GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isHasMet(pLoopPlayer->getTeam()))
+			continue;
+
+		// SP extended quests: the quest is only handed to civs that have not declared war on them
+		// yet - joining the war is the whole point, so a civ already fighting them is skipped
+		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(pLoopPlayer->getTeam()))
+			continue;
+
+		veValidPlayers.push_back(eLoopPlayer);
+	}
+
+	if(veValidPlayers.size() == 0)
+		return NO_PLAYER;
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidPlayers.size(), "Finding random player for Minor to give out a quest to declare war on.");
+	return veValidPlayers[iRandIndex];
+}
+
+/// Find a civilization whose original capital a major could capture for us
+PlayerTypes CvMinorCivAI::GetBestOriginalCapitalTargetForQuest(PlayerTypes ePlayer)
+{
+	FStaticVector<PlayerTypes, MAX_CIV_PLAYERS, true, c_eCiv5GameplayDLL, 0> veValidPlayers;
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
+		CvPlayer* pLoopPlayer = &GET_PLAYER(eLoopPlayer);
+
+		if(!pLoopPlayer->isAlive())
+			continue;
+
+		// Skip the player we are asking
+		if(eLoopPlayer == ePlayer)
+			continue;
+
+		// Must be at war with us
+		if(!GET_TEAM(GetPlayer()->getTeam()).isAtWar(pLoopPlayer->getTeam()))
+			continue;
+
+		// The player we ask must have met them
+		if(!GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isHasMet(pLoopPlayer->getTeam()))
+			continue;
+
+		// The player we ask must already be at war with them - they are the one who would
+		// have to capture that capital, so handing out the quest otherwise makes no sense
+		if(!GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(pLoopPlayer->getTeam()))
+			continue;
+
+		// They must still have an original capital on the map
+		if(pLoopPlayer->GetOriginalCapitalX() < 0 || pLoopPlayer->GetOriginalCapitalY() < 0)
+			continue;
+
+		// ...and that capital must still be standing (the coordinates are never reset once set,
+		// so a razed capital would otherwise be offered as a target that completes instantly)
+		CvPlot* pCapitalPlot = GC.getMap().plot(pLoopPlayer->GetOriginalCapitalX(), pLoopPlayer->GetOriginalCapitalY());
+		if(pCapitalPlot == NULL || pCapitalPlot->getPlotCity() == NULL)
+			continue;
+
+		veValidPlayers.push_back(eLoopPlayer);
+	}
+
+	if(veValidPlayers.size() == 0)
+		return NO_PLAYER;
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidPlayers.size(), "Finding random player for Minor to give out a quest to capture an original capital.");
+	return veValidPlayers[iRandIndex];
+}
+
+/// Find a civilization a major could sign a research agreement with for us
+PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePlayer)
+{
+	// The player we ask must have enough influence with us
+	if(GetEffectiveFriendshipWithMajor(ePlayer) <= 60)
+		return NO_PLAYER;
+
+	FStaticVector<PlayerTypes, MAX_CIV_PLAYERS, true, c_eCiv5GameplayDLL, 0> veValidPlayers;
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
+		CvPlayer* pLoopPlayer = &GET_PLAYER(eLoopPlayer);
+
+		if(!pLoopPlayer->isAlive())
+			continue;
+
+		// Skip the player we are asking
+		if(eLoopPlayer == ePlayer)
+			continue;
+
+		// The target must not be at war with us
+		if(GET_TEAM(GetPlayer()->getTeam()).isAtWar(pLoopPlayer->getTeam()))
+			continue;
+
+		// The target must not be at war with the player we ask
+		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(pLoopPlayer->getTeam()))
+			continue;
+
+		// The player we ask must have met them
+		if(!GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isHasMet(pLoopPlayer->getTeam()))
+			continue;
+
+		// The target must also have enough influence with us
+		if(GetEffectiveFriendshipWithMajor(eLoopPlayer) <= 60)
+			continue;
+
+		// They must not already share a research agreement
+		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).IsHasResearchAgreement(pLoopPlayer->getTeam()))
+			continue;
+
+		veValidPlayers.push_back(eLoopPlayer);
+	}
+
+	if(veValidPlayers.size() == 0)
+		return NO_PLAYER;
+
+	int iRandIndex = GC.getGame().getJonRandNum(veValidPlayers.size(), "Finding random player for Minor to give out a quest to sign a research agreement.");
+	return veValidPlayers[iRandIndex];
 }
 
 /// Find a Great Person that a Minor would want a major to spawn
@@ -10844,6 +12152,24 @@ void CvMinorCivAI::SetTurnLastBulliedByMajor(PlayerTypes ePlayer, int iTurn)
 	m_aiTurnLastBullied[ePlayer] = iTurn;
 }
 
+int CvMinorCivAI::GetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer) const
+{
+	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
+	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "ePlayer is expected to be within maximum bounds (invalid Index)");
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS) return -1;
+
+	return m_aiTurnLastRiggedElection[ePlayer];
+}
+
+void CvMinorCivAI::SetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer, int iTurn)
+{
+	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
+	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "ePlayer is expected to be within maximum bounds (invalid Index)");
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS) return;
+
+	m_aiTurnLastRiggedElection[ePlayer] = iTurn;
+}
+
 // ****************
 // *** Election ***
 // ****************
@@ -10894,6 +12220,12 @@ void CvMinorCivAI::DoElection()
 			{
 				continue;
 			}
+
+			// SP extended quests: this major resolved an election rig here on election day.
+			// Winning is irrelevant - the quest counts the attempt itself
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			SetTurnLastRiggedElectionByMajor(eEspionagePlayer, GC.getGame().getGameTurn());
+#endif
 
 			apSpy[ui] = &(pPlayerEspionage->m_aSpyList[iSpyID]);
 
@@ -11391,6 +12723,10 @@ void CvMinorCivAI::DoFaithGiftFromMajor(PlayerTypes eMajor, int iEquivalentGold)
 	kMajor.ChangeCSUAFaithInfluencePurchaseUsed(1);
 	ChangeFriendshipWithMajor(eMajor, iFriendshipChange);
 
+	// SP extended quests: a faith gift is a gold gift paid in faith, so it counts towards
+	// gold-donation quests (e.g. the 5000 gold donation quest) at its equivalent value
+	ChangeNumGoldGifted(eMajor, iEquivalentGold);
+
 	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
 }
 
@@ -11733,11 +13069,53 @@ bool CvMinorCivAI::IsPeaceBlocked(TeamTypes eTeam) const
 }
 
 /// eTeam declared war on us
+/// SP extended quests: hand out the "declare war on our aggressor" quest. This quest is not part
+/// of the regular pool - it fires the moment we are attacked instead of on the quest countdown,
+/// and it never occupies a personal or global quest slot.
+void CvMinorCivAI::DoStartDeclareWarQuests(TeamTypes eAttackerTeam)
+{
+	PlayerTypes eAttacker = GET_TEAM(eAttackerTeam).getLeaderID();
+
+	if(eAttacker == NO_PLAYER)
+		return;
+
+	// Only a major civ can be the aggressor we ask our friends to fight
+	if(GET_PLAYER(eAttacker).isMinorCiv())
+		return;
+
+	if(!IsEnabledQuest(MINOR_CIV_QUEST_DECLARE_WAR))
+		return;
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		PlayerTypes ePlayer = (PlayerTypes) iPlayerLoop;
+
+		if(!GET_PLAYER(ePlayer).isAlive())
+			continue;
+
+		// We can only ask civs we have met
+		if(!IsHasMetPlayer(ePlayer))
+			continue;
+
+		// Already fighting them - joining the war is the whole point, so there is nothing to ask
+		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(eAttackerTeam))
+			continue;
+
+		if(!IsValidQuestForPlayer(ePlayer, MINOR_CIV_QUEST_DECLARE_WAR))
+			continue;
+
+		AddQuestForPlayer(ePlayer, MINOR_CIV_QUEST_DECLARE_WAR, GC.getGame().getGameTurn(), eAttacker);
+	}
+}
+
 void CvMinorCivAI::DoTeamDeclaredWarOnMe(TeamTypes eEnemyTeam)
 {
 	CvTeam* pEnemyTeam = &GET_TEAM(eEnemyTeam);
 	CivsList veMinorsNowWary;
 	int iRand;
+
+	// SP extended quests: being attacked is what triggers the declare war quest
+	DoStartDeclareWarQuests(eEnemyTeam);
 
 	// Since eEnemyTeam was the aggressor, drop the base influence to the minimum
 	for(int iEnemyMajorLoop = 0; iEnemyMajorLoop < MAX_MAJOR_CIVS; iEnemyMajorLoop++)

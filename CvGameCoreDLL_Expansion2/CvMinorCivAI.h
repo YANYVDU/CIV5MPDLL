@@ -71,6 +71,22 @@ enum MinorCivQuestTypes
     MINOR_CIV_QUEST_SPREAD_RELIGION,
 	MINOR_CIV_QUEST_TRADE_ROUTE,
 
+	// SP extended quests - the ID values MUST match the rows in the Quests table
+	MINOR_CIV_QUEST_RESEARCH_TECH,
+	MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER,
+	MINOR_CIV_QUEST_SPREAD_BUILDING,
+	MINOR_CIV_QUEST_FIND_CITY_STATE,
+	MINOR_CIV_QUEST_DISCONNECT_TRADE_ROUTE,
+	MINOR_CIV_QUEST_BECOME_ALLY,
+	MINOR_CIV_QUEST_RIG_ELECTION,
+	MINOR_CIV_QUEST_DECLARE_WAR,
+	MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL,
+	MINOR_CIV_QUEST_LEAGUE_PROTECT_CITY_STATE,
+	MINOR_CIV_QUEST_LEAGUE_SANCTION,
+	MINOR_CIV_QUEST_LEAGUE_REPEAL_EMBARGO,
+	MINOR_CIV_QUEST_DONATE_GOLD,
+	MINOR_CIV_QUEST_RESEARCH_AGREEMENT,
+
 	NUM_MINOR_CIV_QUEST_TYPES,
 };
 FDataStream& operator<<(FDataStream&, const MinorCivQuestTypes&);
@@ -138,7 +154,7 @@ public:
 	void SetHandled(bool bValue);
 
 	// Starting and finishing
-	void DoStartQuest(int iStartTurn);
+	void DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget = NO_PLAYER);
 	void DoStartQuestUsingExistingData(CvMinorCivQuest* pExistingQuest);
 	bool DoFinishQuest();
 	bool DoCancelQuest();
@@ -286,7 +302,7 @@ public:
 	// Super Power V11: pveExclude (optional) forbids handing back quest types the caller just
 	// dropped, used by the aid-point quest reroll so a reroll cannot return the old quests.
 	void DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude = NULL);
-	void AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn);
+	void AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn, PlayerTypes eForcedTarget = NO_PLAYER);
 	void AddQuestCopyForPlayer(PlayerTypes ePlayer, CvMinorCivQuest* pQuest);
 	void DoTestQuestsOnFirstContact(PlayerTypes eMajor);
 
@@ -313,6 +329,9 @@ public:
 	int GetNumActivePersonalQuestsForPlayer(PlayerTypes ePlayer) const;
 	bool IsActiveQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType);
 	void EndAllActiveQuestsForPlayer(PlayerTypes ePlayer);
+
+	// SP extended quests: drop a single active quest of the given type from the player's list
+	void CancelQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType);
 
 	int GetNumDisplayedQuestsForPlayer(PlayerTypes ePlayer);
 	bool IsDisplayedQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType);
@@ -347,6 +366,14 @@ public:
 	ResourceTypes GetNearbyResourceForQuest(PlayerTypes ePlayer);
 	BuildingTypes GetBestWonderForQuest(PlayerTypes ePlayer);
 	UnitTypes GetBestGreatPersonForQuest(PlayerTypes ePlayer);
+	TechTypes GetBestTechForQuest(PlayerTypes ePlayer);
+	BuildingTypes GetBestNationalWonderForQuest(PlayerTypes ePlayer);
+	BuildingTypes GetBestBuildingForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestCityStateToFind(PlayerTypes ePlayer);
+	PlayerTypes GetBestTradeRouteTargetForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestWarTargetForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestOriginalCapitalTargetForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestResearchAgreementTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestCityStateTarget(PlayerTypes eForPlayer);
 	PlayerTypes GetMostRecentBullyForQuest() const;
 	bool IsWantsMinorDead(PlayerTypes eMinor);
@@ -586,6 +613,10 @@ public:
 	int GetTurnLastBulliedByMajor(PlayerTypes ePlayer) const;
 	void SetTurnLastBulliedByMajor(PlayerTypes ePlayer, int iTurn);
 
+	// SP extended quests: turn on which this major last staged a coup against us (-1 = never)
+	int GetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer) const;
+	void SetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer, int iTurn);
+
 	// ****************
 	// *** Election ***
 	// ****************
@@ -622,6 +653,11 @@ public:
 	bool IsPeaceBlocked(TeamTypes eTeam) const;
 
 	void DoTeamDeclaredWarOnMe(TeamTypes eEnemyTeam);
+
+	// SP extended quests: the "declare war on our aggressor" quest is not part of the regular
+	// quest pool. It is handed out the moment we are attacked, to every met major not already
+	// fighting the aggressor, and never competes for a personal or global quest slot.
+	void DoStartDeclareWarQuests(TeamTypes eAttackerTeam);
 	bool IsPermanentWar(TeamTypes eTeam) const;
 	void SetPermanentWar(TeamTypes eTeam, bool bValue);
 
@@ -683,6 +719,7 @@ private:
 	int m_aiNumUnitsGifted[MAX_MAJOR_CIVS];
 	int m_aiNumGoldGifted[MAX_MAJOR_CIVS];
 	int m_aiTurnLastBullied[MAX_MAJOR_CIVS];
+	int m_aiTurnLastRiggedElection[MAX_MAJOR_CIVS]; // SP extended quests: last turn a major staged a coup here
 	int m_aiTurnLastPledged[MAX_MAJOR_CIVS];
 	int m_aiTurnLastBrokePledge[MAX_MAJOR_CIVS];
 	bool m_abUnitSpawningDisabled[MAX_MAJOR_CIVS];

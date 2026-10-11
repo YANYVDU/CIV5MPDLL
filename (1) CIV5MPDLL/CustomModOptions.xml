@@ -565,7 +565,7 @@
 	<!--   GameEvents.QuestSendNotification.Add(function(iMajor, iMinor, iQuest, iStartTurn, iEndTurn, iData1, iData2, bStarted, bFinished, sNames) end) -->
 	<!--   GameEvents.QuestContestValue.Add(function(iMajor, iMinor, iQuest) return 0 end) -->
 	<!--   pMajor:AddQuestNotification(iCS, sMessage, sSummary, iPlotX=-1, iPlotY=-1, bNewQuest=false) -->
-	<Row Class="3" Name="EVENTS_QUESTS" Value="0" DbUpdates="1"/>
+	<Row Class="3" Name="EVENTS_QUESTS" Value="1" DbUpdates="1"/>
 
     <!-- Events sent by Barbarians (v68) -->
     <!--   GameEvents.BarbariansCanFoundCamp.Add(function(iPlotX, iPlotY) return true end) -->

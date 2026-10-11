@@ -3617,6 +3617,82 @@ MajorCivApproachTypes CvDiplomacyAI::GetBestApproachTowardsMajorCiv(PlayerTypes 
 	}
 
 	////////////////////////////////////
+	// SP: CITY-STATE QUESTS AIMED AT THIS PLAYER
+	//
+	// Several of the SP extended quests ask a major civ to take a hostile action against a
+	// specific player, and that player is recorded in the quest data. Honouring those requests
+	// has to cost the AI something or it would accept them for free, so an AI that holds such a
+	// quest weighs the target as a worse neighbour until the quest is resolved.
+	//
+	// Placed after the multiplicative adjustments above (war projection, distance, peace treaty)
+	// so the added weight is not scaled down by them. Magnitudes follow the regular signals in
+	// this function: a single quest is worth roughly what DENOUNCED is worth, and holding several
+	// at once stacks.
+	////////////////////////////////////
+
+	int iNumQuestsAgainstWar = 0;
+	int iNumQuestsAgainstHostile = 0;
+
+	for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		PlayerTypes eLoopMinor = (PlayerTypes) iMinorLoop;
+
+		if(!GET_PLAYER(eLoopMinor).isAlive())
+			continue;
+
+		if(!GET_PLAYER(eLoopMinor).isMinorCiv())
+			continue;
+
+		CvMinorCivAI* pMinorCivAI = GET_PLAYER(eLoopMinor).GetMinorCivAI();
+
+		if(pMinorCivAI == NULL)
+			continue;
+
+		// We are not going to follow the lead of a city-state we already mean to conquer or bully
+		MinorCivApproachTypes eApproachToMinor = GetMinorCivApproach(eLoopMinor);
+		if(eApproachToMinor == MINOR_CIV_APPROACH_CONQUEST || eApproachToMinor == MINOR_CIV_APPROACH_BULLY)
+			continue;
+
+		// DECLARE_WAR: we were asked to join a war against this player
+		if(pMinorCivAI->IsActiveQuestForPlayer(eMyPlayer, MINOR_CIV_QUEST_DECLARE_WAR))
+		{
+			if(pMinorCivAI->GetQuestData1(eMyPlayer, MINOR_CIV_QUEST_DECLARE_WAR) == ePlayer)
+			{
+				iNumQuestsAgainstWar++;
+			}
+		}
+
+		// LEAGUE_SANCTION: we were asked to hold a trade embargo against this player
+		if(pMinorCivAI->IsActiveQuestForPlayer(eMyPlayer, MINOR_CIV_QUEST_LEAGUE_SANCTION))
+		{
+			if(pMinorCivAI->GetQuestData1(eMyPlayer, MINOR_CIV_QUEST_LEAGUE_SANCTION) == ePlayer)
+			{
+				iNumQuestsAgainstHostile++;
+			}
+		}
+
+		// DENOUNCE_MAJOR: we were asked to publicly denounce this player
+		if(pMinorCivAI->IsActiveQuestForPlayer(eMyPlayer, MINOR_CIV_QUEST_DENOUNCE_MAJOR))
+		{
+			if(pMinorCivAI->GetQuestData1(eMyPlayer, MINOR_CIV_QUEST_DENOUNCE_MAJOR) == ePlayer)
+			{
+				iNumQuestsAgainstHostile++;
+			}
+		}
+	}
+
+	if(iNumQuestsAgainstWar > 0)
+	{
+		viApproachWeights[MAJOR_CIV_APPROACH_WAR] += /*8*/ 8 * iNumQuestsAgainstWar;
+		viApproachWeights[MAJOR_CIV_APPROACH_HOSTILE] += /*4*/ 4 * iNumQuestsAgainstWar;
+	}
+
+	if(iNumQuestsAgainstHostile > 0)
+	{
+		viApproachWeights[MAJOR_CIV_APPROACH_HOSTILE] += /*6*/ 6 * iNumQuestsAgainstHostile;
+	}
+
+	////////////////////////////////////
 	// DUEL - If there's only 2 players in this game, no friendly or deceptive
 	////////////////////////////////////
 
