@@ -3934,7 +3934,15 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 			{
 				if (GET_PLAYER(ePlayer).GetEspionage()->IsMyDiplomatVisitingThem(eMajor))
 				{
-					iDiplomatVotes += GET_PLAYER(ePlayer).GetExtraVotesPerDiplomat();
+					// SP: a Master Spy posted as a diplomat is worth 3 votes instead of the usual 1.
+					// Gated on the base value so a diplomat still yields nothing before Globalization.
+					int iVotesFromDiplomat = GET_PLAYER(ePlayer).GetExtraVotesPerDiplomat();
+					if (iVotesFromDiplomat > 0
+						&& GET_PLAYER(ePlayer).GetEspionage()->HasMasterSpyDiplomatVisitingThem(eMajor))
+					{
+						iVotesFromDiplomat = 3;
+					}
+					iDiplomatVotes += iVotesFromDiplomat;
 				}
 			}
 		}

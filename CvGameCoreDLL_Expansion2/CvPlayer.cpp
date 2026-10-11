@@ -19849,6 +19849,14 @@ int CvPlayer::GetImmigrationRate(PlayerTypes eTargetPlayer) const
 	iMoveOutCounterMod += kMoveInPlayer->GetCSUAImmigrationRateModifier();
 	iMoveOutCounterMod -= kMoveOutPlayer->GetCSUAEmigrationRateModifier();
 
+	//Master Spy diplomat: a Master Spy stationed in the capital of the country the settlers come from
+	//doubles the flow into us. The receiving side is always the one employing the diplomat, so the
+	//check is on kMoveInPlayer against the source player.
+	if (kMoveInPlayer->GetEspionage()->HasMasterSpyDiplomatVisitingThem(eMoveOutPlayer))
+	{
+		iMoveOutCounterMod += 100;
+	}
+
 	//Trait Modifier
 	if(iInExcessHappiness > iOutExcessHappiness)
 	{
@@ -32910,6 +32918,24 @@ int CvPlayer::GetDiplomaticPrestige() const
 		}
 	}
 #endif
+
+	//Master Spy diplomat: every Master Spy we keep stationed abroad as a diplomat is worth +1 prestige.
+	//Computed on the fly so it tracks the diplomat's presence immediately, with no stored state.
+	CvPlayerEspionage* pMasterSpyEspionage = GetEspionage();
+	if (pMasterSpyEspionage != NULL)
+	{
+		for (int iLoop = 0; iLoop < MAX_MAJOR_CIVS; iLoop++)
+		{
+			PlayerTypes eLoopMajor = (PlayerTypes) iLoop;
+			if (eLoopMajor == GetID())
+				continue;
+
+			if (GET_PLAYER(eLoopMajor).isAlive() && pMasterSpyEspionage->HasMasterSpyDiplomatVisitingThem(eLoopMajor))
+			{
+				iResult += 1;
+			}
+		}
+	}
 
 	return iResult;
 }

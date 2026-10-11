@@ -172,6 +172,8 @@ public:
 	void DoTurn(void);
 
 	void CreateSpy(void);
+	// SP extended quests: grant a spy of an explicit rank (e.g. the master spy reward)
+	void CreateSpyWithRank(CvSpyRank eRank);
 	void ProcessSpy(uint uiSpyIndex);
 	void UncoverIntrigue(uint uiSpyIndex);
 #if defined(MOD_BUGFIX_SPY_NAMES)
@@ -234,6 +236,7 @@ public:
 	// Master Spy helpers
 	int GetNumMasterSpyCounterIntel() const;
 	bool HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
+	void AnnounceMasterSpyBirth();
 	// Diplomacy Bargain: using a stationed diplomat to boost the value of our GPT during this turn's AI valuation
 	bool HasDiplomacyBargainBuff(PlayerTypes eTargetPlayer) const;
 	int  GetDiplomacyBargainCooldown(PlayerTypes eTargetPlayer) const;

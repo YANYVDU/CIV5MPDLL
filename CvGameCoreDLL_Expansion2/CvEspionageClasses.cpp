@@ -270,6 +270,14 @@ void CvPlayerEspionage::DoTurn()
 /// AddSpy - Grants the player a spy to use
 void CvPlayerEspionage::CreateSpy()
 {
+	CreateSpyWithRank((CvSpyRank)m_pPlayer->GetStartingSpyRank());
+}
+
+/// AddSpyWithRank - Grants the player a spy of the given rank
+/// SP extended quests: the master spy reward needs an explicit rank because the
+/// regular promotion path to SPY_RANK_MASTER_SPY is gated behind very hard conditions
+void CvPlayerEspionage::CreateSpyWithRank(CvSpyRank eRank)
+{
 	// don't create spies if espionage is disabled
 	if(GC.getGame().isOption(GAMEOPTION_NO_ESPIONAGE))
 	{
@@ -282,7 +290,7 @@ void CvPlayerEspionage::CreateSpy()
 	}
 
 	CvEspionageSpy kNewSpy;
-	kNewSpy.m_eRank = (CvSpyRank)m_pPlayer->GetStartingSpyRank();
+	kNewSpy.m_eRank = eRank;
 	kNewSpy.m_eSpyState = SPY_STATE_UNASSIGNED;
 #if defined(MOD_BUGFIX_SPY_NAMES)
 	GetNextSpyName(&kNewSpy);
@@ -308,6 +316,12 @@ void CvPlayerEspionage::CreateSpy()
 		CvString strBuffer = GetLocalizedText("TXT_KEY_NOTIFICATION_SPY_CREATED", szSpyName);
 		CvString strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_SPY_CREATED", szSpyName);
 		pNotifications->Add(NOTIFICATION_SPY_CREATED_ACTIVE_PLAYER, strBuffer, strSummary, -1, -1, 0);
+	}
+
+	// Handing out a Master Spy is a once-per-game event - announce it to everyone
+	if (eRank == SPY_RANK_MASTER_SPY)
+	{
+		AnnounceMasterSpyBirth();
 	}
 
 	if(GC.getLogging())
@@ -1763,6 +1777,12 @@ void CvPlayerEspionage::LevelUpSpy(uint uiSpyIndex)
 			CvString strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_SPY_PROMOTED", szSpyName);
 			pNotifications->Add(NOTIFICATION_SPY_PROMOTION, strBuffer, strSummary, -1, -1, 0);
 		}
+
+		// Reaching the Master Spy rank is a once-per-game event - announce it worldwide
+		if (m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+		{
+			AnnounceMasterSpyBirth();
+		}
 	}
 }
 
@@ -3217,6 +3237,30 @@ bool CvPlayerEspionage::HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bo
 	}
 
 	return m_aSpyList[iSpyIndex].m_eRank == SPY_RANK_MASTER_SPY;
+}
+
+/// AnnounceMasterSpyBirth - Tell every player that this player has gained a Master Spy.
+/// Both the promotion path and the quest reward funnel through here.
+void CvPlayerEspionage::AnnounceMasterSpyBirth()
+{
+	// The Master Spy is a once-per-game prize, so the whole world is told about it
+	Localization::String strBuffer = Localization::Lookup("TXT_KEY_NOTIFICATION_MASTER_SPY_BORN");
+	strBuffer << m_pPlayer->getCivilizationShortDescriptionKey();
+	Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_MASTER_SPY_BORN");
+	strSummary << m_pPlayer->getCivilizationShortDescriptionKey();
+
+	for (int iLoop = 0; iLoop < MAX_MAJOR_CIVS; iLoop++)
+	{
+		CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes) iLoop);
+		if (!kLoopPlayer.isAlive())
+			continue;
+
+		CvNotifications* pNotifications = kLoopPlayer.GetNotifications();
+		if (pNotifications != NULL)
+		{
+			pNotifications->Add(NOTIFICATION_GENERIC, strBuffer.toUTF8(), strSummary.toUTF8(), -1, -1, m_pPlayer->GetID());
+		}
+	}
 }
 
 /// AddMessage - This function is called by another player's PlayerEspionage class. It records the spy activity to be played back at the beginning
