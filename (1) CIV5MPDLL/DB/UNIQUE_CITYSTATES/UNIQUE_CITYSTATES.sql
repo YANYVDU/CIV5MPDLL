@@ -425,6 +425,14 @@ create table MinorCivilization_FreeBuildingClasses (
     BuildingClassType text references BuildingClasses(Type)
 );
 
+-- MinorCivilizations purchasable building classes (a single global list shared by every
+-- city-state, no per-city-state preference): each turn a city-state spends its own gold to
+-- buy one of these in the first of its cities that still lacks it, as long as the building
+-- is already unlocked by the city-state's techs and is not already under construction
+create table MinorCivilization_PurchaseBuildingClasses (
+    BuildingClassType text references BuildingClasses(Type)
+);
+
 -- CityState UA (Prague): a city with our own spy garrisoned in it grants a configurable
 -- yield percentage modifier (per YieldType) to that city, e.g. YIELD_SCIENCE / 20 = +20% science
 create table CityStateUAEffect_SpyGarrisonYieldModifiers (

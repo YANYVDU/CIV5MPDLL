@@ -522,6 +522,7 @@ public:
 	void DoSpawnUnit(PlayerTypes eMajor);
 #endif
 	void DoUnitSpawnTurn();
+	void DoBuildingPurchase();
 	int GetSpawnBaseTurns(PlayerTypes ePlayer);
 	int GetCurrentSpawnEstimate(PlayerTypes ePlayer);
 
@@ -739,6 +740,7 @@ public:
 	int GetMinorCivTrait() const;
 	const char* GetUAType() const;
 	bool isFreeBuildingClass(int i) const;
+	bool isPurchaseBuildingClass(int i) const;
 
 	// Deprecated Members
 	const char* getAdjectiveKeyWide() const;
@@ -777,6 +779,7 @@ protected:
 	// Arrays
 	int* m_piFlavorValue;
 	bool* m_pbFreeBuildingClass;
+	bool* m_pbPurchaseBuildingClass;
 	std::vector<CvString> m_vCityNames;
 };
 

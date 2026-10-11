@@ -2401,6 +2401,8 @@ void CvMinorCivAI::DoTurn()
 
 		DoUnitSpawnTurn();
 
+		DoBuildingPurchase();
+
 		DoIntrusion();
 	}
 }
@@ -2955,6 +2957,72 @@ void CvMinorCivAI::DoTestEndSkirmishes(PlayerTypes eNewAlly)
 }
 #endif
 
+//------------------------------------------------------------------------------
+// City-state spends its own gold to buy one of the building classes listed in
+// MinorCivilization_PurchaseBuildingClasses. At most one building is bought per turn.
+// The building must already be unlocked (all construction prereqs met) and must not be
+// under construction in the target city (mutual exclusion with normal production).
+void CvMinorCivAI::DoBuildingPurchase()
+{
+	CvPlayer* pPlayer = GetPlayer();
+	if(pPlayer == NULL)
+		return;
+
+	CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(GetMinorCivType());
+	if(pkMinorCivInfo == NULL)
+		return;
+
+	CvTreasury* pTreasury = pPlayer->GetTreasury();
+	if(pTreasury == NULL)
+		return;
+
+	for(int iBuildingClassLoop = 0; iBuildingClassLoop < GC.getNumBuildingClassInfos(); iBuildingClassLoop++)
+	{
+		if(!pkMinorCivInfo->isPurchaseBuildingClass(iBuildingClassLoop))
+			continue;
+
+		BuildingTypes eBuilding = pPlayer->GetCivBuilding((BuildingClassTypes)iBuildingClassLoop);
+		if(eBuilding == NO_BUILDING)
+			continue;
+
+		// Find the first city that still lacks the building and is not already building it
+		CvCity* pTargetCity = NULL;
+		int iCityLoop;
+		for(CvCity* pLoopCity = pPlayer->firstCity(&iCityLoop); pLoopCity != NULL; pLoopCity = pPlayer->nextCity(&iCityLoop))
+		{
+			if(pLoopCity->GetCityBuildings()->GetNumRealBuilding(eBuilding) > 0)
+				continue;
+
+			if(pLoopCity->GetCityBuildings()->GetNumFreeBuilding(eBuilding) > 0)
+				continue;
+
+			// Already unlocked by our techs, all other prereqs met, and not already queued:
+			// canConstruct() returns false when the building is in the city's build queue
+			if(!pLoopCity->canConstruct(eBuilding))
+				continue;
+
+			pTargetCity = pLoopCity;
+			break;
+		}
+
+		if(pTargetCity == NULL)
+			continue;
+
+		int iCost = pTargetCity->GetPurchaseCost(eBuilding);
+		if(iCost <= 0)
+			continue;
+
+		if(pTreasury->GetGold() < iCost)
+			continue;
+
+		pTreasury->ChangeGold(-iCost);
+		pTargetCity->GetCityBuildings()->SetNumRealBuilding(eBuilding, 1);
+
+		// At most one purchase per turn
+		return;
+	}
+}
+//------------------------------------------------------------------------------
 /// Update what our status is
 void CvMinorCivAI::DoTurnStatus()
 {
@@ -12194,7 +12262,8 @@ CvMinorCivInfo::CvMinorCivInfo() :
 	m_iArtStyleType(NO_ARTSTYLE),
 	m_iMinorCivTrait(NO_MINOR_CIV_TRAIT_TYPE),
 	m_piFlavorValue(NULL),
-	m_pbFreeBuildingClass(NULL)
+	m_pbFreeBuildingClass(NULL),
+	m_pbPurchaseBuildingClass(NULL)
 {
 }
 //------------------------------------------------------------------------------
@@ -12202,6 +12271,7 @@ CvMinorCivInfo::~CvMinorCivInfo()
 {
 	SAFE_DELETE_ARRAY(m_piFlavorValue);
 	SAFE_DELETE_ARRAY(m_pbFreeBuildingClass);
+	SAFE_DELETE_ARRAY(m_pbPurchaseBuildingClass);
 }
 //------------------------------------------------------------------------------
 int CvMinorCivInfo::getDefaultPlayerColor() const
@@ -12306,6 +12376,13 @@ bool CvMinorCivInfo::isFreeBuildingClass(int i) const
 	return m_pbFreeBuildingClass ? m_pbFreeBuildingClass[i] : false;
 }
 //------------------------------------------------------------------------------
+bool CvMinorCivInfo::isPurchaseBuildingClass(int i) const
+{
+	CvAssertMsg(i < GC.getNumBuildingClassInfos(), "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_pbPurchaseBuildingClass ? m_pbPurchaseBuildingClass[i] : false;
+}
+//------------------------------------------------------------------------------
 int CvMinorCivInfo::getFlavorValue(int i) const
 {
 	CvAssertMsg(i < GC.getNumFlavorTypes(), "Index out of bounds");
@@ -12393,6 +12470,22 @@ bool CvMinorCivInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 	kUtility.PopulateArrayByExistence(m_pbFreeBuildingClass,
 	                                  "BuildingClasses", "MinorCivilization_FreeBuildingClasses",
 	                                  "BuildingClassType", "MinorCivType", szType);
+
+	// Purchasable building classes (a single global list shared by all city-states)
+	kUtility.InitializeArray(m_pbPurchaseBuildingClass, "BuildingClasses");
+	{
+		std::string strPurchaseKey = "MinorCiv - PurchaseBuildingClasses";
+		Database::Results* pPurchaseResults = kUtility.GetResults(strPurchaseKey);
+		if(pPurchaseResults == NULL)
+		{
+			pPurchaseResults = kUtility.PrepareResults(strPurchaseKey, "select BuildingClasses.ID from MinorCivilization_PurchaseBuildingClasses inner join BuildingClasses on MinorCivilization_PurchaseBuildingClasses.BuildingClassType = BuildingClasses.Type");
+		}
+		while(pPurchaseResults->Step())
+		{
+			m_pbPurchaseBuildingClass[pPurchaseResults->GetInt(0)] = true;
+		}
+		pPurchaseResults->Reset();
+	}
 
 	return true;
 }
