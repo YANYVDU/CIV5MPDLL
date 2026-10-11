@@ -215,6 +215,7 @@ CvResolutionEffects::CvResolutionEffects(void)
 	iGlobalAttackModifier = 0;
 	iGlobalWarCasualtiesChanges = 0;
 	bEmbargoIdeology = false;
+	bInternationalLawProtection = false;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -267,6 +268,7 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		iGlobalAttackModifier 				= pInfo->GetGlobalAttackModifier();
 		iGlobalWarCasualtiesChanges 		= pInfo->GetGlobalWarCasualtiesChanges();
 		bEmbargoIdeology					= pInfo->IsEmbargoIdeology();
+		bInternationalLawProtection			= pInfo->IsInternationalLawProtection();
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -359,6 +361,8 @@ bool CvResolutionEffects::HasOngoingEffects() const
 	if (iGlobalWarCasualtiesChanges != 0)
 		return true;	
 	if (bEmbargoIdeology)
+		return true;
+	if (bInternationalLawProtection)
 		return true;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
@@ -524,6 +528,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	loadFrom >> writeTo.iGlobalAttackModifier;
 	loadFrom >> writeTo.iGlobalWarCasualtiesChanges;
 	loadFrom >> writeTo.bEmbargoIdeology;
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.bInternationalLawProtection, false);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (uiVersion >= 10)
@@ -584,6 +589,7 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	saveTo << readFrom.iGlobalAttackModifier;
 	saveTo << readFrom.iGlobalWarCasualtiesChanges;
 	saveTo << readFrom.bEmbargoIdeology;
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bInternationalLawProtection);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	saveTo << readFrom.bPermanentAlly;
@@ -1609,7 +1615,9 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	
 	// Civilization-unique proposal: lock target CS as permanent ally
 	// Only the proposer gets the effect, not every league member
-	if (eTargetCityState != NO_PLAYER && ePlayer == GetProposerDecision()->GetProposer())
+	// Guard: only the permanent-ally proposal runs this, not other CITY_CSD resolutions (e.g. international law protection)
+	if (eTargetCityState != NO_PLAYER && ePlayer == GetProposerDecision()->GetProposer()
+		&& !GetEffects()->bInternationalLawProtection)
 	{
 		CvMinorCivAI* pMinorAI = GET_PLAYER(eTargetCityState).GetMinorCivAI();
 		if (pMinorAI)
@@ -3254,6 +3262,16 @@ bool CvLeague::IsResolutionEffectsValid(ResolutionTypes eResolution, int iPropos
 			return false;
 		}
 	}
+	if (pInfo->IsInternationalLawProtection())
+	{
+		// Target must be a living city-state
+		PlayerTypes eTargetCS = (PlayerTypes) iProposerChoice;
+		if (eTargetCS < 0 || eTargetCS >= MAX_CIV_PLAYERS
+			|| !GET_PLAYER(eTargetCS).isAlive() || !GET_PLAYER(eTargetCS).isMinorCiv())
+		{
+			return false;
+		}
+	}
 #endif
 
 	return true;
@@ -3527,6 +3545,11 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 				{
 					bSkip = true;
 				}
+				// International law protection: only city-states the proposer has met
+				if (eDecider != NO_PLAYER && !GET_TEAM(GET_PLAYER(eDecider).getTeam()).isHasMet(GET_PLAYER(e).getTeam()))
+				{
+					bSkip = true;
+				}
 				CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
 				if (pLeagues)
 				{
@@ -3536,7 +3559,8 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 						ActiveResolutionList vRes = pLeague->GetActiveResolutions();
 						for (size_t j = 0; j < vRes.size(); j++)
 						{
-							if (vRes[j].GetEffects()->bPermanentAlly &&
+							// Skip CSes already locked as permanent ally or already under international law protection
+							if ((vRes[j].GetEffects()->bPermanentAlly || vRes[j].GetEffects()->bInternationalLawProtection) &&
 								vRes[j].GetProposerDecision()->GetDecision() == i)
 							{
 								bSkip = true;
@@ -4515,6 +4539,21 @@ bool CvLeague::IsPlayerEmbargoed(PlayerTypes ePlayer)
 	return false;
 }
 #endif
+
+bool CvLeague::IsCityStateUnderInternationalProtection(PlayerTypes eMinor)
+{
+	if (eMinor < 0 || eMinor >= MAX_CIV_PLAYERS) return false;
+	if (!GET_PLAYER(eMinor).isMinorCiv()) return false;
+
+	for (ActiveResolutionList::iterator it = m_vActiveResolutions.begin(); it != m_vActiveResolutions.end(); it++) {
+		if (it->GetEffects()->bInternationalLawProtection
+			&& eMinor == (PlayerTypes) it->GetProposerDecision()->GetDecision()) {
+			return true;
+		}
+	}
+
+	return false;
+}
 
 bool CvLeague::IsLuxuryHappinessBanned(ResourceTypes eResource)
 {
@@ -9721,6 +9760,11 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 	{
 		eTargetIdeology = (PolicyBranchTypes) pProposal->GetProposerDecision()->GetDecision();
 	}
+	PlayerTypes eTargetCityState = NO_PLAYER;
+	if (eProposerDecision == RESOLUTION_DECISION_CITY_CSD)
+	{
+		eTargetCityState = (PlayerTypes) pProposal->GetProposerDecision()->GetDecision();
+	}
 
 	// == Grand Strategy ==
 	AIGrandStrategyTypes eGrandStrategy = GetPlayer()->GetGrandStrategyAI()->GetActiveGrandStrategy();
@@ -10548,6 +10592,38 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 					}
 				}
 			}
+	}
+
+	// International law protection: support if we like the target CS, oppose if we want to conquer it or are at war with it
+	if (eTargetCityState != NO_PLAYER)
+	{
+		int iIntlLawRes = GC.getInfoTypeForString("RESOLUTION_INTERNATIONAL_LAW_PROTECTION", true);
+		if ((int)pProposal->GetType() == iIntlLawRes)
+		{
+			if (GET_TEAM(GetPlayer()->getTeam()).isAtWar(GET_PLAYER(eTargetCityState).getTeam()))
+			{
+				// At war with the target city-state: strongly oppose protecting it
+				iScore += -30;
+			}
+			else
+			{
+				MinorCivApproachTypes eApproach = GetPlayer()->GetDiplomacyAI()->GetMinorCivApproach(eTargetCityState);
+				if (eApproach == MINOR_CIV_APPROACH_PROTECTIVE || eApproach == MINOR_CIV_APPROACH_FRIENDLY)
+				{
+					// Friendly/protective towards this CS: support protecting it
+					iScore += 25;
+				}
+				else if (eApproach == MINOR_CIV_APPROACH_CONQUEST)
+				{
+					// We want to conquer it: oppose protection
+					iScore += -25;
+				}
+				else
+				{
+					iScore += 5;
+				}
+			}
+		}
 	}
 
 	// == Post-Processing ==
@@ -11450,6 +11526,7 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_iGlobalAttackModifier				= 0;
 	m_iGlobalWarCasualtiesChanges		= 0;
 	m_bEmbargoIdeology					= false;
+	m_bInternationalLawProtection		= false;
 #endif
 	m_eCivilizationType = NO_CIVILIZATION;
 #if defined(MOD_GLOBAL_SUZERAIN)
@@ -11524,6 +11601,7 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iGlobalAttackModifier				= kResults.GetInt("GlobalAttackModifier");
 	m_iGlobalWarCasualtiesChanges		= kResults.GetInt("GlobalWarCasualtiesChanges");
 	m_bEmbargoIdeology					= kResults.GetBool("EmbargoIdeology");
+	m_bInternationalLawProtection		= kResults.GetBool("InternationalLawProtection");
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
@@ -11729,6 +11807,10 @@ int CvResolutionEntry::GetGlobalWarCasualtiesChanges() const
 bool CvResolutionEntry::IsEmbargoIdeology() const
 {
 	return m_bEmbargoIdeology;
+}
+bool CvResolutionEntry::IsInternationalLawProtection() const
+{
+	return m_bInternationalLawProtection;
 }
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)

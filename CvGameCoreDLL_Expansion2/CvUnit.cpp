@@ -25778,6 +25778,27 @@ PlayerTypes CvUnit::getCombatOwner(TeamTypes eForTeam, const CvPlot& whosePlot) 
 		{
 			return BARBARIAN_PLAYER;
 		}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// International law protection: a unit that is at war with a protected city-state and
+		// stands inside that city-state's territory is treated as always hostile (combat owner
+		// spoofed to the barbarian player), so any civilization may attack it without declaring
+		// war on its owner. Neutral civs not at war with the city-state are unaffected.
+		PlayerTypes ePlotOwner = whosePlot.getOwner();
+		if(ePlotOwner != NO_PLAYER && ePlotOwner != getOwner()
+			&& GET_PLAYER(ePlotOwner).isMinorCiv()
+			&& GET_TEAM(getTeam()).isAtWar(GET_PLAYER(ePlotOwner).getTeam()))
+		{
+			CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+			if(pLeagues != NULL)
+			{
+				CvLeague* pLeague = pLeagues->GetActiveLeague();
+				if(pLeague != NULL && pLeague->IsCityStateUnderInternationalProtection(ePlotOwner))
+				{
+					return BARBARIAN_PLAYER;
+				}
+			}
+		}
+#endif
 	}
 
 	return getOwner();
@@ -28772,7 +28793,9 @@ bool CvUnit::canRangeStrikeAt(int iX, int iY, bool bNeedWar, bool bNoncombatAllo
 
 				if(!pLoopUnit) continue;
 
-				TeamTypes loopTeam = pLoopUnit->getTeam();
+				// Use combat owner so units spoofed as hostile (e.g. under international law
+				// protection inside a protected city-state) can be ranged-attacked without declaring war
+				TeamTypes loopTeam = GET_PLAYER(pLoopUnit->getCombatOwner(getTeam(), *pTargetPlot)).getTeam();
 
 				// Make sure it's a valid Team
 #if defined(MOD_EVENTS_WAR_AND_PEACE)

@@ -27,3 +27,5 @@ ALTER TABLE Resolutions ADD COLUMN 'VassalVassalCitiesPercent'            INTEGE
 ALTER TABLE Resolutions ADD COLUMN 'VassalPermanentAllyPopulationPercent' INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalVassalPopulationPercent'        INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalVassalMilitaryMightPercent'     INTEGER DEFAULT 0;
+-- International law protection: marks a CITY_CSD resolution that places a city-state under international law protection
+ALTER TABLE Resolutions ADD COLUMN 'InternationalLawProtection' BOOLEAN DEFAULT 0;

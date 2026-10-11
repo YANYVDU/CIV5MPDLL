@@ -89,6 +89,7 @@ protected:
 
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_EXTENSIONS)
 	LUAAPIEXTN(IsPlayerEmbargoed, bool, iPlayer);
+	LUAAPIEXTN(IsCityStateUnderInternationalProtection, bool, iMinor);
 #endif
 
 	static int lGetResolutionName(lua_State* L);

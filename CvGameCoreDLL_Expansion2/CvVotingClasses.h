@@ -128,6 +128,7 @@ struct CvResolutionEffects
 	int iGlobalAttackModifier;
 	int iGlobalWarCasualtiesChanges;
 	bool bEmbargoIdeology;
+	bool bInternationalLawProtection;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bool bPermanentAlly;
@@ -582,6 +583,7 @@ public:
 #if defined(MOD_API_EXTENSIONS)
 	bool IsPlayerEmbargoed(PlayerTypes ePlayer);
 #endif
+	bool IsCityStateUnderInternationalProtection(PlayerTypes eMinor);
 	bool IsLuxuryHappinessBanned(ResourceTypes eLuxury);
 	int GetResearchMod(TechTypes eTech);
 	int GetFeatureYieldChange(FeatureTypes eFeature, YieldTypes eYield);
@@ -1281,6 +1283,7 @@ public:
 	int GetGlobalAttackModifier() const;
 	int GetGlobalWarCasualtiesChanges() const;
 	bool IsEmbargoIdeology() const;
+	bool IsInternationalLawProtection() const;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int GetVassalTaxPercent() const;
@@ -1341,6 +1344,7 @@ protected:
 	int m_iGlobalAttackModifier;
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
+	bool m_bInternationalLawProtection;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int m_iVassalTaxPercent;
