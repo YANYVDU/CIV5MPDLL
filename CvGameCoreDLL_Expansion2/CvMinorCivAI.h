@@ -283,7 +283,9 @@ public:
 	int GetMaxActiveGlobalQuests() const;
 
 	void DoTestStartGlobalQuest();
-	void DoTestStartPersonalQuest(PlayerTypes ePlayer);
+	// Super Power V11: pveExclude (optional) forbids handing back quest types the caller just
+	// dropped, used by the aid-point quest reroll so a reroll cannot return the old quests.
+	void DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude = NULL);
 	void AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn);
 	void AddQuestCopyForPlayer(PlayerTypes ePlayer, CvMinorCivQuest* pQuest);
 	void DoTestQuestsOnFirstContact(PlayerTypes eMajor);
@@ -448,6 +450,17 @@ public:
 	// Economic Aid points (Super Power V11): per-major accumulated aid points on this city-state
 	int GetEconomicAidPoints(PlayerTypes eMajor) const;
 	void ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta);
+	// Economic Aid point spending (Super Power V11)
+	// Reroll this major's personal quests (global quest copies are kept); returns false if no quest could be granted
+	bool DoRerollPersonalQuestsForPlayer(PlayerTypes eMajor);
+	// Preselected military gift unit for this major (NO_UNIT = none); DoSpawnUnit uses it instead of the random pick
+	UnitTypes GetPendingGiftUnit(PlayerTypes eMajor) const;
+	void SetPendingGiftUnit(PlayerTypes eMajor, UnitTypes eUnit);
+	// Bully gold paying the influence loss with aid points instead (no influence loss, no diplomatic penalty)
+	void DoMajorBullyGoldWithAidPoints(PlayerTypes eMajor, int iGold);
+	// Aid points charged to bully gold without penalty: twice the influence loss the bully would normally suffer
+	int GetBullyGoldAidPointCost(PlayerTypes eMajor);
+	void DoBullyTreasuryShare(PlayerTypes eMajor); // seize a share of the city-state treasury on bully gold
 	// Wittenberg CS UA: faith-purchase a belief into this city-state's religion (one per major)
 	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
 	bool IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const;
@@ -564,7 +577,7 @@ public:
 	void DoMajorBullyGold(PlayerTypes eBully, int iGold);
 	void DoMajorBullyUnit(PlayerTypes eBully, UnitTypes eUnitType);
 	
-	void DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100);
+	void DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100, bool bSkipPenalty = false);
 
 	bool IsEverBulliedByAnyMajor() const;
 	bool IsEverBulliedByMajor(PlayerTypes ePlayer) const;
@@ -692,6 +705,7 @@ private:
 	int m_aiFaithPantheonPurchaseCount[MAX_MAJOR_CIVS];
 	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values
 	int m_aiEconomicAidPoints[MAX_MAJOR_CIVS]; // per-major accumulated aid points on this city-state
+	UnitTypes m_aePendingGiftUnit[MAX_MAJOR_CIVS]; // preselected military gift unit per major (NO_UNIT = none)
 	bool m_bEconomicAidOpenThisRound;
 	bool m_abPermanentWar[REALLY_MAX_TEAMS];
 	bool m_abWaryOfTeam[REALLY_MAX_TEAMS];

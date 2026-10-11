@@ -1339,6 +1339,7 @@ void CvPlayer::uninit()
 	m_iStrategicResourceMod = 0;
 	m_iSpecialistCultureChange = 0;
 	m_iGreatPeopleSpawnCounter = 0;
+	m_eNextGreatPersonChoice = NO_UNIT;
 	m_iFreeTechCount = 0;
 	m_iMedianTechPercentage = 50;
 	m_iNumFreePolicies = 0;
@@ -17745,6 +17746,19 @@ void CvPlayer::ChangeGreatPeopleSpawnCounter(int iChange)
 }
 
 //	--------------------------------------------------------------------------------
+// Economic Aid point spending (Super Power V11): preselected next gifted Great Person type.
+UnitTypes CvPlayer::GetNextGreatPersonChoice() const
+{
+	return m_eNextGreatPersonChoice;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetNextGreatPersonChoice(UnitTypes eUnit)
+{
+	m_eNextGreatPersonChoice = eUnit;
+}
+
+//	--------------------------------------------------------------------------------
 /// Create a GreatPeople
 void CvPlayer::DoSpawnGreatPerson(PlayerTypes eMinor, bool bIsFree)
 {
@@ -17802,6 +17816,19 @@ void CvPlayer::DoSpawnGreatPerson(PlayerTypes eMinor, bool bIsFree)
 				}
 			}
 		}
+	}
+
+	// Super Power V11: a preselected Great Person type (bought with aid points) overrides the
+	// random pick. One-shot: consumed here.
+	UnitTypes eChosen = GetNextGreatPersonChoice();
+	if(eChosen != NO_UNIT)
+	{
+		CvUnitEntry* pkChosenInfo = GC.getUnitInfo(eChosen);
+		if(pkChosenInfo && pkChosenInfo->GetSpecialUnitType() == eSpecialUnitGreatPerson && !pkChosenInfo->IsFoundReligion())
+		{
+			eBestUnit = eChosen;
+		}
+		SetNextGreatPersonChoice(NO_UNIT);
 	}
 
 	// Spawn GreatPeople
@@ -30739,6 +30766,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(163, kStream, m_iCityStateUASpyKillProgress, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_iNumWarPeacesCompleted, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_iNumTimesDeclaredWarOn, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_eNextGreatPersonChoice, NO_UNIT);
 #endif
 	MOD_SERIALIZE_READ(164, kStream, m_iSpyPoints, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsTotal, 0);
@@ -31656,6 +31684,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateUASpyKillProgress);
 	MOD_SERIALIZE_WRITE(kStream, m_iNumWarPeacesCompleted);
 	MOD_SERIALIZE_WRITE(kStream, m_iNumTimesDeclaredWarOn);
+	MOD_SERIALIZE_WRITE(kStream, m_eNextGreatPersonChoice);
 #endif
 	MOD_SERIALIZE_WRITE(kStream, m_iSpyPoints);
 	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsTotal);

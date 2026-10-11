@@ -601,6 +601,23 @@ public:
 	void DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBuyout(PlayerTypes eMajor, PlayerTypes eMinor);
 
+	// Economic Aid point spending (Super Power V11)
+	// Network-synced variants taking an explicit eMajor (multiplayer-safe). Costs are configured via
+	// gCustomMods options and charged against the (major, city-state) aid point pool.
+	bool DoMinorRerollQuestsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor);
+	void DoMinorBullyGoldWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iGold);
+	bool DoSetNextGreatPersonChoiceFromMajor(PlayerTypes eMajor, UnitTypes eUnit, PlayerTypes eCostMinor);
+	bool DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, UnitTypes eUnit);
+	// Aid point costs for the spending actions above (0 = disabled)
+	int GetAidPointCostRerollQuests();
+	int GetAidPointCostNextGreatPerson();
+	int GetAidPointCostPendingGiftUnit();
+	// Share of a city-state treasury seized when a major bullies gold (percent, 0 = disabled)
+	int GetBullyTreasurySharePercent();
+	// Every unit type a city-state may gift to ePlayer (same filter as GetCompetitiveSpawnUnitType,
+	// but returns all valid candidates for the aid-point unit picker UI)
+	void GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>& veChoices);
+
 	void DoResearchAgreementNotification(TeamTypes eTeam1, TeamTypes eTeam2);
 
 	int GetResearchAgreementCost(PlayerTypes ePlayer1, PlayerTypes ePlayer2);

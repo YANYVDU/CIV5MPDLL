@@ -286,6 +286,17 @@ protected:
 	static int lDoMinorGiftGold(lua_State* L);
 	static int lDoMinorFaithGift(lua_State* L);
 	static int lDoMinorFaithGiftFromMajor(lua_State* L);
+	// Economic Aid point spending (Super Power V11)
+	static int lDoMinorRerollQuestsFromMajor(lua_State* L);
+	static int lDoMinorBullyGoldWithAidPointsFromMajor(lua_State* L);
+	static int lDoSetNextGreatPersonChoiceFromMajor(lua_State* L);
+	static int lDoSetPendingGiftUnitFromMajor(lua_State* L);
+	static int lGetAidPointCostRerollQuests(lua_State* L);
+	static int lGetAidPointCostNextGreatPerson(lua_State* L);
+	static int lGetAidPointCostPendingGiftUnit(lua_State* L);
+	static int lGetBullyTreasurySharePercent(lua_State* L);
+	static int lGetBullyGoldAidPointCost(lua_State* L);
+	static int lGetMinorGiftUnitChoices(lua_State* L);
 	static int lGetCityStateFaithBeliefPurchaseCost(lua_State* L);
 	static int lIsCityStateFaithBeliefPurchased(lua_State* L);
 	static int lDoCityStateFaithBeliefPurchase(lua_State* L);

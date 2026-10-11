@@ -804,6 +804,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(SetEconomicAidAutoRenew);
 	Method(GetEconomicAidPoints);
 	Method(ChangeEconomicAidPoints);
+	Method(GetPendingGiftUnit);
+	Method(GetNextGreatPersonChoice);
 	Method(GetTurnLastPledgedProtectionByMajor);
 	Method(GetTurnLastPledgeBrokenByMajor);
 	Method(GetMinorCivBullyGoldAmount);
@@ -8170,6 +8172,28 @@ int CvLuaPlayer::lChangeEconomicAidPoints(lua_State* L)
 
 	pkPlayer->GetMinorCivAI()->ChangeEconomicAidPoints((PlayerTypes)eMajor, iDelta);
 	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetPendingGiftUnit(PlayerTypes eMajor);
+// Economic Aid point spending (Super Power V11): the unit this city-state will gift to eMajor (NO_UNIT = none)
+int CvLuaPlayer::lGetPendingGiftUnit(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 2);
+
+	const int eUnit = pkPlayer->GetMinorCivAI()->GetPendingGiftUnit((PlayerTypes)eMajor);
+	lua_pushinteger(L, eUnit);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetNextGreatPersonChoice();
+// Economic Aid point spending (Super Power V11): preselected patronage gift Great Person (NO_UNIT = random)
+int CvLuaPlayer::lGetNextGreatPersonChoice(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkPlayer->GetNextGreatPersonChoice());
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetTurnLastPledgedProtectionByMajor(PlayerTypes eMajor);

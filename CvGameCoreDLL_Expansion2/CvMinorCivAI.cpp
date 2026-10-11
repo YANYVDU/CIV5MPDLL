@@ -1972,6 +1972,7 @@ void CvMinorCivAI::Reset()
 		m_aiTurnLastQuitEconomicAid[iI] = -1;
 		m_aiEconomicAidTerminationReason[iI] = (int)ECON_AID_TERM_NONE;
 		m_aiEconomicAidPoints[iI] = 0;
+		m_aePendingGiftUnit[iI] = NO_UNIT;
 		m_abFaithBeliefPurchasedByMajor[iI] = false;
 		m_abFaithRefundUsedThisTurn[iI] = false;
 		m_abGoldGambleUsedThisTurn[iI] = false;
@@ -2113,6 +2114,7 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS, -1);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS, 0);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiEconomicAidPoints, int, MAX_MAJOR_CIVS, 0);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aePendingGiftUnit, UnitTypes, MAX_MAJOR_CIVS, NO_UNIT);
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidOpenThisRound, true);
 	// Wittenberg CS UA - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS, false);
@@ -2195,6 +2197,7 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastQuitEconomicAid, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidTerminationReason, int, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiEconomicAidPoints, int, MAX_MAJOR_CIVS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aePendingGiftUnit, UnitTypes, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE(kStream, m_bEconomicAidOpenThisRound);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithBeliefPurchasedByMajor, bool, MAX_MAJOR_CIVS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abFaithRefundUsedThisTurn, bool, MAX_MAJOR_CIVS);
@@ -3747,7 +3750,7 @@ void CvMinorCivAI::DoTestStartGlobalQuest()
 }
 
 /// See if it is time to start a personal quest for this player
-void CvMinorCivAI::DoTestStartPersonalQuest(PlayerTypes ePlayer)
+void CvMinorCivAI::DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude /* = NULL */)
 {
 	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
 	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "ePlayer is expected to be within maximum bounds (invalid Index)");
@@ -3783,6 +3786,22 @@ void CvMinorCivAI::DoTestStartPersonalQuest(PlayerTypes ePlayer)
 
 		if(IsValidQuestForPlayer(ePlayer, eQuest) && IsPersonalQuest(eQuest))
 		{
+			// A reroll must not hand back the quests it just dropped
+			bool bExcluded = false;
+			if(pveExclude != NULL)
+			{
+				for(uint iExcludeLoop = 0; iExcludeLoop < pveExclude->size(); iExcludeLoop++)
+				{
+					if((*pveExclude)[iExcludeLoop] == eQuest)
+					{
+						bExcluded = true;
+						break;
+					}
+				}
+			}
+			if(bExcluded)
+				continue;
+
 			// What is the bias for this player wanting this particular quest? Queue up multiple copies (default is 10)
 			iCount = GetPersonalityQuestBias(eQuest);
 
@@ -7901,6 +7920,161 @@ void CvMinorCivAI::ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta)
 	}
 }
 
+UnitTypes CvMinorCivAI::GetPendingGiftUnit(PlayerTypes eMajor) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return NO_UNIT;
+	return m_aePendingGiftUnit[eMajor];
+}
+
+void CvMinorCivAI::SetPendingGiftUnit(PlayerTypes eMajor, UnitTypes eUnit)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return;
+	if(m_aePendingGiftUnit[eMajor] != eUnit)
+	{
+		m_aePendingGiftUnit[eMajor] = eUnit;
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+}
+
+// Economic Aid point spending (Super Power V11): reroll this major's personal quests.
+// Global quest copies are kept; only personal quests are replaced. Returns true if at least one
+// personal quest is active afterwards, so the caller can decide whether to charge the aid points.
+bool CvMinorCivAI::DoRerollPersonalQuestsForPlayer(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return false;
+
+	if(!GetPlayer()->isAlive() || !IsHasMetPlayer(eMajor))
+		return false;
+
+	// Rerolling ignores the normal quest countdown
+	SetQuestCountdownForPlayer(eMajor, 0);
+
+	// Only reroll if at least one personal quest could be granted, so the caller does not charge
+	// aid points (and we do not drop the old quests) when nothing is available.
+	bool bAnyValid = false;
+#if defined(MOD_EVENTS_QUESTS)
+	for(int iQuestLoop = 0; iQuestLoop < GC.getNumQuestInfos(); iQuestLoop++)
+#else
+	for(int iQuestLoop = 0; iQuestLoop < NUM_MINOR_CIV_QUEST_TYPES; iQuestLoop++)
+#endif
+	{
+		MinorCivQuestTypes eQuest = (MinorCivQuestTypes) iQuestLoop;
+		if(IsValidQuestForPlayer(eMajor, eQuest) && IsPersonalQuest(eQuest))
+		{
+			bAnyValid = true;
+			break;
+		}
+	}
+	if(!bAnyValid)
+		return false;
+
+	// Drop existing personal quests, keep global quest copies. The dropped types become the
+	// exclusion set, so the reroll cannot hand back the quests the player just paid to replace.
+	std::vector<MinorCivQuestTypes> veExclude;
+	QuestListForPlayer kKeep;
+	for(uint iQuestLoop = 0; iQuestLoop < m_QuestsGiven[eMajor].size(); iQuestLoop++)
+	{
+		if(IsPersonalQuest(m_QuestsGiven[eMajor][iQuestLoop].GetType()))
+			veExclude.push_back(m_QuestsGiven[eMajor][iQuestLoop].GetType());
+		else
+			kKeep.push_back(m_QuestsGiven[eMajor][iQuestLoop]);
+	}
+	m_QuestsGiven[eMajor].clear();
+	for(uint iKeepLoop = 0; iKeepLoop < kKeep.size(); iKeepLoop++)
+		m_QuestsGiven[eMajor].push_back(kKeep[iKeepLoop]);
+
+	// Grant fresh personal quests up to the normal cap, ignoring the countdown between them
+	for(int i = 0; i < GetMaxActivePersonalQuestsForPlayer(); i++)
+	{
+		SetQuestCountdownForPlayer(eMajor, 0);
+		DoTestStartPersonalQuest(eMajor, &veExclude);
+	}
+
+	return GetNumActivePersonalQuestsForPlayer(eMajor) > 0;
+}
+
+// Super Power V11: when a major bullies gold from this city-state, it also seizes a share of the
+// city-state's own treasury. Pure bonus with no cap; configured by SP_BULLY_TREASURY_SHARE_PERCENT.
+void CvMinorCivAI::DoBullyTreasuryShare(PlayerTypes eBully)
+{
+	CvAssertMsg(eBully >= 0, "eBully is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eBully < MAX_MAJOR_CIVS, "eBully is expected to be within maximum bounds (invalid Index)");
+	if(eBully < 0 || eBully >= MAX_MAJOR_CIVS) return;
+
+	int iSharePercent = GC.getGame().GetBullyTreasurySharePercent();
+	if(iSharePercent <= 0) return;
+
+	int iTreasuryShare = (GetPlayer()->GetTreasury()->GetGold() * iSharePercent) / 100;
+	if(iTreasuryShare > 0)
+	{
+		GET_PLAYER(eBully).GetTreasury()->ChangeGold(iTreasuryShare);
+		GetPlayer()->GetTreasury()->ChangeGold(-iTreasuryShare);
+	}
+}
+
+// Economic Aid point spending (Super Power V11): aid points charged to bully gold without the
+// influence/diplomatic penalty. Costs twice the influence loss the bully would normally suffer.
+int CvMinorCivAI::GetBullyGoldAidPointCost(PlayerTypes eMajor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS) return 0;
+
+	int iInfluenceLossTimes100 = GetBullyInfluenceLoss(eMajor, GC.getMINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS());
+	if(iInfluenceLossTimes100 < 0)
+		iInfluenceLossTimes100 = -iInfluenceLossTimes100;
+
+	// Influence is stored as Times100; expose the cost in whole aid points
+	return 2 * (iInfluenceLossTimes100 / 100);
+}
+
+// Economic Aid point spending (Super Power V11): bully gold that pays the influence loss with aid
+// points instead. No influence loss and no diplomatic penalty, but other city-states' "bully a
+// city-state" quests still progress (the reaction runs with bSkipPenalty = true).
+void CvMinorCivAI::DoMajorBullyGoldWithAidPoints(PlayerTypes eBully, int iGold)
+{
+	CvAssertMsg(eBully >= 0, "eBully is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eBully < MAX_MAJOR_CIVS, "eBully is expected to be within maximum bounds (invalid Index)");
+	if(eBully < 0 || eBully >= MAX_MAJOR_CIVS) return;
+
+	int iBullyMetric = CalculateBullyMetric(eBully, /*bForUnit*/false);
+	bool bSuccess = CanMajorBullyGold(eBully, iBullyMetric);
+	int iOldFriendshipTimes100 = GetEffectiveFriendshipWithMajorTimes100(eBully);
+
+	if(bSuccess)
+	{
+		if(GC.getGame().getActivePlayer() == eBully)
+		{
+			int iBullyGold = 0;
+			gDLL->GetSteamStat(ESTEAMSTAT_BULLIEDGOLD, &iBullyGold);
+			iBullyGold += iGold;
+			gDLL->SetSteamStat(ESTEAMSTAT_BULLIEDGOLD, iBullyGold);
+		}
+
+		GET_PLAYER(eBully).GetTreasury()->ChangeGold(iGold);
+		DoBullyTreasuryShare(eBully);
+
+		// Reaction with no influence loss and no diplomatic penalty, but quest progress is kept
+		DoBulliedByMajorReaction(eBully, 0, /*bSkipPenalty*/ true);
+
+#if defined(MOD_EVENTS_MINORS_INTERACTION)
+		if (MOD_EVENTS_MINORS_INTERACTION) {
+			GAMEEVENTINVOKE_HOOK(GAMEEVENT_PlayerBullied, eBully, GetPlayer()->GetID(), iGold, -1, -1, -1);
+		}
+#endif
+	}
+
+	GET_PLAYER(eBully).GetDiplomacyAI()->LogMinorCivBullyGold(GetPlayer()->GetID(), iOldFriendshipTimes100, GetEffectiveFriendshipWithMajorTimes100(eBully), iGold, bSuccess, iBullyMetric);
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+}
+
 bool CvMinorCivAI::IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const
 {
 	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
@@ -9431,10 +9605,47 @@ void CvMinorCivAI::DoSpawnUnit(PlayerTypes eMajor)
 #endif
 		}
 
+		// Super Power V11: a preselected gift unit (bought with aid points) overrides the random
+		// pick, as long as it is still valid for this major. The choice is one-shot either way.
+		UnitTypes ePending = GetPendingGiftUnit(eMajor);
+		bool bUsedPendingGift = false;
+		if(ePending != NO_UNIT)
+		{
+			CvUnitEntry* pkPendingInfo = GC.getUnitInfo(ePending);
+			bool bPendingValid = (pkPendingInfo != NULL);
+			if(bPendingValid)
+			{
+				TechTypes ePendingPrereq = (TechTypes) pkPendingInfo->GetPrereqAndTech();
+				if(ePendingPrereq != NO_TECH && !GET_TEAM(GET_PLAYER(eMajor).getTeam()).GetTeamTechs()->HasTech(ePendingPrereq))
+					bPendingValid = false;
+				TechTypes ePendingObsolete = (TechTypes) pkPendingInfo->GetObsoleteTech();
+				if(bPendingValid && ePendingObsolete != NO_TECH && GET_TEAM(GET_PLAYER(eMajor).getTeam()).GetTeamTechs()->HasTech(ePendingObsolete))
+					bPendingValid = false;
+				if(bPendingValid && GET_PLAYER(eMajor).isUnitClassMaxedOut((UnitClassTypes)pkPendingInfo->GetUnitClassType()))
+					bPendingValid = false;
+			}
+			if(bPendingValid)
+			{
+				eUnit = ePending;
+				bUsedPendingGift = true;
+			}
+			SetPendingGiftUnit(eMajor, NO_UNIT);
+		}
+
 		// Spawn Unit
 		if(eUnit != NO_UNIT)
 		{
 			CvUnit* pNewUnit = GET_PLAYER(eMajor).initUnit(eUnit, iX, iY);
+
+			// Super Power V11: extra starting experience for a unit preselected with aid points
+			if(bUsedPendingGift)
+			{
+#if defined(MOD_UNITS_XP_TIMES_100)
+				pNewUnit->changeExperienceTimes100(100 * 15);
+#else
+				pNewUnit->changeExperience(15);
+#endif
+			}
 
 			// If player trait is to enhance minor bonuses, give this unit some free experience
 			if(GET_PLAYER(eMajor).GetPlayerTraits()->GetCityStateBonusModifier() > 0)
@@ -10440,6 +10651,8 @@ void CvMinorCivAI::DoMajorBullyGold(PlayerTypes eBully, int iGold)
 		}
 
 		GET_PLAYER(eBully).GetTreasury()->ChangeGold(iGold);
+		// Super Power V11: also seize a share of the city-state's own treasury (pure bonus, no cap)
+		DoBullyTreasuryShare(eBully);
 		DoBulliedByMajorReaction(eBully, GetBullyInfluenceLoss(eBully, GC.getMINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS()));
 		
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
@@ -10511,7 +10724,7 @@ void CvMinorCivAI::DoMajorBullyUnit(PlayerTypes eBully, UnitTypes eUnitType)
 }
 
 // We were just bullied, how do we react?
-void CvMinorCivAI::DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100)
+void CvMinorCivAI::DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100, bool bSkipPenalty)
 {
 	CvAssertMsg(eBully >= 0, "eBully is expected to be non-negative (invalid Index)");
 	CvAssertMsg(eBully < MAX_MAJOR_CIVS, "eBully is expected to be within maximum bounds (invalid Index)");
@@ -10522,23 +10735,32 @@ void CvMinorCivAI::DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceCh
 	if (!pBully) return;
 
 	SetTurnLastBulliedByMajor(eBully, GC.getGame().getGameTurn());
-	ChangeFriendshipWithMajorTimes100(eBully, iInfluenceChangeTimes100);
+
+	// When the penalty is waived (aid-point bully), skip the influence loss and the diplomatic
+	// reaction from other majors, but still run the quest bookkeeping below.
+	if(!bSkipPenalty)
+	{
+		ChangeFriendshipWithMajorTimes100(eBully, iInfluenceChangeTimes100);
+	}
 
 	// In case we have quests that bullying makes obsolete, check now
 	DoTestActiveQuests(/*bTestComplete*/ false, /*bTestObsolete*/ true);
 
-	// Inform alive majors who have met the bully
-	for (int iMajorLoop = 0; iMajorLoop < MAX_MAJOR_CIVS; iMajorLoop++)
+	// Inform alive majors who have met the bully (skipped when the penalty is waived)
+	if(!bSkipPenalty)
 	{
-		PlayerTypes eMajorLoop = (PlayerTypes) iMajorLoop;
-		CvPlayer* pMajorLoop = &GET_PLAYER(eMajorLoop);
-		if (!pMajorLoop) continue;
-
-		if(pMajorLoop->isAlive())
+		for (int iMajorLoop = 0; iMajorLoop < MAX_MAJOR_CIVS; iMajorLoop++)
 		{
-			if(GET_TEAM(pMajorLoop->getTeam()).isHasMet(pBully->getTeam()))
+			PlayerTypes eMajorLoop = (PlayerTypes) iMajorLoop;
+			CvPlayer* pMajorLoop = &GET_PLAYER(eMajorLoop);
+			if (!pMajorLoop) continue;
+
+			if(pMajorLoop->isAlive())
 			{
-				pMajorLoop->GetDiplomacyAI()->DoPlayerBulliedSomeone(eBully, GetPlayer()->GetID());
+				if(GET_TEAM(pMajorLoop->getTeam()).isHasMet(pBully->getTeam()))
+				{
+					pMajorLoop->GetDiplomacyAI()->DoPlayerBulliedSomeone(eBully, GetPlayer()->GetID());
+				}
 			}
 		}
 	}

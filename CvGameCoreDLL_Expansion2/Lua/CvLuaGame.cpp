@@ -87,6 +87,17 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorFaithGiftFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithBeliefPurchaseFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithPantheonPurchaseFromMajor);
+	// Economic Aid point spending (Super Power V11)
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorRerollQuestsFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorBullyGoldWithAidPointsFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetNextGreatPersonChoiceFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetPendingGiftUnitFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostRerollQuests);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostNextGreatPerson);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostPendingGiftUnit);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyTreasurySharePercent);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyGoldAidPointCost);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetMinorGiftUnitChoices);
 
 #if defined(MOD_NUCLEAR_WINTER_FOR_SP)
 	REGIST_STATIC_FUNCTION(CvLuaGame::lChangeNuclearWinterProcess);
@@ -114,6 +125,16 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 {
 	Method(SendAndExecuteLuaFunction);
 	Method(SendAndExecuteLuaFunctionPostpone);
+
+	// Economic Aid point spending (Super Power V11): plain query helpers, callable directly from Lua.
+	// The matching Do* entry points live in RegistStaticFunctions and are reached through
+	// SendAndExecuteLuaFunction so that they execute on every client in multiplayer.
+	Method(GetAidPointCostRerollQuests);
+	Method(GetAidPointCostNextGreatPerson);
+	Method(GetAidPointCostPendingGiftUnit);
+	Method(GetBullyTreasurySharePercent);
+	Method(GetBullyGoldAidPointCost);
+	Method(GetMinorGiftUnitChoices);
 
 	Method(CanHandleAction);
 	Method(HandleAction);
@@ -2127,6 +2148,108 @@ int CvLuaGame::lDoMinorFaithGiftFromMajor(lua_State* L)
 	const int iEquivalentGold = lua_tointeger(L, 3);
 	GC.getGame().DoMinorFaithGiftFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, iEquivalentGold);
 	return 0;
+}
+//------------------------------------------------------------------------------
+// Economic Aid point spending (Super Power V11)
+// Network-synced variants taking an explicit major (multiplayer-safe)
+//bool DoMinorRerollQuestsFromMajor(int iMajorCivID, int iMinorCivID);
+int CvLuaGame::lDoMinorRerollQuestsFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoMinorRerollQuestsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void DoMinorBullyGoldWithAidPointsFromMajor(int iMajorCivID, int iMinorCivID, int iGold);
+int CvLuaGame::lDoMinorBullyGoldWithAidPointsFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iGold = lua_tointeger(L, 3);
+	GC.getGame().DoMinorBullyGoldWithAidPointsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, iGold);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//bool DoSetNextGreatPersonChoiceFromMajor(int iMajorCivID, int iUnit, int iCostMinorCivID);
+int CvLuaGame::lDoSetNextGreatPersonChoiceFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iUnit = lua_tointeger(L, 2);
+	const int iCostMinor = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoSetNextGreatPersonChoiceFromMajor((PlayerTypes)iMajor, (UnitTypes)iUnit, (PlayerTypes)iCostMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoSetPendingGiftUnitFromMajor(int iMajorCivID, int iMinorCivID, int iUnit);
+int CvLuaGame::lDoSetPendingGiftUnitFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iUnit = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoSetPendingGiftUnitFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, (UnitTypes)iUnit));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostRerollQuests();
+int CvLuaGame::lGetAidPointCostRerollQuests(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostRerollQuests());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostNextGreatPerson();
+int CvLuaGame::lGetAidPointCostNextGreatPerson(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostNextGreatPerson());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostPendingGiftUnit();
+int CvLuaGame::lGetAidPointCostPendingGiftUnit(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostPendingGiftUnit());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetBullyTreasurySharePercent();
+int CvLuaGame::lGetBullyTreasurySharePercent(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetBullyTreasurySharePercent());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetBullyGoldAidPointCost(int iMinorCivID, int iMajorCivID);
+int CvLuaGame::lGetBullyGoldAidPointCost(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iMajor = lua_tointeger(L, 2);
+	int iCost = 0;
+	CvPlayer* pMinor = &GET_PLAYER((PlayerTypes)iMinor);
+	if(pMinor && pMinor->isMinorCiv())
+	{
+		CvMinorCivAI* pMinorAI = pMinor->GetMinorCivAI();
+		if(pMinorAI)
+			iCost = pMinorAI->GetBullyGoldAidPointCost((PlayerTypes)iMajor);
+	}
+	lua_pushinteger(L, iCost);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//table GetMinorGiftUnitChoices(int iMajorCivID);
+int CvLuaGame::lGetMinorGiftUnitChoices(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	std::vector<UnitTypes> veChoices;
+	GC.getGame().GetMinorGiftUnitChoices((PlayerTypes)iMajor, veChoices);
+
+	lua_createtable(L, (int)veChoices.size(), 0);
+	for(size_t i = 0; i < veChoices.size(); i++)
+	{
+		lua_pushinteger(L, (int)veChoices[i]);
+		lua_rawseti(L, -2, (int)(i + 1));
+	}
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetCityStateFaithBeliefPurchaseCost(int iMinorCivID);

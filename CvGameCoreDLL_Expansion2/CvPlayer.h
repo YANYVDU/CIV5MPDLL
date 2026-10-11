@@ -890,6 +890,11 @@ public:
 
 	void DoSpawnGreatPerson(PlayerTypes eMinor, bool bIsFree = MOD_GLOBAL_TRULY_FREE_GP);
 	void DoGreatPeopleSpawnTurn();
+
+	// Economic Aid point spending (Super Power V11): the Great Person type the next city-state
+	// gift should spawn (NO_UNIT = random). One-shot: consumed by DoSpawnGreatPerson.
+	UnitTypes GetNextGreatPersonChoice() const;
+	void SetNextGreatPersonChoice(UnitTypes eUnit);
 	CvCity* GetGreatPersonSpawnCity(UnitTypes eUnit);
 
 	// End Great People Stuff
@@ -2999,6 +3004,7 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iStrategicResourceMod;
 	FAutoVariable<int, CvPlayer> m_iSpecialistCultureChange;
 	FAutoVariable<int, CvPlayer> m_iGreatPeopleSpawnCounter;
+	UnitTypes m_eNextGreatPersonChoice; // Economic Aid point spending: preselected next gifted Great Person (NO_UNIT = random)
 
 	FAutoVariable<int, CvPlayer> m_iFreeTechCount;
 	int m_iMedianTechPercentage;
