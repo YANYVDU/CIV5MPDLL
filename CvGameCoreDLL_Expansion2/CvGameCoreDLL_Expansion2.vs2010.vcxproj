@@ -117,7 +117,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /Y /I "$(SolutionDir)\BuildOutput\VS2022_$(Configuration)$(Platform)\" "$(SolutionDir)\(1) CIV5MPDLL\DLL"</Command>
+      <Command>xcopy /Y /I "$(SolutionDir)BuildOutput\VS2022_$(Configuration)$(Platform)" "$(SolutionDir)(1) CIV5MPDLL\DLL"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>..\update_commit_id.bat</Command>
@@ -173,7 +173,7 @@
       <SuppressStartupBanner>false</SuppressStartupBanner>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /Y /I "$(SolutionDir)\BuildOutput\VS2022_$(Configuration)$(Platform)\" "$(SolutionDir)\(1) CIV5MPDLL\DLL"</Command>
+      <Command>xcopy /Y /I "$(SolutionDir)BuildOutput\VS2022_$(Configuration)$(Platform)" "$(SolutionDir)(1) CIV5MPDLL\DLL"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>..\update_commit_id.bat</Command>
