@@ -2300,8 +2300,14 @@ int CvPlayerTrade::GetTradeConnectionTheirBuildingValueTimes100(const TradeConne
 
 	int iBonus = 0;
 
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	// A major civilization benefits from the trade buildings of a city-state partner, while a
+	// city-state itself still gains nothing from others trading with it (the original rule)
+	if (!m_pPlayer->isMinorCiv() && !(GET_PLAYER(kTradeConnection.m_eDestOwner).isMinorCiv() && GET_PLAYER(kTradeConnection.m_eOriginOwner).isMinorCiv()))
+#else
 	// minor civs should not get bonuses for others trading with them
 	if (!GET_PLAYER(kTradeConnection.m_eDestOwner).isMinorCiv() && !GET_PLAYER(kTradeConnection.m_eOriginOwner).isMinorCiv())
+#endif
 	{
 		if (kTradeConnection.m_eOriginOwner == m_pPlayer->GetID())
 		{
