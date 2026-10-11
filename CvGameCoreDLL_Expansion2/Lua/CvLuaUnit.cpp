@@ -374,6 +374,10 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetAirCombatDamage);
 	Method(GetRangeCombatDamage);
 	Method(GetAirStrikeDefenseDamage);
+	Method(GetInterceptionCombatStrength);
+	Method(GetAirSweepCombatStrength);
+	Method(GetAirSweepDamageToInterceptor);
+	Method(GetAirSweepDamageFromInterceptor);
 	Method(GetBestInterceptor);
 	Method(GetInterceptorCount);
 	Method(GetBestSeaPillageInterceptor);
@@ -3104,6 +3108,52 @@ int CvLuaUnit::lGetAirStrikeDefenseDamage(lua_State* L)
 	const bool bIncludeRand = lua_toboolean(L, 3);
 
 	const int iResult = pkUnit->GetAirStrikeDefenseDamage(pkAttacker, bIncludeRand);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetInterceptionCombatStrength( CyUnit* pAttacker);
+int CvLuaUnit::lGetInterceptionCombatStrength(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkAttacker = GetInstance(L, 2);
+
+	const int iResult = pkUnit->GetInterceptionCombatStrength(pkAttacker);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAirSweepCombatStrength( CyUnit* pDefender);
+int CvLuaUnit::lGetAirSweepCombatStrength(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkDefender = GetInstance(L, 2);
+
+	const int iResult = pkUnit->GetAirSweepCombatStrength(pkDefender);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAirSweepDamageToInterceptor( CyUnit* pInterceptor, bool bIncludeRand);
+int CvLuaUnit::lGetAirSweepDamageToInterceptor(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkInterceptor = GetInstance(L, 2);
+	const bool bIncludeRand = lua_toboolean(L, 3);
+
+	const int iResult = pkUnit->GetAirSweepDamageToInterceptor(pkInterceptor, bIncludeRand);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAirSweepDamageFromInterceptor( CyUnit* pInterceptor, bool bIncludeRand);
+int CvLuaUnit::lGetAirSweepDamageFromInterceptor(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkInterceptor = GetInstance(L, 2);
+	const bool bIncludeRand = lua_toboolean(L, 3);
+
+	const int iResult = pkUnit->GetAirSweepDamageFromInterceptor(pkInterceptor, bIncludeRand);
 	lua_pushinteger(L, iResult);
 	return 1;
 }

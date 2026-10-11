@@ -988,6 +988,24 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
 			<Text>附庸交易税 +{2_value}[ICON_GOLD]/回合</Text>
 		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_BY_ENEMY">
+			<Text>你的{@1_UnitName}在执行空中游猎时被敌方{@2_EnUName}击落了！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_TO_ENEMY">
+			<Text>你的{@1_UnitName}在空中游猎中对敌方{@2_EnUName}造成了[COLOR_POSITIVE_TEXT]{3_Damage}[ENDCOLOR]点伤害！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_FIGHTER">
+			<Text>你的{@2_UnitName}击落了敌方正在进行空中游猎的{@1_EnUName}！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_AA">
+			<Text>你的{@1_UnitName}在此次空中游猎行动中消灭了敌方的{@2_EnUName}！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_AA_KILLED_BY_ENEMY">
+			<Text>你的{@2_UnitName}被敌方进行空中游猎的{@1_EnUName}所消灭！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_BY_ENEMY">
+			<Text>你的{@2_UnitName}受到敌方进行空中游猎的{@1_EnUName}造成的[COLOR_NEGATIVE_TEXT]{3_Damage}[ENDCOLOR]点伤害！</Text>
+		</Row>
 </Language_zh_CN>
 
 </GameData>

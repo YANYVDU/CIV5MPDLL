@@ -981,6 +981,24 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
 			<Text>Vassal deal tax +{2_value}[ICON_GOLD]/turn</Text>
 		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_BY_ENEMY">
+			<Text>Your {@1_UnitName} is shot down by an enemy {@2_EnUName} while performing an air-sweep!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_TO_ENEMY">
+			<Text>Your {@1_UnitName} did [COLOR_POSITIVE_TEXT]{3_Damage}[ENDCOLOR] Damage to the enemy {@2_EnUName} while performing an air-sweep!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_FIGHTER">
+			<Text>Your {@2_UnitName} destroyed an enemy {@1_EnUName} when it was performing an air-sweep against us!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_AA">
+			<Text>Your {@1_UnitName} destroyed an enemy's {@2_EnUName} in this air-sweep!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_AA_KILLED_BY_ENEMY">
+			<Text>Your {@2_UnitName} is killed by an enemy {@1_EnUName} performing an air-sweep against us!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_BY_ENEMY">
+			<Text>Your {@2_UnitName} suffered [COLOR_NEGATIVE_TEXT]{3_Damage}[ENDCOLOR] Damage by an enemy {@1_EnUName} performing an air-sweep against us!</Text>
+		</Row>
 </Language_en_US>
 
 </GameData>

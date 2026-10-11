@@ -593,6 +593,7 @@ public:
 
 
 	int GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const;
+	int GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const;
 
 	int GetAirCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bIncludeRand, int iAssumeExtraDamage = 0) const;
 	int GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bIncludeRand, int iAssumeExtraDamage = 0) const;
@@ -608,6 +609,10 @@ public:
 	CvUnit* GetBestInterceptor(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
 	int GetInterceptorCount(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
 	int GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true) const;
+	int GetInterceptionCombatStrength(const CvUnit* pAttacker) const;
+	int GetAirSweepCombatStrength(const CvUnit* pDefender) const;
+	int GetAirSweepDamageToInterceptor(const CvUnit* pInterceptor, bool bIncludeRand = true) const;
+	int GetAirSweepDamageFromInterceptor(const CvUnit* pInterceptor, bool bIncludeRand = true) const;
 #if defined(MOD_GLOBAL_PARATROOPS_AA_DAMAGE)
 	int GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true) const;
 #endif

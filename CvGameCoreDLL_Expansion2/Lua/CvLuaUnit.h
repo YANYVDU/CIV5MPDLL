@@ -296,6 +296,10 @@ protected:
 	static int lGetAirCombatDamage(lua_State* L);
 	static int lGetRangeCombatDamage(lua_State* L);
 	static int lGetAirStrikeDefenseDamage(lua_State* L);
+	static int lGetInterceptionCombatStrength(lua_State* L);
+	static int lGetAirSweepCombatStrength(lua_State* L);
+	static int lGetAirSweepDamageToInterceptor(lua_State* L);
+	static int lGetAirSweepDamageFromInterceptor(lua_State* L);
 	static int lGetBestInterceptor(lua_State* L);
 	static int lGetInterceptorCount(lua_State* L);
 	static int lGetBestSeaPillageInterceptor(lua_State* L);

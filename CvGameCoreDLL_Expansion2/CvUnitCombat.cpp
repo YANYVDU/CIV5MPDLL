@@ -2420,11 +2420,7 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 	// Unit vs. Unit
 	CvAssert(pkDefender != NULL);
 
-	int iAttackerStrength = kAttacker.GetMaxRangedCombatStrength(pkDefender, /*pCity*/ NULL, true, false);
-
-	// Mod to air sweep strength
-	iAttackerStrength *= (100 + kAttacker.GetAirSweepCombatModifier());
-	iAttackerStrength /= 100;
+	int iAttackerStrength = kAttacker.GetAirSweepCombatStrength(pkDefender);
 
 	int iDefenderStrength = 0;
 
@@ -2433,12 +2429,45 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 	// Ground AA interceptor
 	if(pkDefender->getDomainType() != DOMAIN_AIR)
 	{
+		// The sweeping aircraft takes interception damage from the AA unit
 		int iInterceptionDamage = pkDefender->GetInterceptionDamage(&kAttacker);
 
 		// Reduce damage for performing a sweep
 		iInterceptionDamage *= /*75*/ GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD();
 		iInterceptionDamage /= 100;
 
+		// The sweeping aircraft strikes back at the AA unit.
+		int iAttackerDamageInflicted = 0;
+
+		if (MOD_BUGFIX_INTERCEPTOR_STRENGTH)
+		{
+			// Rules merged into the DLL from the SP patch that used to live in NewCombatRules.lua:
+			// that patch double-counted the damage the aircraft takes and mis-computed interceptors
+			// with no ranged attack (the Lua used GetRangeCombatDamage in both directions).
+
+			// Air sweep damage modifier of the sweeping aircraft scales the damage it takes
+			int iSweepDamageMod = 100 + kAttacker.GetAirSweepDamageMod();
+			if(iSweepDamageMod <= 0)
+				iInterceptionDamage = 0;
+			else
+				iInterceptionDamage = iInterceptionDamage * iSweepDamageMod / 100;
+
+			// Melee AA units are poor interceptors; an embarked one barely scratches the aircraft
+			if(!pkDefender->isRanged())
+				iInterceptionDamage = iInterceptionDamage * 25 / 100;
+			if(pkDefender->isEmbarked())
+				iInterceptionDamage = 1;
+
+			int iDefenderSweepStrength = pkDefender->GetInterceptionCombatStrength(&kAttacker);
+			iAttackerDamageInflicted = kAttacker.getCombatDamage(iAttackerStrength, iDefenderSweepStrength, kAttacker.getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
+
+			// Interception damage modifier of the AA unit scales the damage it takes
+			int iDefenderDamageMod = 100 + pkDefender->GetInterceptionDamageMod();
+			if(iDefenderDamageMod <= 0)
+				iAttackerDamageInflicted = 0;
+			else
+				iAttackerDamageInflicted = iAttackerDamageInflicted * iDefenderDamageMod / 100;
+		}
 
 #if defined(MOD_ROG_CORE)
 		if (pkDefender->GetIgnoreDamageChance() > 0)
@@ -2451,15 +2480,43 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 		}
 #endif
 
-		//this code is no work! Ground interceptor's experence is counted elsewhere
+		// Vanilla never applied this value in the ground branch (hence the old "this code is no
+		// work" note); MOD_BUGFIX_INTERCEPTOR_STRENGTH now grants it to the interceptor below.
 		iDefenderExperience = /*2*/ GC.getEXPERIENCE_DEFENDING_AIR_SWEEP_GROUND();
 
+		if (MOD_BUGFIX_INTERCEPTOR_STRENGTH)
+		{
+			// Experience for the sweep. The removed NewCombatRules.lua patch granted experience to
+			// both sides; each entry needs a matching max allowed value, otherwise
+			// changeExperience() in ResolveAirSweep() is a no-op (the default max is 0).
+			// Same source as the other two air sweep paths (vs air interceptor / vs ground target).
+			// The value comes from the EXPERIENCE_ATTACKING_AIR_SWEEP define, so usage mods can tune it.
+			pkCombatInfo->setExperience(BATTLE_UNIT_ATTACKER, GC.getEXPERIENCE_ATTACKING_AIR_SWEEP());
+			pkCombatInfo->setMaxExperienceAllowed(BATTLE_UNIT_ATTACKER, pkDefender->maxXPValue());
+			pkCombatInfo->setInBorders(BATTLE_UNIT_ATTACKER, plot.getOwner() == kAttacker.getOwner());
+#if defined(MOD_TRAITS_GG_FROM_BARBARIANS) || defined(MOD_PROMOTIONS_GG_FROM_BARBARIANS)
+			pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_ATTACKER, kAttacker.isGGFromBarbarians() || !pkDefender->isBarbarian());
+#else
+			pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_ATTACKER, !pkDefender->isBarbarian());
+#endif
+
+			pkCombatInfo->setExperience(BATTLE_UNIT_DEFENDER, iDefenderExperience);
+			pkCombatInfo->setMaxExperienceAllowed(BATTLE_UNIT_DEFENDER, kAttacker.maxXPValue());
+			pkCombatInfo->setInBorders(BATTLE_UNIT_DEFENDER, plot.getOwner() == pkDefender->getOwner());
+#if defined(MOD_TRAITS_GG_FROM_BARBARIANS) || defined(MOD_PROMOTIONS_GG_FROM_BARBARIANS)
+			pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_DEFENDER, pkDefender->isGGFromBarbarians() || !kAttacker.isBarbarian());
+#else
+			pkCombatInfo->setUpdateGlobal(BATTLE_UNIT_DEFENDER, !kAttacker.isBarbarian());
+#endif
+		}
+
+		pkCombatInfo->setDamageInflicted(BATTLE_UNIT_ATTACKER, iAttackerDamageInflicted);	// Damage inflicted this round
 		pkCombatInfo->setDamageInflicted(BATTLE_UNIT_DEFENDER, iInterceptionDamage);		// Damage inflicted this round
 	}
 	// Air interceptor
 	else
 	{
-		iDefenderStrength = pkDefender->GetMaxRangedCombatStrength(&kAttacker, /*pCity*/ NULL, false, false);
+		iDefenderStrength = pkDefender->GetInterceptionCombatStrength(&kAttacker);
 #if defined(MOD_UNITS_MAX_HP)
 		int iDefenderMaxHP = pkDefender->GetMaxHitPoints();
 #endif
@@ -2689,17 +2746,70 @@ void CvUnitCombat::ResolveAirSweep(const CvCombatInfo& kCombatInfo, uint uiParen
 
 					if(iActivePlayerID == pkAttacker->getOwner())
 					{
-						strBuffer = GetLocalizedText("TXT_KEY_MISC_YOU_UNIT_DIED_ATTACKING", pkAttacker->getNameKey(), pkDefender->getNameKey(), iAttackerDamageInflicted, 0);
-						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkAttacker->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer/*, GC.getEraInfo(GC.getGame().getCurrentEra())->getAudioUnitDefeatScript(), MESSAGE_TYPE_INFO, NULL, (ColorTypes)GC.getInfoTypeForString("COLOR_RED"), pkTargetPlot->getX(), pkTargetPlot->getY()*/);
+						// Air-sweep text: {1} = my sweeping aircraft, {2} = the enemy AA unit
+						strBuffer = GetLocalizedText("TXT_KEY_AIRSWEEP_KILLED_BY_ENEMY", pkAttacker->getNameKey(), pkDefender->getNameKey());
+						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkAttacker->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
 						MILITARYLOG(pkAttacker->getOwner(), strBuffer.c_str(), pkDefender->plot(), pkDefender->getOwner());
 					}
 					if(iActivePlayerID == pkDefender->getOwner())
 					{
-						strBuffer = GetLocalizedText("TXT_KEY_MISC_YOU_KILLED_ENEMY_UNIT", pkDefender->getNameKey(), iAttackerDamageInflicted, 0, pkAttacker->getNameKey(), pkAttacker->getVisualCivAdjective(pkDefender->getTeam()));
-						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkDefender->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer/*, GC.getEraInfo(GC.getGame().getCurrentEra())->getAudioUnitVictoryScript(), MESSAGE_TYPE_INFO, NULL, (ColorTypes)GC.getInfoTypeForString("COLOR_GREEN"), pkTargetPlot->getX(), pkTargetPlot->getY()*/);
+						// {1} = the enemy sweeping aircraft, {2} = my AA unit
+						strBuffer = GetLocalizedText("TXT_KEY_AIRSWEEP_KILLED_ENEMY_FIGHTER", pkAttacker->getNameKey(), pkDefender->getNameKey());
+						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkDefender->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
 						MILITARYLOG(pkDefender->getOwner(), strBuffer.c_str(), pkDefender->plot(), pkAttacker->getOwner());
 					}
 					pkDefender->testPromotionReady();
+				}
+				// Defender died (the sweeping aircraft destroyed the AA unit)
+				else if(bDefenderDead)
+				{
+					auto_ptr<ICvUnit1> pDefender = GC.WrapUnitPointer(pkDefender);
+					gDLL->GameplayUnitDestroyedInCombat(pDefender.get());
+
+					if(iActivePlayerID == pkAttacker->getOwner())
+					{
+						// {1} = my sweeping aircraft, {2} = the enemy AA unit
+						strBuffer = GetLocalizedText("TXT_KEY_AIRSWEEP_KILLED_ENEMY_AA", pkAttacker->getNameKey(), pkDefender->getNameKey());
+						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkAttacker->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+						MILITARYLOG(pkAttacker->getOwner(), strBuffer.c_str(), pkDefender->plot(), pkDefender->getOwner());
+					}
+					if(iActivePlayerID == pkDefender->getOwner())
+					{
+						// {1} = the enemy sweeping aircraft, {2} = my AA unit
+						strBuffer = GetLocalizedText("TXT_KEY_AIRSWEEP_AA_KILLED_BY_ENEMY", pkAttacker->getNameKey(), pkDefender->getNameKey());
+						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkDefender->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+						MILITARYLOG(pkDefender->getOwner(), strBuffer.c_str(), pkDefender->plot(), pkAttacker->getOwner());
+					}
+
+					CvNotifications* pNotification = GET_PLAYER(pkDefender->getOwner()).GetNotifications();
+					if(pNotification)
+					{
+						strBuffer = GetLocalizedText("TXT_KEY_MISC_YOU_UNIT_WAS_DESTROYED", pkDefender->getNameKey(), pkAttacker->getNameKey(), pkAttacker->getVisualCivAdjective(pkDefender->getTeam()), iDefenderDamageInflicted);
+						Localization::String strSummary = Localization::Lookup("TXT_KEY_UNIT_LOST");
+						pNotification->Add(NOTIFICATION_UNIT_DIED, strBuffer, strSummary.toUTF8(), pkDefender->getX(), pkDefender->getY(), (int) pkDefender->getUnitType(), pkDefender->getOwner());
+					}
+
+					pkAttacker->testPromotionReady();
+
+					ApplyPostCombatTraitEffects(pkAttacker, pkDefender);
+				}
+				// Neither died: report the damage the sweep dealt (both sides see the same figure)
+				else if(iAttackerDamageInflicted > 0)
+				{
+					if(iActivePlayerID == pkAttacker->getOwner())
+					{
+						// {1} = my sweeping aircraft, {2} = the enemy AA unit, {3} = damage dealt
+						strBuffer = GetLocalizedText("TXT_KEY_AIRSWEEP_TO_ENEMY", pkAttacker->getNameKey(), pkDefender->getNameKey(), iAttackerDamageInflicted);
+						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkAttacker->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+						MILITARYLOG(pkAttacker->getOwner(), strBuffer.c_str(), pkDefender->plot(), pkDefender->getOwner());
+					}
+					if(iActivePlayerID == pkDefender->getOwner())
+					{
+						// {1} = the enemy sweeping aircraft, {2} = my AA unit, {3} = damage taken
+						strBuffer = GetLocalizedText("TXT_KEY_AIRSWEEP_BY_ENEMY", pkAttacker->getNameKey(), pkDefender->getNameKey(), iAttackerDamageInflicted);
+						GC.GetEngineUserInterface()->AddMessage(uiParentEventID, pkDefender->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+						MILITARYLOG(pkDefender->getOwner(), strBuffer.c_str(), pkDefender->plot(), pkAttacker->getOwner());
+					}
 				}
 			}
 			// Air AA interceptor
