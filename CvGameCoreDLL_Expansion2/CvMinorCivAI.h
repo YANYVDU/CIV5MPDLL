@@ -301,7 +301,9 @@ public:
 	void DoTestStartGlobalQuest();
 	// Super Power V11: pveExclude (optional) forbids handing back quest types the caller just
 	// dropped, used by the aid-point quest reroll so a reroll cannot return the old quests.
-	void DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude = NULL);
+	// iForcedDraw (optional, < 0 = off) supplies an already-drawn random value instead of pulling
+	// one from the shared stream, so the reroll can advance the stream by a fixed amount up front.
+	void DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude = NULL, int iForcedDraw = -1);
 	void AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn, PlayerTypes eForcedTarget = NO_PLAYER);
 	void AddQuestCopyForPlayer(PlayerTypes ePlayer, CvMinorCivQuest* pQuest);
 	void DoTestQuestsOnFirstContact(PlayerTypes eMajor);

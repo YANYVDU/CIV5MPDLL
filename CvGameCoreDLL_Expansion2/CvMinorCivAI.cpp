@@ -4456,7 +4456,7 @@ void CvMinorCivAI::DoTestStartGlobalQuest()
 }
 
 /// See if it is time to start a personal quest for this player
-void CvMinorCivAI::DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude /* = NULL */)
+void CvMinorCivAI::DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude /* = NULL */, int iForcedDraw /* = -1 */)
 {
 	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
 	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "ePlayer is expected to be within maximum bounds (invalid Index)");
@@ -4524,7 +4524,14 @@ void CvMinorCivAI::DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vect
 		return;
 	}
 
-	int iRandIndex = GC.getGame().getJonRandNum(veValidQuests.size(), "Picking random quest for Minor to give to a player.");
+	// A forced draw was already taken from the shared random stream by the caller; otherwise pull
+	// one here. Every client must consume the stream identically, so the reroll draws its values
+	// up front rather than at this point, where an early return above would skip the draw.
+	int iRandIndex;
+	if(iForcedDraw >= 0)
+		iRandIndex = iForcedDraw % (int) veValidQuests.size();
+	else
+		iRandIndex = GC.getGame().getJonRandNum(veValidQuests.size(), "Picking random quest for Minor to give to a player.");
 	eQuest = veValidQuests[iRandIndex];
 
 	AddQuestForPlayer(ePlayer, eQuest, GC.getGame().getGameTurn());
@@ -9297,11 +9304,21 @@ bool CvMinorCivAI::DoRerollPersonalQuestsForPlayer(PlayerTypes eMajor)
 	for(uint iKeepLoop = 0; iKeepLoop < kKeep.size(); iKeepLoop++)
 		m_QuestsGiven[eMajor].push_back(kKeep[iKeepLoop]);
 
+	// Draw one value per slot up front. This runs on every client through a broadcast, so the
+	// shared random stream must advance by the same fixed amount everywhere - drawing inside the
+	// loop would consume a different number of values whenever a client bails out of a draw
+	// (countdown set, cap reached, no valid quest left) and desync every later random call.
+	const int iRerollSlots = GetMaxActivePersonalQuestsForPlayer();
+	std::vector<int> viRerollDraws;
+	viRerollDraws.reserve(iRerollSlots);
+	for(int i = 0; i < iRerollSlots; i++)
+		viRerollDraws.push_back(GC.getGame().getJonRandNum(1000, "Rerolling personal quests for a minor civ."));
+
 	// Grant fresh personal quests up to the normal cap, ignoring the countdown between them
-	for(int i = 0; i < GetMaxActivePersonalQuestsForPlayer(); i++)
+	for(int i = 0; i < iRerollSlots; i++)
 	{
 		SetQuestCountdownForPlayer(eMajor, 0);
-		DoTestStartPersonalQuest(eMajor, &veExclude);
+		DoTestStartPersonalQuest(eMajor, &veExclude, viRerollDraws[i]);
 	}
 
 	return GetNumActivePersonalQuestsForPlayer(eMajor) > 0;

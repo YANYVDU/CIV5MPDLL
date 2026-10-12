@@ -2162,11 +2162,23 @@ int CvLuaGame::lDoMinorRerollQuestsFromMajor(lua_State* L)
 }
 //------------------------------------------------------------------------------
 //void DoMinorBullyGoldWithAidPointsFromMajor(int iMajorCivID, int iMinorCivID, int iGold);
+// The gold amount is looked up from synced state here instead of being passed in. A caller-derived
+// value would make the broadcast's argument list differ between clients whenever they are a moment
+// apart, which breaks the dedup key (the call then runs once per client and stacks the gold). The
+// third argument is still accepted - and ignored - so older scripts keep working.
 int CvLuaGame::lDoMinorBullyGoldWithAidPointsFromMajor(lua_State* L)
 {
 	const int iMajor = lua_tointeger(L, 1);
 	const int iMinor = lua_tointeger(L, 2);
-	const int iGold = lua_tointeger(L, 3);
+
+	if(iMinor < 0 || iMinor >= MAX_CIV_PLAYERS)
+		return 0;
+
+	int iGold = 0;
+	CvPlayer* pMinor = &GET_PLAYER((PlayerTypes)iMinor);
+	if(pMinor != NULL && pMinor->isMinorCiv() && pMinor->GetMinorCivAI() != NULL)
+		iGold = pMinor->GetMinorCivAI()->GetBullyGoldAmount((PlayerTypes)iMajor);
+
 	GC.getGame().DoMinorBullyGoldWithAidPointsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, iGold);
 	return 0;
 }
