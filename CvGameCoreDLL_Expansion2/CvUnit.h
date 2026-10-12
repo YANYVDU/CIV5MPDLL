@@ -608,7 +608,7 @@ public:
 
 	CvUnit* GetBestInterceptor(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
 	int GetInterceptorCount(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
-	int GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true) const;
+	int GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true, bool bForAirSweep = false) const;
 	int GetInterceptionCombatStrength(const CvUnit* pAttacker) const;
 	int GetAirSweepCombatStrength(const CvUnit* pDefender) const;
 	int GetAirSweepDamageToInterceptor(const CvUnit* pInterceptor, bool bIncludeRand = true) const;

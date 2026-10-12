@@ -17943,30 +17943,18 @@ int CvUnit::GetInterceptionCombatStrength(const CvUnit* pAttacker) const
 #if defined(MOD_BUGFIX_INTERCEPTOR_STRENGTH)
 	if (MOD_BUGFIX_INTERCEPTOR_STRENGTH)
 	{
+		// Interception resolves like an air strike: both sides fight with the ranged combat
+		// strength they would use to strike the other, so the interceptor uses its ranged
+		// ATTACK stack. All domains share this rule; a boat intercepts with its guns, not
+		// with its hull defense.
 		if (GetBaseRangedCombatStrength() > 0)
 		{
-			switch (getDomainType())
-			{
-			case DOMAIN_SEA:
-				iStrength = GetMaxDefenseStrength(plot(), pAttacker);
-				break;
-
-			case DOMAIN_AIR:
-				iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
-				break;
-
-			case DOMAIN_LAND:
-			case DOMAIN_IMMOBILE:
-			case DOMAIN_HOVER:
-			default:
-				iStrength = GetMaxAttackStrength(NULL, NULL, pAttacker);
-				break;
-			}
+			iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true);
 		}
 		else
 		{
 			// No ranged combat value at all: intercept with 50% of base melee strength
-			iStrength = GetMaxRangedCombatStrengthWithBase(GetBaseCombatStrength() / 2, pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
+			iStrength = GetMaxRangedCombatStrengthWithBase(GetBaseCombatStrength() / 2, pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true);
 		}
 	}
 	else
@@ -17993,7 +17981,7 @@ int CvUnit::GetInterceptionCombatStrength(const CvUnit* pAttacker) const
 int CvUnit::GetAirSweepCombatStrength(const CvUnit* pDefender) const
 {
 	VALIDATE_OBJECT
-	int iStrength = GetMaxRangedCombatStrength(pDefender, /*pCity*/ NULL, true, /*bForRangedAttack*/ false);
+	int iStrength = GetMaxRangedCombatStrength(pDefender, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true);
 
 	// Mod to air sweep strength
 	iStrength *= (100 + GetAirSweepCombatModifier());
@@ -18060,7 +18048,7 @@ int CvUnit::GetAirSweepDamageFromInterceptor(const CvUnit* pInterceptor, bool bI
 	// the sweeping aircraft's own air sweep damage modifier
 	if(pInterceptor->getDomainType() != DOMAIN_AIR)
 	{
-		iDamage = pInterceptor->GetInterceptionDamage(this, bIncludeRand);
+		iDamage = pInterceptor->GetInterceptionDamage(this, bIncludeRand, /*bForAirSweep*/ true);
 
 		iDamage *= GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD();
 		iDamage /= 100;
@@ -18103,10 +18091,17 @@ int CvUnit::GetAirSweepDamageFromInterceptor(const CvUnit* pInterceptor, bool bI
 }
 
 //	--------------------------------------------------------------------------------
-/// Amount of damage done by this unit when intercepting pAttacker
-int CvUnit::GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand) const
+/// Amount of damage done by this unit when intercepting pAttacker.
+/// bForAirSweep selects the air sweep exchange, where the intercepted unit is a sweeping
+/// aircraft and contributes its air sweep strength; otherwise this is an air strike.
+int CvUnit::GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand, bool bForAirSweep) const
 {
-	int iAttackerStrength = pAttacker->GetMaxRangedCombatStrength(this, /*pCity*/ NULL, true, /*bForRangedAttack*/ false);
+	// An air sweep is a straight ranged exchange, so the sweeping unit contributes the same
+	// strength GenerateAirSweepCombatInfo uses for it. A plain air strike keeps the vanilla
+	// defensive-strength reading of the intercepted attacker.
+	int iAttackerStrength = bForAirSweep
+		? pAttacker->GetAirSweepCombatStrength(this)
+		: pAttacker->GetMaxRangedCombatStrength(this, /*pCity*/ NULL, true, /*bForRangedAttack*/ false);
 
 	// Interceptor strength (shared with air sweep resolution)
 	int iInterceptorStrength = GetInterceptionCombatStrength(pAttacker);

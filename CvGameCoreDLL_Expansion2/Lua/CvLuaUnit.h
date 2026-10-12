@@ -425,6 +425,7 @@ protected:
 	static int lGetStrategicResourceCombatPenalty(lua_State* L);
 	static int lGetUnhappinessCombatPenalty(lua_State* L);
 	static int lAirSweepCombatMod(lua_State* L);
+	static int lInterceptionCombatMod(lua_State* L);
 	static int lCapitalDefenseModifier(lua_State* L);
 	static int lCapitalDefenseFalloff(lua_State* L);
 	

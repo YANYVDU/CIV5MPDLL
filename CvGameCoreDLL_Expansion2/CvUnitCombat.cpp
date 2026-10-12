@@ -2430,7 +2430,7 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 	if(pkDefender->getDomainType() != DOMAIN_AIR)
 	{
 		// The sweeping aircraft takes interception damage from the AA unit
-		int iInterceptionDamage = pkDefender->GetInterceptionDamage(&kAttacker);
+		int iInterceptionDamage = pkDefender->GetInterceptionDamage(&kAttacker, /*bIncludeRand*/ true, /*bForAirSweep*/ true);
 
 		// Reduce damage for performing a sweep
 		iInterceptionDamage *= /*75*/ GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD();
