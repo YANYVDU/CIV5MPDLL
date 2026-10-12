@@ -14039,7 +14039,6 @@ bool CvMinorCivInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 	m_iMinorCivTrait = GC.getInfoTypeForString(szTextVal, true);
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_strUAType = kResults.GetText("UAType");
-	LOGFILEMGR.GetLog("CSUA_debug.log", FILogFile::kDontTimeStamp)->Msg("MinorCiv CacheResults: Type=[%s] UAType=[%s]", GetType(), m_strUAType.c_str());
 #endif
 
 	//Arrays
