@@ -476,6 +476,11 @@ protected:
 	static int lChangeUnitProduction(lua_State* L);
 
 	static int lIsCanAddSpecialistToBuilding(lua_State* L);
+	static int lGetMaxSpecialistCount(lua_State* L);
+	static int lChangeMaxSpecialistCount(lua_State* L);
+	static int lIsCanAddSpecialist(lua_State* L);
+	static int lGetNumSpecialistsInBuildings(lua_State* L);
+	static int lDoRemoveSpecialist(lua_State* L);
 	static int lGetSpecialistUpgradeThreshold(lua_State* L);
 	static int lGetNumSpecialistsAllowedByBuilding(lua_State* L);
 	static int lGetSpecialistCount(lua_State* L);

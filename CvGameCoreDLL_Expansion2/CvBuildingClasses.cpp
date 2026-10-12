@@ -5371,6 +5371,8 @@ void CvCityBuildings::SetNumRealBuildingTimed(BuildingTypes eIndex, int iNewValu
 	const CvBuildingClassInfo& kBuildingClassInfo = buildingEntry->GetBuildingClassInfo();
 
 	int iOldNumBuilding = GetNumRealBuilding(eIndex);
+	// How many of this building the City counts as owned, before the change below
+	const int iNumBuildingBefore = GetNumBuilding(eIndex);
 	m_paiNumRealBuilding[eIndex] = iNewValue;
 
 	if (GetNumRealBuilding(eIndex) > 0)
@@ -5386,6 +5388,11 @@ void CvCityBuildings::SetNumRealBuildingTimed(BuildingTypes eIndex, int iNewValu
 
 	// Process building effects
 	m_pCity->processBuilding(eIndex, iChangeNumRealBuilding, bFirst);
+
+	// Specialist slots this building supplies. The change of GetNumBuilding() is passed
+	// rather than iChangeNumRealBuilding, because a building counts once while the City
+	// owns it (see CvCity::ChangeMaxSpecialistCountFromBuilding).
+	m_pCity->ChangeMaxSpecialistCountFromBuilding(eIndex, GetNumBuilding(eIndex) - iNumBuildingBefore);
 
 	// Maintenance cost
 	if (buildingEntry->GetGoldMaintenance() != 0)
@@ -5611,11 +5618,17 @@ void CvCityBuildings::SetNumFreeBuilding(BuildingTypes eIndex, int iNewValue)
 	{
 		// This condensed logic comes from SetNumRealBuilding()
 		int iChangeNumFreeBuilding = iNewValue - GetNumFreeBuilding(eIndex);
-		
+		// How many of this building the City counts as owned, before the change below
+		const int iNumBuildingBefore = GetNumBuilding(eIndex);
+
 		m_paiNumFreeBuilding[eIndex] = iNewValue;
 
 		// Process building effects
 		m_pCity->processBuilding(eIndex, iChangeNumFreeBuilding, true);
+
+		// Specialist slots this building supplies, counted the way the City counts the
+		// building itself (see CvCity::ChangeMaxSpecialistCountFromBuilding)
+		m_pCity->ChangeMaxSpecialistCountFromBuilding(eIndex, GetNumBuilding(eIndex) - iNumBuildingBefore);
 
 		CvBuildingEntry* buildingEntry = GC.getBuildingInfo(eIndex);
 		if(buildingEntry->GetSpyPoints() != 0)

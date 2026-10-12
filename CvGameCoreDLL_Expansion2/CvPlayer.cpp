@@ -25633,11 +25633,15 @@ void CvPlayer::changeFreeBuildingCount(BuildingTypes eIndex, int iChange)
 
 			for(pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
 			{
-				pLoopCity->GetCityBuildings()->SetNumFreeBuilding(eIndex, 0);
 #ifdef MOD_BUGFIX_BUILDING_FREEBUILDING
+				// Give the building back as a real one before the free copy goes away. The other
+				// order drops GetNumBuilding() to zero for an instant when the City did not own a
+				// copy of its own, which takes the Specialist slots with it and evicts the Citizens
+				// sitting in them (see CvCity::ChangeMaxSpecialistCountFromBuilding).
 				if (MOD_BUGFIX_BUILDING_FREEBUILDING && !GC.getBuildingInfo(eIndex)->IsDummyBuilding())
 					pLoopCity->GetCityBuildings()->SetNumRealBuilding(eIndex, 1);
 #endif
+				pLoopCity->GetCityBuildings()->SetNumFreeBuilding(eIndex, 0);
 			}
 		}
 	}

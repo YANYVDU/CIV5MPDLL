@@ -2797,11 +2797,27 @@ CityTaskResult CvCity::doTask(TaskTypes eTask, int iData1, int iData2, bool bOpt
 		break;
 
 	case TASK_ADD_SPECIALIST:
-		GetCityCitizens()->DoAddSpecialistToBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		if((BuildingTypes) iData2 == NO_BUILDING)
+		{
+			// The slot belongs to the City, so a task may name a Specialist type instead of the
+			// building that supplies the slot (iData1 is the SpecialistTypes index).
+			GetCityCitizens()->DoAddSpecialist(/*eSpecialist*/ (SpecialistTypes) iData1, true);
+		}
+		else
+		{
+			GetCityCitizens()->DoAddSpecialistToBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		}
 		break;
 
 	case TASK_REMOVE_SPECIALIST:
-		GetCityCitizens()->DoRemoveSpecialistFromBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		if((BuildingTypes) iData2 == NO_BUILDING)
+		{
+			GetCityCitizens()->DoRemoveSpecialist(/*eSpecialist*/ (SpecialistTypes) iData1, true);
+		}
+		else
+		{
+			GetCityCitizens()->DoRemoveSpecialistFromBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		}
 		GetCityCitizens()->DoAddBestCitizenFromUnassigned();
 		break;
 
@@ -7881,8 +7897,14 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 				if (eFreeBuildingThisCity != NO_BUILDING)
 				{
-					m_pCityBuildings->SetNumRealBuilding(eFreeBuildingThisCity, 0);
+					// Hand out the free copy before dropping the built one. The City usually already
+					// owns the building (the Great Library comes with a Library), and SetNumRealBuilding(0)
+					// on its own drops GetNumBuilding() to zero for an instant, which takes that
+					// building's Specialist slots with it and evicts the Citizens sitting in them (see
+					// CvCity::ChangeMaxSpecialistCountFromBuilding). Granting the free copy first keeps
+					// the count up for the whole swap.
 					m_pCityBuildings->SetNumFreeBuilding(eFreeBuildingThisCity, 1);
+					m_pCityBuildings->SetNumRealBuilding(eFreeBuildingThisCity, 0);
 				}
 			}
 
@@ -8559,9 +8581,9 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			ChangeHurryModifierLocal((HurryTypes) iI, (pBuildingInfo->GetHurryModifierLocal(iI) * iChange));
 		}
 
-		if(GC.getBuildingInfo(eBuilding)->GetSpecialistType() != NO_SPECIALIST)
+		if(pBuildingInfo->GetSpecialistType() != NO_SPECIALIST)
 		{
-			GetCityCitizens()->ChangeBuildingGreatPeopleRateChanges((SpecialistTypes) GC.getBuildingInfo(eBuilding)->GetSpecialistType(), pBuildingInfo->GetGreatPeopleRateChange() * iChange);
+			GetCityCitizens()->ChangeBuildingGreatPeopleRateChanges((SpecialistTypes) pBuildingInfo->GetSpecialistType(), pBuildingInfo->GetGreatPeopleRateChange() * iChange);
 		}
 
 		for(int iI = 0; iI < GC.getNumUnitCombatClassInfos(); iI++)
@@ -23832,18 +23854,182 @@ bool CvCity::IsConnectedTo(CvCity* pCity) const
 	return GET_PLAYER(getOwner()).IsCityConnectedToCity((CvCity*) this, pCity);
 }
 
-bool CvCity::HasSpecialistSlot(SpecialistTypes iSpecialistType) const
+/// How many Specialists of this type can this City support?
+/// This reads the slot inventory (m_paiMaxSpecialistCount) maintained by
+/// ChangeMaxSpecialistCount(); it is NOT derived from the buildings on demand, so a slot
+/// no longer belongs to a particular building.
+int CvCity::GetMaxSpecialistCount(SpecialistTypes eIndex) const
 {
-	for (int iBuildingType = 0; iBuildingType < GC.getNumBuildingInfos(); iBuildingType++) {
-		if (HasBuilding((BuildingTypes)iBuildingType)) {
-			CvBuildingEntry* pkBuilding = GC.getBuildingInfo((BuildingTypes)iBuildingType);
-			if (pkBuilding && pkBuilding->GetSpecialistType() == iSpecialistType && pkBuilding->GetSpecialistCount() > 0) {
+	if (eIndex < 0 || eIndex >= GC.getNumSpecialistInfos())
+	{
+		return 0;
+	}
+
+	if ((size_t) eIndex >= m_paiMaxSpecialistCount.size())
+	{
+		return 0;
+	}
+
+	return m_paiMaxSpecialistCount[eIndex];
+}
+
+/// Change how many Specialists of this type this City can support.
+/// ChangeMaxSpecialistCountFromBuilding() calls this for every building the City gains or
+/// loses; policies, traits, Lua scripts and any other slot source may call it as well
+/// (MPDLL exposes this to Lua as City:ChangeMaxSpecialistCount).
+void CvCity::ChangeMaxSpecialistCount(SpecialistTypes eIndex, int iChange)
+{
+	if (iChange == 0 || eIndex < 0 || eIndex >= GC.getNumSpecialistInfos())
+	{
+		return;
+	}
+
+	// reset() sizes the inventory, but a City is handed its free buildings early in
+	// CvCity::init(); grow the vector on demand so no such call is ever dropped.
+	if (m_paiMaxSpecialistCount.size() != (size_t) GC.getNumSpecialistInfos())
+	{
+		m_paiMaxSpecialistCount.resize(GC.getNumSpecialistInfos());
+	}
+
+	// Never let a source drive the inventory negative; the floor is not an error state,
+	// it just means the source asked for more slots than it had granted.
+	int iNewValue = m_paiMaxSpecialistCount[eIndex] + iChange;
+	// A negative result means a source gave back more slots than it handed out. The floor
+	// keeps the inventory usable; the assert reports the bookkeeping error in a debug build
+	// rather than hiding it.
+	CvAssertMsg(iNewValue >= 0, "specialist slot inventory went below zero");
+	if (iNewValue < 0)
+	{
+		iNewValue = 0;
+	}
+
+	m_paiMaxSpecialistCount.setAt(eIndex, iNewValue);
+
+	// Losing slots can leave more Specialists assigned than the City can now hold; those
+	// citizens are returned to the unassigned pool.
+	if (iChange < 0)
+	{
+		GetCityCitizens()->DoEnforceSpecialistSlotLimit(eIndex);
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(CityScreen_DIRTY_BIT, true);
+
+	auto_ptr<ICvCity1> pCity = GC.WrapCityPointer(this);
+	GC.GetEngineUserInterface()->SetSpecificCityInfoDirty(pCity.get(), CITY_UPDATE_TYPE_SPECIALISTS);
+}
+
+/// Keep the specialist slot inventory in step with one building type this City owns.
+/// A building supplies its slots while the City owns it, so this mirrors
+/// CvCityBuildings::GetNumBuilding(); the callers pass the change of that count rather than
+/// the change of the counter they touched, because a building counts once even when a free
+/// copy sits next to a built one (GetNumBuilding() returns max(real, free) while
+/// CITY_MAX_NUM_BUILDINGS <= 1). An obsolete building keeps its slots, exactly as
+/// CvCity::HasBuilding() keeps reporting it.
+void CvCity::ChangeMaxSpecialistCountFromBuilding(BuildingTypes eBuilding, int iNumBuildingChange)
+{
+	if (iNumBuildingChange == 0)
+	{
+		return;
+	}
+
+	CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+	if (pkBuildingInfo == NULL)
+	{
+		return;
+	}
+
+	const SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+	if (eSpecialist == NO_SPECIALIST || pkBuildingInfo->GetSpecialistCount() <= 0)
+	{
+		return;
+	}
+
+	ChangeMaxSpecialistCount(eSpecialist, pkBuildingInfo->GetSpecialistCount() * iNumBuildingChange);
+
+	// A building the City no longer owns holds nobody. Buildings also leave through paths that never
+	// clear the per-building count (razed in combat, removed by a script), so clear it here. This has
+	// to run after the slot change above, which still needs that count to pick the Citizens to evict.
+	if (m_pCityBuildings->GetNumBuilding(eBuilding) <= 0)
+	{
+		GetCityCitizens()->ClearSpecialistsInBuilding(eBuilding);
+	}
+}
+
+/// Rebuild the specialist slot inventory from the buildings this City owns.
+/// Buildings are the primary slot source, so this restores the inventory for a save that
+/// predates it (the field was serialized but always zero in those saves).
+void CvCity::RebuildMaxSpecialistCountsFromBuildings()
+{
+	const int iNumSpecialistInfos = GC.getNumSpecialistInfos();
+
+	// A save made against a different number of specialist types may have loaded a shorter
+	// vector; make sure every type has a slot entry before writing to it.
+	if (m_paiMaxSpecialistCount.size() != (size_t) iNumSpecialistInfos)
+	{
+		m_paiMaxSpecialistCount.resize(iNumSpecialistInfos);
+	}
+
+	for (int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistInfos; iSpecialistLoop++)
+	{
+		m_paiMaxSpecialistCount.setAt(iSpecialistLoop, 0);
+	}
+
+	const int iNumBuildingInfos = GC.getNumBuildingInfos();
+	for (int iBuildingLoop = 0; iBuildingLoop < iNumBuildingInfos; iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+		const int iNumBuilding = m_pCityBuildings->GetNumBuilding(eBuilding);
+		if (iNumBuilding > 0)
+		{
+			CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+			if (pkBuildingInfo != NULL)
+			{
+				const SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+				if (eSpecialist != NO_SPECIALIST && pkBuildingInfo->GetSpecialistCount() > 0)
+				{
+					m_paiMaxSpecialistCount.setAt(eSpecialist, m_paiMaxSpecialistCount[eSpecialist] + pkBuildingInfo->GetSpecialistCount() * iNumBuilding);
+				}
+			}
+		}
+	}
+}
+
+/// Does this City need its slot inventory rebuilt? True when the inventory is empty even
+/// though the City owns buildings that carry specialist slots, i.e. the save predates the
+/// inventory (or wrote it before any building was processed).
+bool CvCity::IsRebuildMaxSpecialistCountsNeeded() const
+{
+	const int iNumSpecialistInfos = GC.getNumSpecialistInfos();
+	for (int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistInfos; iSpecialistLoop++)
+	{
+		if (GetMaxSpecialistCount((SpecialistTypes) iSpecialistLoop) > 0)
+		{
+			return false;
+		}
+	}
+
+	const int iNumBuildingInfos = GC.getNumBuildingInfos();
+	for (int iBuildingLoop = 0; iBuildingLoop < iNumBuildingInfos; iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+		if (m_pCityBuildings->GetNumBuilding(eBuilding) > 0)
+		{
+			CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+			if (pkBuildingInfo != NULL && pkBuildingInfo->GetSpecialistType() != NO_SPECIALIST && pkBuildingInfo->GetSpecialistCount() > 0)
+			{
 				return true;
 			}
 		}
 	}
 
 	return false;
+}
+
+bool CvCity::HasSpecialistSlot(SpecialistTypes iSpecialistType) const
+{
+	return GetMaxSpecialistCount(iSpecialistType) > 0;
 }
 
 bool CvCity::HasSpecialist(SpecialistTypes iSpecialistType) const

@@ -1315,6 +1315,17 @@ public:
 	bool IsConnectedTo(CvCity* pCity) const;
 	bool HasSpecialistSlot(SpecialistTypes iSpecialistType) const;
 	bool HasSpecialist(SpecialistTypes iSpecialistType) const;
+	// Specialist slot inventory: how many specialists of each type this City can support.
+	// Maintained incrementally by whatever provides the slots (buildings go through
+	// ChangeMaxSpecialistCountFromBuilding; other slot sources may call
+	// ChangeMaxSpecialistCount as well) instead of being recomputed by scanning the
+	// buildings on demand. A slot is therefore owned by the City, not by an individual
+	// building.
+	int GetMaxSpecialistCount(SpecialistTypes eIndex) const;
+	void ChangeMaxSpecialistCount(SpecialistTypes eIndex, int iChange);
+	void ChangeMaxSpecialistCountFromBuilding(BuildingTypes eBuilding, int iNumBuildingChange);
+	void RebuildMaxSpecialistCountsFromBuildings();
+	bool IsRebuildMaxSpecialistCountsNeeded() const;
 	bool HasTerrain(TerrainTypes iTerrainType) const;
 	bool HasWorkedTerrain(TerrainTypes iTerrainType) const;
 	bool HasAnyDomesticTradeRoute() const;

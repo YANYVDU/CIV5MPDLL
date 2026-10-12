@@ -104,7 +104,20 @@ public:
 	void DoAddSpecialistToBuilding(BuildingTypes eBuilding, bool bForced);
 	void DoRemoveSpecialistFromBuilding(BuildingTypes eBuilding, bool bForced, bool bEliminatePopulation = false);
 	void DoRemoveAllSpecialistsFromBuilding(BuildingTypes eBuilding, bool bEliminatePopulation = false);
+	void ClearSpecialistsInBuilding(BuildingTypes eBuilding);
 	bool DoRemoveWorstSpecialist(SpecialistTypes eDontChangeSpecialist, const BuildingTypes eDontRemoveFromBuilding = NO_BUILDING);
+
+	// Specialist slots are owned by the City, not by a building: a building only supplies
+	// the slot (via CvCity::ChangeMaxSpecialistCountFromBuilding), the citizen filling it
+	// belongs to the city-wide pool. These are the type-based entry points used by the UI
+	// and the AI.
+	bool IsCanAddSpecialist(SpecialistTypes eSpecialist);
+	void DoAddSpecialist(SpecialistTypes eSpecialist, bool bForced);
+	bool DoRemoveSpecialist(SpecialistTypes eSpecialist, bool bForced, bool bEliminatePopulation = false);
+	int GetNumSpecialistsInBuildings(SpecialistTypes eSpecialist);
+	BuildingTypes GetSpecialistProviderBuilding(SpecialistTypes eSpecialist);
+	BuildingTypes GetSpecialistRemovalBuilding(SpecialistTypes eSpecialist);
+	void DoEnforceSpecialistSlotLimit(SpecialistTypes eSpecialist);
 
 	int GetNumDefaultSpecialists() const;
 	void ChangeNumDefaultSpecialists(int iChange);
@@ -163,6 +176,12 @@ private:
 	int* m_piBuildingGreatPeopleRateChanges;
 
 	bool m_bInited;
+
+	// Shared cores of the building-based and the type-based entry points above. eBuilding may be
+	// NO_BUILDING, in which case the Specialist is only counted in the city-wide pool and no
+	// per-building bookkeeping is done (its slot does not come from a building).
+	void DoAddSpecialistInternal(SpecialistTypes eSpecialist, BuildingTypes eBuilding, bool bForced);
+	bool DoRemoveSpecialistInternal(SpecialistTypes eSpecialist, BuildingTypes eBuilding, bool bForced, bool bEliminatePopulation);
 
 };
 

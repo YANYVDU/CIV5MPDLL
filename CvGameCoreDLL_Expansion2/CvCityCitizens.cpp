@@ -162,6 +162,24 @@ void CvCityCitizens::Read(FDataStream& kStream)
 	BuildingArrayHelpers::Read(kStream, m_aiNumForcedSpecialistsInBuilding);
 
 	CvInfosSerializationHelper::ReadHashedDataArray(kStream, m_piBuildingGreatPeopleRateChanges, GC.getNumSpecialistInfos());
+
+	// The city-wide specialist slot inventory lives in CvCity::m_paiMaxSpecialistCount. It is
+	// serialized, but saves made before the inventory was introduced always wrote zero there,
+	// so restore it from the buildings this City owns. Buildings are read before the citizens
+	// in CvCity::read(), so they are available here.
+	if (GetCity() != NULL && GetCity()->IsRebuildMaxSpecialistCountsNeeded())
+	{
+		GetCity()->RebuildMaxSpecialistCountsFromBuildings();
+
+		// A save written before the inventory existed can hold more assigned Specialists of a type
+		// than its buildings supply, because nothing trimmed them back then. The inventory is the
+		// source of truth from here on, so bring the assignments within it now rather than leaving
+		// the City over its limit until the Citizens happen to be reassigned.
+		for (int iSpecialistLoop = 0; iSpecialistLoop < GC.getNumSpecialistInfos(); iSpecialistLoop++)
+		{
+			DoEnforceSpecialistSlotLimit((SpecialistTypes) iSpecialistLoop);
+		}
+	}
 }
 
 /// Serialization write
@@ -2438,6 +2456,17 @@ bool CvCityCitizens::IsCanAddSpecialistToBuilding(BuildingTypes eBuilding)
 	CvAssert(eBuilding > -1);
 	CvAssert(eBuilding < GC.getNumBuildingInfos());
 
+	CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+	if(pkBuildingInfo == NULL)
+	{
+		return false;
+	}
+
+	if(pkBuildingInfo->GetSpecialistType() == NO_SPECIALIST || pkBuildingInfo->GetSpecialistCount() <= 0)
+	{
+		return false;
+	}
+
 	int iNumSpecialistsAssigned = GetNumSpecialistsInBuilding(eBuilding);
 
 #if defined(MOD_GLOBAL_CITY_AUTOMATON_WORKERS)
@@ -2445,13 +2474,148 @@ bool CvCityCitizens::IsCanAddSpecialistToBuilding(BuildingTypes eBuilding)
 #else
 	if(iNumSpecialistsAssigned < GetCity()->getPopulation() &&	// Limit based on Pop of City
 #endif
-	        iNumSpecialistsAssigned < GC.getBuildingInfo(eBuilding)->GetSpecialistCount() &&				// Limit for this particular Building
-	        iNumSpecialistsAssigned < GC.getMAX_SPECIALISTS_FROM_BUILDING())	// Overall Limit
+	        iNumSpecialistsAssigned < pkBuildingInfo->GetSpecialistCount() &&				// Limit for this particular Building
+	        iNumSpecialistsAssigned < GC.getMAX_SPECIALISTS_FROM_BUILDING() &&				// Overall Limit
+	        IsCanAddSpecialist((SpecialistTypes) pkBuildingInfo->GetSpecialistType()))		// Limit for the Specialist type in the whole City
 	{
 		return true;
 	}
 
 	return false;
+}
+
+/// Are we in the position to add another Specialist of this type anywhere in the City?
+/// The slot belongs to the City, so this only looks at the city-wide slot inventory.
+bool CvCityCitizens::IsCanAddSpecialist(SpecialistTypes eSpecialist)
+{
+	if(eSpecialist < 0 || eSpecialist >= GC.getNumSpecialistInfos())
+	{
+		return false;
+	}
+
+	// No free slot of this type left in the City
+	if(GetSpecialistCount(eSpecialist) >= GetCity()->GetMaxSpecialistCount(eSpecialist))
+	{
+		return false;
+	}
+
+#if defined(MOD_GLOBAL_CITY_AUTOMATON_WORKERS)
+	if(GetSpecialistCount(eSpecialist) >= GetCity()->getPopulation(true))
+#else
+	if(GetSpecialistCount(eSpecialist) >= GetCity()->getPopulation())
+#endif
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/// How many Specialists of this type are (still) sitting in the City's buildings?
+/// Bookkeeping only, used to decide whether a Specialist of this type can be taken out of a
+/// building or lives in the city-wide pool alone.
+int CvCityCitizens::GetNumSpecialistsInBuildings(SpecialistTypes eSpecialist)
+{
+	int iNumSpecialists = 0;
+
+	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+
+		if(m_aiNumSpecialistsInBuilding[eBuilding] <= 0)
+		{
+			continue;
+		}
+
+		// A building the City no longer owns holds nobody; skipping it keeps the total here
+		// from running ahead of the city-wide count of this type.
+		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) <= 0)
+		{
+			continue;
+		}
+
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+		if(pkBuildingInfo != NULL && (SpecialistTypes) pkBuildingInfo->GetSpecialistType() == eSpecialist)
+		{
+			iNumSpecialists += m_aiNumSpecialistsInBuilding[eBuilding];
+		}
+	}
+
+	return iNumSpecialists;
+}
+
+/// Which building of this City should give up a Specialist of this type?
+/// Removal has to pick a building that really holds one of them: picking any building that
+/// merely supplies the type would decrement the count of a building that has no such
+/// occupant, leaving the City-wide count and the per-building counts out of step. Among the
+/// candidates the fullest one is taken, so that draining a type empties one building at a
+/// time. Returns NO_BUILDING when the slot of this type does not come from a building at
+/// all, in which case the citizen lives in the city-wide pool alone.
+BuildingTypes CvCityCitizens::GetSpecialistRemovalBuilding(SpecialistTypes eSpecialist)
+{
+	BuildingTypes eBestBuilding = NO_BUILDING;
+	int iMostSpecialists = 0;
+
+	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+
+		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) <= 0)
+		{
+			continue;
+		}
+
+		if(m_aiNumSpecialistsInBuilding[eBuilding] <= iMostSpecialists)
+		{
+			continue;
+		}
+
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+		if(pkBuildingInfo != NULL && (SpecialistTypes) pkBuildingInfo->GetSpecialistType() == eSpecialist)
+		{
+			iMostSpecialists = m_aiNumSpecialistsInBuilding[eBuilding];
+			eBestBuilding = eBuilding;
+		}
+	}
+
+	return eBestBuilding;
+}
+
+/// Which building of this City should hold a Specialist of this type?
+/// A building only supplies the slot, so any building providing this type will do; the one
+/// with the most free room is picked to keep the per-building counts as close to the slot
+/// layout as possible. Returns NO_BUILDING when no building supplies this type at all, in
+/// which case the slot comes from a non-building source and the citizen is not tied to a
+/// building.
+BuildingTypes CvCityCitizens::GetSpecialistProviderBuilding(SpecialistTypes eSpecialist)
+{
+	BuildingTypes eBestBuilding = NO_BUILDING;
+	int iBestFreeSlots = 0;
+
+	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+
+		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) <= 0)
+		{
+			continue;
+		}
+
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+		if(pkBuildingInfo == NULL || (SpecialistTypes) pkBuildingInfo->GetSpecialistType() != eSpecialist)
+		{
+			continue;
+		}
+
+		const int iFreeSlots = pkBuildingInfo->GetSpecialistCount() - m_aiNumSpecialistsInBuilding[eBuilding];
+		if(iFreeSlots > iBestFreeSlots)
+		{
+			iBestFreeSlots = iFreeSlots;
+			eBestBuilding = eBuilding;
+		}
+	}
+
+	return eBestBuilding;
 }
 
 /// Adds and initializes a Specialist for this building
@@ -2466,64 +2630,118 @@ void CvCityCitizens::DoAddSpecialistToBuilding(BuildingTypes eBuilding, bool bFo
 		return;
 	}
 
-	SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+	// The building only supplies the slot, the citizen belongs to the city-wide pool
+	DoAddSpecialistInternal((SpecialistTypes) pkBuildingInfo->GetSpecialistType(), eBuilding, bForced);
+}
 
-	// Can't add more than the max
-	if(IsCanAddSpecialistToBuilding(eBuilding))
+/// Adds and initializes a Specialist of this type, without naming a building
+void CvCityCitizens::DoAddSpecialist(SpecialistTypes eSpecialist, bool bForced)
+{
+	DoAddSpecialistInternal(eSpecialist, GetSpecialistProviderBuilding(eSpecialist), bForced);
+}
+
+/// Shared core of the two entry points above. eBuilding may be NO_BUILDING, in which case the
+/// Specialist is only counted in the city-wide pool.
+void CvCityCitizens::DoAddSpecialistInternal(SpecialistTypes eSpecialist, BuildingTypes eBuilding, bool bForced)
+{
+	if(eSpecialist < 0 || eSpecialist >= GC.getNumSpecialistInfos())
 	{
-		// If we're force-assigning a specialist, then we can reduce the count on forced default specialists
-		if(bForced)
+		return;
+	}
+
+	// SPECIALIST_CITIZEN is the City's default pool rather than a slot type: CvCityCitizens keeps it
+	// in m_iNumDefaultSpecialists as well as in the inventory, and only ChangeNumDefaultSpecialists()
+	// moves the two together. A slot source may not name it, so a slot of that type is refused here
+	// instead of being counted on one side only.
+	if(eBuilding == NO_BUILDING && eSpecialist == (SpecialistTypes) GC.getDEFAULT_SPECIALIST())
+	{
+		return;
+	}
+
+	// Same gate the city-wide API exposes: a free slot of this type, and a Citizen to fill it.
+	// DoAddSpecialistToBuilding() used to reach this through IsCanAddSpecialistToBuilding();
+	// routing both entry points through one predicate keeps the two in step.
+	if(!IsCanAddSpecialist(eSpecialist))
+	{
+		return;
+	}
+
+	// When the caller named a building, that building's own limits stay in force as well
+	if(eBuilding != NO_BUILDING)
+	{
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+		if(pkBuildingInfo == NULL || (SpecialistTypes) pkBuildingInfo->GetSpecialistType() != eSpecialist)
 		{
-			if(GetNumForcedDefaultSpecialists() > 0)
-				ChangeNumForcedDefaultSpecialists(-1);
+			return;
 		}
 
-		// If we don't already have an Unassigned Citizen to turn into a Specialist, find one from somewhere
+		const int iNumSpecialistsAssigned = GetNumSpecialistsInBuilding(eBuilding);
+		if(iNumSpecialistsAssigned >= pkBuildingInfo->GetSpecialistCount() ||
+		        iNumSpecialistsAssigned >= GC.getMAX_SPECIALISTS_FROM_BUILDING())
+		{
+			return;
+		}
+	}
+
+	// If we're force-assigning a specialist, then we can reduce the count on forced default specialists
+	if(bForced)
+	{
+		if(GetNumForcedDefaultSpecialists() > 0)
+			ChangeNumForcedDefaultSpecialists(-1);
+	}
+
+	// If we don't already have an Unassigned Citizen to turn into a Specialist, find one from somewhere
+	if(GetNumUnassignedCitizens() == 0)
+	{
+		DoRemoveWorstCitizen(true, /*Don't remove this type*/ eSpecialist);
 		if(GetNumUnassignedCitizens() == 0)
 		{
-			DoRemoveWorstCitizen(true, /*Don't remove this type*/ eSpecialist);
-			if(GetNumUnassignedCitizens() == 0)
+			// Still nobody, all the citizens may be assigned to the eSpecialist we are looking for, try again
+			if(!DoRemoveWorstSpecialist(NO_SPECIALIST, eBuilding))
 			{
-				// Still nobody, all the citizens may be assigned to the eSpecialist we are looking for, try again
-				if(!DoRemoveWorstSpecialist(NO_SPECIALIST, eBuilding))
-				{
-					return; // For some reason we can't do this, we must exit, else we will be going over the population count
-				}
+				return; // For some reason we can't do this, we must exit, else we will be going over the population count
 			}
 		}
+	}
 
-		// Increase count for the whole city
-		m_aiSpecialistCounts[eSpecialist]++;
+	// Increase count for the whole city
+	m_aiSpecialistCounts[eSpecialist]++;
+
+	// Bookkeeping for the building that supplied the slot (used for display and for the bonuses
+	// that are tied to a building, eg the Guilds). A Specialist whose slot comes from a
+	// non-building source has no building to sit in, and that is fine.
+	if(eBuilding != NO_BUILDING)
+	{
 		m_aiNumSpecialistsInBuilding[eBuilding]++;
 
 		if(bForced)
 		{
 			m_aiNumForcedSpecialistsInBuilding[eBuilding]++;
 		}
-
-		GetCity()->processSpecialist(eSpecialist, 1);
-
-		ChangeNumUnassignedCitizens(-1);
-
-		//we added the first specialist, this may have religious effects
-		if (GetTotalSpecialistCount() == 1)
-		{
-			GetCity()->UpdateReligiousYieldFromSpecialist(true);
-			GetCity()->UpdateAllNonPlotYields();
-		}
-
-		ICvUserInterface2* pkIFace = GC.GetEngineUserInterface();
-		pkIFace->setDirty(GameData_DIRTY_BIT, true);
-		pkIFace->setDirty(CityInfo_DIRTY_BIT, true);
-		//pkIFace->setDirty(InfoPane_DIRTY_BIT, true );
-		pkIFace->setDirty(CityScreen_DIRTY_BIT, true);
-		pkIFace->setDirty(ColoredPlots_DIRTY_BIT, true);
-
-		CvCity* pkCity = GetCity();
-		auto_ptr<ICvCity1> pCity = GC.WrapCityPointer(pkCity);
-
-		pkIFace->SetSpecificCityInfoDirty(pCity.get(), CITY_UPDATE_TYPE_SPECIALISTS);
 	}
+
+	GetCity()->processSpecialist(eSpecialist, 1);
+
+	ChangeNumUnassignedCitizens(-1);
+
+	//we added the first specialist, this may have religious effects
+	if (GetTotalSpecialistCount() == 1)
+	{
+		GetCity()->UpdateReligiousYieldFromSpecialist(true);
+		GetCity()->UpdateAllNonPlotYields();
+	}
+
+	ICvUserInterface2* pkIFace = GC.GetEngineUserInterface();
+	pkIFace->setDirty(GameData_DIRTY_BIT, true);
+	pkIFace->setDirty(CityInfo_DIRTY_BIT, true);
+	//pkIFace->setDirty(InfoPane_DIRTY_BIT, true );
+	pkIFace->setDirty(CityScreen_DIRTY_BIT, true);
+	pkIFace->setDirty(ColoredPlots_DIRTY_BIT, true);
+
+	CvCity* pkCity = GetCity();
+	auto_ptr<ICvCity1> pCity = GC.WrapCityPointer(pkCity);
+
+	pkIFace->SetSpecificCityInfoDirty(pCity.get(), CITY_UPDATE_TYPE_SPECIALISTS);
 }
 
 /// Removes and uninitializes a Specialist for this building
@@ -2538,46 +2756,110 @@ void CvCityCitizens::DoRemoveSpecialistFromBuilding(BuildingTypes eBuilding, boo
 		return;
 	}
 
-	SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+	DoRemoveSpecialistInternal((SpecialistTypes) pkBuildingInfo->GetSpecialistType(), eBuilding, bForced, bEliminatePopulation);
+}
 
-	int iNumSpecialistsAssigned = GetNumSpecialistsInBuilding(eBuilding);
+/// Removes and uninitializes a Specialist of this type, without naming a building
+bool CvCityCitizens::DoRemoveSpecialist(SpecialistTypes eSpecialist, bool bForced, bool bEliminatePopulation)
+{
+	return DoRemoveSpecialistInternal(eSpecialist, GetSpecialistRemovalBuilding(eSpecialist), bForced, bEliminatePopulation);
+}
+
+/// Shared core of the two entry points above. eBuilding may be NO_BUILDING, in which case the
+/// Specialist is only counted in the city-wide pool.
+bool CvCityCitizens::DoRemoveSpecialistInternal(SpecialistTypes eSpecialist, BuildingTypes eBuilding, bool bForced, bool bEliminatePopulation)
+{
+	if(eSpecialist < 0 || eSpecialist >= GC.getNumSpecialistInfos())
+	{
+		return false;
+	}
+
+	// See DoAddSpecialistInternal(): the default Specialist is not a slot type, and its two counters
+	// are kept in step by ChangeNumDefaultSpecialists() alone.
+	if(eBuilding == NO_BUILDING && eSpecialist == (SpecialistTypes) GC.getDEFAULT_SPECIALIST())
+	{
+		return false;
+	}
 
 	// Need at least 1 assigned to remove
-	if(iNumSpecialistsAssigned > 0)
+	if(GetSpecialistCount(eSpecialist) <= 0)
 	{
-		// Decrease count for the whole city
-		m_aiSpecialistCounts[eSpecialist]--;
-		m_aiNumSpecialistsInBuilding[eBuilding]--;
+		return false;
+	}
+
+	// Decrease count for the whole city
+	m_aiSpecialistCounts[eSpecialist]--;
+
+	if(eBuilding != NO_BUILDING)
+	{
+		if(m_aiNumSpecialistsInBuilding[eBuilding] > 0)
+		{
+			m_aiNumSpecialistsInBuilding[eBuilding]--;
+		}
 
 		if(bForced)
 		{
-			m_aiNumForcedSpecialistsInBuilding[eBuilding]--;
+			if(m_aiNumForcedSpecialistsInBuilding[eBuilding] > 0)
+			{
+				m_aiNumForcedSpecialistsInBuilding[eBuilding]--;
+			}
 		}
+	}
 
-		GetCity()->processSpecialist(eSpecialist, -1);
+	GetCity()->processSpecialist(eSpecialist, -1);
 
-		if (GetTotalSpecialistCount() == 0)
-			GetCity()->UpdateReligiousYieldFromSpecialist(false);
+	if (GetTotalSpecialistCount() == 0)
+		GetCity()->UpdateReligiousYieldFromSpecialist(false);
 
-		// Do we kill this population or reassign him?
-		if(bEliminatePopulation)
+	// Do we kill this population or reassign him?
+	if(bEliminatePopulation)
+	{
+		GetCity()->changePopulation(-1, /*bReassignPop*/ false);
+	}
+	else
+	{
+		ChangeNumUnassignedCitizens(1);
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
+	//GC.GetEngineUserInterface()->setDirty(InfoPane_DIRTY_BIT, true );
+	GC.GetEngineUserInterface()->setDirty(CityScreen_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(ColoredPlots_DIRTY_BIT, true);
+
+	auto_ptr<ICvCity1> pCity = GC.WrapCityPointer(GetCity());
+
+	GC.GetEngineUserInterface()->SetSpecificCityInfoDirty(pCity.get(), CITY_UPDATE_TYPE_SPECIALISTS);
+
+	return true;
+}
+
+/// Bring the number of assigned Specialists of this type back within the City's slots.
+/// Called whenever the slot inventory of a type shrinks (a building was sold, a policy was
+/// lost, an effect expired, ...).
+void CvCityCitizens::DoEnforceSpecialistSlotLimit(SpecialistTypes eSpecialist)
+{
+	if(eSpecialist < 0 || eSpecialist >= GC.getNumSpecialistInfos())
+	{
+		return;
+	}
+
+	const int iMaxSpecialists = GetCity()->GetMaxSpecialistCount(eSpecialist);
+
+	while(GetSpecialistCount(eSpecialist) > iMaxSpecialists)
+	{
+		const BuildingTypes eBuilding = GetSpecialistRemovalBuilding(eSpecialist);
+
+		// A Specialist carries no "forced" flag of its own; only the building keeps a count of
+		// how many of its occupants were forced. Charge the removal to that count when the
+		// building has one, so the bookkeeping stays as close to the truth as it can get.
+		const bool bForced = (eBuilding != NO_BUILDING && m_aiNumForcedSpecialistsInBuilding[eBuilding] > 0);
+
+		if(!DoRemoveSpecialistInternal(eSpecialist, eBuilding, bForced, false))
 		{
-			GetCity()->changePopulation(-1, /*bReassignPop*/ false);
+			// Nothing left to take away from, don't spin
+			return;
 		}
-		else
-		{
-			ChangeNumUnassignedCitizens(1);
-		}
-
-		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
-		GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
-		//GC.GetEngineUserInterface()->setDirty(InfoPane_DIRTY_BIT, true );
-		GC.GetEngineUserInterface()->setDirty(CityScreen_DIRTY_BIT, true);
-		GC.GetEngineUserInterface()->setDirty(ColoredPlots_DIRTY_BIT, true);
-
-		auto_ptr<ICvCity1> pCity = GC.WrapCityPointer(GetCity());
-
-		GC.GetEngineUserInterface()->SetSpecificCityInfoDirty(pCity.get(), CITY_UPDATE_TYPE_SPECIALISTS);
 	}
 }
 
@@ -2597,7 +2879,16 @@ void CvCityCitizens::DoRemoveAllSpecialistsFromBuilding(BuildingTypes eBuilding,
 	}
 
 	SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
-	int iNumSpecialists = GetNumSpecialistsInBuilding(eBuilding);
+	// A building that carries no Specialist has nothing to clear, and GetSpecialistCount() would
+	// otherwise index the inventory at NO_SPECIALIST.
+	if(eSpecialist == NO_SPECIALIST)
+	{
+		return;
+	}
+
+	// Never take away more of this type than the City actually has assigned; the per-building
+	// count is bookkeeping and must not be able to drive the city-wide count below zero.
+	int iNumSpecialists = std::min(GetNumSpecialistsInBuilding(eBuilding), GetSpecialistCount(eSpecialist));
 
 	m_aiNumForcedSpecialistsInBuilding[eBuilding] = 0;
 
@@ -2634,6 +2925,22 @@ void CvCityCitizens::DoRemoveAllSpecialistsFromBuilding(BuildingTypes eBuilding,
 }
 
 
+/// Forget the per-building Specialist bookkeeping.
+/// Called when the City stops owning a building (see CvCity::ChangeMaxSpecialistCountFromBuilding).
+/// The Citizens that filled its slots have already been returned to the city-wide pool by the time
+/// this runs, so all that is left is to drop the counts that pointed at the building.
+void CvCityCitizens::ClearSpecialistsInBuilding(BuildingTypes eBuilding)
+{
+	if(eBuilding < 0 || eBuilding >= GC.getNumBuildingInfos())
+	{
+		return;
+	}
+
+	m_aiNumSpecialistsInBuilding[eBuilding] = 0;
+	m_aiNumForcedSpecialistsInBuilding[eBuilding] = 0;
+}
+
+
 /// Find the worst Specialist and remove him from duty
 bool CvCityCitizens::DoRemoveWorstSpecialist(SpecialistTypes eDontChangeSpecialist, const BuildingTypes eDontRemoveFromBuilding /* = NO_BUILDING */)
 {
@@ -2658,11 +2965,54 @@ bool CvCityCitizens::DoRemoveWorstSpecialist(SpecialistTypes eDontChangeSpeciali
 			continue;
 		}
 
+		// A building the City no longer owns holds nobody: a building destroyed outside the
+		// sell path (razed in combat, removed by a script) keeps a stale per-building count,
+		// and removing "from" it would change nothing while still reporting success below.
+		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) <= 0)
+		{
+			continue;
+		}
+
 		if(GetNumSpecialistsInBuilding(eBuilding) > 0)
 		{
+			const SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+			if(eSpecialist == NO_SPECIALIST)
+			{
+				continue;
+			}
+
+			const int iNumBefore = GetSpecialistCount(eSpecialist);
+
 			DoRemoveSpecialistFromBuilding(eBuilding, true);
 
-			return true;
+			// DoRemoveSpecialistFromBuilding() returns nothing and quietly does nothing when the
+			// City has no Specialist of that type left, so confirm one was really taken out
+			// before telling the caller a Citizen is free again.
+			if(GetSpecialistCount(eSpecialist) < iNumBefore)
+			{
+				return true;
+			}
+		}
+	}
+
+	// Specialists whose slot does not come from a building live in the city-wide pool only and
+	// are not covered by the loop above.
+	for(int iSpecialistLoop = 0; iSpecialistLoop < GC.getNumSpecialistInfos(); iSpecialistLoop++)
+	{
+		const SpecialistTypes eSpecialist = static_cast<SpecialistTypes>(iSpecialistLoop);
+
+		// We might not be allowed to change this Specialist
+		if(eSpecialist == eDontChangeSpecialist || eSpecialist == (SpecialistTypes) GC.getDEFAULT_SPECIALIST())
+		{
+			continue;
+		}
+
+		if(GetSpecialistCount(eSpecialist) > GetNumSpecialistsInBuildings(eSpecialist))
+		{
+			if(DoRemoveSpecialistInternal(eSpecialist, NO_BUILDING, true, false))
+			{
+				return true;
+			}
 		}
 	}
 
