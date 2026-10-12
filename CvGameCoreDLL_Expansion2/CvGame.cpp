@@ -105,6 +105,7 @@ CvGame::CvGame() :
 	, m_bFOW(true)
 	, m_bArchaeologyTriggered(false)
 	, m_lastTurnAICivsProcessed(-1)
+	, m_firstActivationOfPlayersAfterLoad(false)
 #ifdef MOD_API_MP_PLOT_SIGNAL
 	, m_uiLastMPSignalInvokeTime(0)
 #endif // MOD_API_MP_PLOT_SIGNAL
@@ -4716,6 +4717,13 @@ bool CvGame::isGameMultiPlayer() const
 
 
 //	--------------------------------------------------------------------------------
+bool CvGame::isFirstActivationOfPlayersAfterLoad() const
+{
+	return m_firstActivationOfPlayersAfterLoad;
+}
+
+
+//	--------------------------------------------------------------------------------
 bool CvGame::isTeamGame() const
 {
 	CvAssert(countCivPlayersAlive() >= countCivTeamsAlive());
@@ -8901,6 +8909,11 @@ void CvGame::updateMoves()
 
 	int currentTurn = getGameTurn();
 	bool activatePlayers = playersToProcess.empty() && m_lastTurnAICivsProcessed != currentTurn;
+	// m_lastTurnAICivsProcessed is -1 only right after a load (CvGame::Read resets it) or at the start of a new
+	// game, so this flags the single frame in which the human players are activated for the loaded/new turn.
+	// CvPlayer::setTurnActive() checks it to drop the "turn complete" state the engine wrongly restored from
+	// the save; without that, updateMoves() ends the turn again immediately and the AI plays twice.
+	m_firstActivationOfPlayersAfterLoad = activatePlayers && m_lastTurnAICivsProcessed == -1;
 	// If no AI with an active turn, check humans.
 	if(playersToProcess.empty())
 	{

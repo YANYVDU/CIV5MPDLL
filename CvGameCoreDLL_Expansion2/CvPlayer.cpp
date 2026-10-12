@@ -22601,6 +22601,23 @@ void CvPlayer::setTurnActive(bool bNewValue, bool bDoTurn)
 
 		CvGame& kGame = GC.getGame();
 
+		// Loading an autosave in simultaneous-turns multiplayer can leave the engine believing the local
+		// player already signalled "turn complete" for this turn. updateMoves() then re-ends the turn on the
+		// very next frame through its (!isEndTurn() && HasReceivedTurnComplete()) check, so the loaded turn
+		// looks skipped to the player while the AI gets to act twice. Cancel that stale ready state on the
+		// first activation of players after a load, so everyone really plays the turn. (Same fix as the
+		// community patch for the "multiplayer skipping turns on load" report.)
+		if(bNewValue
+			&& kGame.isFirstActivationOfPlayersAfterLoad()
+			&& isHuman()
+			&& isAlive()
+			&& isSimultaneousTurns()
+			&& isLocalPlayer()
+			&& gDLL->HasReceivedTurnComplete(GetID()))
+		{
+			gDLL->sendTurnUnready();
+		}
+
 		/////////////////////////////////////////////
 		// TURN IS BEGINNING
 		/////////////////////////////////////////////

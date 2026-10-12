@@ -176,6 +176,9 @@ public:
 #endif
 	bool isNetworkMultiPlayer() const;
 	bool isGameMultiPlayer() const;
+	// True on the single updateMoves() frame that activates the human players right after a load (or a new game).
+	// CvPlayer::setTurnActive() uses it to clear a stale "turn complete" the engine restored from the save.
+	bool isFirstActivationOfPlayersAfterLoad() const;
 	bool isTeamGame() const;
 
 	void ReviveActivePlayer();
@@ -917,6 +920,7 @@ protected:
 	FTimer  m_endTurnTimer;
 	int     m_endTurnTimerSemaphore;
 	int     m_lastTurnAICivsProcessed;
+	bool    m_firstActivationOfPlayersAfterLoad;
 	FTimer  m_curTurnTimer;
 	FTimer  m_timeSinceGameTurnStart;		//time since game turn started for human players
 	float	m_fCurrentTurnTimerPauseDelta;	//
