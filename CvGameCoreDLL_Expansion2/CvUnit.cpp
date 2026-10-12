@@ -16549,7 +16549,7 @@ void CvUnit::SetBaseRangedCombatStrength(int iStrength)
 
 
 //	--------------------------------------------------------------------------------
-int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const
+int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier) const
 {
 	VALIDATE_OBJECT
 	int iBaseStrength = 0;
@@ -16565,13 +16565,16 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 		iBaseStrength = GetBaseRangedCombatStrength();
 	}
 
-	return GetMaxRangedCombatStrengthWithBase(iBaseStrength, pOtherUnit, pCity, bAttacking, bForRangedAttack);
+	return GetMaxRangedCombatStrengthWithBase(iBaseStrength, pOtherUnit, pCity, bAttacking, bForRangedAttack, iExtraModifier);
 }
 
 //	--------------------------------------------------------------------------------
 /// Same modifier stack as GetMaxRangedCombatStrength, but the caller supplies the base strength.
 /// Used by interception so units without a ranged attack can still receive the full modifier stack.
-int CvUnit::GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const
+/// iExtraModifier is a caller-supplied flat percentage (e.g. the air sweep / interception strength
+/// bonuses) that is folded into the same stack, so it adds with every other modifier instead of
+/// multiplying the finished result.
+int CvUnit::GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier) const
 {
 	VALIDATE_OBJECT
 	int iModifier;
@@ -17367,6 +17370,11 @@ int CvUnit::GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* 
 	if(iModifier < -90)
 		iModifier = -90;
 
+	// Caller-supplied flat modifier (air sweep / interception strength bonus), folded in after the
+	// clamp so it stacks additively with the rest of the modifier stack rather than multiplying the
+	// finished strength.
+	iModifier += iExtraModifier;
+
 	iModifier += kPlayer.GetStrengthModifierFromAlly();
 
 	iModifier += GC.GetIndependentPromotion()->GetAllyCityStateCombatModifier(*this);
@@ -17949,12 +17957,12 @@ int CvUnit::GetInterceptionCombatStrength(const CvUnit* pAttacker) const
 		// with its hull defense.
 		if (GetBaseRangedCombatStrength() > 0)
 		{
-			iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true);
+			iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true, GetInterceptionCombatModifier());
 		}
 		else
 		{
 			// No ranged combat value at all: intercept with 50% of base melee strength
-			iStrength = GetMaxRangedCombatStrengthWithBase(GetBaseCombatStrength() / 2, pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true);
+			iStrength = GetMaxRangedCombatStrengthWithBase(GetBaseCombatStrength() / 2, pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true, GetInterceptionCombatModifier());
 		}
 	}
 	else
@@ -17965,13 +17973,12 @@ int CvUnit::GetInterceptionCombatStrength(const CvUnit* pAttacker) const
 		// Use ranged combat value for the interceptor, UNLESS it's a boat
 		if(GetMaxRangedCombatStrength(this, /*pCity*/ NULL, false, false) > 0 && !getDomainType() == DOMAIN_SEA)
 		{
-			iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
+			iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false, GetInterceptionCombatModifier());
 		}
 	}
 
-	// Mod to interceptor strength
-	iStrength *= (100 + GetInterceptionCombatModifier());
-	iStrength /= 100;
+	// InterceptionCombatModifier is already folded into the ranged combat stack above (it adds
+	// with every other modifier instead of multiplying the finished strength).
 
 	return std::max(1, iStrength);
 }
@@ -17981,11 +17988,10 @@ int CvUnit::GetInterceptionCombatStrength(const CvUnit* pAttacker) const
 int CvUnit::GetAirSweepCombatStrength(const CvUnit* pDefender) const
 {
 	VALIDATE_OBJECT
-	int iStrength = GetMaxRangedCombatStrength(pDefender, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true);
-
-	// Mod to air sweep strength
-	iStrength *= (100 + GetAirSweepCombatModifier());
-	iStrength /= 100;
+	// AirSweepCombatModifier is folded into the ranged combat stack as a flat modifier so it adds
+	// with every other modifier (strategic resource penalty, bonus vs. domain, etc.) instead of
+	// multiplying the finished strength.
+	int iStrength = GetMaxRangedCombatStrength(pDefender, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true, GetAirSweepCombatModifier());
 
 	return std::max(1, iStrength);
 }
@@ -18006,26 +18012,15 @@ int CvUnit::GetAirSweepDamageToInterceptor(const CvUnit* pInterceptor, bool bInc
 
 	int iDamage = getCombatDamage(iAttackerStrength, iDefenderStrength, getDamage(), bIncludeRand, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
 
-	// Ground AA only: the air-vs-air exchange applies no such modifier.
-	if(pInterceptor->getDomainType() != DOMAIN_AIR)
+	// Interception damage modifier of the interceptor scales the damage it takes
+	int iDefenderDamageMod = 100 + pInterceptor->GetInterceptionDamageMod();
+	if(iDefenderDamageMod <= 0)
 	{
-		// A ground interceptor only takes damage back when the interceptor strength fix is on
-		// (the same switch that gates the retaliation in GenerateAirSweepCombatInfo).
-		if(!MOD_BUGFIX_INTERCEPTOR_STRENGTH)
-		{
-			return 0;
-		}
-
-		// Interception damage modifier of the interceptor scales the damage it takes
-		int iDefenderDamageMod = 100 + pInterceptor->GetInterceptionDamageMod();
-		if(iDefenderDamageMod <= 0)
-		{
-			iDamage = 0;
-		}
-		else
-		{
-			iDamage = iDamage * iDefenderDamageMod / 100;
-		}
+		iDamage = 0;
+	}
+	else
+	{
+		iDamage = iDamage * iDefenderDamageMod / 100;
 	}
 
 	return iDamage;
@@ -18042,49 +18037,24 @@ int CvUnit::GetAirSweepDamageFromInterceptor(const CvUnit* pInterceptor, bool bI
 		return 0;
 	}
 
-	int iDamage = 0;
+	int iAttackerStrength = GetAirSweepCombatStrength(pInterceptor);
+	int iDefenderStrength = pInterceptor->GetInterceptionCombatStrength(this);
 
-	// Ground AA interceptor: interception damage reduced by the sweep, then scaled by
-	// the sweeping aircraft's own air sweep damage modifier
-	if(pInterceptor->getDomainType() != DOMAIN_AIR)
+	// Symmetric ranged exchange, same as the resolution path
+	int iDamage = pInterceptor->getCombatDamage(iDefenderStrength, iAttackerStrength, pInterceptor->getDamage(), bIncludeRand, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
+
+	// A sweeping aircraft takes reduced damage (50 = -50%)
+	iDamage = iDamage * GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD() / 100;
+
+	// Air sweep damage modifier of the sweeping aircraft scales the damage it takes
+	int iSweepDamageMod = 100 + GetAirSweepDamageMod();
+	if(iSweepDamageMod <= 0)
 	{
-		iDamage = pInterceptor->GetInterceptionDamage(this, bIncludeRand, /*bForAirSweep*/ true);
-
-		iDamage *= GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD();
-		iDamage /= 100;
-
-		// Remaining SP rules merged from NewCombatRules.lua, gated exactly like the resolution path
-		if (MOD_BUGFIX_INTERCEPTOR_STRENGTH)
-		{
-			// Air sweep damage modifier of the sweeping aircraft scales the damage it takes
-			int iSweepDamageMod = 100 + GetAirSweepDamageMod();
-			if(iSweepDamageMod <= 0)
-			{
-				iDamage = 0;
-			}
-			else
-			{
-				iDamage = iDamage * iSweepDamageMod / 100;
-			}
-
-			// Melee AA units are poor interceptors; an embarked one barely scratches the aircraft
-			if(!pInterceptor->isRanged())
-			{
-				iDamage = iDamage * 25 / 100;
-			}
-			if(pInterceptor->isEmbarked())
-			{
-				iDamage = 1;
-			}
-		}
+		iDamage = 0;
 	}
-	// Air interceptor: plain exchange of ranged combat damage
 	else
 	{
-		int iAttackerStrength = GetAirSweepCombatStrength(pInterceptor);
-		int iDefenderStrength = pInterceptor->GetInterceptionCombatStrength(this);
-
-		iDamage = pInterceptor->getCombatDamage(iDefenderStrength, iAttackerStrength, pInterceptor->getDamage(), bIncludeRand, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
+		iDamage = iDamage * iSweepDamageMod / 100;
 	}
 
 	return iDamage;
@@ -18182,6 +18152,12 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 
 	int iInterceptorStrength = 0;
 
+	// InterceptionCombatModifier is folded into the ranged combat stack whenever the interceptor
+	// strength comes from that stack, so it adds with every other modifier. The defense- and
+	// melee-attack based branches below have no such stack, so they keep the multiplier.
+	int iInterceptorMod = GetInterceptionCombatModifier();
+	bool bModFolded = false;
+
 #if defined(MOD_BUGFIX_INTERCEPTOR_STRENGTH)
 	if (MOD_BUGFIX_INTERCEPTOR_STRENGTH) {
 		switch (getDomainType()) {
@@ -18190,7 +18166,8 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 				break;
 
 			case DOMAIN_AIR:
-				iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
+				iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false, iInterceptorMod);
+				bModFolded = true;
 				break;
 
 			case DOMAIN_LAND:
@@ -18210,7 +18187,8 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 		// Use Ranged combat value for Interceptor, UNLESS it's a boat
 		if(GetMaxRangedCombatStrength(this, /*pCity*/ NULL, false, false) > 0 && !getDomainType() == DOMAIN_SEA)
 		{
-			iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
+			iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false, iInterceptorMod);
+			bModFolded = true;
 		}
 		else
 		{
@@ -18223,8 +18201,11 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 #endif
 
 	// Mod to interceptor strength
-	iInterceptorStrength *= (100 + GetInterceptionCombatModifier());
-	iInterceptorStrength /= 100;
+	if(!bModFolded)
+	{
+		iInterceptorStrength *= (100 + iInterceptorMod);
+		iInterceptorStrength /= 100;
+	}
 	// CUSTOMLOG("ParadropIntercept: Paratrooper str=%i, Interceptor str=%i", iAttackerStrength, iInterceptorStrength)
 
 	// The roll will vary damage between 2 and 3 (out of 10) for two units of identical strength

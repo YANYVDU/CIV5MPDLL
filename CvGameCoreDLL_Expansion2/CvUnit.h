@@ -592,8 +592,8 @@ public:
 #endif 
 
 
-	int GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const;
-	int GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const;
+	int GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier = 0) const;
+	int GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier = 0) const;
 
 	int GetAirCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bIncludeRand, int iAssumeExtraDamage = 0) const;
 	int GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bIncludeRand, int iAssumeExtraDamage = 0) const;

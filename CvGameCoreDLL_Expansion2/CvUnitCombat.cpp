@@ -2429,45 +2429,33 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 	// Ground AA interceptor
 	if(pkDefender->getDomainType() != DOMAIN_AIR)
 	{
-		// The sweeping aircraft takes interception damage from the AA unit
-		int iInterceptionDamage = pkDefender->GetInterceptionDamage(&kAttacker, /*bIncludeRand*/ true, /*bForAirSweep*/ true);
+		// Symmetric ranged exchange, exactly like any normal combat: the sweeping aircraft and the
+		// ground interceptor each deal plain combat damage to the other, and then each side's damage
+		// taken is scaled by its own "damage taken" modifier.
+		int iDefenderSweepStrength = pkDefender->GetInterceptionCombatStrength(&kAttacker);
 
-		// Reduce damage for performing a sweep
-		iInterceptionDamage *= /*75*/ GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD();
-		iInterceptionDamage /= 100;
+		// Damage the sweeping aircraft takes from the interceptor
+		int iInterceptionDamage = pkDefender->getCombatDamage(iDefenderSweepStrength, iAttackerStrength, pkDefender->getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
 
-		// The sweeping aircraft strikes back at the AA unit.
-		int iAttackerDamageInflicted = 0;
+		// A sweeping aircraft takes reduced damage (50 = -50%)
+		iInterceptionDamage = iInterceptionDamage * GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD() / 100;
 
-		if (MOD_BUGFIX_INTERCEPTOR_STRENGTH)
-		{
-			// Rules merged into the DLL from the SP patch that used to live in NewCombatRules.lua:
-			// that patch double-counted the damage the aircraft takes and mis-computed interceptors
-			// with no ranged attack (the Lua used GetRangeCombatDamage in both directions).
+		// Air sweep damage modifier of the sweeping aircraft scales the damage it takes
+		int iSweepDamageMod = 100 + kAttacker.GetAirSweepDamageMod();
+		if(iSweepDamageMod <= 0)
+			iInterceptionDamage = 0;
+		else
+			iInterceptionDamage = iInterceptionDamage * iSweepDamageMod / 100;
 
-			// Air sweep damage modifier of the sweeping aircraft scales the damage it takes
-			int iSweepDamageMod = 100 + kAttacker.GetAirSweepDamageMod();
-			if(iSweepDamageMod <= 0)
-				iInterceptionDamage = 0;
-			else
-				iInterceptionDamage = iInterceptionDamage * iSweepDamageMod / 100;
+		// The sweeping aircraft strikes back at the interceptor
+		int iAttackerDamageInflicted = kAttacker.getCombatDamage(iAttackerStrength, iDefenderSweepStrength, kAttacker.getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
 
-			// Melee AA units are poor interceptors; an embarked one barely scratches the aircraft
-			if(!pkDefender->isRanged())
-				iInterceptionDamage = iInterceptionDamage * 25 / 100;
-			if(pkDefender->isEmbarked())
-				iInterceptionDamage = 1;
-
-			int iDefenderSweepStrength = pkDefender->GetInterceptionCombatStrength(&kAttacker);
-			iAttackerDamageInflicted = kAttacker.getCombatDamage(iAttackerStrength, iDefenderSweepStrength, kAttacker.getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
-
-			// Interception damage modifier of the AA unit scales the damage it takes
-			int iDefenderDamageMod = 100 + pkDefender->GetInterceptionDamageMod();
-			if(iDefenderDamageMod <= 0)
-				iAttackerDamageInflicted = 0;
-			else
-				iAttackerDamageInflicted = iAttackerDamageInflicted * iDefenderDamageMod / 100;
-		}
+		// Interception damage modifier of the interceptor scales the damage it takes
+		int iDefenderDamageMod = 100 + pkDefender->GetInterceptionDamageMod();
+		if(iDefenderDamageMod <= 0)
+			iAttackerDamageInflicted = 0;
+		else
+			iAttackerDamageInflicted = iAttackerDamageInflicted * iDefenderDamageMod / 100;
 
 #if defined(MOD_ROG_CORE)
 		if (pkDefender->GetIgnoreDamageChance() > 0)
@@ -2523,6 +2511,23 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 
 		int iAttackerDamageInflicted = kAttacker.getCombatDamage(iAttackerStrength, iDefenderStrength, kAttacker.getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
 		int iDefenderDamageInflicted = pkDefender->getCombatDamage(iDefenderStrength, iAttackerStrength, pkDefender->getDamage(), /*bIncludeRand*/ true, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
+
+		// A sweeping aircraft takes reduced damage (50 = -50%)
+		iDefenderDamageInflicted = iDefenderDamageInflicted * GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD() / 100;
+
+		// Air sweep damage modifier of the sweeping aircraft scales the damage it takes
+		int iSweepDamageMod = 100 + kAttacker.GetAirSweepDamageMod();
+		if(iSweepDamageMod <= 0)
+			iDefenderDamageInflicted = 0;
+		else
+			iDefenderDamageInflicted = iDefenderDamageInflicted * iSweepDamageMod / 100;
+
+		// Interception damage modifier of the interceptor scales the damage it takes
+		int iDefenderDamageMod = 100 + pkDefender->GetInterceptionDamageMod();
+		if(iDefenderDamageMod <= 0)
+			iAttackerDamageInflicted = 0;
+		else
+			iAttackerDamageInflicted = iAttackerDamageInflicted * iDefenderDamageMod / 100;
 
 #if defined(MOD_ROG_CORE)
 		if (kAttacker.GetIgnoreDamageChance() > 0)
@@ -5840,6 +5845,13 @@ void CvUnitCombat::DoStackingFightBack(const CvCombatInfo & kCombatInfo)
 	CvUnit *pAttackerUnit = kCombatInfo.getUnit(BATTLE_UNIT_ATTACKER);
 	CvUnit *pDefenderUnit = kCombatInfo.getUnit(BATTLE_UNIT_DEFENDER);
 	if (pAttackerUnit == nullptr || pDefenderUnit == nullptr)
+		return;
+	// Air units report their home base as their coordinates (a carrier for carrier aircraft, a
+	// city or airbase for land-based aircraft), so a ground stacking counter-attack would shell
+	// the base instead of the aircraft itself. Air attacks (air sweep / air strike) must never
+	// trigger the ground stacking fight-back, otherwise e.g. an air-sweeping carrier aircraft
+	// would get its own carrier bombarded by a stacked AA gun.
+	if (pAttackerUnit->getDomainType() == DOMAIN_AIR)
 		return;
 	if (pAttackerUnit->IsDead() || pAttackerUnit->isDelayedDeath() || pDefenderUnit->IsDead() || pDefenderUnit->isDelayedDeath() || !pDefenderUnit->IsCombatUnit())
 		return;
