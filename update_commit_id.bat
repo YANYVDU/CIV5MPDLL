@@ -23,7 +23,7 @@ if not defined USERNAME set USERNAME=%USERNAME%
 for /f "usebackq delims=" %%i in (`git config --get remote.origin.url`) do (
     set REPO_OWNER=%%i
     :: Extract username/repo from GitHub/GitLab URL (e.g., https://github.com/user/repo.git → user-repo)
-    for /f "tokens=4,5 delims=/." %%a in ("%%i") do set REPO_OWNER=%%a
+    for /f "tokens=4,5 delims=/." %%a in ("%%i") do set REPO_OWNER=%%a-%%b
 )
 if not defined REPO_OWNER (
     for /f "usebackq delims=" %%i in (`git rev-parse --show-toplevel`) do set REPO_OWNER=%%~nxi
