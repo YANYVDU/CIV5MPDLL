@@ -8549,6 +8549,45 @@ UnitTypes CvGame::GetCompetitiveSpawnUnitType(PlayerTypes ePlayer, bool bInclude
 }
 
 //	--------------------------------------------------------------------------------
+// Super Power V11: how many city-states currently reserve a pending gift unit of eUnitClass for
+// eMajor. A limited (national) unit class can only be delivered once, so every pending pick of
+// that class shares its slots - see GetMinorGiftUnitChoices and DoSetPendingGiftUnitFromMajor.
+int CvGame::GetPendingGiftUnitCountForClass(PlayerTypes eMajor, UnitClassTypes eUnitClass) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return 0;
+
+	int iCount = 0;
+	for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		const PlayerTypes eMinor = (PlayerTypes) iMinorLoop;
+		CvPlayer* pMinor = &GET_PLAYER(eMinor);
+		if(pMinor == NULL || !pMinor->isAlive() || !pMinor->isMinorCiv())
+			continue;
+
+		CvMinorCivAI* pMinorAI = pMinor->GetMinorCivAI();
+		if(pMinorAI == NULL)
+			continue;
+
+		const UnitTypes ePending = pMinorAI->GetPendingGiftUnit(eMajor);
+		if(ePending == NO_UNIT)
+			continue;
+
+		CvUnitEntry* pkPendingInfo = GC.getUnitInfo(ePending);
+		if(pkPendingInfo == NULL)
+			continue;
+
+		if((UnitClassTypes) pkPendingInfo->GetUnitClassType() == eUnitClass)
+			iCount++;
+	}
+
+	return iCount;
+}
+
+//	--------------------------------------------------------------------------------
 // Super Power V11: every unit type the city-state may gift to ePlayer (same filter as
 // GetCompetitiveSpawnUnitType, but returns all valid candidates for the aid-point picker UI).
 void CvGame::GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>& veChoices)
@@ -8622,6 +8661,12 @@ void CvGame::GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>
 
 		// Must be able to train this thing
 		if(!GET_PLAYER(ePlayer).canTrain(eLoopUnit, false, false, false, /*bIgnoreUniqueUnitStatus*/ true))
+			continue;
+
+		// Super Power V11: a pending gift unit already reserves a slot in its (limited) unit
+		// class at some city-state, so do not offer it again - a second pick of the same class
+		// would silently fail on delivery and waste the aid points it costs.
+		if(GET_PLAYER(ePlayer).isUnitClassMaxedOut(eLoopUnitClass, GetPendingGiftUnitCountForClass(ePlayer, eLoopUnitClass)))
 			continue;
 
 		veChoices.push_back(eLoopUnit);
@@ -11507,6 +11552,21 @@ bool CvGame::DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMino
 
 	if(eUnit != NO_UNIT && (eUnit < 0 || eUnit >= GC.getNumUnitInfos()))
 		return false;
+
+	// Super Power V11: a limited (national) unit class can only be delivered once, and pending
+	// picks at other city-states already reserve its slots. Refuse - charging nothing - rather
+	// than let this pick silently fail on delivery later and waste the aid points. NO_UNIT is a
+	// plain clear and always allowed.
+	if(eUnit != NO_UNIT)
+	{
+		CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eUnit);
+		if(pkUnitInfo == NULL)
+			return false;
+
+		const UnitClassTypes eUnitClass = (UnitClassTypes) pkUnitInfo->GetUnitClassType();
+		if(GET_PLAYER(eMajor).isUnitClassMaxedOut(eUnitClass, GetPendingGiftUnitCountForClass(eMajor, eUnitClass)))
+			return false;
+	}
 
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
 	if(pMinorAI == NULL)

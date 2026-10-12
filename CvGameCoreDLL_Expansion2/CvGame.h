@@ -625,6 +625,9 @@ public:
 	// Every unit type a city-state may gift to ePlayer (same filter as GetCompetitiveSpawnUnitType,
 	// but returns all valid candidates for the aid-point unit picker UI)
 	void GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>& veChoices);
+	// How many city-states currently reserve a pending gift unit of eUnitClass for eMajor. A limited
+	// (national) unit class can only be delivered once, so these reservations share its slots.
+	int GetPendingGiftUnitCountForClass(PlayerTypes eMajor, UnitClassTypes eUnitClass) const;
 
 	void DoResearchAgreementNotification(TeamTypes eTeam1, TeamTypes eTeam2);
 
