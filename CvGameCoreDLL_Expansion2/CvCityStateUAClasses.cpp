@@ -379,6 +379,10 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_bHasImprovementHappiness(false)
 	, m_bHasBuildingClassHappiness(false)
 	, m_bHasTradeRouteGoldPerSurplusResource(false)
+	, m_bHasSpecialistPointRate(false)
+	, m_bHasGreatPersonOneShotModifier(false)
+	, m_bHasFaithGPClassCostModifier(false)
+	, m_bHasGreatPersonPoints(false)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
 	, m_iFaithInfluencePurchasePerTurnLimit(0)
@@ -444,10 +448,15 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_bHasImprovementHappiness						= false;
 	m_bHasBuildingClassHappiness					= false;
 	m_bHasTradeRouteGoldPerSurplusResource			= false;
+	m_bHasSpecialistPointRate						= false;
+	m_bHasGreatPersonOneShotModifier				= false;
+	m_bHasFaithGPClassCostModifier					= false;
+	m_bHasGreatPersonPoints							= false;
 
 	m_iFaithPurchaseGreatPeopleCostRiseModifier			= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifier");
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifierPerGW");
 	kUtility.PopulateArrayByValue(m_piGreatPersonPoints, "Specialists", "CityStateUAEffect_GreatPersonPoints", "SpecialistType", "EffectType", GetType(), "Points");
+	m_bHasGreatPersonPoints = HasAnyNonZero(m_piGreatPersonPoints, GC.getNumSpecialistInfos());
 	m_bFaithPurchaseAllGreatPeople					= kResults.GetBool("FaithPurchaseAllGreatPeople");
 
 	m_bGPNoDeathAfterGreatWork						= kResults.GetBool("GPNoDeathAfterGreatWork");
@@ -682,6 +691,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Brussels: specialist great person point accumulation rate (%)
 	kUtility.PopulateArrayByValue(m_piSpecialistPointRate, "Specialists", "CityStateUAEffect_SpecialistPointRate", "SpecialistType", "EffectType", GetType(), "Rate");
+	m_bHasSpecialistPointRate = HasAnyNonZero(m_piSpecialistPointRate, GC.getNumSpecialistInfos());
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers (per YieldType)
 	kUtility.PopulateArrayByValue(m_piSpyGarrisonYieldModifiers, "Yields", "CityStateUAEffect_SpyGarrisonYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 	//Brussels: each great work of a class grants great person points to a specialist
@@ -746,6 +756,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Brussels: specified unit class's one-shot great person output modifier (%)
 	kUtility.PopulateArrayByValue(m_piGreatPersonOneShotModifier, "UnitClasses", "CityStateUAEffect_GreatPersonOneShotModifier", "UnitClassType", "EffectType", GetType(), "Modifier");
+	m_bHasGreatPersonOneShotModifier = HasAnyNonZero(m_piGreatPersonOneShotModifier, GC.getNumUnitClassInfos());
 	{
 		m_vBuildingGPP.clear();
 		std::string strKey2("CityStateUAEffect_BuildingGreatPersonPoints");
@@ -991,6 +1002,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Ife: per-unitclass FAITH great-people cost discount (CostRiseModifier in percent, negative = discount)
 	kUtility.PopulateArrayByValue(m_piFaithGPClassCostModifier, "UnitClasses", "CityStateUAEffect_FaithGPClassCostModifier", "UnitClassType", "EffectType", GetType(), "CostRiseModifier");
+	m_bHasFaithGPClassCostModifier = HasAnyNonZero(m_piFaithGPClassCostModifier, GC.getNumUnitClassInfos());
 	//Ife: each great work / artifact of a GreatWorkClassType grants a yield % modifier per YieldType
 	{
 		m_vGreatWorkYieldModifiers.clear();
@@ -2056,9 +2068,12 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 	m_iFaithPurchaseGreatPeopleCostRiseModifier			+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifier() * iChange;
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() * iChange;
-	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+	if (pEffect->HasGreatPersonPoints())
 	{
-		m_aiGreatPersonPoints[iSpec] += pEffect->GetGreatPersonPoints(iSpec) * iChange;
+		for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+		{
+			m_aiGreatPersonPoints[iSpec] += pEffect->GetGreatPersonPoints(iSpec) * iChange;
+		}
 	}
 	m_iFaithPurchaseAllGreatPeopleCount += (pEffect->IsFaithPurchaseAllGreatPeople() ? iChange : 0);
 
@@ -2329,10 +2344,13 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		if (iHCapC != 0) m_aiHappinessYieldModifierCaps[iY] += iHCapC * iChange;
 	}
 	//Ife: per-unitclass FAITH great-people cost discount
-	for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+	if (pEffect->HasFaithGPClassCostModifier())
 	{
-		int iClassMod = pEffect->GetFaithGPClassCostModifier(iUC);
-		if (iClassMod != 0) m_aiFaithGPClassCostModifier[iUC] += iClassMod * iChange;
+		for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+		{
+			int iClassMod = pEffect->GetFaithGPClassCostModifier(iUC);
+			if (iClassMod != 0) m_aiFaithGPClassCostModifier[iUC] += iClassMod * iChange;
+		}
 	}
 	//Ife: each great work / artifact grants a yield % modifier per YieldType (per GreatWorkClass)
 	{
@@ -2439,9 +2457,12 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		}
 	}
 	//Brussels: specialist great person point accumulation rate
-	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+	if (pEffect->HasSpecialistPointRate())
 	{
-		m_aiSpecialistPointRate[iSpec] += pEffect->GetSpecialistPointRate(iSpec) * iChange;
+		for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+		{
+			m_aiSpecialistPointRate[iSpec] += pEffect->GetSpecialistPointRate(iSpec) * iChange;
+		}
 	}
 	{
 		const std::vector<GreatWorkGreatPersonPointsEntry>& vEntries = pEffect->GetGreatWorkGreatPersonPointsEntries();
@@ -2453,9 +2474,12 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		}
 	}
 	//Brussels: specified unit class's one-shot great person output modifier
-	for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+	if (pEffect->HasGreatPersonOneShotModifier())
 	{
-		m_aiGreatPersonOneShotModifier[iUC] += pEffect->GetGreatPersonOneShotModifier(iUC) * iChange;
+		for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+		{
+			m_aiGreatPersonOneShotModifier[iUC] += pEffect->GetGreatPersonOneShotModifier(iUC) * iChange;
+		}
 	}
 	{
 		const std::vector<BornGreatPersonSpecialistYieldEntry>& vEntries = pEffect->GetBornGreatPersonSpecialistYieldEntries();
