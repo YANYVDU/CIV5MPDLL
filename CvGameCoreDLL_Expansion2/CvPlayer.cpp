@@ -20406,11 +20406,8 @@ void CvPlayer::RefreshCSAllUAEffects()
 		if (!pkMinorCivInfo)
 			continue;
 
-		const char* szUAType = pkMinorCivInfo->GetUAType();
-		if (!szUAType || szUAType[0] == '\0')
-			continue;
-
-		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes).
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
 		if (!pUAEntry)
 			continue;
 
@@ -20453,11 +20450,8 @@ void CvPlayer::RefreshCSAllUAEffects()
 			if (!pkMinorCivInfo)
 				continue;
 
-			const char* szUAType = pkMinorCivInfo->GetUAType();
-			if (!szUAType || szUAType[0] == '\0')
-				continue;
-
-			CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+			// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes).
+			CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
 			if (!pUAEntry)
 				continue;
 
@@ -33426,9 +33420,9 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 		if (!pMinorAI) return false;
 		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
 		if (!pkMinorCivInfo) return false;
-		const char* szUAType = pkMinorCivInfo->GetUAType();
-		if (!szUAType || szUAType[0] == '\0') return false;
-		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes); an empty
+		// or unmatched UAType is stored as -1 and GetEntry returns NULL for it.
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
 		if (!pUAEntry) return false;
 		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
 		return pEffect && pEffect->GetFaithBeliefPurchase();
@@ -33512,9 +33506,9 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 		if (!pMinorAI) return false;
 		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
 		if (!pkMinorCivInfo) return false;
-		const char* szUAType = pkMinorCivInfo->GetUAType();
-		if (!szUAType || szUAType[0] == '\0') return false;
-		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes); an empty
+		// or unmatched UAType is stored as -1 and GetEntry returns NULL for it.
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
 		if (!pUAEntry) return false;
 		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
 		return pEffect && pEffect->GetFaithPantheonPurchase();
@@ -33602,11 +33596,8 @@ int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) con
 			if (!pkMinorCivInfo)
 				continue;
 
-			const char* szUAType = pkMinorCivInfo->GetUAType();
-			if (!szUAType || szUAType[0] == '\0')
-				continue;
-
-			CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+			// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes).
+			CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
 			if (!pUAEntry)
 				continue;
 

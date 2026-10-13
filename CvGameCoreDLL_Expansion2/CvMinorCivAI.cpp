@@ -12604,10 +12604,8 @@ static CvCityStateUAEffectEntry* GetMinorUAGrantedEffect(CvMinorCivAI* pMinorAI,
 	CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
 	if (!pkMinorCivInfo) return NULL;
 
-	const char* szUAType = pkMinorCivInfo->GetUAType();
-	if (!szUAType || szUAType[0] == '\0') return NULL;
-
-	CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+	// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes).
+	CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
 	if (!pUAEntry) return NULL;
 
 	if (pMinorAI->IsAllies(eMajor))
@@ -12679,9 +12677,10 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 		// Dubai CS UA: only count gold donated to CSes whose UA has donation effect
 		if (MOD_SP_UNIQUE_CITYSTATE) {
 			MinorCivTypes eMinorType = GetMinorCivType();
-			const char* szUAType = GC.getMinorCivInfo(eMinorType)->GetUAType();
-			if (szUAType && szUAType[0]) {
-				CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+			CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(eMinorType);
+			// O(1) row-index lookup; an empty or unmatched UAType is stored as -1.
+			if (pkMinorCivInfo && pkMinorCivInfo->GetCityStateUAIndex() >= 0) {
+				CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
 				if (pUAEntry) {
 					CvCityStateUAEffectEntry* pAllyEff = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
 					CvCityStateUAEffectEntry* pFriendEff = GC.getCityStateUAEffectEntry(pUAEntry->GetFriendEffectID());
@@ -13878,6 +13877,7 @@ CvMinorCivInfo::CvMinorCivInfo() :
 	m_iDefaultPlayerColor(NO_PLAYERCOLOR),
 	m_iArtStyleType(NO_ARTSTYLE),
 	m_iMinorCivTrait(NO_MINOR_CIV_TRAIT_TYPE),
+	m_iCityStateUAIndex(-1),
 	m_piFlavorValue(NULL),
 	m_pbFreeBuildingClass(NULL),
 	m_pbPurchaseBuildingClass(NULL)
@@ -13983,6 +13983,16 @@ int CvMinorCivInfo::GetMinorCivTrait() const
 const char* CvMinorCivInfo::GetUAType() const
 {
 	return m_strUAType.c_str();
+}
+//------------------------------------------------------------------------------
+int CvMinorCivInfo::GetCityStateUAIndex() const
+{
+	return m_iCityStateUAIndex;
+}
+//------------------------------------------------------------------------------
+void CvMinorCivInfo::SetCityStateUAIndex(int iIndex)
+{
+	m_iCityStateUAIndex = iIndex;
 }
 #endif
 //------------------------------------------------------------------------------

@@ -1569,17 +1569,6 @@ CvCityStateUAEffectEntry* CvCityStateUAEffectXMLEntries::GetEntry(int index) con
 	return NULL;
 }
 
-CvCityStateUAEffectEntry* CvCityStateUAEffectXMLEntries::GetEntryByType(const char* szType) const
-{
-	if (szType == NULL) return NULL;
-	for (size_t i = 0; i < m_paEffectEntries.size(); i++)
-	{
-		if (m_paEffectEntries[i] && strcmp(m_paEffectEntries[i]->GetType(), szType) == 0)
-			return m_paEffectEntries[i];
-	}
-	return NULL;
-}
-
 void CvCityStateUAEffectXMLEntries::DeleteArray()
 {
 	for (size_t i = 0; i < m_paEffectEntries.size(); i++)
@@ -1645,15 +1634,28 @@ CvCityStateUAEntry* CvCityStateUAXMLEntries::GetEntry(int index) const
 	return NULL;
 }
 
-CvCityStateUAEntry* CvCityStateUAXMLEntries::GetEntryByType(const char* szType) const
+int CvCityStateUAXMLEntries::GetEntryIndexByType(const char* szType) const
 {
-	if (szType == NULL) return NULL;
+	if (szType == NULL) return -1;
 	for (size_t i = 0; i < m_paUAEntries.size(); i++)
 	{
 		if (m_paUAEntries[i] && strcmp(m_paUAEntries[i]->GetType(), szType) == 0)
-			return m_paUAEntries[i];
+			return (int)i;
 	}
-	return NULL;
+	return -1;
+}
+
+void CvCityStateUAXMLEntries::ResolveMinorCivUAIndexes()
+{
+	for (int i = 0; i < GC.getNumMinorCivInfos(); i++)
+	{
+		CvMinorCivInfo* pMinorCivInfo = GC.getMinorCivInfo((MinorCivTypes)i);
+		if (pMinorCivInfo == NULL)
+			continue;
+
+		const char* szUAType = pMinorCivInfo->GetUAType();
+		pMinorCivInfo->SetCityStateUAIndex((szUAType && szUAType[0] != '\0') ? GetEntryIndexByType(szUAType) : -1);
+	}
 }
 
 void CvCityStateUAXMLEntries::DeleteArray()

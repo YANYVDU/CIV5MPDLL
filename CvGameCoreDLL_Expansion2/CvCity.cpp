@@ -15290,9 +15290,9 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 	int iResult = 0;
 	PlayerTypes ePlayer = getOwner();
 
-	// Hot path guard: this function runs per city per yield, and the scan below costs a linear
-	// string lookup (CvCityStateUAXMLEntries::GetEntryByType) for every living city-state. Owners
-	// that hold no yield-conversion effect at all (the common case) must not pay for it.
+	// Hot path guard: this function runs per city per yield; owners that hold no yield-conversion
+	// effect at all (the common case) return immediately instead of scanning every living city-state.
+	// The per-city-state UA lookup below is O(1): the row index is cached on CvMinorCivInfo at load time.
 	if (MOD_SP_UNIQUE_CITYSTATE)
 	{
 		CvPlayerCityStateUA* pCSUA = GET_PLAYER(ePlayer).GetPlayerCityStateUA();
@@ -15309,11 +15309,8 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 
 		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
 		CvMinorCivInfo* pkMinorCivInfo = pMinorAI ? GC.getMinorCivInfo(pMinorAI->GetMinorCivType()) : NULL;
-		const char* szUAType = pkMinorCivInfo ? pkMinorCivInfo->GetUAType() : NULL;
-		if (!szUAType || szUAType[0] == '\0')
-			continue;
-
-		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes).
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo ? pkMinorCivInfo->GetCityStateUAIndex() : -1);
 		if (!pUAEntry)
 			continue;
 

@@ -792,6 +792,11 @@ public:
 
 	int GetMinorCivTrait() const;
 	const char* GetUAType() const;
+	// Cached index of this city-state's UAType within CvCityStateUAXMLEntries, resolved once after
+	// the CityStateUAs table loads (CvCityStateUAXMLEntries::ResolveMinorCivUAIndexes). -1 when no
+	// row matches. Lets every CSUA query read the entry by index instead of a linear strcmp lookup.
+	int GetCityStateUAIndex() const;
+	void SetCityStateUAIndex(int iIndex);
 	bool isFreeBuildingClass(int i) const;
 	bool isPurchaseBuildingClass(int i) const;
 
@@ -811,6 +816,7 @@ protected:
 	int m_iNumLeaders;				 // the number of leaders the Civ has, this is needed so that random leaders can be generated easily
 	int m_iMinorCivTrait;
 	CvString m_strUAType;
+	int m_iCityStateUAIndex;		 // index into CvCityStateUAXMLEntries::GetUAEntries(), -1 if none
 
 	bool m_bAIPlayable;
 	bool m_bPlayable;

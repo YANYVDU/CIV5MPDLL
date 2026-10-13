@@ -2730,10 +2730,10 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					{
 						CvMinorCivAI* pColomboDestMinorAI = GET_PLAYER(eColomboDestPlayer).GetMinorCivAI();
 						CvMinorCivInfo* pColomboDestMinorInfo = pColomboDestMinorAI ? GC.getMinorCivInfo(pColomboDestMinorAI->GetMinorCivType()) : NULL;
-						const char* szColomboDestUAType = pColomboDestMinorInfo ? pColomboDestMinorInfo->GetUAType() : NULL;
-						if (szColomboDestUAType && szColomboDestUAType[0] != '\0')
+						// O(1) row-index lookup; an empty or unmatched UAType is stored as -1.
+						if (pColomboDestMinorInfo && pColomboDestMinorInfo->GetCityStateUAIndex() >= 0)
 						{
-							CvCityStateUAEntry* pColomboDestUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szColomboDestUAType);
+							CvCityStateUAEntry* pColomboDestUAEntry = GC.GetGameCityStateUAs()->GetEntry(pColomboDestMinorInfo->GetCityStateUAIndex());
 							if (pColomboDestUAEntry)
 							{
 								int iColomboEffectID = -1;

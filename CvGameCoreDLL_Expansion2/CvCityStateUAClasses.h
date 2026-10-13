@@ -758,7 +758,6 @@ public:
 	std::vector<CvCityStateUAEffectEntry*>& GetEffectEntries();
 	int GetNumEffects() const;
 	CvCityStateUAEffectEntry* GetEntry(int index) const;
-	CvCityStateUAEffectEntry* GetEntryByType(const char* szType) const;
 	void DeleteArray();
 
 private:
@@ -796,7 +795,12 @@ public:
 	std::vector<CvCityStateUAEntry*>& GetUAEntries();
 	int GetNumUAs() const;
 	CvCityStateUAEntry* GetEntry(int index) const;
-	CvCityStateUAEntry* GetEntryByType(const char* szType) const;
+	// Linear lookup returning the row index (or -1). Only used at load time, by ResolveMinorCivUAIndexes.
+	int GetEntryIndexByType(const char* szType) const;
+	// Resolve every city-state's UAType to its row index once, after the CityStateUAs table loads, so
+	// every CSUA query site reads CvMinorCivInfo::GetCityStateUAIndex() (O(1)) instead of re-running a
+	// linear strcmp lookup on each call.
+	void ResolveMinorCivUAIndexes();
 	void DeleteArray();
 
 private:
