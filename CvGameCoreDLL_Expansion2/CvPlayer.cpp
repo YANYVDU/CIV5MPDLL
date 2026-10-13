@@ -18437,6 +18437,8 @@ int CvPlayer::GetCSUAGoldDonationInfluenceModifier() const
 // Genoa / Vilnius: per-yield % modifier from friend/ally city-states and unlocked policies (Rate=100 => +1%)
 int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 {
+	// CSUA perf profiling: per-city per-yield hot path (called from CvCity::getBaseYieldRateModifier).
+	AI_PERF("CSUA-perf.csv", "CSUA GetCSUAYieldPercentModifier");
 	if (!m_pCityStateUA) return 0;
 	int iMod = m_pCityStateUA->GetFriendCityStateYieldModifier(eYield) * GetNumCSFriends();
 	iMod += m_pCityStateUA->GetAllyCityStateYieldModifier(eYield) * GetNumCSAllies();
@@ -20380,6 +20382,11 @@ void CvPlayer::RefreshCSAllUAEffects()
 	if (!m_pCityStateUA)
 		return;
 
+	// CSUA perf profiling: one CSV row per player per call, written to CSUA-perf.csv when AI perf
+	// logging is enabled (CustomModOption GLOBAL_AI_PERF_LOGGING=1 or Lua SetAIPerfLogging(true)).
+	// Near-zero cost when logging is off. The per-step AI_PERF rows below are nested under this one.
+	AI_PERF_FORMAT("CSUA-perf.csv", ("CSUA RefreshCSAllUAEffects, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), getCivilizationShortDescription()));
+
 	// Belgrade UA: capture the previous garrison-defense modifier before the rebuild below, so the
 	// city-strength refresh at the end of this function can also run when the bonus is being lost
 	// (old != 0 while new == 0). Players never affected by this modifier skip that full-city recompute,
@@ -20460,58 +20467,103 @@ void CvPlayer::RefreshCSAllUAEffects()
 
 	// Born-yield contribution is dynamic (per-specialist extra yield). Re-sync all cities so
 	// the rebuilt effect list takes effect idempotently (delta-based, never stacks per turn).
-	updateExtraSpecialistYield();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA updateExtraSpecialistYield");
+		updateExtraSpecialistYield();
+	}
 
 	// Ife UA: cache the player's per-GreatWorkClass great-work count once per turn so the
 	// per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning cities.
-	m_pCityStateUA->CacheGreatWorkCounts();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheGreatWorkCounts");
+		m_pCityStateUA->CacheGreatWorkCounts();
+	}
 
 	// Yerevan UA: cache literacy rate and worked holy-site count once per turn so the per-yield
 	// (GetCSUAYieldPercentModifier) and global-happiness (GetHappinessFromMinorCivs) hot paths read flat ints.
-	m_pCityStateUA->ComputeLiteracyPercent();
-	m_pCityStateUA->CacheWorkedHolySites();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA ComputeLiteracyPercent");
+		m_pCityStateUA->ComputeLiteracyPercent();
+	}
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheWorkedHolySites");
+		m_pCityStateUA->CacheWorkedHolySites();
+	}
 
 	// Bogota UA: cache the owned cities matching each special city type once per turn so the per-yield
 	// hot paths (GetCSUAYieldPercentModifier, CvCity::GetBaseYieldRateModifier) read a flat table
 	// instead of re-running the predicate against every plot of every city.
-	m_pCityStateUA->CacheSpecialCityMatches();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheSpecialCityMatches");
+		m_pCityStateUA->CacheSpecialCityMatches();
+	}
 
 	// Kuala Lumpur UA: cache the puppet count once per turn so the tech-threshold hot path
 	// (CvPlayerTechs::GetResearchCost) reads a flat int instead of re-scanning every city. The puppet
 	// population is cached by CacheSpecialCityMatches above, for the per-yield path.
-	m_pCityStateUA->CachePuppetStats();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CachePuppetStats");
+		m_pCityStateUA->CachePuppetStats();
+	}
 
 	// Manila UA: cache the happy-luxury type count once per turn so the per-yield hot path
 	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
-	m_pCityStateUA->CacheHappyLuxuryCount();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheHappyLuxuryCount");
+		m_pCityStateUA->CacheHappyLuxuryCount();
+	}
 
 	// Milan UA: cache the luxury happiness total once per turn so the per-yield hot path
 	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
-	m_pCityStateUA->CacheLuxuryHappiness();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheLuxuryHappiness");
+		m_pCityStateUA->CacheLuxuryHappiness();
+	}
 
 	// Bucharest UA: cache the world-wonder count and the number of diplomats stationed abroad once per
 	// turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads flat ints.
-	m_pCityStateUA->CacheWorldWonderCount();
-	m_pCityStateUA->CacheDiplomatAbroadCount();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheWorldWonderCount");
+		m_pCityStateUA->CacheWorldWonderCount();
+	}
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheDiplomatAbroadCount");
+		m_pCityStateUA->CacheDiplomatAbroadCount();
+	}
 
 	// Quebec UA: cache the count of met major civilizations at Unknown influence toward this player once
 	// per turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int instead of
 	// re-running the influence query against every other civilization.
-	m_pCityStateUA->CacheUnknownInfluenceCount();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheUnknownInfluenceCount");
+		m_pCityStateUA->CacheUnknownInfluenceCount();
+	}
 
 	// Kiev UA: cache the national-wonder count and the player's current League delegate votes once per
 	// turn so the per-city (CvCity::getGreatPeopleRateModifier) and per-yield (GetCSUAYieldPercentModifier)
 	// hot paths read flat ints instead of re-scanning cities / recomputing League votes.
-	m_pCityStateUA->CacheNationalWonderCount();
-	m_pCityStateUA->CacheLeagueVotes();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheNationalWonderCount");
+		m_pCityStateUA->CacheNationalWonderCount();
+	}
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheLeagueVotes");
+		m_pCityStateUA->CacheLeagueVotes();
+	}
 
 	// Almaty UA: cache the surplus of each configured resource once per turn so the very hot
 	// CvUnit::GetMaxHitPoints path reads a flat int instead of walking every city.
-	m_pCityStateUA->CacheKillMaxHpSurplus();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA CacheKillMaxHpSurplus");
+		m_pCityStateUA->CacheKillMaxHpSurplus();
+	}
 
 	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
 	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.
-	RefreshCoastalCityCount();
+	{
+		AI_PERF("CSUA-perf.csv", "CSUA RefreshCoastalCityCount");
+		RefreshCoastalCityCount();
+	}
 
 	// Refresh the cached per-turn spy rates (m_aiRate in CvCityEspionage). It is only
 	// recomputed by UpdateSpies/UpdateCity, so without this Sofia's steal-tech speed bonus
@@ -20528,6 +20580,7 @@ void CvPlayer::RefreshCSAllUAEffects()
 	// the same turn while unaffected players avoid the (CvCity::doTurn already covers) redundant pass.
 	if (iOldGarrisonCityDefenseModifier != 0 || m_pCityStateUA->GetGarrisonCityDefenseModifier() != 0)
 	{
+		AI_PERF("CSUA-perf.csv", "CSUA UpdateCityStrength");
 		UpdateCityStrength();
 	}
 }

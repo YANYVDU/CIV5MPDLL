@@ -13467,6 +13467,8 @@ int CvCity::GetYieldPerTurnFromReligion(ReligionTypes eReligion, YieldTypes eYie
 int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* toolTipSink) const
 {
 	VALIDATE_OBJECT
+	// CSUA perf profiling: per-city per-yield aggregate entry point (wraps the CSUA blocks below).
+	AI_PERF("CSUA-perf.csv", "CSUA getBaseYieldRateModifier");
 	int iModifier = 0;
 	int iTempMod;
 	auto& owner = GET_PLAYER(getOwner());
@@ -15279,6 +15281,11 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 	VALIDATE_OBJECT
 	CvAssertMsg(eYield >= 0, "eYield expected to be >= 0");
 	CvAssertMsg(eYield < NUM_YIELD_TYPES, "eYield expected to be < NUM_YIELD_TYPES");
+
+	// CSUA perf profiling: per-city per-yield hot path. Rows land in CSUA-perf.csv only when AI perf
+	// logging is on; near-zero cost otherwise. Short-circuited (no-conversion owner) calls show up as
+	// near-zero deltas, full city-state scans as the larger ones, so the two mix is visible directly.
+	AI_PERF("CSUA-perf.csv", "CSUA GetYieldRateFromUCSConversion");
 
 	int iResult = 0;
 	PlayerTypes ePlayer = getOwner();
