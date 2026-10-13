@@ -481,6 +481,16 @@ public:
 	int GetBuildingClassHappiness(int i) const;
 	// Hormuz: each unit of surplus strategic resource grants trade-route gold %
 	int GetTradeRouteGoldPerSurplusResource(int i) const;
+	// Load-time "is this sub-table present" flags for the six fixed-size sub-tables above. The backing
+	// arrays are always allocated (Initialize2DArray / PopulateArrayByValue), so a NULL check cannot tell
+	// whether an effect actually carries data; ApplyEffect uses these flags to skip the whole-dimension
+	// scan for effects that do not (the common case: most effects carry none of these six).
+	bool HasBuildingClassYieldModifiers() const { return m_bHasBuildingClassYieldModifiers; }
+	bool HasResourceYieldModifiers() const { return m_bHasResourceYieldModifiers; }
+	bool HasImprovementYieldModifiers() const { return m_bHasImprovementYieldModifiers; }
+	bool HasImprovementHappiness() const { return m_bHasImprovementHappiness; }
+	bool HasBuildingClassHappiness() const { return m_bHasBuildingClassHappiness; }
+	bool HasTradeRouteGoldPerSurplusResource() const { return m_bHasTradeRouteGoldPerSurplusResource; }
 	// Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
 	int GetHappinessPerFollowingCity() const;
 	// Gangtok: buy influence at any city-state with faith at (gold price / divisor) faith (divisor > 0 enables the feature)
@@ -686,6 +696,15 @@ private:
 	int* m_piBuildingClassHappiness;
 	// Hormuz
 	int* m_piTradeRouteGoldPerSurplusResource;
+	// Load-time presence flags for the six fixed-size sub-tables above (see the matching Has* getters).
+	// The backing arrays are always allocated, so ApplyEffect needs these to tell whether an effect
+	// actually carries data before scanning the whole dimension.
+	bool m_bHasBuildingClassYieldModifiers;
+	bool m_bHasResourceYieldModifiers;
+	bool m_bHasImprovementYieldModifiers;
+	bool m_bHasImprovementHappiness;
+	bool m_bHasBuildingClassHappiness;
+	bool m_bHasTradeRouteGoldPerSurplusResource;
 	// Gangtok
 	int m_iHappinessPerFollowingCity;
 	int m_iFaithInfluencePurchaseCostDivisor;

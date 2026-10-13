@@ -274,6 +274,23 @@ void CvCityStateUASpecialCityTypeXMLEntries::DeleteArray()
 	m_paEntries.clear();
 }
 
+// True when the array carries any non-zero entry. The fixed-size CSUA sub-table arrays are always
+// allocated (Initialize2DArray / PopulateArrayByValue), so this is the only way to tell whether an
+// effect actually uses one of them; CvCityStateUAEffectEntry::CacheResults stores the result in the
+// matching "Has*" flag so ApplyEffect can skip the whole-dimension scan for effects that do not.
+static bool HasAnyNonZero(const int* piArray, int iCount)
+{
+	if (piArray == NULL)
+		return false;
+
+	for (int i = 0; i < iCount; i++)
+	{
+		if (piArray[i] != 0)
+			return true;
+	}
+	return false;
+}
+
 //======================================================================================================
 // CvCityStateUAEffectEntry
 //======================================================================================================
@@ -356,6 +373,12 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iLocalHappinessCapModifier(0)
 	, m_iGoldenAgeBuildingMaintenanceMod(0)
 	, m_piTradeRouteGoldPerSurplusResource(nullptr)
+	, m_bHasBuildingClassYieldModifiers(false)
+	, m_bHasResourceYieldModifiers(false)
+	, m_bHasImprovementYieldModifiers(false)
+	, m_bHasImprovementHappiness(false)
+	, m_bHasBuildingClassHappiness(false)
+	, m_bHasTradeRouteGoldPerSurplusResource(false)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
 	, m_iFaithInfluencePurchasePerTurnLimit(0)
@@ -411,6 +434,16 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 {
 	if (!CvBaseInfo::CacheResults(kResults, kUtility))
 		return false;
+
+	// Reset the presence flags; they are set below as each sub-table is read back, so ApplyEffect can
+	// skip dimensions this effect does not use. Setting them here (not in the constructor) also keeps
+	// a reload of the same entry correct.
+	m_bHasBuildingClassYieldModifiers				= false;
+	m_bHasResourceYieldModifiers					= false;
+	m_bHasImprovementYieldModifiers					= false;
+	m_bHasImprovementHappiness						= false;
+	m_bHasBuildingClassHappiness					= false;
+	m_bHasTradeRouteGoldPerSurplusResource			= false;
 
 	m_iFaithPurchaseGreatPeopleCostRiseModifier			= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifier");
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifierPerGW");
@@ -556,6 +589,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			const int iYieldMod = pResults->GetInt(2);
 
 			m_ppiResourceYieldModifiers[iResourceID][iYieldID] = iYieldMod;
+			m_bHasResourceYieldModifiers = true;
 		}
 	}
 
@@ -578,13 +612,16 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			const int iYieldMod = pResults->GetInt(2);
 
 			m_ppiImprovementYieldModifiers[iImprovementID][iYieldID] = iYieldMod;
+			m_bHasImprovementYieldModifiers = true;
 		}
 	}
 
 	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
 	kUtility.PopulateArrayByValue(m_piImprovementHappiness, "Improvements", "CityStateUAEffect_ImprovementHappiness", "ImprovementType", "EffectType", GetType(), "Happiness");
+	m_bHasImprovementHappiness = HasAnyNonZero(m_piImprovementHappiness, GC.getNumImprovementInfos());
 	//CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
 	kUtility.PopulateArrayByValue(m_piBuildingClassHappiness, "BuildingClasses", "CityStateUAEffect_BuildingClassHappiness", "BuildingClassType", "EffectType", GetType(), "Happiness");
+	m_bHasBuildingClassHappiness = HasAnyNonZero(m_piBuildingClassHappiness, GC.getNumBuildingClassInfos());
 	//Gangtok
 	m_iHappinessPerFollowingCity = kResults.GetInt("HappinessPerFollowingCity");
 	m_iFaithInfluencePurchaseCostDivisor = kResults.GetInt("FaithInfluencePurchaseCostDivisor");
@@ -640,6 +677,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			const int iYieldMod = pResults->GetInt(2);
 
 			m_ppiBuildingClassYieldModifiers[BuildingClassID][iYieldID] = iYieldMod;
+			m_bHasBuildingClassYieldModifiers = true;
 		}
 	}
 	//Brussels: specialist great person point accumulation rate (%)
@@ -878,6 +916,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Hormuz: each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
 	kUtility.PopulateArrayByValue(m_piTradeRouteGoldPerSurplusResource, "Resources", "CityStateUAEffect_TradeRouteGoldPerSurplusResource", "ResourceType", "EffectType", GetType(), "Modifier");
+	m_bHasTradeRouteGoldPerSurplusResource = HasAnyNonZero(m_piTradeRouteGoldPerSurplusResource, GC.getNumResourceInfos());
 	//Vancouver: global happiness per coastal city (basis points, 100 = +1 happiness per coastal city)
 	m_iCoastalCityHappiness = kResults.GetInt("CoastalCityHappiness");
 	//Vancouver: per point of net happiness, a yield % modifier per YieldType (YieldMod in basis points, Cap in percent)
@@ -2168,7 +2207,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iCoastalCityGrowthThresholdModifier			+= pEffect->GetCoastalCityGrowthThresholdModifier() * iChange;
 	m_iDiplomaticPrestigePerCity					+= pEffect->GetDiplomaticPrestigePerCity() * iChange;
 	{
-		if (m_ppiBuildingClassYieldModifiers)
+		if (m_ppiBuildingClassYieldModifiers && pEffect->HasBuildingClassYieldModifiers())
 		{
 			for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
 			{
@@ -2186,7 +2225,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	}
 	//CityState UA (Melbourne): city owning the specified improved resource grants yield percentage modifiers
 	{
-		if (m_ppiResourceYieldModifiers)
+		if (m_ppiResourceYieldModifiers && pEffect->HasResourceYieldModifiers())
 		{
 			for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
 			{
@@ -2204,7 +2243,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	}
 	//CityState UA (Antananarivo): each worked plot holding the specified improvement grants yield percentage modifiers
 	{
-		if (m_ppiImprovementYieldModifiers)
+		if (m_ppiImprovementYieldModifiers && pEffect->HasImprovementYieldModifiers())
 		{
 			for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
 			{
@@ -2221,33 +2260,42 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		}
 	}
 	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
-	for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
+	if (pEffect->HasImprovementHappiness())
 	{
-		int iHappy = pEffect->GetImprovementHappiness(iImp);
-		if (iHappy != 0)
+		for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
 		{
-			m_aiImprovementHappiness[iImp] += iHappy * iChange;
-			m_iImprovementHappinessCount += iChange;
+			int iHappy = pEffect->GetImprovementHappiness(iImp);
+			if (iHappy != 0)
+			{
+				m_aiImprovementHappiness[iImp] += iHappy * iChange;
+				m_iImprovementHappinessCount += iChange;
+			}
 		}
 	}
 	//CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
-	for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+	if (pEffect->HasBuildingClassHappiness())
 	{
-		int iHappy = pEffect->GetBuildingClassHappiness(iBC);
-		if (iHappy != 0)
+		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
 		{
-			m_aiBuildingClassHappiness[iBC] += iHappy * iChange;
-			m_iBuildingClassHappinessCount += iChange;
+			int iHappy = pEffect->GetBuildingClassHappiness(iBC);
+			if (iHappy != 0)
+			{
+				m_aiBuildingClassHappiness[iBC] += iHappy * iChange;
+				m_iBuildingClassHappinessCount += iChange;
+			}
 		}
 	}
 	//CityState UA (Hormuz): each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
-	for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
+	if (pEffect->HasTradeRouteGoldPerSurplusResource())
 	{
-		int iTRMod = pEffect->GetTradeRouteGoldPerSurplusResource(iRes);
-		if (iTRMod != 0)
+		for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
 		{
-			m_aiTradeRouteGoldPerSurplusResource[iRes] += iTRMod * iChange;
-			m_iTradeRouteGoldPerSurplusResourceCount += iChange;
+			int iTRMod = pEffect->GetTradeRouteGoldPerSurplusResource(iRes);
+			if (iTRMod != 0)
+			{
+				m_aiTradeRouteGoldPerSurplusResource[iRes] += iTRMod * iChange;
+				m_iTradeRouteGoldPerSurplusResourceCount += iChange;
+			}
 		}
 	}
 	//Gangtok
