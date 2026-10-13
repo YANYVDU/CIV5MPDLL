@@ -15283,6 +15283,16 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 	int iResult = 0;
 	PlayerTypes ePlayer = getOwner();
 
+	// Hot path guard: this function runs per city per yield, and the scan below costs a linear
+	// string lookup (CvCityStateUAXMLEntries::GetEntryByType) for every living city-state. Owners
+	// that hold no yield-conversion effect at all (the common case) must not pay for it.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(ePlayer).GetPlayerCityStateUA();
+		if (pCSUA == NULL || !pCSUA->HasUCSYieldConversion())
+			return 0;
+	}
+
 	// iterate all minor civs, looking for an allied/friendly city-state whose UA grants a yield conversion
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
 	{

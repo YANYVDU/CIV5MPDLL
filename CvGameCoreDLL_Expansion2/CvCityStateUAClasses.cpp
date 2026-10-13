@@ -1771,6 +1771,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCachedLeagueVotes(0)
 	, m_iCachedPuppetCount(0)
 	, m_iWorldWonderHappiness(0)
+	, m_iUCSYieldConversionCount(0)
 {
 }
 
@@ -1852,6 +1853,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iLocalHappinessCapModifier = 0;
 	m_iGoldenAgeBuildingMaintenanceMod = 0;
 	m_vGoldDonationGamble.clear();
+	// Colombo / Cape Town / Mogadishu / Monaco: cleared here and re-accumulated by ApplyEffect
+	m_iUCSYieldConversionCount = 0;
 	m_iFoodKeptModifierPerLuxury = 0;
 	m_iTradeRouteGoldModifierPerLuxuryType = 0;
 	m_iTradeRouteGoldModifierPerDistance = 0;
@@ -2141,6 +2144,13 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		{
 			m_vGoldDonationGamble.push_back(vGamble[i]);
 		}
+	}
+	// Colombo / Cape Town / Mogadishu / Monaco: flag that this player holds at least one yield-to-yield
+	// conversion effect, so CvCity::GetYieldRateFromUCSConversion (called per city per yield) can skip
+	// the city-state scan entirely for players that hold none.
+	if (!pEffect->GetYieldToYieldViaTRToUCSEntries().empty() || !pEffect->GetYieldToYieldEntries().empty())
+	{
+		m_iUCSYieldConversionCount += iChange;
 	}
 	m_iFoodKeptModifierPerLuxury						+= pEffect->GetFoodKeptModifierPerLuxury() * iChange;
 	m_iTradeRouteGoldModifierPerLuxuryType			+= pEffect->GetTradeRouteGoldModifierPerLuxuryType() * iChange;

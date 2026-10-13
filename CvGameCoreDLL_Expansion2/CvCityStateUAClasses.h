@@ -452,6 +452,11 @@ public:
 	bool YieldToYieldViaTRToUCSRequiresRouteToThisCS(int eInYield, int eOutYield) const;
 	// Monaco: unconditional conversion, Mod% of the city's eInYield output is granted as extra eOutYield output
 	int GetYieldToYield(int eInYield, int eOutYield) const;
+	// Colombo / Cape Town / Mogadishu / Monaco: the raw conversion rows carried by this effect.
+	// Exposed so ApplyEffect can maintain a player-level "has any conversion" flag, which keeps the
+	// per-city per-yield CvCity::GetYieldRateFromUCSConversion out of the city-state scan.
+	const std::vector<YieldToYieldViaTRToUCSEntry>& GetYieldToYieldViaTRToUCSEntries() const { return m_vYieldToYieldViaTRToUCS; }
+	const std::vector<YieldToYieldEntry>& GetYieldToYieldEntries() const { return m_vYieldToYield; }
 	// Monaco: the outcomes of the first-gold-donation wager (empty = effect not present)
 	const std::vector<GoldDonationGambleEntry>& GetGoldDonationGambleEntries() const { return m_vGoldDonationGamble; }
 	// Valletta: enemy city besieged by >= this many of our combat units cannot heal
@@ -903,6 +908,11 @@ public:
 	int GetGoldenAgeBuildingMaintenanceMod() const;
 	bool HasGoldDonationGamble() const { return !m_vGoldDonationGamble.empty(); }
 	const std::vector<GoldDonationGambleEntry>& GetGoldDonationGambleEntries() const { return m_vGoldDonationGamble; }
+	// Yield-to-yield conversion (Colombo / Cape Town / Mogadishu / Monaco): true when any active effect
+	// carries a conversion row. Read at the top of CvCity::GetYieldRateFromUCSConversion, a per-city
+	// per-yield hot path whose city-state scan costs a linear string lookup each; players holding no
+	// conversion effect at all (the common case) must not pay for it.
+	bool HasUCSYieldConversion() const { return m_iUCSYieldConversionCount > 0; }
 	// Panama
 	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
@@ -1201,6 +1211,9 @@ protected:
 	// Monaco
 	int m_iGoldenAgeBuildingMaintenanceMod;
 	std::vector<GoldDonationGambleEntry> m_vGoldDonationGamble;
+	// Colombo / Cape Town / Mogadishu / Monaco: count of active effects carrying a yield-to-yield
+	// conversion. Maintained by ApplyEffect, read by HasUCSYieldConversion.
+	int m_iUCSYieldConversionCount;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	// Manila
