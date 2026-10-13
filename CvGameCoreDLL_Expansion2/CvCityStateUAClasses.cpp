@@ -1705,7 +1705,23 @@ void CvCityStateUAXMLEntries::ResolveMinorCivUAIndexes()
 			continue;
 
 		const char* szUAType = pMinorCivInfo->GetUAType();
-		pMinorCivInfo->SetCityStateUAIndex((szUAType && szUAType[0] != '\0') ? GetEntryIndexByType(szUAType) : -1);
+		if (szUAType == NULL || szUAType[0] == '\0')
+		{
+			// No UA assigned: legitimate for city-states that carry none, so just leave the index at -1.
+			pMinorCivInfo->SetCityStateUAIndex(-1);
+			continue;
+		}
+
+		const int iIndex = GetEntryIndexByType(szUAType);
+		if (iIndex < 0)
+		{
+			// A non-empty UAType that matches no CityStateUAs row is a config error (typo, or the row was
+			// never inserted): every CSUA query site reads -1 as "no UA", so the ability would silently do
+			// nothing. CVASSERT_ENABLE is off in this build, so the log line is what surfaces it.
+			CvAssertMsg(iIndex >= 0, "City-state UAType matches no CityStateUAs row");
+			LOGFILEMGR.GetLog("xml.log", 0)->Msg("CSUA: minor civ %s declares UAType '%s' which matches no CityStateUAs row", pMinorCivInfo->GetType(), szUAType);
+		}
+		pMinorCivInfo->SetCityStateUAIndex(iIndex);
 	}
 }
 
