@@ -1208,6 +1208,9 @@
     <Row Class="5" Name="SP_AID_POINT_COST_REROLL_QUESTS" Value="20"/>
     <Row Class="5" Name="SP_AID_POINT_COST_NEXT_GREAT_PERSON" Value="50"/>
     <Row Class="5" Name="SP_AID_POINT_COST_PENDING_GIFT_UNIT" Value="10"/>
+    <!-- Cost (aid points) and effect (turns) of pulling the next World Congress / United Nations session forward -->
+    <Row Class="5" Name="SP_AID_POINT_COST_HASTEN_CONGRESS" Value="20"/>
+    <Row Class="5" Name="SP_AID_POINT_HASTEN_CONGRESS_TURNS" Value="3"/>
     <!-- Share of the city-state treasury seized when a major bullies gold (percent, 0 = disabled) -->
     <Row Class="5" Name="SP_BULLY_TREASURY_SHARE_PERCENT" Value="25"/>
 

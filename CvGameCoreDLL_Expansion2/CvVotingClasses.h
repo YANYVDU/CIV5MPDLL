@@ -620,6 +620,10 @@ public:
 	CvString GetLeagueSplashNextEraDetails(LeagueSpecialSessionTypes eGoverningSpecialSession, bool bJustFounded);
 	CvString GetGreatPersonRateModifierDetails(UnitClassTypes eGreatPersonClass);
 
+	// Super Power V11: exposed so the aid-point hasten action can re-announce the session-soon
+	// warning when pulling the countdown forward skips the turn DoTurn would have announced on.
+	void NotifySessionSoon(int iTurnsLeft);
+
 	// Achievements
 	void CheckProjectAchievements();
 
@@ -667,7 +671,6 @@ private:
 	void NotifySessionDone();
 	void NotifyProposalResult(CvEnactProposal* pProposal);
 	void NotifyProposalResult(CvRepealProposal* pProposal);
-	void NotifySessionSoon(int iTurnsLeft);
 	void NotifyProjectComplete(LeagueProjectTypes eProject);
 	void NotifyProjectProgress(LeagueProjectTypes eProject);
 

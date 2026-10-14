@@ -92,9 +92,12 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorBullyGoldWithAidPointsFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetNextGreatPersonChoiceFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetPendingGiftUnitFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoHastenCongressWithAidPointsFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostRerollQuests);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostNextGreatPerson);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostPendingGiftUnit);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostHastenCongress);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointHastenCongressTurns);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyTreasurySharePercent);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyGoldAidPointCost);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetMinorGiftUnitChoices);
@@ -132,6 +135,8 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetAidPointCostRerollQuests);
 	Method(GetAidPointCostNextGreatPerson);
 	Method(GetAidPointCostPendingGiftUnit);
+	Method(GetAidPointCostHastenCongress);
+	Method(GetAidPointHastenCongressTurns);
 	Method(GetBullyTreasurySharePercent);
 	Method(GetBullyGoldAidPointCost);
 	Method(GetMinorGiftUnitChoices);
@@ -2203,6 +2208,16 @@ int CvLuaGame::lDoSetPendingGiftUnitFromMajor(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//bool DoHastenCongressWithAidPointsFromMajor(int iMajorCivID, int iCostMinorCivID);
+// The League countdown is global and lives in synced state, so nothing caller-derived is passed in.
+int CvLuaGame::lDoHastenCongressWithAidPointsFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iCostMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoHastenCongressWithAidPointsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iCostMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
 //int GetAidPointCostRerollQuests();
 int CvLuaGame::lGetAidPointCostRerollQuests(lua_State* L)
 {
@@ -2221,6 +2236,20 @@ int CvLuaGame::lGetAidPointCostNextGreatPerson(lua_State* L)
 int CvLuaGame::lGetAidPointCostPendingGiftUnit(lua_State* L)
 {
 	lua_pushinteger(L, GC.getGame().GetAidPointCostPendingGiftUnit());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostHastenCongress();
+int CvLuaGame::lGetAidPointCostHastenCongress(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostHastenCongress());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointHastenCongressTurns();
+int CvLuaGame::lGetAidPointHastenCongressTurns(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointHastenCongressTurns());
 	return 1;
 }
 //------------------------------------------------------------------------------

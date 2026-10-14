@@ -291,9 +291,12 @@ protected:
 	static int lDoMinorBullyGoldWithAidPointsFromMajor(lua_State* L);
 	static int lDoSetNextGreatPersonChoiceFromMajor(lua_State* L);
 	static int lDoSetPendingGiftUnitFromMajor(lua_State* L);
+	static int lDoHastenCongressWithAidPointsFromMajor(lua_State* L);
 	static int lGetAidPointCostRerollQuests(lua_State* L);
 	static int lGetAidPointCostNextGreatPerson(lua_State* L);
 	static int lGetAidPointCostPendingGiftUnit(lua_State* L);
+	static int lGetAidPointCostHastenCongress(lua_State* L);
+	static int lGetAidPointHastenCongressTurns(lua_State* L);
 	static int lGetBullyTreasurySharePercent(lua_State* L);
 	static int lGetBullyGoldAidPointCost(lua_State* L);
 	static int lGetMinorGiftUnitChoices(lua_State* L);

@@ -11582,6 +11582,62 @@ bool CvGame::DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMino
 }
 
 //	--------------------------------------------------------------------------------
+// Pull the next League session forward. The countdown is global (shared by every player),
+// so this runs from a network-synced Lua entry point and must behave identically on each client.
+// Refused when there is no active League, while a session is running (the countdown is frozen then),
+// and when the remaining turns cannot absorb the full pull - SetTurnsUntilSession() rejects negative
+// values, so a partial pull would charge the points without moving the session.
+bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eCostMinor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eCostMinor >= MAX_MAJOR_CIVS, "eCostMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eCostMinor < MAX_CIV_PLAYERS, "eCostMinor is not in expected range (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	if(eCostMinor < MAX_MAJOR_CIVS || eCostMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	const int iCost = GetAidPointCostHastenCongress();
+	const int iTurns = GetAidPointHastenCongressTurns();
+	if(iCost <= 0 || iTurns <= 0)
+		return false;
+
+	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
+	if(pLeague == NULL || pLeague->IsInSession())
+		return false;
+
+	if(pLeague->GetTurnsUntilSession() <= iTurns)
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eCostMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	pLeague->ChangeTurnsUntilSession(-iTurns);
+
+	// Pulling the session forward can skip the "session soon" turn the League's own DoTurn warns on:
+	// that check fires only when the countdown lands exactly on the warning value, and DoTurn
+	// decrements before comparing. Re-announce here whenever the accelerated countdown already sits
+	// inside (or has dropped below) the warning window, so nobody is caught by surprise.
+	if(pLeague->GetTurnsUntilSession() <= GC.getLEAGUE_SESSION_SOON_WARNING_TURNS())
+	{
+		pLeague->NotifySessionSoon(pLeague->GetTurnsUntilSession());
+	}
+
+	// The countdown readout only refreshes on GameData_DIRTY_BIT and nothing else in this path
+	// dirties it, so without this the player who paid (and every other client) keeps seeing the
+	// stale number on the top bar.
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
+
+//	--------------------------------------------------------------------------------
 // Aid point costs for the spending actions above (0 = disabled)
 int CvGame::GetAidPointCostRerollQuests()
 {
@@ -11596,6 +11652,16 @@ int CvGame::GetAidPointCostNextGreatPerson()
 int CvGame::GetAidPointCostPendingGiftUnit()
 {
 	return gCustomMods.getOption("SP_AID_POINT_COST_PENDING_GIFT_UNIT", 10);
+}
+
+int CvGame::GetAidPointCostHastenCongress()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_HASTEN_CONGRESS", 20);
+}
+
+int CvGame::GetAidPointHastenCongressTurns()
+{
+	return gCustomMods.getOption("SP_AID_POINT_HASTEN_CONGRESS_TURNS", 3);
 }
 
 int CvGame::GetBullyTreasurySharePercent()

@@ -616,10 +616,16 @@ public:
 	void DoMinorBullyGoldWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iGold);
 	bool DoSetNextGreatPersonChoiceFromMajor(PlayerTypes eMajor, UnitTypes eUnit, PlayerTypes eCostMinor);
 	bool DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, UnitTypes eUnit);
+	// Pull the next World Congress / United Nations session forward by a fixed number of turns.
+	// The League countdown is global (shared by every player), so this is a network-synced action.
+	bool DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eCostMinor);
 	// Aid point costs for the spending actions above (0 = disabled)
 	int GetAidPointCostRerollQuests();
 	int GetAidPointCostNextGreatPerson();
 	int GetAidPointCostPendingGiftUnit();
+	int GetAidPointCostHastenCongress();
+	// Turns the League countdown is pulled forward per hasten purchase (0 = disabled)
+	int GetAidPointHastenCongressTurns();
 	// Share of a city-state treasury seized when a major bullies gold (percent, 0 = disabled)
 	int GetBullyTreasurySharePercent();
 	// Every unit type a city-state may gift to ePlayer (same filter as GetCompetitiveSpawnUnitType,
