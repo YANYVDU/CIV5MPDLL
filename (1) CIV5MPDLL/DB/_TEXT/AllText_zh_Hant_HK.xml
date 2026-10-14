@@ -461,6 +461,18 @@
 		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_GLOBAL_WAR_CASUTIES_CHANGES">
 			<Text>全球戰爭傷亡和攻占城市後的人口損失變化{1_NumModifier}%</Text>
 		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION">
+			<Text>受國際法保護的城邦：{1_List}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION_ENTRY">
+			<Text>{1_CivName}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY">
+			<Text>永久同盟的城邦：{1_List}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY_ENTRY">
+			<Text>{1_CivName}</Text>
+		</Row>
 		<Row Tag="TXT_KEY_RESOLUTION_WAR_CONVENTION">
 			<Text>戰爭公約</Text>
 		</Row>

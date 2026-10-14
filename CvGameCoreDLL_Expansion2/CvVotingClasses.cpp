@@ -409,6 +409,7 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iGlobalAttackModifier					+= pOtherEffects->iGlobalAttackModifier;
 	iGlobalWarCasualtiesChanges				+= pOtherEffects->iGlobalWarCasualtiesChanges;
 	bEmbargoIdeology						|= pOtherEffects->bEmbargoIdeology; // target ideology	
+	bInternationalLawProtection				|= pOtherEffects->bInternationalLawProtection; // target city-state
 #if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
 	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
@@ -421,6 +422,10 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	bVassalGetUC							|= pOtherEffects->bVassalGetUC;
 #endif
 #endif		
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bPermanentAlly							|= pOtherEffects->bPermanentAlly; // target city-state
+#endif
 }
 
 // Serialization Read
@@ -5521,6 +5526,12 @@ std::vector<CvString> CvLeague::GetCurrentEffectsSummary(PlayerTypes /*eObserver
 	PolicyBranchTypes eWorldIdeology = NO_POLICY_BRANCH_TYPE;
 	FStaticVector<PlayerTypes, MAX_MAJOR_CIVS, true, c_eCiv5GameplayDLL> veEmbargoedPlayers;
 	FStaticVector<ResourceTypes, 32, true, c_eCiv5GameplayDLL> veBannedResources;
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+	FStaticVector<PlayerTypes, MAX_MAJOR_CIVS, true, c_eCiv5GameplayDLL> veProtectedCityStates;
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	FStaticVector<PlayerTypes, MAX_MAJOR_CIVS, true, c_eCiv5GameplayDLL> vePermanentAllyCityStates;
+#endif
 	CvResolutionEffects effects;
 	for (ActiveResolutionList::iterator it = m_vActiveResolutions.begin(); it != m_vActiveResolutions.end(); ++it)
 	{
@@ -5560,6 +5571,20 @@ std::vector<CvString> CvLeague::GetCurrentEffectsSummary(PlayerTypes /*eObserver
 			CvAssert(eWorldIdeology == NO_POLICY_BRANCH_TYPE);
 			eWorldIdeology = eIdeology;
 		}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		if (it->GetEffects()->bInternationalLawProtection)
+		{
+			PlayerTypes eProtected = (PlayerTypes) it->GetProposerDecision()->GetDecision();
+			veProtectedCityStates.push_back(eProtected);
+		}
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (it->GetEffects()->bPermanentAlly)
+		{
+			PlayerTypes eAlly = (PlayerTypes) it->GetProposerDecision()->GetDecision();
+			vePermanentAllyCityStates.push_back(eAlly);
+		}
+#endif
 	}
 	if (eWorldReligion != NO_RELIGION)
 	{
@@ -5773,6 +5798,48 @@ std::vector<CvString> CvLeague::GetCurrentEffectsSummary(PlayerTypes /*eObserver
 	if (effects.bEmbargoIdeology)
 	{
 		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_EMBARGO_IDEOLOGY");
+		vsEffects.push_back(sTemp.toUTF8());
+	}
+	if (effects.bInternationalLawProtection)
+	{
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION");
+		CvString sEntries = "";
+		for (uint i = 0; i < veProtectedCityStates.size(); i++)
+		{
+			if (veProtectedCityStates[i] != NO_PLAYER)
+			{
+				if (i != 0)
+				{
+					sEntries += ", ";
+				}
+				Localization::String sTempEntry = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION_ENTRY");
+				sTempEntry << GET_PLAYER(veProtectedCityStates[i]).getCivilizationShortDescriptionKey();
+				sEntries += sTempEntry.toUTF8();
+			}
+		}
+		sTemp << sEntries;
+		vsEffects.push_back(sTemp.toUTF8());
+	}
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (effects.bPermanentAlly)
+	{
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY");
+		CvString sEntries = "";
+		for (uint i = 0; i < vePermanentAllyCityStates.size(); i++)
+		{
+			if (vePermanentAllyCityStates[i] != NO_PLAYER)
+			{
+				if (i != 0)
+				{
+					sEntries += ", ";
+				}
+				Localization::String sTempEntry = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY_ENTRY");
+				sTempEntry << GET_PLAYER(vePermanentAllyCityStates[i]).getCivilizationShortDescriptionKey();
+				sEntries += sTempEntry.toUTF8();
+			}
+		}
+		sTemp << sEntries;
 		vsEffects.push_back(sTemp.toUTF8());
 	}
 #endif
