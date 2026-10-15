@@ -18,6 +18,10 @@ INSERT INTO Defines(Name, Value) VALUES('CITY_CRIME_OPINION_DISSIDENTS_YIELD', 1
 INSERT INTO Defines(Name, Value) VALUES('CITY_CRIME_GOLDEN_AGE_YIELD',-10);
 INSERT INTO Defines(Name, Value) VALUES('CITY_LOYALTY_GOLDEN_AGE_YIELD', -10);
 
+-- Spy points system: threshold progression (base 100, +50 per spy)
+INSERT INTO Defines(Name, Value) VALUES('SPY_POINTS_THRESHOLD_BASE', 100);
+INSERT INTO Defines(Name, Value) VALUES('SPY_POINTS_THRESHOLD_INCREASE', 50);
+
 alter table Features add PseudoNaturalWonder integer default 0;
 alter table Features add Volcano boolean default 0;
 

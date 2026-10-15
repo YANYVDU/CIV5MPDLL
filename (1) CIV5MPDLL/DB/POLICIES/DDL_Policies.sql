@@ -47,6 +47,8 @@ alter table Policies add InstantFoodThresholdPercent integer not null default 0;
 alter table Policies add InstantFoodKeptPercent integer not null default 0;
 alter table Policies add FreeBuildingClass text default null references BuildingClasses(Type);
 alter table Policies add ExtraSpies integer default 0;
+--Spy points per turn granted to the city owner while this policy is active
+alter table Policies add SpyPoints integer default 0;
 --******************** New Effect ********************--
 alter table Policies add DefenseBoostAllCities integer default 0;
 alter table Policies add AlwaysWeLoveKindDayInGoldenAge boolean default 0;

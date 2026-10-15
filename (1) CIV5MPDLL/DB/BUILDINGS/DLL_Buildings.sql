@@ -431,6 +431,8 @@ alter table Buildings add PopulationChange integer default 0;
 alter table Buildings add FoodKeptFromPollution integer default 0;
 alter table Buildings add GoldenAgeMeterMod int not null default 0;
 alter table Buildings add GlobalEspionageSpeedModifier integer default 0;
+--Spy points per turn granted to the city owner while this building is in the city
+alter table Buildings add SpyPoints integer default 0;
 
 alter table Buildings add MinorFriendshipAnchorChange int not null default 0;
 alter table Buildings add MinorQuestFriendshipMod int not null default 0;

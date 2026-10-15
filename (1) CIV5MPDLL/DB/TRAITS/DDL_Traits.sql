@@ -88,6 +88,8 @@ alter table Traits add InstantTourismBombWhenFirstConquerMajorCapital int defaul
 alter table Traits add ConquestCasualtiesModifier int default 0;
 
 --******************** Other Bonus ********************--
+--Spy points per turn granted to the player while this trait is active
+alter table Traits add SpyPoints integer default 0;
 alter table Traits add AbleToDualEmpire boolean default 0;
 alter table Traits add CanDiplomaticMarriage boolean default 0;
 alter table Traits add BuyOwnedTiles boolean default 0;
