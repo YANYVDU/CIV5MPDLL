@@ -46,6 +46,10 @@ public:
 	int GetCombatModifierFriendlyCities() const;
 	int GetFriendlyHealChange() const;
 	int GetCityStateFriendshipModifier() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// One-time diplomatic prestige granted to the player who picks this belief
+	int GetDiplomaticPrestige() const;
+#endif
 	int GetLandBarbarianConversionPercent() const;
 	int GetWonderProductionModifier() const;
 	int GetPlayerHappiness() const;
@@ -204,6 +208,9 @@ protected:
 	int m_iCombatModifierFriendlyCities;
 	int m_iFriendlyHealChange;
 	int m_iCityStateFriendshipModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+#endif
 	int m_iLandBarbarianConversionPercent;
 	int m_iWonderProductionModifier;
 	int m_iPlayerHappiness;

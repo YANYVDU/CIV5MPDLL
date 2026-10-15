@@ -7565,6 +7565,11 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 
 	// Modifier to rate based on traits and religion
 	int iTraitMod = kPlayer.GetPlayerTraits()->GetCityStateFriendshipModifier();
+#if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+	// Beliefs carrying a CityStateFriendshipModifier (e.g. Papal Legate) piggyback on the trait modifier:
+	// they speed up influence recovery and slow down decay the same way a trait does.
+	iTraitMod += kPlayer.GetReligions()->GetCityStateFriendshipModifier();
+#endif
 	int iReligionMod = 0;
 	if (IsSameReligionAsMajor(ePlayer))
 		iReligionMod += /*50*/ GC.getMINOR_FRIENDSHIP_RATE_MOD_SHARED_RELIGION();

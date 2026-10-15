@@ -5,6 +5,8 @@ alter table Beliefs add SpyPoints integer default 0;
 --Spy points per turn granted to the city owner for each city this belief applies to (follower majority religion or secondary pantheon)
 alter table Beliefs add SpyPointsPerCity integer default 0;
 alter table Beliefs add CuttingBonusModifier integer default 0;
+--One-time diplomatic prestige granted to the player who picks this belief
+alter table Beliefs add DiplomaticPrestige integer default 0;
 --Yield = Modifier * cutting-production
 create table Belief_CuttingInstantYieldModifier (
     BeliefType text references Beliefs(Type),

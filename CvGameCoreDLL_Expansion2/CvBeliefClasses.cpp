@@ -34,6 +34,9 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_iCombatModifierFriendlyCities(0),
 	m_iFriendlyHealChange(0),
 	m_iCityStateFriendshipModifier(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+#endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iWonderProductionModifier(0),
 	m_iPlayerHappiness(0),
@@ -332,6 +335,14 @@ int CvBeliefEntry::GetCityStateFriendshipModifier() const
 {
 	return m_iCityStateFriendshipModifier;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+/// Accessor:: One-time diplomatic prestige granted to the player who picks this belief
+int CvBeliefEntry::GetDiplomaticPrestige() const
+{
+	return m_iDiplomaticPrestige;
+}
+#endif
 
 /// Accessor:: Chance of converting a barbarian camp guard
 int CvBeliefEntry::GetLandBarbarianConversionPercent() const
@@ -1099,6 +1110,9 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iCombatModifierFriendlyCities   = kResults.GetInt("CombatModifierFriendlyCities");
 	m_iFriendlyHealChange	          = kResults.GetInt("FriendlyHealChange");
 	m_iCityStateFriendshipModifier    = kResults.GetInt("CityStateFriendshipModifier");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige             = kResults.GetInt("DiplomaticPrestige");
+#endif
 	m_iLandBarbarianConversionPercent = kResults.GetInt("LandBarbarianConversionPercent");
 	m_iWonderProductionModifier       = kResults.GetInt("WonderProductionModifier");
 	m_iPlayerHappiness			      = kResults.GetInt("PlayerHappiness");

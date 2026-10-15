@@ -935,6 +935,10 @@ void CvGameReligions::FoundPantheon(PlayerTypes ePlayer, BeliefTypes eBelief)
 	CvReligion newReligion(RELIGION_PANTHEON, ePlayer, NULL, true);
 	newReligion.m_Beliefs.AddBelief(eBelief, ePlayer);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief);
+#endif
+
 	// Found it
 	m_CurrentReligions.push_back(newReligion);
 
@@ -1098,6 +1102,13 @@ void CvGameReligions::FoundReligion(PlayerTypes ePlayer, ReligionTypes eReligion
 	{
 		kReligion.m_Beliefs.AddBelief(eBelief4, ePlayer);
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief1);
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief2);
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief3);
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief4);
+#endif
 
 	if(szCustomName != NULL && strlen(szCustomName) <= sizeof(kReligion.m_szCustomName))
 	{
@@ -1385,6 +1396,11 @@ void CvGameReligions::EnhanceReligion(PlayerTypes ePlayer, ReligionTypes eReligi
 #endif
 		it->m_Beliefs.AddBelief(eBelief2, ePlayer);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief1);
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief2);
+#endif
+
 #if defined(MOD_API_RELIGION)
 	if(eReligion != RELIGION_PANTHEON)
 #endif
@@ -1580,6 +1596,10 @@ void CvGameReligions::AddReformationBelief(PlayerTypes ePlayer, ReligionTypes eR
 
 	it->m_Beliefs.AddBelief(eBelief1, ePlayer);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief1);
+#endif
+
 #if defined(MOD_TRAITS_OTHER_PREREQS)
 	if (MOD_TRAITS_OTHER_PREREQS) {
 		// Update our traits (some may have become obsolete)
@@ -1685,6 +1705,10 @@ bool CvGameReligions::AddBeliefToReligion(PlayerTypes ePlayer, ReligionTypes eRe
 	it->m_Beliefs.AddBelief(eBelief, ePlayer);
 	it->m_vExtraBeliefs.push_back(eBelief);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	ApplyBeliefDiplomaticPrestige(ePlayer, eBelief);
+#endif
+
 #if defined(MOD_TRAITS_OTHER_PREREQS)
 	if (MOD_TRAITS_OTHER_PREREQS) {
 		// Update our traits (some may have become obsolete)
@@ -1700,6 +1724,20 @@ bool CvGameReligions::AddBeliefToReligion(PlayerTypes ePlayer, ReligionTypes eRe
 
 	return true;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+/// Grant the one-time diplomatic prestige a belief carries to the player who picked it.
+/// NO_PLAYER marks a silent copy (pantheon belief copied into a religion) and must not trigger again.
+void CvGameReligions::ApplyBeliefDiplomaticPrestige(PlayerTypes ePlayer, BeliefTypes eBelief)
+{
+	if(ePlayer == NO_PLAYER || eBelief == NO_BELIEF)
+		return;
+
+	CvBeliefEntry* pEntry = GC.getBeliefInfo(eBelief);
+	if(pEntry != NULL && pEntry->GetDiplomaticPrestige() != 0)
+		GET_PLAYER(ePlayer).ChangeExtraDiplomaticPrestige(pEntry->GetDiplomaticPrestige());
+}
+#endif
 
 /// Move the Holy City for a religion (useful for scenario scripting)
 void CvGameReligions::SetHolyCity(ReligionTypes eReligion, CvCity* pkHolyCity)
@@ -3395,6 +3433,25 @@ int CvPlayerReligions::GetCityStateInfluenceModifier() const
 	}
 	return iRtnValue;
 }
+
+#if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+/// Does this player get a modifier to the City-State influence decay/recovery rate from their beliefs?
+/// Mirrors the trait-based CityStateFriendshipModifier: speeds up recovery, slows down decay.
+int CvPlayerReligions::GetCityStateFriendshipModifier() const
+{
+	int iRtnValue = 0;
+	ReligionTypes eReligion = GetReligionCreatedByPlayer();
+	if (eReligion != NO_RELIGION)
+	{
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion, NO_PLAYER);
+		if(pReligion)
+		{
+			iRtnValue += pReligion->m_Beliefs.GetCityStateFriendshipModifier();
+		}
+	}
+	return iRtnValue;
+}
+#endif
 
 /// Does this player get religious pressure from spies?
 int CvPlayerReligions::GetSpyPressure() const
