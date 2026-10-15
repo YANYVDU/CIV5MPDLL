@@ -61,6 +61,7 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_iGoldenAgeModifier(0),
 	m_iExtraSpies(0),
 	m_iSpyPoints(0),
+	m_iSpyPointsPerCity(0),
 	m_bGreatPersonPointsCapital(false),
 	m_bGreatPersonPointsPerCity(false),
 	m_bGreatPersonPointsHolyCity(false),
@@ -833,6 +834,10 @@ int CvBeliefEntry::GetSpyPoints() const
 {
 	return m_iSpyPoints;
 }
+int CvBeliefEntry::GetSpyPointsPerCity() const
+{
+	return m_iSpyPointsPerCity;
+}
 //Great Person Points
 bool CvBeliefEntry::IsGreatPersonPointsCapital() const
 {
@@ -1121,6 +1126,7 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iGoldenAgeModifier	  		  = kResults.GetInt("GoldenAgeModifier");
 	m_iExtraSpies	  	  			  = kResults.GetInt("ExtraSpies");
 	m_iSpyPoints	  	  			  = kResults.GetInt("SpyPoints");
+	m_iSpyPointsPerCity	  	  		  = kResults.GetInt("SpyPointsPerCity");
 	m_iLandmarksTourismPercent	  	  = kResults.GetInt("LandmarksTourismPercent");
 	m_iHolyCityUnitExperence	  	  = kResults.GetInt("HolyCityUnitExperence");
 	m_iCityExtraMissionarySpreads	  = kResults.GetInt("CityExtraMissionarySpreads");
@@ -2665,6 +2671,19 @@ int CvReligionBeliefs::GetYieldPerBirth(YieldTypes eYieldType) const
 	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
 	{
 		rtnValue += pBeliefs->GetEntry(*i)->GetYieldPerBirth(eYieldType);
+	}
+
+	return rtnValue;
+}
+/// Get spy points per city from beliefs
+int CvReligionBeliefs::GetSpyPointsPerCity() const
+{
+	CvBeliefXMLEntries* pBeliefs = GC.GetGameBeliefs();
+	int rtnValue = 0;
+
+	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
+	{
+		rtnValue += pBeliefs->GetEntry(*i)->GetSpyPointsPerCity();
 	}
 
 	return rtnValue;

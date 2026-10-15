@@ -143,6 +143,7 @@ public:
 	int GetGoldenAgeModifier() const;
 	int GetExtraSpies() const;
 	int GetSpyPoints() const;
+	int GetSpyPointsPerCity() const;
 	bool IsGreatPersonPointsCapital() const;
 	bool IsGreatPersonPointsPerCity() const;
 	bool IsGreatPersonPointsHolyCity() const;
@@ -232,6 +233,7 @@ protected:
 	int m_iGoldenAgeModifier;
 	int m_iExtraSpies;
 	int m_iSpyPoints;
+	int m_iSpyPointsPerCity;
 	bool m_bGreatPersonPointsCapital;
 	bool m_bGreatPersonPointsPerCity;
 	bool m_bGreatPersonPointsHolyCity;
@@ -641,6 +643,7 @@ public:
 	int GetGreatPersonPoints(GreatPersonTypes eGreatPersonTypes, bool bCapital, bool bHolyCity) const;
 	int GetTerrainCityFoodConsumption(TerrainTypes eTerrain) const;
 	int GetYieldPerBirth(YieldTypes eYieldType) const;
+	int GetSpyPointsPerCity() const;
 	int GetLakePlotYieldChange(YieldTypes eYieldType) const;
 	int GetRiverPlotYieldChange(YieldTypes eYieldType) const;
 	int GetLocalHappinessYieldRate(YieldTypes eYieldType) const;

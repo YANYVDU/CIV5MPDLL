@@ -15404,11 +15404,64 @@ int CvPlayer::GetSpyPointsCreated() const
 
 //	--------------------------------------------------------------------------------
 /// Spy points earned per turn from all sources (buildings, policies, beliefs, traits).
-/// Maintained incrementally on change events; loaded from and written to the save file.
+/// The trait/policy/building/belief part is maintained incrementally on change events and
+/// loaded from and written to the save file. The religion-city part is computed on demand
+/// (mirroring the belief great person point mechanism) so it never has to be cached or saved.
 int CvPlayer::GetSpyPointsPerTurn() const
 {
+#if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+	if (MOD_BELIEF_NEW_EFFECT_FOR_SP)
+		return m_iSpyPointsPerTurn + GetSpyPointsPerTurnFromBeliefCity();
+#endif
 	return m_iSpyPointsPerTurn;
 }
+
+#if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+//	--------------------------------------------------------------------------------
+/// Spy points per turn granted by this player's cities that a belief (SpyPointsPerCity) applies to.
+/// Computed on demand from the current city/religion state, mirroring the belief great person
+/// point mechanism (CvCity::GetGreatPersonPointsFromReligion), so it is always correct after a
+/// load and never needs to be refreshed before use or written to the save file.
+int CvPlayer::GetSpyPointsPerTurnFromBeliefCity() const
+{
+	int iTotal = 0;
+	const CvCity* pLoopCity;
+	int iLoop;
+	for (pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	{
+		if (pLoopCity->IsResistance())
+			continue;
+
+		CvCityReligions* pCityReligions = pLoopCity->GetCityReligions();
+
+		// Beliefs of the city's majority religion, summed across all of them like the belief
+		// great person points. A full religion founded by another player still counts; a foreign
+		// pantheon is skipped, since GetReligion() matches a pantheon by founder.
+		ReligionTypes eMajority = pCityReligions->GetReligiousMajority();
+		if (eMajority != NO_RELIGION)
+		{
+			const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, GetID());
+			if (pReligion)
+			{
+				iTotal += pReligion->m_Beliefs.GetSpyPointsPerCity();
+			}
+		}
+
+		// Pantheon belief granted by the secondary religion. The getter is already gated by the
+		// policy and de-duplicated against the majority religion's pantheon.
+		BeliefTypes eSecondary = pCityReligions->GetSecondaryReligionPantheonBelief();
+		if (eSecondary != NO_BELIEF)
+		{
+			const CvBeliefEntry* pEntry = GC.GetGameBeliefs()->GetEntry(eSecondary);
+			if (pEntry)
+			{
+				iTotal += pEntry->GetSpyPointsPerCity();
+			}
+		}
+	}
+	return iTotal;
+}
+#endif
 
 //	--------------------------------------------------------------------------------
 /// Adjust the cached spy points earned per turn on change events.

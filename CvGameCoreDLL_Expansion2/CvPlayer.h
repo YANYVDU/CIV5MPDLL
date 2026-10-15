@@ -619,6 +619,9 @@ public:
 	int getSpyPointsThresholdModifier() const;
 	void changeSpyPointsThresholdModifier(int iChange);
 	void ChangeSpyPointsPerTurn(int iChange);
+#if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+	int GetSpyPointsPerTurnFromBeliefCity() const;
+#endif
 	// END Espionage
 
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)

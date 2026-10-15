@@ -6983,6 +6983,16 @@ int CvReligionAI::ScoreBeliefAtCity(CvBeliefEntry* pEntry, CvCity* pCity)
 		}
 		iRtnValue += iTempValue;
 	}
+	if(pEntry->GetSpyPointsPerCity() != 0)
+	{
+		// Spy points per city (worth more in a larger empire's core city)
+		iTempValue = pEntry->GetSpyPointsPerCity();
+		if(pCity->getPopulation() >= 15)
+		{
+			iTempValue *= 2;
+		}
+		iRtnValue += iTempValue;
+	}
 	if(iTerrain != NO_TERRAIN)
 	{
 		iTempValue = pEntry->GetTerrainCityFoodConsumption(iTerrain);

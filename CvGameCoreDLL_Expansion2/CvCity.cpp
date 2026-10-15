@@ -4985,10 +4985,15 @@ int CvCity::getProductionExperience(UnitTypes eUnit)
 			ReligionTypes eCityReligion = GetCityReligions()->GetReligiousMajority();
 			if(MOD_BELIEF_NEW_EFFECT_FOR_SP && eCityReligion != NO_RELIGION)
 			{
-				int iExBouns = GC.getGame().GetGameReligions()->GetReligion(eCityReligion,getOwner())->m_Beliefs.GetHolyCityUnitExperence();
-				if(iExBouns != 0 && GetCityReligions()->IsHolyCityForReligion(eCityReligion) && GET_PLAYER(getOwner()).HasReligion(eCityReligion))
+				// GetReligion() returns NULL when the majority is a pantheon founded by another player
+				const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eCityReligion,getOwner());
+				if(pReligion)
 				{
-					iExperience += iExBouns;
+					int iExBouns = pReligion->m_Beliefs.GetHolyCityUnitExperence();
+					if(iExBouns != 0 && GetCityReligions()->IsHolyCityForReligion(eCityReligion) && GET_PLAYER(getOwner()).HasReligion(eCityReligion))
+					{
+						iExperience += iExBouns;
+					}
 				}
 			}
 #endif
@@ -9404,7 +9409,12 @@ int CvCity::foodConsumption(bool /*bNoAngry*/, int iExtra) const
 	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
 	if(eMajority != NO_RELIGION)
 	{
-		iConsumptionModifier += GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner())->m_Beliefs.GetTerrainCityFoodConsumption(eTerrain);
+		// GetReligion() returns NULL when the majority is a pantheon founded by another player
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if(pReligion)
+		{
+			iConsumptionModifier += pReligion->m_Beliefs.GetTerrainCityFoodConsumption(eTerrain);
+		}
 	}	
 	BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
 	if(eSecondaryPantheon != NO_BELIEF)
@@ -12100,7 +12110,8 @@ int CvCity::GetGreatPersonPointsFromReligion(GreatPersonTypes eGreatPersonTypes)
 	if(eReligion != NO_RELIGION)
 	{
 		const CvReligion* pkReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion,getOwner());
-		if(pkReligion->m_Beliefs.HasGreatPersonPoints())
+		// GetReligion() returns NULL when the city's majority is a pantheon founded by another player
+		if(pkReligion && pkReligion->m_Beliefs.HasGreatPersonPoints())
 		{
 			resValue += pkReligion->m_Beliefs.GetGreatPersonPoints(eGreatPersonTypes,isCapital(),GetCityReligions()->IsHolyCityForReligion(eReligion));
 		}
@@ -12119,7 +12130,10 @@ int CvCity::GetReligionExtraMissionarySpreads(ReligionTypes eReligion)
 {
 	VALIDATE_OBJECT
 	if(eReligion == NO_RELIGION) return 0;
-	return GC.getGame().GetGameReligions()->GetReligion(eReligion,getOwner())->m_Beliefs.GetCityExtraMissionarySpreads();
+	// GetReligion() returns NULL when eReligion is a pantheon founded by another player
+	const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion,getOwner());
+	if(!pReligion) return 0;
+	return pReligion->m_Beliefs.GetCityExtraMissionarySpreads();
 }
 //	--------------------------------------------------------------------------------
 int CvCity::GetBeliefExtraMissionarySpreads(BeliefTypes eBelief)
