@@ -2552,21 +2552,22 @@ int CvLuaPlayer::lGetResearchProgressExceptOverflow(lua_State* L)
 //------------------------------------------------------------------------------
 //int GetResearchThresholdMod();
 // Returns the city-count research threshold (the "research threshold") broken into its parts:
-// iModPerCity, iEffectiveCities, iPuppetDiscount, iBuildingClassPercent, iGoldenAgePercent, iTotal.
+// iModPerCity, iEffectiveCities, iPuppetDiscount, iBuildingClassCut (threshold points, not a percent),
+// iGoldenAgePercent, iTotal.
 int CvLuaPlayer::lGetResearchThresholdMod(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	int iModPerCity = 0;
 	int iEffectiveCities = 0;
 	int iPuppetDiscount = 0;
-	int iBuildingClassPercent = 0;
+	int iBuildingClassCut = 0;
 	int iGoldenAgePercent = 0;
 	const int iTotal = pkPlayer->GetResearchThresholdMod(&iModPerCity, &iEffectiveCities,
-		&iPuppetDiscount, &iBuildingClassPercent, &iGoldenAgePercent);
+		&iPuppetDiscount, &iBuildingClassCut, &iGoldenAgePercent);
 	lua_pushinteger(L, iModPerCity);
 	lua_pushinteger(L, iEffectiveCities);
 	lua_pushinteger(L, iPuppetDiscount);
-	lua_pushinteger(L, iBuildingClassPercent);
+	lua_pushinteger(L, iBuildingClassCut);
 	lua_pushinteger(L, iGoldenAgePercent);
 	lua_pushinteger(L, iTotal);
 	return 6;

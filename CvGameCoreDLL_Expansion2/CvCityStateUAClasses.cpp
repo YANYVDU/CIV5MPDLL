@@ -1261,7 +1261,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vBuildingClassGlobalYieldModifiers.push_back(entry);
 		}
 	}
-	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent
+	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod points
 	{
 		m_vBuildingClassTechCostModifiers.clear();
 		std::string strKey("CityStateUAEffect_BuildingClassTechCostModifiers");
@@ -2622,7 +2622,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_vBuildingClassGlobalYieldModifiers.push_back(entry);
 		}
 	}
-	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent
+	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod points
 	{
 		const std::vector<BuildingClassTechCostModifierEntry>& vEntries = pEffect->GetBuildingClassTechCostModifiers();
 		for (size_t i = 0; i < vEntries.size(); i++)

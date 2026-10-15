@@ -249,8 +249,9 @@ struct BuildingClassGlobalYieldModifierEntry {
 };
 
 // Singapore: each owned building class lowers the city-count research threshold
-// (CvPlayerTechs::GetResearchCost) by TechCostMod percent, nation-wide. TechCostMod is a PLAIN PERCENT
-// (2 = -2% per owned building class); the consumer clamps the sum at 100.
+// (CvPlayerTechs::GetResearchCost) by TechCostMod threshold points, nation-wide. TechCostMod is a plain
+// number of threshold points, NOT a percent of the threshold (2 = -2 per owned building class). The
+// consumer subtracts the sum from the modifier and floors it at 0.
 struct BuildingClassTechCostModifierEntry {
 	int m_iBuildingClass;
 	int m_iTechCostMod;
@@ -1087,7 +1088,8 @@ public:
 	// percent). The count is read live from CvPlayer::getBuildingClassCount, so no per-turn cache is needed.
 	const std::vector<BuildingClassGlobalYieldModifierEntry>& GetBuildingClassGlobalYieldModifiers() const { return m_vBuildingClassGlobalYieldModifiers; }
 	bool HasBuildingClassGlobalYieldModifiers() const;
-	// Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent.
+	// Singapore: each owned building class lowers the city-count research threshold by TechCostMod points
+	// (a plain subtraction, not a percent of the threshold).
 	const std::vector<BuildingClassTechCostModifierEntry>& GetBuildingClassTechCostModifiers() const { return m_vBuildingClassTechCostModifiers; }
 	bool HasBuildingClassTechCostModifiers() const;
 

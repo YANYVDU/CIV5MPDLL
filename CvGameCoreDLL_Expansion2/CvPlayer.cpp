@@ -34675,7 +34675,7 @@ int CvPlayer::GetMaxEffectiveCities(bool bIncludePuppets)
 // Research threshold (the city-count tech cost modifier) broken into its component parts, for UI display.
 // Mirrors the threshold math in CvPlayerTechs::GetResearchCost, which calls this function.
 int CvPlayer::GetResearchThresholdMod(int* piModPerCity, int* piEffectiveCities,
-	int* piPuppetDiscount, int* piBuildingClassPercent, int* piGoldenAgePercent)
+	int* piPuppetDiscount, int* piBuildingClassCut, int* piGoldenAgePercent)
 {
 	const int iModPerCity = GC.getMap().getWorldInfo().GetNumCitiesTechCostMod();	// Default is 40, gets smaller on larger maps
 	const int iEffectiveCities = GetMaxEffectiveCities(/*bIncludePuppets*/ true);
@@ -34709,24 +34709,27 @@ int CvPlayer::GetResearchThresholdMod(int* piModPerCity, int* piEffectiveCities,
 	}
 #endif
 
-	int iBuildingClassPercent = 0;
+	int iBuildingClassCut = 0;
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Singapore CS UA: each owned building class lowers the city-count research threshold by TechCostMod
-	// percent. Clamp the sum at 100 so the threshold can never go negative.
+	// points, added straight onto the threshold. TechCostMod is a plain number of threshold points (2 = -2),
+	// NOT a percent of the threshold: scaling iMod instead would make the same cut bite a fixed share of the
+	// whole modifier, so a handful of tier-1 cities would erase a far larger slice than designed.
 	{
 		CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
 		if (pCSUA != NULL && pCSUA->HasBuildingClassTechCostModifiers())
 		{
 			const std::vector<BuildingClassTechCostModifierEntry>& vTC = pCSUA->GetBuildingClassTechCostModifiers();
-			int iPercent = 0;
+			int iCut = 0;
 			for (size_t i = 0; i < vTC.size(); i++)
-				iPercent += getBuildingClassCount((BuildingClassTypes)vTC[i].m_iBuildingClass) * vTC[i].m_iTechCostMod;
-			if (iPercent > 100) iPercent = 100;
-			if (iPercent > 0)
+				iCut += getBuildingClassCount((BuildingClassTypes)vTC[i].m_iBuildingClass) * vTC[i].m_iTechCostMod;
+			if (iCut > 0)
 			{
-				iBuildingClassPercent = iPercent;
-				iMod = iMod * (100 - iPercent) / 100;
+				// Report what is actually taken off, so the tooltip's subtraction always lands on the total.
+				if (iCut > iMod) iCut = iMod;
+				iBuildingClassCut = iCut;
+				iMod -= iCut;
 			}
 		}
 	}
@@ -34742,7 +34745,7 @@ int CvPlayer::GetResearchThresholdMod(int* piModPerCity, int* piEffectiveCities,
 	if (piModPerCity != NULL) *piModPerCity = iModPerCity;
 	if (piEffectiveCities != NULL) *piEffectiveCities = iEffectiveCities;
 	if (piPuppetDiscount != NULL) *piPuppetDiscount = iPuppetDiscount;
-	if (piBuildingClassPercent != NULL) *piBuildingClassPercent = iBuildingClassPercent;
+	if (piBuildingClassCut != NULL) *piBuildingClassCut = iBuildingClassCut;
 	if (piGoldenAgePercent != NULL) *piGoldenAgePercent = iGoldenAgePercent;
 
 	return iMod;

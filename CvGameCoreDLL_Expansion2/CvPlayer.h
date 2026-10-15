@@ -2060,8 +2060,9 @@ public:
 	// Research threshold (the city-count tech cost modifier) broken into its component parts, for UI display.
 	// Returns the final modifier; any non-NULL out-param receives one component. Shared with
 	// CvPlayerTechs::GetResearchCost so the tooltip can never drift from the real math.
+	// piBuildingClassCut is a number of threshold points subtracted (Singapore CS UA), not a percent.
 	int GetResearchThresholdMod(int* piModPerCity = NULL, int* piEffectiveCities = NULL,
-		int* piPuppetDiscount = NULL, int* piBuildingClassPercent = NULL, int* piGoldenAgePercent = NULL);
+		int* piPuppetDiscount = NULL, int* piBuildingClassCut = NULL, int* piGoldenAgePercent = NULL);
 
 	int GetNumNaturalWondersDiscoveredInArea() const;
 	void SetNumNaturalWondersDiscoveredInArea(int iValue);
