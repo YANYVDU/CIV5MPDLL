@@ -11526,6 +11526,12 @@ bool CvGame::DoSetNextGreatPersonChoiceFromMajor(PlayerTypes eMajor, UnitTypes e
 	if(eGP == NO_SPECIALUNIT || GC.getUnitInfo(eUnit)->GetSpecialUnitType() != eGP)
 		return false;
 
+	// Super Power V11: m_eNextGreatPersonChoice is a single slot on the player, so only one pick
+	// may be pending at a time. A second pick would silently overwrite the pending one while still
+	// charging its aid points. Refuse here so the cost cannot go to waste.
+	if(GET_PLAYER(eMajor).GetNextGreatPersonChoice() != NO_UNIT)
+		return false;
+
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eCostMinor).GetMinorCivAI();
 	if(pMinorAI == NULL)
 		return false;
