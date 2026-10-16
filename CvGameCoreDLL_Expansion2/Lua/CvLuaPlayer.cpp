@@ -13048,6 +13048,16 @@ int CvLuaPlayer::lGetEspionageSpies(lua_State* L)
 		lua_pushboolean(L, pSpy->m_bPassive);
 		lua_setfield(L, t, "Passive");
 #endif
+		// SP: expose the Master Spy promotion conditions so the UI can show per-spy progress
+		lua_pushboolean(L, pSpy->m_bHasStolenTech);
+		lua_setfield(L, t, "HasStolenTech");
+
+		lua_pushboolean(L, pSpy->m_bHasKilledSpy);
+		lua_setfield(L, t, "HasKilledSpy");
+
+		lua_pushboolean(L, pSpy->m_bHasCoupSuccess);
+		lua_setfield(L, t, "HasCoupSuccess");
+
 		lua_rawseti(L, -2, index++);
 	}
 	return 1;
