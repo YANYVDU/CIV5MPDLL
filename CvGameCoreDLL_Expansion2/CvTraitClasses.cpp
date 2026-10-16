@@ -166,6 +166,7 @@ CvTraitEntry::CvTraitEntry() :
 #endif
 
 	m_eFreeUnitPrereqTech(NO_TECH),
+	m_eCombatBonusImprovement(NO_IMPROVEMENT),
 	m_eFreeBuilding(NO_BUILDING),
 	m_eFreeBuildingOnConquest(NO_BUILDING),
 	m_bTrainedAll(false),
@@ -3460,7 +3461,9 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_aFreeTraitUnits.push_back(traitUnit);
 			}
 
-			m_eCombatBonusImprovement = trait->GetCombatBonusImprovement();
+			// A trait without a CombatBonusImprovement must not clobber the value of an earlier trait
+			if (trait->GetCombatBonusImprovement() != NO_IMPROVEMENT)
+				m_eCombatBonusImprovement = trait->GetCombatBonusImprovement();
 
 			int iNumUnitCombatClassInfos = GC.getNumUnitCombatClassInfos();
 			for(int jJ= 0; jJ < iNumUnitCombatClassInfos; jJ++)
