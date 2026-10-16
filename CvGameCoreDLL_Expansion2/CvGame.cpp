@@ -11481,7 +11481,7 @@ bool CvGame::DoMinorRerollQuestsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor
 }
 
 //	--------------------------------------------------------------------------------
-// Bully gold paying the influence loss with aid points instead (no influence loss, no diplomatic penalty).
+// Bully gold paying the influence loss with aid points instead; no penalty of any kind is applied.
 void CvGame::DoMinorBullyGoldWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iGold)
 {
 	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
@@ -11500,8 +11500,9 @@ void CvGame::DoMinorBullyGoldWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return;
 
-	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
-	pMinorAI->DoMajorBullyGoldWithAidPoints(eMajor, iGold);
+	// Charge the points only if the bully actually goes through, so a failed attempt costs nothing
+	if(pMinorAI->DoMajorBullyGoldWithAidPoints(eMajor, iGold))
+		pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
 }
 
 //	--------------------------------------------------------------------------------

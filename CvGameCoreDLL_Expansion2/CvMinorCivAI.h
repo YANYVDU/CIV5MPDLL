@@ -485,8 +485,9 @@ public:
 	// Preselected military gift unit for this major (NO_UNIT = none); DoSpawnUnit uses it instead of the random pick
 	UnitTypes GetPendingGiftUnit(PlayerTypes eMajor) const;
 	void SetPendingGiftUnit(PlayerTypes eMajor, UnitTypes eUnit);
-	// Bully gold paying the influence loss with aid points instead (no influence loss, no diplomatic penalty)
-	void DoMajorBullyGoldWithAidPoints(PlayerTypes eMajor, int iGold);
+	// Bully gold paying the influence loss with aid points instead. No penalty of any kind is applied -
+	// the city-state does not even record the bully. Returns false if the bully could not be pulled off.
+	bool DoMajorBullyGoldWithAidPoints(PlayerTypes eMajor, int iGold);
 	// Aid points charged to bully gold without penalty: twice the influence loss the bully would normally suffer
 	int GetBullyGoldAidPointCost(PlayerTypes eMajor);
 	void DoBullyTreasuryShare(PlayerTypes eMajor); // seize a share of the city-state treasury on bully gold
@@ -606,7 +607,10 @@ public:
 	void DoMajorBullyGold(PlayerTypes eBully, int iGold);
 	void DoMajorBullyUnit(PlayerTypes eBully, UnitTypes eUnitType);
 	
-	void DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100, bool bSkipPenalty = false);
+	void DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100);
+	// Let other city-states settle any "bully a city-state" quest this fulfils for the bully. Has no
+	// other effect, so an unrecorded bully (aid points) still hands the bully every quest reward.
+	void NotifyOtherMinorsOfBully(PlayerTypes eBully);
 
 	bool IsEverBulliedByAnyMajor() const;
 	bool IsEverBulliedByMajor(PlayerTypes ePlayer) const;

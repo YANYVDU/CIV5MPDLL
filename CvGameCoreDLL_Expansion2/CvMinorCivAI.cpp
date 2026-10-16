@@ -9365,13 +9365,15 @@ int CvMinorCivAI::GetBullyGoldAidPointCost(PlayerTypes eMajor)
 }
 
 // Economic Aid point spending (Super Power V11): bully gold that pays the influence loss with aid
-// points instead. No influence loss and no diplomatic penalty, but other city-states' "bully a
-// city-state" quests still progress (the reaction runs with bSkipPenalty = true).
-void CvMinorCivAI::DoMajorBullyGoldWithAidPoints(PlayerTypes eBully, int iGold)
+// points instead. No penalty of any kind - no influence loss, no diplomatic reaction, no revoked
+// quests and no "recently bullied" lockout - so the bully collects exactly what a normal bully
+// would, other city-states' "bully a city-state" quest rewards included.
+// Returns false when the bully could not be pulled off, so the caller can skip charging the points.
+bool CvMinorCivAI::DoMajorBullyGoldWithAidPoints(PlayerTypes eBully, int iGold)
 {
 	CvAssertMsg(eBully >= 0, "eBully is expected to be non-negative (invalid Index)");
 	CvAssertMsg(eBully < MAX_MAJOR_CIVS, "eBully is expected to be within maximum bounds (invalid Index)");
-	if(eBully < 0 || eBully >= MAX_MAJOR_CIVS) return;
+	if(eBully < 0 || eBully >= MAX_MAJOR_CIVS) return false;
 
 	int iBullyMetric = CalculateBullyMetric(eBully, /*bForUnit*/false);
 	bool bSuccess = CanMajorBullyGold(eBully, iBullyMetric);
@@ -9390,8 +9392,9 @@ void CvMinorCivAI::DoMajorBullyGoldWithAidPoints(PlayerTypes eBully, int iGold)
 		GET_PLAYER(eBully).GetTreasury()->ChangeGold(iGold);
 		DoBullyTreasuryShare(eBully);
 
-		// Reaction with no influence loss and no diplomatic penalty, but quest progress is kept
-		DoBulliedByMajorReaction(eBully, 0, /*bSkipPenalty*/ true);
+		// No reaction at all: the minor records nothing, loses no influence, revokes no quest and never
+		// locks us out. Other city-states' "bully a city-state" quest progress still counts.
+		NotifyOtherMinorsOfBully(eBully);
 
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
 		if (MOD_EVENTS_MINORS_INTERACTION) {
@@ -9403,6 +9406,8 @@ void CvMinorCivAI::DoMajorBullyGoldWithAidPoints(PlayerTypes eBully, int iGold)
 	GET_PLAYER(eBully).GetDiplomacyAI()->LogMinorCivBullyGold(GetPlayer()->GetID(), iOldFriendshipTimes100, GetEffectiveFriendshipWithMajorTimes100(eBully), iGold, bSuccess, iBullyMetric);
 
 	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+
+	return bSuccess;
 }
 
 bool CvMinorCivAI::IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const
@@ -12054,7 +12059,7 @@ void CvMinorCivAI::DoMajorBullyUnit(PlayerTypes eBully, UnitTypes eUnitType)
 }
 
 // We were just bullied, how do we react?
-void CvMinorCivAI::DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100, bool bSkipPenalty)
+void CvMinorCivAI::DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100)
 {
 	CvAssertMsg(eBully >= 0, "eBully is expected to be non-negative (invalid Index)");
 	CvAssertMsg(eBully < MAX_MAJOR_CIVS, "eBully is expected to be within maximum bounds (invalid Index)");
@@ -12066,36 +12071,39 @@ void CvMinorCivAI::DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceCh
 
 	SetTurnLastBulliedByMajor(eBully, GC.getGame().getGameTurn());
 
-	// When the penalty is waived (aid-point bully), skip the influence loss and the diplomatic
-	// reaction from other majors, but still run the quest bookkeeping below.
-	if(!bSkipPenalty)
-	{
-		ChangeFriendshipWithMajorTimes100(eBully, iInfluenceChangeTimes100);
-	}
+	ChangeFriendshipWithMajorTimes100(eBully, iInfluenceChangeTimes100);
 
 	// In case we have quests that bullying makes obsolete, check now
 	DoTestActiveQuests(/*bTestComplete*/ false, /*bTestObsolete*/ true);
 
-	// Inform alive majors who have met the bully (skipped when the penalty is waived)
-	if(!bSkipPenalty)
+	// Inform alive majors who have met the bully
+	for (int iMajorLoop = 0; iMajorLoop < MAX_MAJOR_CIVS; iMajorLoop++)
 	{
-		for (int iMajorLoop = 0; iMajorLoop < MAX_MAJOR_CIVS; iMajorLoop++)
-		{
-			PlayerTypes eMajorLoop = (PlayerTypes) iMajorLoop;
-			CvPlayer* pMajorLoop = &GET_PLAYER(eMajorLoop);
-			if (!pMajorLoop) continue;
+		PlayerTypes eMajorLoop = (PlayerTypes) iMajorLoop;
+		CvPlayer* pMajorLoop = &GET_PLAYER(eMajorLoop);
+		if (!pMajorLoop) continue;
 
-			if(pMajorLoop->isAlive())
+		if(pMajorLoop->isAlive())
+		{
+			if(GET_TEAM(pMajorLoop->getTeam()).isHasMet(pBully->getTeam()))
 			{
-				if(GET_TEAM(pMajorLoop->getTeam()).isHasMet(pBully->getTeam()))
-				{
-					pMajorLoop->GetDiplomacyAI()->DoPlayerBulliedSomeone(eBully, GetPlayer()->GetID());
-				}
+				pMajorLoop->GetDiplomacyAI()->DoPlayerBulliedSomeone(eBully, GetPlayer()->GetID());
 			}
 		}
 	}
 
-	// Inform other alive minors, in case they had a quest that this fulfills
+	NotifyOtherMinorsOfBully(eBully);
+}
+
+// Inform other alive minors, in case they had a quest that this fulfills.
+// Split out of DoBulliedByMajorReaction so that an aid-point bully - which applies no reaction at
+// all - can still let those city-states hand the bully their "bully a city-state" quest reward.
+void CvMinorCivAI::NotifyOtherMinorsOfBully(PlayerTypes eBully)
+{
+	CvAssertMsg(eBully >= 0, "eBully is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eBully < MAX_MAJOR_CIVS, "eBully is expected to be within maximum bounds (invalid Index)");
+	if(eBully < 0 || eBully >= MAX_MAJOR_CIVS) return;
+
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
 	{
 		PlayerTypes eMinorLoop = (PlayerTypes) iMinorLoop;
