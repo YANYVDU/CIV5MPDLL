@@ -12707,6 +12707,7 @@ int CvLuaPlayer::lGetDealTheyreValue(lua_State* L)
 //   iAmountOverWeWillRequest - upper accept threshold: AI accepts while iTotalValueToMe <= this
 //   iAmountUnderWeWillOffer  - lower accept threshold: AI accepts while iTotalValueToMe >= this
 //   bCantMatchOffer          - true if the AI currently wants more than we can give
+//   bAcceptable              - whether the AI would actually accept this exact deal right now
 int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
 {
 	CvPlayerAI* pkThisPlayer = GetInstance(L);
@@ -12718,16 +12719,24 @@ int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
 	int iAmountOverWeWillRequest = 0;
 	int iAmountUnderWeWillOffer = 0;
 	bool bCantMatchOffer = false;
+	bool bAcceptable = false;
 
 	if (pkDeal)
 	{
 		PlayerTypes eOtherPlayer = pkDeal->GetOtherPlayer(pkThisPlayer->GetID());
-		pkThisPlayer->GetDealAI()->IsDealWithHumanAcceptable(pkDeal, eOtherPlayer,
+		bAcceptable = pkThisPlayer->GetDealAI()->IsDealWithHumanAcceptable(pkDeal, eOtherPlayer,
 			/*Passed by reference*/ iTotalValueToMe, iValueImOffering, iValueTheyreOffering,
 			iAmountOverWeWillRequest, iAmountUnderWeWillOffer, bCantMatchOffer);
+
+		// Mirror DoHumanOfferDealToThisAI: a deal that hands the AI more than it gives away is
+		// accepted outright, even though it sits outside the normal accept band below.
+		if (!bAcceptable && !pkDeal->IsPeaceTreatyTrade(eOtherPlayer) && iValueTheyreOffering > iValueImOffering)
+		{
+			bAcceptable = true;
+		}
 	}
 
-	lua_createtable(L, 0, 6);
+	lua_createtable(L, 0, 7);
 	lua_pushinteger(L, iTotalValueToMe);
 	lua_setfield(L, -2, "iTotalValueToMe");
 	lua_pushinteger(L, iValueImOffering);
@@ -12740,6 +12749,8 @@ int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
 	lua_setfield(L, -2, "iAmountUnderWeWillOffer");
 	lua_pushboolean(L, bCantMatchOffer);
 	lua_setfield(L, -2, "bCantMatchOffer");
+	lua_pushboolean(L, bAcceptable);
+	lua_setfield(L, -2, "bAcceptable");
 
 	return 1;
 }
