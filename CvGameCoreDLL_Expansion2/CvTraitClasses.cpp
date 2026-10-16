@@ -42,6 +42,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iDiplomaticPrestige(0),
 	m_iMinorCivAlliesThresholdModifier(0),
 	m_bGainConqueredCityStateUA(false),
+	m_bGainAnnexedCityStateUA(false),
 #endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iLandBarbarianConversionExtraUnits(0),
@@ -427,6 +428,13 @@ int CvTraitEntry::GetCityStateCombatModifier() const
 	bool CvTraitEntry::IsGainConqueredCityStateUA() const
 	{
 		return m_bGainConqueredCityStateUA;
+	}
+
+	//	--------------------------------------------------------------------------
+	/// Accessor:: keep the ally-tier UA effects of city-states annexed by buyout
+	bool CvTraitEntry::IsGainAnnexedCityStateUA() const
+	{
+		return m_bGainAnnexedCityStateUA;
 	}
 #endif
 
@@ -1832,6 +1840,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_iDiplomaticPrestige					= kResults.GetInt("DiplomaticPrestige");
 	m_iMinorCivAlliesThresholdModifier					= kResults.GetInt("MinorCivAlliesThresholdModifier");
 	m_bGainConqueredCityStateUA							= kResults.GetBool("GainConqueredCityStateUA");
+	m_bGainAnnexedCityStateUA							= kResults.GetBool("GainAnnexedCityStateUA");
 #endif
 	m_iCityStateCombatModifier				= kResults.GetInt("CityStateCombatModifier");
 	m_iLandBarbarianConversionPercent       = kResults.GetInt("LandBarbarianConversionPercent");
@@ -2864,6 +2873,7 @@ CvPlayerTraits::CvPlayerTraits()
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iMinorCivAlliesThresholdModifier = 0;
 	m_bGainConqueredCityStateUA = false;
+	m_bGainAnnexedCityStateUA = false;
 #endif
 }
 
@@ -2923,6 +2933,8 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iMinorCivAlliesThresholdModifier += trait->GetMinorCivAlliesThresholdModifier();
 			if (trait->IsGainConqueredCityStateUA())
 				m_bGainConqueredCityStateUA = true;
+			if (trait->IsGainAnnexedCityStateUA())
+				m_bGainAnnexedCityStateUA = true;
 #endif
 			m_iLandBarbarianConversionPercent += trait->GetLandBarbarianConversionPercent();
 			m_iLandBarbarianConversionExtraUnits += trait->GetLandBarbarianConversionExtraUnits();
@@ -3555,6 +3567,7 @@ void CvPlayerTraits::Reset()
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
 	m_iMinorCivAlliesThresholdModifier = 0;
 	m_bGainConqueredCityStateUA = false;
+	m_bGainAnnexedCityStateUA = false;
 #endif
 	m_iLandBarbarianConversionPercent = 0;
 	m_iLandBarbarianConversionExtraUnits = 0;

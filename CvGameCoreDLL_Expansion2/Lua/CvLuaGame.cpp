@@ -98,6 +98,7 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostPendingGiftUnit);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostHastenCongress);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointHastenCongressTurns);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostAnnexCityState);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyTreasurySharePercent);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyGoldAidPointCost);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetMinorGiftUnitChoices);
@@ -137,6 +138,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetAidPointCostPendingGiftUnit);
 	Method(GetAidPointCostHastenCongress);
 	Method(GetAidPointHastenCongressTurns);
+	Method(GetAidPointCostAnnexCityState);
 	Method(GetBullyTreasurySharePercent);
 	Method(GetBullyGoldAidPointCost);
 	Method(GetMinorGiftUnitChoices);
@@ -2250,6 +2252,13 @@ int CvLuaGame::lGetAidPointCostHastenCongress(lua_State* L)
 int CvLuaGame::lGetAidPointHastenCongressTurns(lua_State* L)
 {
 	lua_pushinteger(L, GC.getGame().GetAidPointHastenCongressTurns());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostAnnexCityState();
+int CvLuaGame::lGetAidPointCostAnnexCityState(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostAnnexCityState());
 	return 1;
 }
 //------------------------------------------------------------------------------

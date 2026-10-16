@@ -11194,6 +11194,14 @@ bool CvMinorCivAI::CanMajorBuyout(PlayerTypes eMajor)
 	if(GET_PLAYER(eMajor).GetTreasury()->GetGold() < iBuyoutCost)
 		return false;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Super Power V11: the buyout also costs aid points (the Austria UA surcharge), charged from the
+	// pool this city-state has accumulated for eMajor. 0 disables the extra cost entirely.
+	const int iAidPointCost = GC.getGame().GetAidPointCostAnnexCityState();
+	if (iAidPointCost > 0 && GetEconomicAidPoints(eMajor) < iAidPointCost)
+		return false;
+#endif
+
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
 	if (MOD_EVENTS_MINORS_INTERACTION) {
 		if (GAMEEVENTINVOKE_TESTALL(GAMEEVENT_PlayerCanBuyOut, eMajor, GetPlayer()->GetID()) == GAMEEVENTRETURN_FALSE) {
@@ -11265,6 +11273,26 @@ void CvMinorCivAI::DoBuyout(PlayerTypes eMajor)
 	GET_PLAYER(eMajor).GetTreasury()->LogExpenditure(GetPlayer()->GetMinorCivAI()->GetNamesListAsString(0), iBuyoutCost,6);
 	GET_PLAYER(eMajor).GetTreasury()->ChangeGold(-iBuyoutCost);
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Super Power V11 (Austria UA): the buyout also burns aid points banked with this city-state, and
+	// with the GainAnnexedCityStateUA trait it permanently keeps the city-state's ally-tier UA effect.
+	const int iAidPointCost = GC.getGame().GetAidPointCostAnnexCityState();
+	if (iAidPointCost > 0)
+	{
+		ChangeEconomicAidPoints(eMajor, -iAidPointCost);
+	}
+
+	// The permanent record has to be written before DoAcquire runs: the city-state stops existing the
+	// moment its cities are transferred. It goes into the same per-city-state record the Venice-style
+	// unit buyout writes (CvPlayer::m_abBoughtCityStateAllyUA) - both paths mean exactly the same
+	// thing, "bought out, so the ally-tier effect stays ours forever".
+	const bool bGainAnnexedUA = GET_PLAYER(eMajor).GetPlayerTraits()->IsGainAnnexedCityStateUA();
+	if (bGainAnnexedUA)
+	{
+		GET_PLAYER(eMajor).GainCityStateUAOnBuyout(GetPlayer()->GetID(), true, false);
+	}
+#endif
+
 	int iNumUnits = 0;
 	int iCapitalX = 0;
 	int iCapitalY = 0;
@@ -11272,6 +11300,17 @@ void CvMinorCivAI::DoBuyout(PlayerTypes eMajor)
 	DoAcquire(eMajor, iNumUnits, iCapitalX, iCapitalY, bKeepResources);
 #else
 	DoAcquire(eMajor, iNumUnits, iCapitalX, iCapitalY);
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Apply the permanently kept UA this turn instead of waiting for the next doTurn. DoBuyout always
+	// runs through the buyout network message, so every client executes this deterministically; the
+	// refresh is a Reset() + full re-apply, so it can never stack. The conquest path cannot cover this:
+	// DoAcquire passes bConquest = false, which leaves acquireCity's own refresh flag untouched.
+	if (bGainAnnexedUA)
+	{
+		GET_PLAYER(eMajor).RefreshCSAllUAEffects();
+	}
 #endif
 
 	GET_PLAYER(eMajor).GetDiplomacyAI()->LogMinorCivBuyout(GetPlayer()->GetID(), iBuyoutCost, /*bSaving*/ false);

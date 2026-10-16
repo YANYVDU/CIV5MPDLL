@@ -46,6 +46,15 @@ alter table Traits    add column MinorCivAlliesThresholdModifier int default 0;
 -- Only genuine conquest counts; gifts and the Austria/Venice buyout do not trigger it.
 alter table Traits add column GainConqueredCityStateUA boolean default 0;
 
+-- GainAnnexedCityStateUA: the player PERMANENTLY keeps the ally-tier UA effect of any city-state it
+-- ANNEXES through the gold buyout (the Austria / Diplomatic Marriage UA, CvMinorCivAI::DoBuyout).
+-- Recorded once in DoBuyout before DoAcquire runs (the city-state ceases to exist at that point) into
+-- CvPlayer::m_abBoughtCityStateAllyUA - deliberately the SAME permanent record the Venice-style unit
+-- buyout (GainAllyCityStateUAOnBuy) writes, because both paths mean exactly the same thing: the
+-- city-state was bought out, so its ally-tier effect stays ours forever. Independent of the
+-- conquest-based GainConqueredCityStateUA.
+alter table Traits add column GainAnnexedCityStateUA boolean default 0;
+
 -- GainAllyCityStateUAOnBuy / GainFriendCityStateUAOnBuy: a unit with CanBuyCityState that performs
 -- the Venice-style buyout PERMANENTLY keeps the bought city-state's ally/friend-tier UA effect.
 -- The buyout is recorded once (CvPlayer::m_abBoughtCityStateAllyUA / m_abBoughtCityStateFriendUA,

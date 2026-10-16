@@ -624,6 +624,9 @@ public:
 	int GetAidPointCostNextGreatPerson();
 	int GetAidPointCostPendingGiftUnit();
 	int GetAidPointCostHastenCongress();
+	// Extra aid points (on top of the gold) the Austria UA pays to buy a city-state out (0 = disabled).
+	// Charged from the (major, city-state) aid point pool by CvMinorCivAI::DoBuyout.
+	int GetAidPointCostAnnexCityState();
 	// Turns the League countdown is pulled forward per hasten purchase (0 = disabled)
 	int GetAidPointHastenCongressTurns();
 	// Share of a city-state treasury seized when a major bullies gold (percent, 0 = disabled)

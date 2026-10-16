@@ -1846,8 +1846,9 @@ public:
 	void ChangeMinorCivAlliesThresholdModifier(int iChange);
 	int GetMinorCivAlliesThreshold() const;
 	void RefreshCSAllUAEffects();
-	// Venice-style buyout (unit fields GainAlly/FriendCityStateUAOnBuy): record that we permanently
-	// keep this city-state's ally/friend-tier UA effect. Called from CvUnit::buyCityState.
+	// Buyout (unit fields GainAlly/FriendCityStateUAOnBuy, or the Austria UA trait GainAnnexedCityStateUA):
+	// record that we permanently keep this city-state's ally/friend-tier UA effect. Called from
+	// CvUnit::buyCityState and CvMinorCivAI::DoBuyout.
 	void GainCityStateUAOnBuyout(PlayerTypes eMinor, bool bAlly, bool bFriend);
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
@@ -2944,9 +2945,10 @@ protected:
 	// conquered that city-state's ORIGINAL capital. Permanent - survives later city loss, the
 	// city-state's death and any later alliance. Rebuilt into UA effects each turn.
 	bool m_abConqueredCityStateUA[MAX_CIV_PLAYERS];
-	// Venice-style buyout: indexed by city-state player id, true once a unit carrying
-	// GainAlly/FriendCityStateUAOnBuy has bought that city-state out. Permanent - the city-state
-	// is gone for good, so these effects can never be provided by diplomacy afterwards.
+	// Buyout record: indexed by city-state player id, true once that city-state has been bought out -
+	// either by a unit carrying GainAlly/FriendCityStateUAOnBuy (Venice) or by the Austria UA trait
+	// GainAnnexedCityStateUA (CvMinorCivAI::DoBuyout). Permanent - the city-state is gone for good,
+	// so these effects can never be provided by diplomacy afterwards.
 	bool m_abBoughtCityStateAllyUA[MAX_CIV_PLAYERS];
 	bool m_abBoughtCityStateFriendUA[MAX_CIV_PLAYERS];
 #endif

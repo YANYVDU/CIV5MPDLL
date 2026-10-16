@@ -11665,6 +11665,11 @@ int CvGame::GetAidPointHastenCongressTurns()
 	return gCustomMods.getOption("SP_AID_POINT_HASTEN_CONGRESS_TURNS", 3);
 }
 
+int CvGame::GetAidPointCostAnnexCityState()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_ANNEX_CITY_STATE", 50);
+}
+
 int CvGame::GetBullyTreasurySharePercent()
 {
 	return gCustomMods.getOption("SP_BULLY_TREASURY_SHARE_PERCENT", 25);

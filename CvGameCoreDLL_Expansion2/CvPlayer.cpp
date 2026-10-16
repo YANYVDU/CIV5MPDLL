@@ -20517,8 +20517,9 @@ void CvPlayer::RefreshCSAllUAEffects()
 		}
 	}
 
-	// Venice-style buyout (unit fields GainAlly/FriendCityStateUAOnBuy on the buying unit): keep
-	// the bought city-state's ally/friend-tier UA effect forever. A bought-out city-state ceases
+	// Buyout (unit fields GainAlly/FriendCityStateUAOnBuy on the buying unit, or the Austria UA trait
+	// GainAnnexedCityStateUA): keep the bought city-state's ally/friend-tier UA effect forever.
+	// A bought-out city-state ceases
 	// to exist, so no diplomacy can supply these again; the isAlive checks below only guard the
 	// theoretical case where it somehow still exists and still holds the same tier for us, in
 	// which case the loop above already applied it and applying it again would double the bonus.
@@ -31541,8 +31542,9 @@ void CvPlayer::Read(FDataStream& kStream)
 	// Rome trait (GainConqueredCityStateUA): permanent per-city-state record of whose ORIGINAL
 	// capital we have conquered. Uses the same 164 gate as the other in-development members.
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abConqueredCityStateUA, bool, MAX_CIV_PLAYERS, false);
-	// Venice-style buyout: permanent per-city-state record of which city-states we have bought out.
-	// Positionally paired with the writes at the end of Write(); keep both in the same order.
+	// Buyout (Venice unit / Austria UA): permanent per-city-state record of which city-states we
+	// have bought out. Positionally paired with the writes at the end of Write(); keep both in the
+	// same order.
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abBoughtCityStateAllyUA, bool, MAX_CIV_PLAYERS, false);
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abBoughtCityStateFriendUA, bool, MAX_CIV_PLAYERS, false);
 #endif
@@ -32350,7 +32352,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Rome trait (GainConqueredCityStateUA): must stay positionally paired with the read above.
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abConqueredCityStateUA, bool, MAX_CIV_PLAYERS);
-	// Venice-style buyout: must stay positionally paired with the reads above.
+	// Buyout (Venice unit / Austria UA): must stay positionally paired with the reads above.
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abBoughtCityStateAllyUA, bool, MAX_CIV_PLAYERS);
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abBoughtCityStateFriendUA, bool, MAX_CIV_PLAYERS);
 #endif
@@ -33195,9 +33197,10 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 	}
 
 //	--------------------------------------------------------------------------------
-//	Venice-style buyout (unit fields GainAlly/FriendCityStateUAOnBuy): permanently remember the
-//	purchased city-state so RefreshCSAllUAEffects keeps reapplying its ally/friend-tier UA effect.
-//	A bought-out city-state ceases to exist, so diplomacy can never supply these effects again.
+//	Buyout (unit fields GainAlly/FriendCityStateUAOnBuy, or the Austria UA trait GainAnnexedCityStateUA):
+//	permanently remember the purchased city-state so RefreshCSAllUAEffects keeps reapplying its
+//	ally/friend-tier UA effect. A bought-out city-state ceases to exist, so diplomacy can never
+//	supply these effects again.
 //	--------------------------------------------------------------------------------
 void CvPlayer::GainCityStateUAOnBuyout(PlayerTypes eMinor, bool bAlly, bool bFriend)
 {

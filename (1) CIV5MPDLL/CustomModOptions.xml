@@ -1213,6 +1213,9 @@
     <Row Class="5" Name="SP_AID_POINT_HASTEN_CONGRESS_TURNS" Value="3"/>
     <!-- Share of the city-state treasury seized when a major bullies gold (percent, 0 = disabled) -->
     <Row Class="5" Name="SP_BULLY_TREASURY_SHARE_PERCENT" Value="25"/>
+    <!-- Extra aid points (on top of the gold) the Austria UA pays to buy a city-state out; charged from
+         the (major, city-state) aid point pool. Must match the SP-side DLL_Options.xml override. -->
+    <Row Class="5" Name="SP_AID_POINT_COST_ANNEX_CITY_STATE" Value="50"/>
 
     <Row Class="6" Name="TRAITS_SPREAD_RELIGION_AFTER_KILLING" Value="0"/>
     <Row Class="6" Name="TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY" Value="0"/>
