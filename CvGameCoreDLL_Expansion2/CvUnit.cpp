@@ -12427,6 +12427,18 @@ bool CvUnit::buyCityState()
 
 	// Improve relations with the Minor
 	PlayerTypes eMinor = pPlot->getOwner();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Venice-style buyout: remember the bought city-state's ally/friend-tier UA before DoAcquire
+	// runs, because the city-state stops existing the moment its cities are transferred. The
+	// permanent record lives in CvPlayer so the effect survives that disappearance.
+	const bool bGainAllyUA = m_pUnitInfo->IsGainAllyCityStateUAOnBuy();
+	const bool bGainFriendUA = m_pUnitInfo->IsGainFriendCityStateUAOnBuy();
+	if ((bGainAllyUA || bGainFriendUA) && eMinor >= MAX_MAJOR_CIVS && eMinor < MAX_CIV_PLAYERS)
+	{
+		GET_PLAYER(getOwner()).GainCityStateUAOnBuyout(eMinor, bGainAllyUA, bGainFriendUA);
+	}
+#endif
 	CvAssertMsg(eMinor != NO_PLAYER, "Trying to buy a city state and not in city state territory. This is bad. Please send slewis this with your last 5 autosaves and what changelist # you're playing.");
 
 	if (eMinor != NO_PLAYER)
@@ -12451,6 +12463,14 @@ bool CvUnit::buyCityState()
 
 		}
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Apply the permanently gained UA effect this turn instead of waiting for the next doTurn.
+	// buyCityState runs deterministically on every client via the mission queue, so a plain local
+	// call is multiplayer-safe - same pattern as the conquest refresh in CvPlayer::acquireCity.
+	if (bGainAllyUA || bGainFriendUA)
+		GET_PLAYER(getOwner()).RefreshCSAllUAEffects();
+#endif
 
 	if (getOwner() == GC.getGame().getActivePlayer())
 	{

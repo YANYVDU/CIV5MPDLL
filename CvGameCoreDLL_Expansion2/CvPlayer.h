@@ -1846,6 +1846,9 @@ public:
 	void ChangeMinorCivAlliesThresholdModifier(int iChange);
 	int GetMinorCivAlliesThreshold() const;
 	void RefreshCSAllUAEffects();
+	// Venice-style buyout (unit fields GainAlly/FriendCityStateUAOnBuy): record that we permanently
+	// keep this city-state's ally/friend-tier UA effect. Called from CvUnit::buyCityState.
+	void GainCityStateUAOnBuyout(PlayerTypes eMinor, bool bAlly, bool bFriend);
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
@@ -2941,6 +2944,11 @@ protected:
 	// conquered that city-state's ORIGINAL capital. Permanent - survives later city loss, the
 	// city-state's death and any later alliance. Rebuilt into UA effects each turn.
 	bool m_abConqueredCityStateUA[MAX_CIV_PLAYERS];
+	// Venice-style buyout: indexed by city-state player id, true once a unit carrying
+	// GainAlly/FriendCityStateUAOnBuy has bought that city-state out. Permanent - the city-state
+	// is gone for good, so these effects can never be provided by diplomacy afterwards.
+	bool m_abBoughtCityStateAllyUA[MAX_CIV_PLAYERS];
+	bool m_abBoughtCityStateFriendUA[MAX_CIV_PLAYERS];
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends

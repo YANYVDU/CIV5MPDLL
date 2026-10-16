@@ -46,6 +46,15 @@ alter table Traits    add column MinorCivAlliesThresholdModifier int default 0;
 -- Only genuine conquest counts; gifts and the Austria/Venice buyout do not trigger it.
 alter table Traits add column GainConqueredCityStateUA boolean default 0;
 
+-- GainAllyCityStateUAOnBuy / GainFriendCityStateUAOnBuy: a unit with CanBuyCityState that performs
+-- the Venice-style buyout PERMANENTLY keeps the bought city-state's ally/friend-tier UA effect.
+-- The buyout is recorded once (CvPlayer::m_abBoughtCityStateAllyUA / m_abBoughtCityStateFriendUA,
+-- set in CvUnit::buyCityState) so the effect survives the city-state's disappearance - a bought-out
+-- city-state is gone for good, so its effect can never come back through diplomacy. Independent of
+-- the trait-based conquest path (GainConqueredCityStateUA).
+alter table Units add column GainAllyCityStateUAOnBuy boolean default 0;
+alter table Units add column GainFriendCityStateUAOnBuy boolean default 0;
+
 -- ==================== Unique CityState UA System (Rule 1-18) ====================
 
 -- Effects definition table (internal data, not shown to players): one row per ally or friend effect

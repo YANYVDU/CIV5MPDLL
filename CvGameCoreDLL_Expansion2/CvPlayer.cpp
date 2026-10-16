@@ -648,6 +648,8 @@ CvPlayer::CvPlayer() :
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	memset(m_abConqueredCityStateUA, 0, sizeof(m_abConqueredCityStateUA));
+	memset(m_abBoughtCityStateAllyUA, 0, sizeof(m_abBoughtCityStateAllyUA));
+	memset(m_abBoughtCityStateFriendUA, 0, sizeof(m_abBoughtCityStateFriendUA));
 #endif
 	m_bfEverConqueredBy.ClearAll();
 	m_aiGreatWorkYieldChange.clear();
@@ -1460,9 +1462,12 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Rome trait (GainConqueredCityStateUA): permanent per-city-state conquest record
 	// (array is MAX_CIV_PLAYERS wide; init the whole range)
+	// Venice-style buyout: same shape for the purchased city-states
 	for(int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
 	{
 		m_abConqueredCityStateUA[iI] = false;
+		m_abBoughtCityStateAllyUA[iI] = false;
+		m_abBoughtCityStateFriendUA[iI] = false;
 	}
 #endif
 
@@ -20512,6 +20517,46 @@ void CvPlayer::RefreshCSAllUAEffects()
 		}
 	}
 
+	// Venice-style buyout (unit fields GainAlly/FriendCityStateUAOnBuy on the buying unit): keep
+	// the bought city-state's ally/friend-tier UA effect forever. A bought-out city-state ceases
+	// to exist, so no diplomacy can supply these again; the isAlive checks below only guard the
+	// theoretical case where it somehow still exists and still holds the same tier for us, in
+	// which case the loop above already applied it and applying it again would double the bonus.
+	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
+		const bool bBuyAlly = m_abBoughtCityStateAllyUA[eMinor];
+		const bool bBuyFriend = m_abBoughtCityStateFriendUA[eMinor];
+		if (!bBuyAlly && !bBuyFriend)
+			continue;
+
+		if (!GET_PLAYER(eMinor).isMinorCiv())
+			continue;
+
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+		if (!pMinorAI)
+			continue;
+
+		const bool bStillOursAlly = GET_PLAYER(eMinor).isAlive() && pMinorAI->IsAllies(GetID());
+		const bool bStillOursFriend = GET_PLAYER(eMinor).isAlive() && pMinorAI->IsFriends(GetID());
+		if ((!bBuyAlly || bStillOursAlly) && (!bBuyFriend || bStillOursFriend))
+			continue;
+
+		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+		if (!pkMinorCivInfo)
+			continue;
+
+		// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes).
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo->GetCityStateUAIndex());
+		if (!pUAEntry)
+			continue;
+
+		if (bBuyAlly && !bStillOursAlly)
+			m_pCityStateUA->ApplyEffect(pUAEntry->GetAllyEffectID(), 1);
+		if (bBuyFriend && !bStillOursFriend)
+			m_pCityStateUA->ApplyEffect(pUAEntry->GetFriendEffectID(), 1);
+	}
+
 	// Born-yield contribution is dynamic (per-specialist extra yield). Re-sync all cities so
 	// the rebuilt effect list takes effect idempotently (delta-based, never stacks per turn).
 	{
@@ -31496,6 +31541,10 @@ void CvPlayer::Read(FDataStream& kStream)
 	// Rome trait (GainConqueredCityStateUA): permanent per-city-state record of whose ORIGINAL
 	// capital we have conquered. Uses the same 164 gate as the other in-development members.
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abConqueredCityStateUA, bool, MAX_CIV_PLAYERS, false);
+	// Venice-style buyout: permanent per-city-state record of which city-states we have bought out.
+	// Positionally paired with the writes at the end of Write(); keep both in the same order.
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abBoughtCityStateAllyUA, bool, MAX_CIV_PLAYERS, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_abBoughtCityStateFriendUA, bool, MAX_CIV_PLAYERS, false);
 #endif
 
 	// City-state gift unit free promotions are a derived cache rebuilt from the adopted policies
@@ -32301,6 +32350,9 @@ void CvPlayer::Write(FDataStream& kStream) const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Rome trait (GainConqueredCityStateUA): must stay positionally paired with the read above.
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abConqueredCityStateUA, bool, MAX_CIV_PLAYERS);
+	// Venice-style buyout: must stay positionally paired with the reads above.
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abBoughtCityStateAllyUA, bool, MAX_CIV_PLAYERS);
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_abBoughtCityStateFriendUA, bool, MAX_CIV_PLAYERS);
 #endif
 }
 
@@ -33141,6 +33193,24 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 		int iRaw = iBase + iExtra;
 		return (iRaw * (100 + iMod)) / 100;
 	}
+
+//	--------------------------------------------------------------------------------
+//	Venice-style buyout (unit fields GainAlly/FriendCityStateUAOnBuy): permanently remember the
+//	purchased city-state so RefreshCSAllUAEffects keeps reapplying its ally/friend-tier UA effect.
+//	A bought-out city-state ceases to exist, so diplomacy can never supply these effects again.
+//	--------------------------------------------------------------------------------
+void CvPlayer::GainCityStateUAOnBuyout(PlayerTypes eMinor, bool bAlly, bool bFriend)
+{
+	// Same guard as the conquest record in acquireCity: keeps the MAX_CIV_PLAYERS index in bounds
+	// even if a caller passes a non-city-state slot.
+	if (eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return;
+
+	if (bAlly)
+		m_abBoughtCityStateAllyUA[eMinor] = true;
+	if (bFriend)
+		m_abBoughtCityStateFriendUA[eMinor] = true;
+}
 
 #endif // MOD_SP_UNIQUE_CITYSTATE
 

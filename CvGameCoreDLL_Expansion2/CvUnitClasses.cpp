@@ -55,6 +55,10 @@ CvUnitEntry::CvUnitEntry(void) :
 	m_bRequiresEnhancedReligion(false),
 	m_bProhibitsSpread(false),
 	m_bCanBuyCityState(false),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_bGainAllyCityStateUAOnBuy(false),
+	m_bGainFriendCityStateUAOnBuy(false),
+#endif
 #if defined(MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL)
 	m_bCanRepairFleet(false),
 	m_bCanChangePort(false),
@@ -269,6 +273,10 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 	m_bRequiresEnhancedReligion = kResults.GetBool("RequiresEnhancedReligion");
 	m_bProhibitsSpread = kResults.GetBool("ProhibitsSpread");
 	m_bCanBuyCityState = kResults.GetBool("CanBuyCityState");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_bGainAllyCityStateUAOnBuy = kResults.GetBool("GainAllyCityStateUAOnBuy");
+	m_bGainFriendCityStateUAOnBuy = kResults.GetBool("GainFriendCityStateUAOnBuy");
+#endif
 #if defined(MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL)
 	if (MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL) {
 		m_bCanRepairFleet = kResults.GetBool("CanRepairFleet");
@@ -844,6 +852,20 @@ bool CvUnitEntry::IsCanBuyCityState() const
 {
 	return m_bCanBuyCityState;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+/// Buying a city state out with this unit permanently grants us the ally-tier UA of that city state
+bool CvUnitEntry::IsGainAllyCityStateUAOnBuy() const
+{
+	return m_bGainAllyCityStateUAOnBuy;
+}
+
+/// Buying a city state out with this unit permanently grants us the friend-tier UA of that city state
+bool CvUnitEntry::IsGainFriendCityStateUAOnBuy() const
+{
+	return m_bGainFriendCityStateUAOnBuy;
+}
+#endif
 
 #if defined(MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL)
 bool CvUnitEntry::IsCanRepairFleet() const

@@ -70,6 +70,11 @@ public:
 	bool IsProhibitsSpread() const;
 	bool IsRemoveHeresy() const;
 	bool IsCanBuyCityState() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Venice-style buyout: permanently keep the bought city-state's ally/friend-tier UA effect
+	bool IsGainAllyCityStateUAOnBuy() const;
+	bool IsGainFriendCityStateUAOnBuy() const;
+#endif
 #if defined(MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL)
 	bool IsCanRepairFleet() const;
 	bool IsCanChangePort() const;
@@ -275,6 +280,10 @@ private:
 	bool m_bProhibitsSpread;
 	bool m_bRemoveHeresy;
 	bool m_bCanBuyCityState;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bool m_bGainAllyCityStateUAOnBuy;
+	bool m_bGainFriendCityStateUAOnBuy;
+#endif
 #if defined(MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL)
 	bool m_bCanRepairFleet;
 	bool m_bCanChangePort;
