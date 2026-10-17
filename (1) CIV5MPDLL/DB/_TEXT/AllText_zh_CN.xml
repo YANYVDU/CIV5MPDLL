@@ -16,6 +16,12 @@
 		<Row Tag="TXT_KEY_NOTIFICATION_SPY_EVICTED_FPRBIDDEN_YOU">
 			<Text>您的间谍{1_SpyRank}{2_SpyName}从{3_CityName}离开，因为这座城市不再支持行动。</Text>
 		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED">
+			<Text>{1_SpyRank} {2_SpyName}在{3_CityName}策划政变失败，但成功脱身并返回避难所。{4_Adjective}仍是{3_CityName}的盟友。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SPY_YOU_STAGE_COUP_FAILURE_SURVIVED_S">
+			<Text>{1_CityName} - 政变失败（间谍幸存）</Text>
+		</Row>
 		<Row Tag="TXT_KEY_NO_ACTION_BUILDING_EMPIRE_RESOURCE">
 			<Text>[NEWLINE]需要国內拥有{1_FeatureName:textkey}。</Text>
 		</Row>

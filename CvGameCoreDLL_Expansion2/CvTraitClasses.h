@@ -133,6 +133,7 @@ public:
 	int GetExtraSupplyPerPopulation() const;
 #endif
 	int GetExtraSpies() const;
+	int GetSpyPoints() const;
 	int GetUnresearchedTechBonusFromKills() const;
 	int GetExtraFoundedCityTerritoryClaimRange() const;
 	int GetFreeSocialPoliciesPerEra() const;
@@ -459,6 +460,7 @@ protected:
 	int m_iExtraSupplyPerPopulation;
 #endif
 	int m_iExtraSpies;
+	int m_iSpyPoints;
 	int m_iUnresearchedTechBonusFromKills;
 	int m_iExtraFoundedCityTerritoryClaimRange;
 	int m_iFreeSocialPoliciesPerEra;
@@ -1011,6 +1013,10 @@ public:
 	{
 		return m_iExtraSpies;
 	};
+	int GetSpyPoints() const
+	{
+		return m_iSpyPoints;
+	};
 	int GetUnresearchedTechBonusFromKills() const
 	{
 		return m_iUnresearchedTechBonusFromKills;
@@ -1031,6 +1037,12 @@ public:
 	{
 		return m_iExtraUnitPlayerInstances;
 	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetDiplomaticPrestige() const
+	{
+		return m_iDiplomaticPrestige;
+	}
+#endif
 	int GetConquestCasualtiesModifier() const
 	{
 		return m_iConquestCasualtiesModifier;
@@ -1634,6 +1646,7 @@ private:
 	int m_iExtraSupplyPerPopulation;
 #endif
 	int m_iExtraSpies;
+	int m_iSpyPoints;
 	int m_iUnresearchedTechBonusFromKills;
 	int m_iExtraFoundedCityTerritoryClaimRange;
 	int m_iFreeSocialPoliciesPerEra;

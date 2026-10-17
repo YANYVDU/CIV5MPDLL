@@ -106,6 +106,10 @@ void CvLuaPlayer::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetNumGoldenAges);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetConscriptCount);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetMinorCivUniqueUnit);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetEconomicAidAutoRenew);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lTryBuyFoodFromVenice);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetLastVeniceBuyFoodTurn);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChangeMinorCivFriendshipWithMajor);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetPersonalityType);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetOption);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetPlayable);
@@ -282,6 +286,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetResearchCost);
 	Method(GetResearchProgress);
 	Method(GetResearchProgressExceptOverflow);
+	Method(GetResearchThresholdMod);
 
 	Method(UnitsRequiredForGoldenAge);
 	Method(UnitsGoldenAgeCapable);
@@ -438,6 +443,15 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetTotalLuxuryHappinessValue);
 	Method(GetCrossContinentRouteUnhappinessReduction);
 	Method(GetCityStateSpecialistPointRate);
+	Method(GetCSUAGreatPersonRateModifierFromGreatWorks);
+	Method(GetCSUAFaithRefundPerDonationPercent);
+	Method(HasCSUAGoldDonationGamble);
+	Method(GetCSUACityAttackIgnoreBuildingDefensePercent);
+	Method(GetCSUAWoundedFixedDamage);
+	Method(GetCSUAImmigrationRateModifier);
+	Method(GetCSUAEmigrationRateModifier);
+	Method(GetCSUACultureVictoryProgressModifier);
+	Method(RefreshCSAlliesFriends);
 	Method(GetExtraHappinessPerLuxury);
 	Method(GetHappinessFromReligion);
 	Method(GetHappinessFromNaturalWonders);
@@ -718,6 +732,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetAlliedTurns);
 	Method(IsFriends);
 	Method(IsAllies);
+	Method(GetMinorCivGoldGambleUsedThisTurn);
+	Method(GetMinorCivGoldGambleLastMultiplier);
 	Method(IsPlayerHasOpenBorders);
 	Method(IsPlayerHasOpenBordersAutomatically);
 	Method(GetFriendshipChangePerTurnTimes100);
@@ -752,6 +768,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetFriendshipFromGoldGift);
 	Method(GetFriendshipNeededForNextLevel);
 	Method(GetMinorCivFavoriteMajor);
+	Method(GetCSUAFaithInfluencePurchaseRemaining);
+	Method(GetCSUAFaithInfluencePurchaseCostDivisor);
 	Method(GetMinorCivScienceFriendshipBonus);
 	Method(GetMinorCivCultureFriendshipBonus); // DEPRECATED
 	Method(GetMinorCivCurrentCultureFlatBonus);
@@ -775,6 +793,14 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(CanMajorProtect);
 	Method(CanMajorStartProtection);
 	Method(CanMajorWithdrawProtection);
+	Method(IsEconomicAidFromMajor);
+	Method(CanMajorStartEconomicAid);
+	Method(CanMajorWithdrawEconomicAid);
+	Method(IsEconomicAidOpenThisRound);
+	Method(IsEconomicAidAutoRenew);
+	Method(SetEconomicAidAutoRenew);
+	Method(GetEconomicAidPoints);
+	Method(ChangeEconomicAidPoints);
 	Method(GetTurnLastPledgedProtectionByMajor);
 	Method(GetTurnLastPledgeBrokenByMajor);
 	Method(GetMinorCivBullyGoldAmount);
@@ -1167,12 +1193,19 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetDealValue);
 	Method(GetDealMyValue);
 	Method(GetDealTheyreValue);
+	Method(GetDiplomatTradeAdvice);
+	Method(GetLastVeniceBuyFoodTurn);
 	Method(MayNotAnnex);
 
 	Method(GetEspionageCityStatus);
 	Method(GetNumSpies);
 	Method(GetNumUnassignedSpies);
+	Method(GetSpyPoints);
+	Method(GetSpyPointsThreshold);
+	Method(GetSpyPointsCreated);
+	Method(GetSpyPointsPerTurn);
 	Method(GetEspionageSpies);
+	Method(GetEspionageGatheringIntelInfo);
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_ESPIONAGE)
 	Method(EspionageCreateSpy);
 	Method(EspionagePromoteSpy);
@@ -1191,6 +1224,11 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCoupChanceOfSuccess);
 	Method(IsMyDiplomatVisitingThem);
 	Method(IsOtherDiplomatVisitingMe);
+	Method(GetSpyRankVisitingThem);
+	Method(HasDiplomacyBargainBuff);
+	Method(GetDiplomacyBargainCooldown);
+	Method(GetDiplomacyBargainChance);
+	Method(TryDiplomacyBargain);
 
 	Method(GetTradeRouteRange);
 	Method(GetInternationalTradeRoutePlotToolTip);
@@ -1216,6 +1254,10 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetInternationalTradeRouteDomainModifier);
 	Method(GetInternationalTradeRouteTotal);
 	Method(GetInternationalTradeRouteScience);
+	Method(GetInternationalTradeRouteBaseValueDetail);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	Method(GetCSUATradeRouteGoldModifier);
+#endif
 	Method(GetPotentialTradeUnitNewHomeCity);
 	Method(GetPotentialAdmiralNewPort);
 	Method(GetNumAvailableTradeUnits);
@@ -1276,6 +1318,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(IsAtWarAnyMajor);
 	Method(IsAtWarAnyMinor);
 	Method(IsAtWarWith);
+	Method(IsAllowsOpenBordersToPlayer);
 	Method(HasPantheon);
 	Method(HasAnyReligion);
 	Method(HasReligion);
@@ -1388,11 +1431,18 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 #endif
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	Method(GetImmigrationCounter);
+	// MP: ChangeImmigrationCounter / SetImmigrationCounter / ChangeTotalImmigrants* are raw setters.
+	// A direct Lua call mutates only the local copy and desyncs the other clients. The counters are
+	// advanced authoritatively by CvPlayer::DoInternationalImmigration; mods must not call them.
 	Method(ChangeImmigrationCounter);
 	Method(SetImmigrationCounter);
 	Method(GetImmigrationRate);
 	Method(GetImmigrationInRateFromPolicy);
 	Method(GetImmigrationOutRateFromPolicy);
+	Method(GetTotalImmigrantsReceived);
+	Method(ChangeTotalImmigrantsReceived);
+	Method(GetTotalImmigrantsEmigrated);
+	Method(ChangeTotalImmigrantsEmigrated);
 #endif
 
 	Method(GetScienceTimes100FromFriendsTable);
@@ -1673,6 +1723,17 @@ int CvLuaPlayer::lGetNickName(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	lua_pushstring(L, pkPlayer->getNickName());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+// bool IsAllowsOpenBordersToPlayer(PlayerTypes ePlayer)
+int CvLuaPlayer::lIsAllowsOpenBordersToPlayer(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eOther = (PlayerTypes)lua_tointeger(L, 2);
+	const bool bResult = pkPlayer->IsAllowsOpenBordersToPlayer(eOther);
+	lua_pushboolean(L, bResult);
 	return 1;
 }
 
@@ -2469,6 +2530,29 @@ int CvLuaPlayer::lGetResearchProgressExceptOverflow(lua_State* L)
 	const int iResult = GET_TEAM(pkPlayer->getTeam()).GetTeamTechs()->GetResearchProgress(eTech);
 	lua_pushinteger(L, iResult);
 	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetResearchThresholdMod();
+// Returns the city-count research threshold (the "research threshold") broken into its parts:
+// iModPerCity, iEffectiveCities, iPuppetDiscount, iBuildingClassPercent, iGoldenAgePercent, iTotal.
+int CvLuaPlayer::lGetResearchThresholdMod(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iModPerCity = 0;
+	int iEffectiveCities = 0;
+	int iPuppetDiscount = 0;
+	int iBuildingClassPercent = 0;
+	int iGoldenAgePercent = 0;
+	const int iTotal = pkPlayer->GetResearchThresholdMod(&iModPerCity, &iEffectiveCities,
+		&iPuppetDiscount, &iBuildingClassPercent, &iGoldenAgePercent);
+	lua_pushinteger(L, iModPerCity);
+	lua_pushinteger(L, iEffectiveCities);
+	lua_pushinteger(L, iPuppetDiscount);
+	lua_pushinteger(L, iBuildingClassPercent);
+	lua_pushinteger(L, iGoldenAgePercent);
+	lua_pushinteger(L, iTotal);
+	return 6;
 }
 
 //------------------------------------------------------------------------------
@@ -3546,6 +3630,89 @@ int CvLuaPlayer::lGetCityStateSpecialistPointRate(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+//int GetCSUAGreatPersonRateModifierFromGreatWorks() const;
+int CvLuaPlayer::lGetCSUAGreatPersonRateModifierFromGreatWorks(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAGreatPersonRateModifierFromGreatWorks());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUAFaithRefundPerDonationPercent() const;
+int CvLuaPlayer::lGetCSUAFaithRefundPerDonationPercent(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAFaithRefundPerDonationPercent());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//bool HasCSUAGoldDonationGamble() const;
+int CvLuaPlayer::lHasCSUAGoldDonationGamble(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->HasCSUAGoldDonationGamble());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUACityAttackIgnoreBuildingDefensePercent() const;
+int CvLuaPlayer::lGetCSUACityAttackIgnoreBuildingDefensePercent(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSACityAttackIgnoreBuildingDefensePercent());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUAWoundedFixedDamage() const;
+int CvLuaPlayer::lGetCSUAWoundedFixedDamage(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSAWoundedFixedDamage());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUAImmigrationRateModifier() const;
+int CvLuaPlayer::lGetCSUAImmigrationRateModifier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAImmigrationRateModifier());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUAEmigrationRateModifier() const;
+int CvLuaPlayer::lGetCSUAEmigrationRateModifier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAEmigrationRateModifier());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//int GetCSUACultureVictoryProgressModifier() const;
+int CvLuaPlayer::lGetCSUACultureVictoryProgressModifier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUACultureVictoryProgressModifier());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+//void RefreshCSAlliesFriends();
+// Recomputes city-state ally/friend counts and the CSUA effects derived from them.
+// Normally only runs in doTurn(); exported so Lua can force a refresh right after a game load.
+int CvLuaPlayer::lRefreshCSAlliesFriends(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	pkPlayer->RefreshCSAlliesFriends();
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 //int GetExtraHappinessPerLuxury() const;
 int CvLuaPlayer::lGetExtraHappinessPerLuxury(lua_State* L)
 {
@@ -4278,6 +4445,85 @@ int CvLuaPlayer::lGetInternationalTradeRouteDomainModifier(lua_State* L)
 	lua_pushinteger(L, iResult);
 	return 1;
 }
+
+//------------------------------------------------------------------------------
+// Returns the 11 fixed-value components of the gold base plus their sum (all x100).
+// Order (mirrors GetTradeConnectionValueTimes100 gold origin branch, traits split):
+//   total, base, gptOrigin, gptDest, resource, exclusive, policy, cityState,
+//   yourBuilding, theirBuilding, trait, otherTrait
+int CvLuaPlayer::lGetInternationalTradeRouteBaseValueDetail(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvPlayerTrade* pPlayerTrade = pkPlayer->GetTrade();
+	CvCity* pOriginCity = CvLuaCity::GetInstance(L, 2, true);
+	CvCity* pDestCity = CvLuaCity::GetInstance(L, 3, true);
+	DomainTypes eDomain = (DomainTypes)lua_tointeger(L, 4);
+	bool bOrigin = lua_toboolean(L, 5);
+
+	TradeConnection kTradeConnection;
+	kTradeConnection.m_iOriginX = pOriginCity->getX();
+	kTradeConnection.m_iOriginY = pOriginCity->getY();
+	kTradeConnection.m_iDestX = pDestCity->getX();
+	kTradeConnection.m_iDestY = pDestCity->getY();
+	kTradeConnection.m_eOriginOwner = pOriginCity->getOwner();
+	kTradeConnection.m_eDestOwner = pDestCity->getOwner();
+	kTradeConnection.m_eDomain = eDomain;
+	kTradeConnection.m_eConnectionType = TRADE_CONNECTION_INTERNATIONAL;
+
+	int iBase = pPlayerTrade->GetTradeConnectionBaseValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin);
+	int iGPTOrigin = pPlayerTrade->GetTradeConnectionGPTValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin, true);
+	int iGPTDest = pPlayerTrade->GetTradeConnectionGPTValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin, false);
+	int iResource = pPlayerTrade->GetTradeConnectionResourceValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin);
+	int iExclusive = pPlayerTrade->GetTradeConnectionExclusiveValueTimes100(kTradeConnection, YIELD_GOLD);
+	int iPolicy = pPlayerTrade->GetTradeConnectionPolicyValueTimes100(kTradeConnection, YIELD_GOLD);
+	int iCityState = pPlayerTrade->GetTradeConnectionCityStateValueTimes100(kTradeConnection, YIELD_GOLD);
+	int iYourBuilding = pPlayerTrade->GetTradeConnectionYourBuildingValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin);
+	int iTheirBuilding = pPlayerTrade->GetTradeConnectionTheirBuildingValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin);
+	int iTrait = pPlayerTrade->GetTradeConnectionTraitValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin);
+	int iOtherTrait = pPlayerTrade->GetTradeConnectionOtherTraitValueTimes100(kTradeConnection, YIELD_GOLD, bOrigin);
+
+	int iTotal = iBase + iGPTOrigin + iGPTDest + iResource + iExclusive + iPolicy + iCityState + iYourBuilding + iTheirBuilding + iTrait + iOtherTrait;
+
+	lua_pushinteger(L, iTotal);
+	lua_pushinteger(L, iBase);
+	lua_pushinteger(L, iGPTOrigin);
+	lua_pushinteger(L, iGPTDest);
+	lua_pushinteger(L, iResource);
+	lua_pushinteger(L, iExclusive);
+	lua_pushinteger(L, iPolicy);
+	lua_pushinteger(L, iCityState);
+	lua_pushinteger(L, iYourBuilding);
+	lua_pushinteger(L, iTheirBuilding);
+	lua_pushinteger(L, iTrait);
+	lua_pushinteger(L, iOtherTrait);
+
+	return 12;
+}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetCSUATradeRouteGoldModifier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvCity* pOriginCity = CvLuaCity::GetInstance(L, 2, true);
+	CvCity* pDestCity = CvLuaCity::GetInstance(L, 3, true);
+	DomainTypes eDomain = (DomainTypes)lua_tointeger(L, 4);
+
+	TradeConnection kTradeConnection;
+	kTradeConnection.m_iOriginX = pOriginCity->getX();
+	kTradeConnection.m_iOriginY = pOriginCity->getY();
+	kTradeConnection.m_iDestX = pDestCity->getX();
+	kTradeConnection.m_iDestY = pDestCity->getY();
+	kTradeConnection.m_eOriginOwner = pOriginCity->getOwner();
+	kTradeConnection.m_eDestOwner = pDestCity->getOwner();
+	kTradeConnection.m_eDomain = eDomain;
+	kTradeConnection.m_eConnectionType = TRADE_CONNECTION_INTERNATIONAL;
+
+	int iResult = pkPlayer->GetCSUATradeRouteGoldModifier(kTradeConnection);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+#endif
 
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetInternationalTradeRouteTotal(lua_State* L)
@@ -7142,6 +7388,28 @@ int CvLuaPlayer::lIsAllies(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+// Monaco CS UA: whether this city-state has already had ePlayer's first-donation wager this turn
+int CvLuaPlayer::lGetMinorCivGoldGambleUsedThisTurn(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const PlayerTypes ePlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->GetGoldGambleUsedThisTurn(ePlayer);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+// Monaco CS UA: the refund multiplier this city-state rolled for ePlayer's wager (-1 = not wagered yet)
+int CvLuaPlayer::lGetMinorCivGoldGambleLastMultiplier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const PlayerTypes ePlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	const int iResult = pkPlayer->GetMinorCivAI()->GetGoldGambleLastMultiplier(ePlayer);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
 int CvLuaPlayer::lIsPlayerHasOpenBorders(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
@@ -7501,6 +7769,20 @@ int CvLuaPlayer::lGetFriendshipFromGoldGift(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+int CvLuaPlayer::lGetCSUAFaithInfluencePurchaseRemaining(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAFaithInfluencePurchaseRemaining());
+	return 1;
+}
+
+int CvLuaPlayer::lGetCSUAFaithInfluencePurchaseCostDivisor(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCSUAFaithInfluencePurchaseCostDivisor());
+	return 1;
+}
+
 int CvLuaPlayer::lGetMinorCivFavoriteMajor(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
@@ -7688,6 +7970,115 @@ int CvLuaPlayer::lCanMajorWithdrawProtection(lua_State* L)
 	const bool bResult = pkPlayer->GetMinorCivAI()->CanMajorWithdrawProtection(eMajor);
 	lua_pushboolean(L, bResult);
 	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsEconomicAidFromMajor(PlayerTypes eMajor);
+int CvLuaPlayer::lIsEconomicAidFromMajor(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eMajor = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidFromMajor(eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanMajorStartEconomicAid(PlayerTypes eMajor);
+int CvLuaPlayer::lCanMajorStartEconomicAid(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eMajor = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->CanMajorStartEconomicAid(eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanMajorWithdrawEconomicAid(PlayerTypes eMajor);
+int CvLuaPlayer::lCanMajorWithdrawEconomicAid(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eMajor = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->CanMajorWithdrawEconomicAid(eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsEconomicAidOpenThisRound();
+int CvLuaPlayer::lIsEconomicAidOpenThisRound(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidOpenThisRound();
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsEconomicAidAutoRenew(PlayerTypes eMajor);
+int CvLuaPlayer::lIsEconomicAidAutoRenew(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 2);
+
+	const bool bResult = pkPlayer->GetMinorCivAI()->IsEconomicAidAutoRenew((PlayerTypes)eMajor);
+	lua_pushboolean(L, bResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew);
+int CvLuaPlayer::lSetEconomicAidAutoRenew(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 2);
+	const bool bRenew = lua_toboolean(L, 3);
+
+	pkPlayer->GetMinorCivAI()->SetEconomicAidAutoRenew((PlayerTypes)eMajor, bRenew);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//int TryBuyFoodFromVenice(int iFood, int iGold);  (Super Power V11)
+// Broadcast from the City-State Diplo popup so the authoritative per-player cooldown,
+// gold deduction and food gain run in lock-step on every client in multiplayer.
+int CvLuaPlayer::lTryBuyFoodFromVenice(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int iFood = lua_tointeger(L, 2);
+	const int iGold = lua_tointeger(L, 3);
+
+	const int iResult = pkPlayer->TryBuyFoodFromVenice(iFood, iGold);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetLastVeniceBuyFoodTurn() const;  (Super Power V11)
+int CvLuaPlayer::lGetLastVeniceBuyFoodTurn(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetLastVeniceBuyFoodTurn());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetEconomicAidPoints(PlayerTypes eMajor);
+int CvLuaPlayer::lGetEconomicAidPoints(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 2);
+
+	const int iPoints = pkPlayer->GetMinorCivAI()->GetEconomicAidPoints((PlayerTypes)eMajor);
+	lua_pushinteger(L, iPoints);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta);
+int CvLuaPlayer::lChangeEconomicAidPoints(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 2);
+	const int iDelta = lua_tointeger(L, 3);
+
+	pkPlayer->GetMinorCivAI()->ChangeEconomicAidPoints((PlayerTypes)eMajor, iDelta);
+	return 0;
 }
 //------------------------------------------------------------------------------
 //int GetTurnLastPledgedProtectionByMajor(PlayerTypes eMajor);
@@ -11549,6 +11940,16 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 		aOpinions.push_back(kOpinion);
 	}
 
+	// Almaty CSUA: neutral trade-route plundering (decays 1/turn, never reset)
+	iValue = pDiploAI->GetCSUAPlunderedTradeRouteScore(eWithPlayer);
+	if (iValue != 0)
+	{
+		Opinion kOpinion;
+		kOpinion.m_iValue = iValue;
+		kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_CSUA_PLUNDERED_TRADE_ROUTE");
+		aOpinions.push_back(kOpinion);
+	}
+
 	iValue = pDiploAI->GetTimesIntrigueSharedScore(eWithPlayer);
 	if (iValue != 0)
 	{
@@ -12181,6 +12582,53 @@ int CvLuaPlayer::lGetDealTheyreValue(lua_State* L)
 }
 
 //------------------------------------------------------------------------------
+// Returns the AI's evaluation of a deal, exposed to the "Consult Diplomat"
+// trade-screen feature. Must be called on the AI player that the human is dealing with.
+// Returns a table:
+//   iTotalValueToMe         - net value of the deal to the AI (positive = AI gains)
+//   iValueImOffering        - total value of what the AI is giving away
+//   iValueTheyreOffering    - total value of what the AI is receiving
+//   iAmountOverWeWillRequest - upper accept threshold: AI accepts while iTotalValueToMe <= this
+//   iAmountUnderWeWillOffer  - lower accept threshold: AI accepts while iTotalValueToMe >= this
+//   bCantMatchOffer          - true if the AI currently wants more than we can give
+int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvDeal* pkDeal = CvLuaDeal::GetInstance(L, 2);
+
+	int iTotalValueToMe = 0;
+	int iValueImOffering = 0;
+	int iValueTheyreOffering = 0;
+	int iAmountOverWeWillRequest = 0;
+	int iAmountUnderWeWillOffer = 0;
+	bool bCantMatchOffer = false;
+
+	if (pkDeal)
+	{
+		PlayerTypes eOtherPlayer = pkDeal->GetOtherPlayer(pkThisPlayer->GetID());
+		pkThisPlayer->GetDealAI()->IsDealWithHumanAcceptable(pkDeal, eOtherPlayer,
+			/*Passed by reference*/ iTotalValueToMe, iValueImOffering, iValueTheyreOffering,
+			iAmountOverWeWillRequest, iAmountUnderWeWillOffer, bCantMatchOffer);
+	}
+
+	lua_createtable(L, 0, 6);
+	lua_pushinteger(L, iTotalValueToMe);
+	lua_setfield(L, -2, "iTotalValueToMe");
+	lua_pushinteger(L, iValueImOffering);
+	lua_setfield(L, -2, "iValueImOffering");
+	lua_pushinteger(L, iValueTheyreOffering);
+	lua_setfield(L, -2, "iValueTheyreOffering");
+	lua_pushinteger(L, iAmountOverWeWillRequest);
+	lua_setfield(L, -2, "iAmountOverWeWillRequest");
+	lua_pushinteger(L, iAmountUnderWeWillOffer);
+	lua_setfield(L, -2, "iAmountUnderWeWillOffer");
+	lua_pushboolean(L, bCantMatchOffer);
+	lua_setfield(L, -2, "bCantMatchOffer");
+
+	return 1;
+}
+
+//------------------------------------------------------------------------------
 int CvLuaPlayer::lMayNotAnnex(lua_State* L)
 {
 	CvPlayerAI* pkThisPlayer = GetInstance(L);
@@ -12318,6 +12766,42 @@ int CvLuaPlayer::lGetNumSpies(lua_State* L)
 	const int lNumSpies = (pkPlayerEspionage != NULL)? pkPlayerEspionage->GetNumSpies() : 0;
 
 	lua_pushinteger(L, lNumSpies);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPoints(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPoints());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPointsThreshold(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPointsThreshold());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPointsCreated(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPointsCreated());
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetSpyPointsPerTurn(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkThisPlayer->GetSpyPointsPerTurn());
 	return 1;
 }
 
@@ -12596,6 +13080,58 @@ int CvLuaPlayer::lGetNumTechsToSteal(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+int CvLuaPlayer::lGetEspionageGatheringIntelInfo(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	int iSpyIndex = lua_tointeger(L, 2);
+
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	CvCity* pCity = pkPlayerEspionage->GetCityWithSpy(iSpyIndex);
+	if(pCity == NULL)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+
+	SpyGatheringIntelInfo kInfo;
+	pkPlayerEspionage->CalcGatheringIntelPerTurn(pCity, iSpyIndex, &kInfo);
+
+	lua_createtable(L, 0, 0);
+	const int t = lua_gettop(L);
+
+	lua_pushinteger(L, kInfo.iBaseRate);
+	lua_setfield(L, t, "iBaseRate");
+
+	lua_pushinteger(L, kInfo.iCityMod);
+	lua_setfield(L, t, "iCityMod");
+
+	lua_pushinteger(L, kInfo.iPlayerMod);
+	lua_setfield(L, t, "iPlayerMod");
+
+	lua_pushinteger(L, kInfo.iTheirPolicyMod);
+	lua_setfield(L, t, "iTheirPolicyMod");
+
+	lua_pushinteger(L, kInfo.iMyPolicyMod);
+	lua_setfield(L, t, "iMyPolicyMod");
+
+	lua_pushinteger(L, kInfo.iCSUAMod);
+	lua_setfield(L, t, "iCSUAMod");
+
+	lua_pushinteger(L, kInfo.iSpyRank);
+	lua_setfield(L, t, "iSpyRank");
+
+	lua_pushinteger(L, kInfo.iSpyRankMod);
+	lua_setfield(L, t, "iSpyRankMod");
+
+	lua_pushinteger(L, kInfo.iSpeedMod);
+	lua_setfield(L, t, "iSpeedMod");
+
+	lua_pushinteger(L, kInfo.iResult);
+	lua_setfield(L, t, "iResult");
+
+	return 1;
+}
+//------------------------------------------------------------------------------
 int CvLuaPlayer::lGetIntrigueMessages(lua_State* L)
 {
 	lua_createtable(L, 0, 0);
@@ -12703,6 +13239,94 @@ int CvLuaPlayer::lIsOtherDiplomatVisitingMe(lua_State* L)
 	lua_pushboolean(L, bValue);
 	return 1;
 }
+//------------------------------------------------------------------------------
+// Returns the rank of our spy that is stationed as a diplomat in ePlayer's capital,
+// or -1 if we have no diplomat stationed there. Used to gate the "Consult Diplomat" feature.
+int CvLuaPlayer::lGetSpyRankVisitingThem(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
+	bool bIncludeTravelling = lua_toboolean(L, 3);
+
+	int iRank = -1;
+	if (pkPlayerEspionage)
+	{
+		iRank = pkPlayerEspionage->GetSpyRankVisitingThem(eOtherPlayer, bIncludeTravelling);
+	}
+
+	lua_pushinteger(L, iRank);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lHasDiplomacyBargainBuff(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	bool bHasBuff = false;
+	if (pkPlayerEspionage)
+	{
+		bHasBuff = pkPlayerEspionage->HasDiplomacyBargainBuff(eTargetPlayer);
+	}
+
+	lua_pushboolean(L, bHasBuff);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomacyBargainCooldown(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	int iCooldown = 0;
+	if (pkPlayerEspionage)
+	{
+		iCooldown = pkPlayerEspionage->GetDiplomacyBargainCooldown(eTargetPlayer);
+	}
+
+	lua_pushinteger(L, iCooldown);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lGetDiplomacyBargainChance(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	int iChance = -1;
+	if (pkPlayerEspionage)
+	{
+		iChance = pkPlayerEspionage->GetDiplomacyBargainChance(eTargetPlayer);
+	}
+
+	lua_pushinteger(L, iChance);
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int CvLuaPlayer::lTryDiplomacyBargain(lua_State* L)
+{
+	CvPlayerAI* pkThisPlayer = GetInstance(L);
+	CvPlayerEspionage* pkPlayerEspionage = pkThisPlayer->GetEspionage();
+	PlayerTypes eTargetPlayer = (PlayerTypes) lua_tointeger(L, 2);
+
+	int iResult = -2;
+	if (pkPlayerEspionage)
+	{
+		iResult = pkPlayerEspionage->TryDiplomacyBargain(eTargetPlayer);
+	}
+
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+
 //------------------------------------------------------------------------------
 int CvLuaPlayer::lGetTradeRouteRange(lua_State* L)
 {
@@ -13336,8 +13960,14 @@ LUAAPIIMPL(Player, IsCanEstablishArmee)
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 LUAAPIIMPL(Player, GetImmigrationCounter)
+// MP: raw setters, see the registration note above. ChangeTotalImmigrantsReceived no longer pays out
+// the Sydney CS UA cash - that now runs explicitly in CvPlayer::DoImmigration.
 LUAAPIIMPL(Player, ChangeImmigrationCounter)
 LUAAPIIMPL(Player, SetImmigrationCounter)
+LUAAPIIMPL(Player, GetTotalImmigrantsReceived)
+LUAAPIIMPL(Player, ChangeTotalImmigrantsReceived)
+LUAAPIIMPL(Player, GetTotalImmigrantsEmigrated)
+LUAAPIIMPL(Player, ChangeTotalImmigrantsEmigrated)
 int CvLuaPlayer::lGetImmigrationRate(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);

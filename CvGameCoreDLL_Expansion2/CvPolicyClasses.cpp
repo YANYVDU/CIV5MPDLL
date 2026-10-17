@@ -226,6 +226,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_piGreatPersonPoints(nullptr),
 	m_iFreePopulationCapital(0),
 	m_iExtraSpies(0),
+	m_iSpyPoints(0),
 	m_iGreatScientistBeakerPolicyModifier(0),
 	m_iInstantTourismBombWhenFirstConquerMajorCapital(0),
 	m_iNaturalWonderFirstFinderPolicies(0),
@@ -575,6 +576,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iFreePopulation = kResults.GetInt("FreePopulation");
 	m_iFreePopulationCapital = kResults.GetInt("FreePopulationCapital");
 	m_iExtraSpies = kResults.GetInt("ExtraSpies");
+	m_iSpyPoints = kResults.GetInt("SpyPoints");
 	m_iGreatScientistBeakerPolicyModifier = kResults.GetInt("GreatScientistBeakerPolicyModifier");
 	m_iInstantTourismBombWhenFirstConquerMajorCapital = kResults.GetInt("InstantTourismBombWhenFirstConquerMajorCapital");
 	m_iNaturalWonderFirstFinderPolicies = kResults.GetInt("NaturalWonderFirstFinderPolicies");
@@ -2581,6 +2583,10 @@ int CvPolicyEntry::GetFreePopulationCapital() const
 int CvPolicyEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
+}
+int CvPolicyEntry::GetSpyPoints() const
+{
+	return m_iSpyPoints;
 }
 int CvPolicyEntry::GetGreatPersonPoints(int i) const
 {

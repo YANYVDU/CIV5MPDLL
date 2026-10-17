@@ -99,6 +99,10 @@ protected:
 	static int lSetGameTurn(lua_State* L);
 	static int lGetTurnYear(lua_State* L);
 	static int lGetGameTurnYear(lua_State* L);
+	static int lIsEconomicAidActive(lua_State* L);
+	static int lGetEconomicAidWorldEra(lua_State* L);
+	static int lGetEconomicAidRound(lua_State* L);
+	static int lGetEconomicAidRoundTurnsLeft(lua_State* L);
 	static int lGetTurnString(lua_State* L);
 #if defined(MOD_API_LUA_EXTENSIONS)
 	LUAAPIEXTN(GetDateString, char*, iTurn);
@@ -168,6 +172,7 @@ protected:
 	static int lMakeCircumnavigated(lua_State* L);
 
 	static int lDoFromUIDiploEvent(lua_State* L);
+	static int lDoDiplomacyBargain(lua_State* L);
 
 	static int lIsDebugMode(lua_State* L);
 	static int lSetDebugMode(lua_State* L);
@@ -276,8 +281,18 @@ protected:
 	static int lDoControl(lua_State* L);
 
 	static int lDoMinorPledgeProtection(lua_State* L);
+	static int lDoMinorEconomicAid(lua_State* L);
 	static int lDoMinorGoldGift(lua_State* L); // old name, kept here for backwards compatibility with old Lua
 	static int lDoMinorGiftGold(lua_State* L);
+	static int lDoMinorFaithGift(lua_State* L);
+	static int lDoMinorFaithGiftFromMajor(lua_State* L);
+	static int lGetCityStateFaithBeliefPurchaseCost(lua_State* L);
+	static int lIsCityStateFaithBeliefPurchased(lua_State* L);
+	static int lDoCityStateFaithBeliefPurchase(lua_State* L);
+	static int lDoCityStateFaithBeliefPurchaseFromMajor(lua_State* L);
+	static int lGetCityStateFaithPantheonPurchaseCost(lua_State* L);
+	static int lDoCityStateFaithPantheonPurchase(lua_State* L);
+	static int lDoCityStateFaithPantheonPurchaseFromMajor(lua_State* L);
 	static int lDoMinorGiftTileImprovement(lua_State* L);
 	static int lDoMinorBullyGold(lua_State* L);
 	static int lDoMinorBullyUnit(lua_State* L);

@@ -175,6 +175,16 @@ typedef FStaticVector< QuestListForPlayer, MAX_MAJOR_CIVS, false, c_eCiv5Gamepla
 //!  - Should be one instance for each Minor Civ (right now there's one for EVERY Player though)
 //!  - Accessed by any class that needs information relating to Minor Civs
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+// Economic Aid termination reason (Super Power V11)
+enum EconomicAidTerminationReason
+{
+	ECON_AID_TERM_NONE = 0,      // normal / not terminated
+	ECON_AID_TERM_PLAYER_QUIT,   // player quit: ally -20 influence + locked for this round
+	ECON_AID_TERM_WAR,           // player declared war on the city-state: settled as mid-round quit (ally -20 + locked)
+	ECON_AID_TERM_ALLY_PACT,     // city-state joined via ally pact: terminate without penalty, can rejoin this round after peace
+};
+
 class CvMinorCivAI
 {
 public:
@@ -425,6 +435,37 @@ public:
 	int GetTurnLastPledgeBrokenByMajor(PlayerTypes eMajor) const;
 	void SetTurnLastPledgeBrokenByMajor(PlayerTypes eMajor, int iTurn);
 
+	// Economic Aid (Super Power V11)
+	void DoChangeEconomicAidFromMajor(PlayerTypes eMajor, bool bAid, EconomicAidTerminationReason eReason = ECON_AID_TERM_NONE);
+	bool CanMajorStartEconomicAid(PlayerTypes eMajor);
+	bool CanMajorWithdrawEconomicAid(PlayerTypes eMajor);
+	bool CanMajorEconomicAid(PlayerTypes eMajor);
+	bool IsEconomicAidFromMajor(PlayerTypes eMajor) const;
+	bool IsEconomicAidOpenThisRound() const;
+	void SetEconomicAidOpenThisRound(bool bOpen);
+	bool IsEconomicAidAutoRenew(PlayerTypes eMajor) const;
+	void SetEconomicAidAutoRenew(PlayerTypes eMajor, bool bRenew);
+	// Economic Aid points (Super Power V11): per-major accumulated aid points on this city-state
+	int GetEconomicAidPoints(PlayerTypes eMajor) const;
+	void ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta);
+	// Wittenberg CS UA: faith-purchase a belief into this city-state's religion (one per major)
+	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
+	bool IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const;
+	void SetFaithBeliefPurchasedByMajor(PlayerTypes eMajor, bool bPurchased);
+	// Kathmandu CS UA: whether each major has already claimed this turn's first-donation faith refund
+	bool GetFaithRefundUsedThisTurn(PlayerTypes eMajor) const;
+	void SetFaithRefundUsedThisTurn(PlayerTypes eMajor, bool bUsed);
+	// Monaco CS UA: whether each major has already made this turn's first gold donation (the wager)
+	bool GetGoldGambleUsedThisTurn(PlayerTypes eMajor) const;
+	// Monaco CS UA: the refund multiplier rolled for this turn's first gold donation (-1 = not wagered yet)
+	int GetGoldGambleLastMultiplier(PlayerTypes eMajor) const;
+	// La Venta CS UA: faith-purchase an idle pantheon belief into this city-state's religion (price doubles per purchase, per major)
+	bool DoCityStateFaithPantheonPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
+	int GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMajor) const;
+	int GetFaithPantheonPurchaseCount(PlayerTypes eMajor) const;
+	void SetFaithPantheonPurchaseCount(PlayerTypes eMajor, int iCount);
+	void ChangeFaithPantheonPurchaseCount(PlayerTypes eMajor, int iDelta);
+
 	// ************************************
 	// ***** Friendship - with Benefits ***** - slewis: woah
 	// ************************************
@@ -552,6 +593,7 @@ public:
 	void ChangeNumGoldGifted(PlayerTypes ePlayer, int iChange);
 
 	void DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold);
+	void DoFaithGiftFromMajor(PlayerTypes eMajor, int iEquivalentGold);
 	int GetFriendshipFromGoldGift(PlayerTypes eMajor, int iGold);
 
 	bool CanMajorGiftTileImprovement(PlayerTypes eMajor);
@@ -633,6 +675,23 @@ private:
 	bool m_abMajorIntruding[MAX_MAJOR_CIVS];
 	bool m_abEverFriends[MAX_MAJOR_CIVS];
 	bool m_abPledgeToProtect[MAX_MAJOR_CIVS];
+	// Economic Aid (Super Power V11)
+	bool m_abEconomicAidFromMajor[MAX_MAJOR_CIVS];
+	bool m_abEconomicAidAutoRenew[MAX_MAJOR_CIVS];
+	int m_aiTurnLastQuitEconomicAid[MAX_MAJOR_CIVS];
+	// Wittenberg CS UA: whether each major has already faith-purchased a belief for this city-state's religion
+	bool m_abFaithBeliefPurchasedByMajor[MAX_MAJOR_CIVS];
+	// Kathmandu CS UA: whether each major has already claimed this turn's first-donation faith refund
+	bool m_abFaithRefundUsedThisTurn[MAX_MAJOR_CIVS];
+	// Monaco CS UA: whether each major has already made this turn's first gold donation (the wager)
+	bool m_abGoldGambleUsedThisTurn[MAX_MAJOR_CIVS];
+	// Monaco CS UA: the refund multiplier rolled for this turn's first gold donation (-1 = not wagered yet)
+	int m_aiGoldGambleLastMultiplier[MAX_MAJOR_CIVS];
+	// La Venta CS UA: how many times each major has faith-purchased an idle pantheon belief (drives the doubling price)
+	int m_aiFaithPantheonPurchaseCount[MAX_MAJOR_CIVS];
+	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values
+	int m_aiEconomicAidPoints[MAX_MAJOR_CIVS]; // per-major accumulated aid points on this city-state
+	bool m_bEconomicAidOpenThisRound;
 	bool m_abPermanentWar[REALLY_MAX_TEAMS];
 	bool m_abWaryOfTeam[REALLY_MAX_TEAMS];
 	QuestListForAllPlayers m_QuestsGiven;

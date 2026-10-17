@@ -217,6 +217,11 @@ CvPlayer::CvPlayer() :
 	, m_iAttackBonusTurns("CvPlayer::m_iAttackBonusTurns", m_syncArchive)
 	, m_iCultureBonusTurns(0)
 	, m_iTourismBonusTurns(0)
+	, m_iSpyPoints(0)
+	, m_iSpyPointsTotal(0)
+	, m_iSpyPointsThresholdModifier(0)
+	, m_iSpyPointsCreated(0)
+	, m_iSpyPointsPerTurn(0)
 	, m_iGoldenAgeProgressMeter("CvPlayer::m_iGoldenAgeProgressMeter", m_syncArchive, true)
 	, m_iGoldenAgeMeterMod("CvPlayer::m_iGoldenAgeMeterMod", m_syncArchive)
 	, m_iGoldenAgeUnitCombatModifier("CvPlayer::m_iGoldenAgeUnitCombatModifier", m_syncArchive)
@@ -403,6 +408,10 @@ CvPlayer::CvPlayer() :
 	, m_iResearchTotalCostModifier(0)
 	, m_iResearchTotalCostModifierGoldenAge(0)
 	, m_iImmigrationRegressandModifier(0)
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	, m_iTotalImmigrantsReceived(0)
+	, m_iTotalImmigrantsEmigrated(0)
+#endif
 	, m_iLiberatedInfluence(0)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	, m_iExtraDiplomaticPrestige(0)
@@ -773,6 +782,7 @@ void CvPlayer::init(PlayerTypes eID)
 
 		CvAssert(m_pTraits);
 		m_pTraits->InitPlayerTraits();
+		ChangeSpyPointsPerTurn(GetPlayerTraits()->GetSpyPoints());
 		GetBuilderTaskingAI()->UpdateKeepFeatures(this);
 
 		// Special handling for the Polynesian trait's overriding of embarked unit graphics
@@ -804,6 +814,12 @@ void CvPlayer::init(PlayerTypes eID)
 		changeWonderProductionModifier(GetPlayerTraits()->GetWonderProductionModifier());
 		ChangeRouteGoldMaintenanceMod(GetPlayerTraits()->GetImprovementMaintenanceModifier());
 		ChangeExtraUnitPlayerInstances(GetPlayerTraits()->GetExtraUnitPlayerInstances());
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Trait diplomatic prestige is applied here reload-safely (after CvPlayer::Reset zeroes this
+		// counter each (re)start), mirroring ChangeExtraUnitPlayerInstances. Traits no longer do a
+		// symmetric add/remove, which avoided the hot-restart garbage-read bug in CvPlayerTraits::Reset.
+		ChangeExtraDiplomaticPrestige(GetPlayerTraits()->GetDiplomaticPrestige());
+#endif
 		ChangeConquestCasualtiesModifier(GetPlayerTraits()->GetConquestCasualtiesModifier());
 		for(iJ = 0; iJ < NUM_YIELD_TYPES; iJ++)
 		{
@@ -1123,6 +1139,7 @@ void CvPlayer::uninit()
 	m_iNaturalWonderFirstFinderPolicies = 0;
 	m_iNaturalWonderSubsequentFinderTech = 0;
 	m_iNaturalWonderSubsequentFinderPolicies = 0;
+	m_iLastVeniceBuyFoodTurn = -1;
 	m_iProductionBeakerMod = 0;
 	m_iGreatEngineerRateModifier = 0;
 	m_iGreatPersonExpendGold = 0;
@@ -1241,12 +1258,27 @@ void CvPlayer::uninit()
 	m_iResearchTotalCostModifier = 0;
 	m_iResearchTotalCostModifierGoldenAge = 0;
 	m_iImmigrationRegressandModifier = 0;
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	m_iTotalImmigrantsReceived = 0;
+	m_iTotalImmigrantsEmigrated = 0;
+#endif
 	m_iLiberatedInfluence = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iExtraDiplomaticPrestige = 0;
 	m_iCityStateAllyCount = 0;
 	m_iMinorCivAlliesThresholdModifier = 0;
 	m_iCityStateUASpyKillProgress = 0;
+	m_iSpyPoints = 0;
+	m_iSpyPointsTotal = 0;
+	m_iSpyPointsThresholdModifier = 0;
+	m_iSpyPointsCreated = 0;
+	m_iSpyPointsPerTurn = 0;
+	m_iCachedHolyCityCount = -1;
+	m_iCachedPapalRecognitionFollowerCount = -1;
+	m_iCachedCoastalCityCount = -1;
+	m_iCSUAFaithInfluencePurchaseUsed = 0;
+	m_iNumWarPeacesCompleted = 0;
+	m_iNumTimesDeclaredWarOn = 0;
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
@@ -1410,6 +1442,13 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 
 	// tutorial info
 	m_bEverPoppedGoody = false;
+
+	// Player-level open borders (array is REALLY_MAX_PLAYERS wide; init the whole range)
+	for(int iI = 0; iI < REALLY_MAX_PLAYERS; iI++)
+	{
+		m_abPlayerOpenBorders[iI] = false;
+	}
+	m_bPlayerOBsValid = false;
 
 	m_aiCityYieldChange.clear();
 	m_aiCityYieldChange.resize(NUM_YIELD_TYPES, 0);
@@ -4444,41 +4483,10 @@ CvUnit* CvPlayer::initUnit(UnitTypes eUnit, int iX, int iY, UnitAITypes eUnitAI,
 		GreatPersonTypes eGP = GetGreatPersonFromUnitClass(eUC);
 		if (eGP != NO_GREATPERSON)
 		{
-			int iBeforeCount = GetBornGreatPersonCount(eGP);
-			int iVecSize = (int)m_paiBornGreatPersonCount.size();
-
-			// Snapshot old born yields before count changes
-			SpecialistTypes eSpec = (SpecialistTypes)GC.getGreatPersonInfo(eGP)->GetSpecialistType();
-			CvPlayerCityStateUA* pUA = GetPlayerCityStateUA();
-			int aiOldYields[NUM_YIELD_TYPES] = {0};
-			if (eSpec != NO_SPECIALIST && pUA)
-				for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
-					aiOldYields[iY] = pUA->GetSpecialistYieldFromBornGreatPerson(eSpec, (YieldTypes)iY);
-
 			ChangeBornGreatPersonCount(eGP, 1);
-			int iAfterCount = GetBornGreatPersonCount(eGP);
-			LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("GreatPersonBorn: Player=%d Unit=%d GP=%d VecSize=%d Before=%d After=%d", GetID(), eUnit, (int)eGP, iVecSize, iBeforeCount, iAfterCount);
-
-			// Apply yield delta to all cities with existing specialists
-			if (eSpec != NO_SPECIALIST && pUA)
-			{
-				int iLoop;
-				for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
-				{
-					int iSpecCount = pLoopCity->GetCityCitizens()->GetSpecialistCount(eSpec);
-					if (iSpecCount <= 0) continue;
-					for (int iY = 0; iY < NUM_YIELD_TYPES; iY++)
-					{
-						int iNewYield = pUA->GetSpecialistYieldFromBornGreatPerson(eSpec, (YieldTypes)iY);
-						int iDelta = iNewYield - aiOldYields[iY];
-						if (iDelta != 0)
-						{
-							pLoopCity->ChangeBaseYieldRateFromSpecialists((YieldTypes)iY, iDelta * iSpecCount);
-							LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("CityYieldUpdate: Spec=%d Yield=%d Old=%d New=%d Delta=%d Count=%d", (int)eSpec, iY, aiOldYields[iY], iNewYield, iDelta, iSpecCount);
-						}
-					}
-				}
-			}
+			// Born-yield contribution is dynamic (per-specialist extra yield); re-sync every
+			// city so the newly born great person's yield is reflected immediately.
+			updateExtraSpecialistYield();
 
 	#if defined(MOD_SP_UNIQUE_CITYSTATE)
 		// Valletta UA: grant yield based on influence when a unit of configured class is born
@@ -5381,6 +5389,15 @@ void CvPlayer::doTurn()
 
 	doUpdateCacheOnTurn();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Jerusalem CS UA: refresh the cached holy-city count once per turn
+	RefreshHolyCityCount();
+	// Vatican CS UA: refresh the cached papal-recognition follower count once per turn
+	RefreshPapalRecognitionFollowerCount();
+	// Gangtok CS UA: faith influence purchases are once per turn (global) - reset the counter
+	m_iCSUAFaithInfluencePurchaseUsed = 0;
+#endif
+
 	AI_doTurnPre();
 
 	if(getCultureBombTimer() > 0)
@@ -5480,6 +5497,14 @@ void CvPlayer::doTurn()
 					GetTreasury()->ChangeGold(iInterest);
 			}
 		}
+	}
+#endif
+
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	// International immigration: driven in C++ sync simulation (was Lua PlayerDoTurn handler)
+	if (MOD_INTERNATIONAL_IMMIGRATION_FOR_SP && isHuman())
+	{
+		DoInternationalImmigration();
 	}
 #endif
 
@@ -5594,6 +5619,30 @@ void CvPlayer::doTurnPostDiplomacy()
 	// Gold
 	GetTreasury()->DoGold();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11): per-turn gold transfer from aiding majors to city-states.
+	// Deliberately NOT routed through DoGoldGiftFromMajor so the gold is not counted as a donation
+	// and the influence gain is not affected by donation modifiers.
+	// Runtime check: skip entirely when the SP_UNIQUE_CITYSTATE option is disabled (covers
+	// pre-existing aid relations carried over from older save games).
+	if (GC.getGame().IsEconomicAidActive() && !isMinorCiv() && !isBarbarian())
+	{
+		int iAidGold = GC.getGame().GetEconomicAidWorldEra();
+		if (iAidGold > 0)
+		{
+			for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+			{
+				CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
+				if (kMinor.isAlive() && kMinor.isMinorCiv() && kMinor.GetMinorCivAI()->IsEconomicAidFromMajor(GetID()))
+				{
+					GetTreasury()->ChangeGold(-iAidGold);
+					kMinor.GetTreasury()->ChangeGold(iAidGold);
+				}
+			}
+		}
+	}
+#endif
+
 	// Culture
 
 	// Prevent exploits in turn timed MP games - no accumulation of culture if player hasn't picked yet
@@ -5677,6 +5726,9 @@ void CvPlayer::doTurnPostDiplomacy()
 	doResearch();
 
 	GetEspionage()->DoTurn();
+
+	// Spy points from buildings/policies/beliefs/traits (Great General style)
+	ChangeSpyPoints(GetSpyPointsPerTurn());
 
 	// Faith
 	CvGameReligions* pGameReligions = kGame.GetGameReligions();
@@ -9956,6 +10008,24 @@ int CvPlayer::getProductionModifier(UnitTypes eUnit, CvString* toolTipSink) cons
 			iTempMod = getMilitaryProductionModifier();
 			iMultiplier += iTempMod;
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_MILITARY_PLAYER", iTempMod);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Mbanza Kongo CS UA: each owned city adds UnitProductionModifierPerCity% to military unit
+			// production, applied nation-wide (this player-level function is reached by every city's
+			// production path). Plain percent per city: no basis-point scaling here, because the consumer
+			// is getProductionModifier, not GetCSUAYieldPercentModifier.
+			if (MOD_SP_UNIQUE_CITYSTATE)
+			{
+				CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+				int iPerCity = (pCSUA != NULL) ? pCSUA->GetUnitProductionModifierPerCity() : 0;
+				if (iPerCity != 0)
+				{
+					iTempMod = iPerCity * getNumCities();
+					iMultiplier += iTempMod;
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+				}
+			}
+#endif
 		}
 
 		// Settler bonus
@@ -10378,7 +10448,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 		int iNewHeal = it.second;
 		if (eLoopUnit != NO_UNIT && iNewHeal > 0)
 		{
-			ChangeUnitTypePrmoteHealGlobal(eLoopUnit, iNewHeal);
+			ChangeUnitTypePrmoteHealGlobal(eLoopUnit, iNewHeal * iChange);
 		}
 	}
 #endif
@@ -10388,7 +10458,7 @@ void CvPlayer::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst
 		int iExtraMax = it.second;
 		if (eUnitClass != NO_UNITCLASS && iExtraMax != 0)
 		{
-			ChangeEraUnitClassMaxInstances(eUnitClass, iExtraMax);
+			ChangeEraUnitClassMaxInstances(eUnitClass, iExtraMax * iChange);
 		}
 	}
 
@@ -13991,6 +14061,16 @@ int CvPlayer::GetHappinessFromLuxury(ResourceTypes eResource) const
 	{
 		int iBaseHappiness = pkResourceInfo->getHappiness();
 
+		// Luxury era decay: once the world era passes the resource's decay era, each excess era lowers happiness by 1 (floor 1)
+		if (MOD_LUXURY_ERA_DECAY)
+		{
+			EraTypes eDecayEra = pkResourceInfo->getHappinessDecayEra();
+			if (eDecayEra != NO_ERA && GC.getGame().getCurrentEraCached() > eDecayEra)
+			{
+				iBaseHappiness = std::max(1, iBaseHappiness - (GC.getGame().getCurrentEraCached() - eDecayEra));
+			}
+		}
+
 		if (GC.getGame().GetGameLeagues()->IsLuxuryHappinessBanned(GetID(), eResource))
 		{
 			iBaseHappiness = 0;
@@ -15031,6 +15111,40 @@ int CvPlayer::GetHappinessFromMinorCivs() const
 		eMinor = (PlayerTypes) iMinorLoop;
 		iHappiness += GetHappinessFromMinor(eMinor);
 	}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Gangtok CS UA: per city worldwide following the player's religion, global happiness
+	// (100 = +1 happiness per city). Counted here so it shows up under "from City-States".
+	ReligionTypes eFoundedReligion = GC.getGame().GetGameReligions()->GetFounderBenefitsReligion(GetID());
+	if (eFoundedReligion != NO_RELIGION)
+	{
+		int iCSHappinessPerCity = GetCSUAHappinessPerFollowingCity();
+		if (iCSHappinessPerCity > 0)
+		{
+			iHappiness += (GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eFoundedReligion) * iCSHappinessPerCity) / 100;
+		}
+	}
+	// Vancouver CS UA: per coastal city owned by the player, global happiness
+	// (100 = +1 happiness per coastal city). Counted here so it shows up under "from City-States".
+	int iCoastalHappinessPerCity = GetCSUACoastalCityHappiness();
+	if (iCoastalHappinessPerCity > 0)
+	{
+		iHappiness += (GetNumCoastalCities() * iCoastalHappinessPerCity) / 100;
+	}
+	// Yerevan CS UA: per worked holy-site improvement, GLOBAL happiness (no local-population cap).
+	// (100 = +1 global happiness per worked holy site). Counted here so it shows up under
+	// "from City-States". Use the per-turn cached worked-holy-site count for the hot path.
+	if (m_pCityStateUA && m_pCityStateUA->GetHolySiteHappiness() > 0)
+	{
+		iHappiness += (m_pCityStateUA->GetCachedWorkedHolySites() * m_pCityStateUA->GetHolySiteHappiness()) / 100;
+	}
+	// Ur CS UA: per world wonder owned, GLOBAL happiness (100 = +1 happiness per world wonder).
+	// Counted here so it shows up under "from City-States". Shares the per-turn cached world-wonder
+	// count with Bucharest's yield effect.
+	if (m_pCityStateUA && m_pCityStateUA->GetWorldWonderHappiness() > 0)
+	{
+		iHappiness += (m_pCityStateUA->GetCachedWorldWonderCount() * m_pCityStateUA->GetWorldWonderHappiness()) / 100;
+	}
+#endif
 	return iHappiness;
 }
 
@@ -15115,6 +15229,77 @@ int CvPlayer::GetStartingSpyRank() const
 void CvPlayer::ChangeStartingSpyRank(int iChange)
 {
 	m_iSpyStartingRank = (m_iSpyStartingRank + iChange);
+}
+
+//	--------------------------------------------------------------------------------
+/// Current accumulated spy points. If bTotal is true, returns the all-time total instead.
+int CvPlayer::GetSpyPoints(bool bTotal) const
+{
+	return bTotal ? m_iSpyPointsTotal : m_iSpyPoints;
+}
+
+//	--------------------------------------------------------------------------------
+/// Spy points needed to earn the next spy. Grows with each spy earned (Great General style).
+int CvPlayer::GetSpyPointsThreshold() const
+{
+	return GC.getSPY_POINTS_THRESHOLD_BASE() * max(0, getSpyPointsThresholdModifier() + 100) / 100;
+}
+
+//	--------------------------------------------------------------------------------
+/// Number of spies earned through the spy points system so far.
+int CvPlayer::GetSpyPointsCreated() const
+{
+	return m_iSpyPointsCreated;
+}
+
+//	--------------------------------------------------------------------------------
+/// Spy points earned per turn from all sources (buildings, policies, beliefs, traits).
+/// Maintained incrementally on change events; loaded from and written to the save file.
+int CvPlayer::GetSpyPointsPerTurn() const
+{
+	return m_iSpyPointsPerTurn;
+}
+
+//	--------------------------------------------------------------------------------
+/// Adjust the cached spy points earned per turn on change events.
+void CvPlayer::ChangeSpyPointsPerTurn(int iChange)
+{
+	m_iSpyPointsPerTurn += iChange;
+}
+
+//	--------------------------------------------------------------------------------
+/// Add (or remove) spy points. When the threshold is reached, a spy is granted and the threshold grows.
+void CvPlayer::ChangeSpyPoints(int iChange)
+{
+	if (GC.getGame().isOption(GAMEOPTION_NO_ESPIONAGE))
+		return;
+
+	m_iSpyPoints += iChange;
+	if (iChange > 0)
+		m_iSpyPointsTotal += iChange;
+
+	while (m_iSpyPoints >= GetSpyPointsThreshold() && GetSpyPointsThreshold() > 0)
+	{
+		CvPlayerEspionage* pEspionage = GetEspionage();
+		if (!pEspionage)
+			break;
+		pEspionage->CreateSpy();
+		m_iSpyPoints -= GetSpyPointsThreshold();
+		m_iSpyPointsCreated++;
+		changeSpyPointsThresholdModifier(GC.getSPY_POINTS_THRESHOLD_INCREASE() * ((m_iSpyPointsCreated / 10) + 1));
+	}
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::getSpyPointsThresholdModifier() const
+{
+	return m_iSpyPointsThresholdModifier;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::changeSpyPointsThresholdModifier(int iChange)
+{
+	m_iSpyPointsThresholdModifier = (m_iSpyPointsThresholdModifier + iChange);
 }
 
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
@@ -15362,6 +15547,18 @@ void CvPlayer::setHasPolicy(PolicyTypes eIndex, bool bNewValue)
 		m_pPlayerPolicies->SetPolicy(eIndex, bNewValue);
 #endif
 		processPolicies(eIndex, bNewValue ? 1 : -1);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Diplomatic prestige must be applied through this unified setHasPolicy entry
+		// (not only doAdoptPolicy) so it also takes effect for finishers, free grants
+		// and Lua-granted policies. Symmetric add/remove via (bNewValue ? 1 : -1).
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			CvPolicyEntry* pkPolicyInfo = GC.getPolicyInfo(eIndex);
+			if (pkPolicyInfo && pkPolicyInfo->GetDiplomaticPrestige() != 0)
+				ChangeExtraDiplomaticPrestige(pkPolicyInfo->GetDiplomaticPrestige() * (bNewValue ? 1 : -1));
+		}
+#endif
 	}
 }
 
@@ -15413,12 +15610,8 @@ void CvPlayer::doAdoptPolicy(PolicyTypes ePolicy)
 
 	setHasPolicy(ePolicy, true);
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (MOD_SP_UNIQUE_CITYSTATE && pkPolicyInfo->GetDiplomaticPrestige() != 0)
-	{
-		ChangeExtraDiplomaticPrestige(pkPolicyInfo->GetDiplomaticPrestige());
-		if (pkPolicyInfo->GetMinorCivAlliesThresholdModifier() != 0)
-			ChangeMinorCivAlliesThresholdModifier(pkPolicyInfo->GetMinorCivAlliesThresholdModifier());
-	}
+	if (MOD_SP_UNIQUE_CITYSTATE && pkPolicyInfo->GetMinorCivAlliesThresholdModifier() != 0)
+		ChangeMinorCivAlliesThresholdModifier(pkPolicyInfo->GetMinorCivAlliesThresholdModifier());
 #endif
 
 	// Update cost if trying to buy another policy this turn
@@ -15608,8 +15801,7 @@ CvString CvPlayer::GetInternationalTourismTooltip()
 			}
 
 			// Open borders with this player
-			CvTeam &kTeam = GET_TEAM(kPlayer.getTeam());
-			if (kTeam.IsAllowsOpenBordersToTeam(eTeam))
+			if (kPlayer.IsAllowsOpenBordersToPlayer(GetID()))
 			{
 				if (openBordersCivs.length() > 0)
 				{
@@ -17068,6 +17260,41 @@ void CvPlayer::SetNaturalWonderSubsequentFinderTech(int iValue)
 {
 	m_iNaturalWonderSubsequentFinderTech = iValue;
 }
+
+//	--------------------------------------------------------------------------------
+// Venice buy-food (Super Power V11): authoritatively handle the per-player cooldown plus the
+// gold/food exchange. Broadcast from the UI, so the cooldown is applied in lock-step on every
+// client (no more client-local save/load cooldown that could desync in multiplayer).
+int CvPlayer::TryBuyFoodFromVenice(int iFood, int iGold)
+{
+	if(m_iLastVeniceBuyFoodTurn >= GC.getGame().getGameTurn())
+	{
+		return 0; // already bought this turn
+	}
+	if(GetTreasury()->GetGold() < iGold)
+	{
+		return 2; // not enough gold
+	}
+	GetTreasury()->ChangeGold(-iGold);
+	CvCity* pCapital = getCapitalCity();
+	if(pCapital)
+	{
+		pCapital->changeFood(iFood);
+	}
+	m_iLastVeniceBuyFoodTurn = GC.getGame().getGameTurn();
+	return 1; // success
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetLastVeniceBuyFoodTurn() const
+{
+	return m_iLastVeniceBuyFoodTurn;
+}
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetLastVeniceBuyFoodTurn(int iTurn)
+{
+	m_iLastVeniceBuyFoodTurn = iTurn;
+}
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetNaturalWonderSubsequentFinderPolicies() const
 {
@@ -18042,7 +18269,410 @@ int CvPlayer::GetCSUAYieldPercentModifier(YieldTypes eYield) const
 #else
 	iMod += m_pCityStateUA->GetPolicyYieldModifier(eYield) * GetPlayerPolicies()->GetNumPoliciesOwned();
 #endif
+	// Vancouver CS UA: per point of the player's net happiness, a yield % modifier per YieldType
+	// (YieldMod in basis points per happiness, capped per yield at Cap percent). Accumulate into
+	// iMod in basis points, then normalized at the end. GetHappiness() already includes the per
+	// coastal-city happiness from this same UA, so the two effects compound, capped by Cap.
+	if (m_pCityStateUA->HasHappinessYieldModifiers())
+	{
+		// Vancouver UA: use NET happiness (income minus unhappiness), clamped at floor 0
+		int iHappinessBase = GetHappiness() - GetUnhappiness();
+		if (iHappinessBase < 0) iHappinessBase = 0;
+		int iPerPoint = m_pCityStateUA->GetHappinessYieldModifier(eYield);
+		if (iPerPoint > 0)
+		{
+			int iTotalBasis = iHappinessBase * iPerPoint;          // happiness x basis-points-per-happiness
+			int iCapBasis = m_pCityStateUA->GetHappinessYieldModifierCap(eYield) * 100;  // Cap percent -> basis points
+			if (iCapBasis > 0 && iTotalBasis > iCapBasis) iTotalBasis = iCapBasis;
+			iMod += iTotalBasis;
+		}
+	}
+	// Ife: each great work / artifact of the specified GreatWorkClass grants a yield % modifier, nation-wide.
+	// The per-class great-work count is cached once per doTurn (CvPlayerCityStateUA::CacheGreatWorkCounts),
+	// so this hot path only multiplies the cached count by the basis-point modifier.
+	if (m_pCityStateUA->HasGreatWorkYieldModifiers())
+	{
+		const std::vector<GreatWorkYieldModifierEntry>& vGWEnts = m_pCityStateUA->GetGreatWorkYieldModifierEntries();
+		int iGWTotal = 0;
+		for (size_t i = 0; i < vGWEnts.size(); i++)
+		{
+			const GreatWorkYieldModifierEntry& e = vGWEnts[i];
+			if (e.m_iYieldType != (int)eYield) continue;
+			const int iCount = m_pCityStateUA->GetCachedGreatWorkCount((GreatWorkClass)e.m_iGreatWorkClassType);
+			iGWTotal += iCount * e.m_iYieldMod;
+		}
+		iMod += iGWTotal;
+	}
+	// Ife: while in a golden age, grant a yield % modifier per YieldType, nation-wide.
+	// GoldenAgeYieldModifier is stored as a plain percent (25 = +25%); convert to basis points here
+	// because GetCSUAYieldPercentModifier normalizes by /100 at the end.
+	{
+		int iGAMod = m_pCityStateUA->GetGoldenAgeYieldModifier(eYield);
+		if (iGAMod != 0 && getGoldenAgeTurns() > 0)
+			iMod += iGAMod * 100;
+	}
+	// Yerevan CS UA: literacy rate (owned techs / total techs x 100) grants a yield % per literacy point,
+	// nation-wide. (YieldMod is basis points per point; ally 100 = +1% production per point, friend 50 = +1% per 2 points.)
+	if (m_pCityStateUA->HasLiteracyYieldModifiers())
+	{
+		const std::vector<LiteracyYieldModifierEntry>& vLit = m_pCityStateUA->GetLiteracyYieldModifiers();
+		const int iLitPercent = m_pCityStateUA->GetCachedLiteracyPercent();
+		for (size_t i = 0; i < vLit.size(); i++)
+		{
+			if (vLit[i].m_iYieldType == (int)eYield)
+				iMod += iLitPercent * vLit[i].m_iYieldMod;
+		}
+	}
+	// Yerevan CS UA: each born great person of a unit class grants a yield % per born, nation-wide.
+	// (YieldMod is basis points per born; ally prophet: UNITCLASS_PROPHET / YIELD_FAITH / 500 = +5% faith per born prophet.)
+	if (m_pCityStateUA->HasBornGreatPersonYieldModifiers())
+	{
+		const std::vector<BornGreatPersonNationwideYieldEntry>& vGP = m_pCityStateUA->GetBornGreatPersonYieldModifiers();
+		for (size_t i = 0; i < vGP.size(); i++)
+		{
+			if (vGP[i].m_iYieldType != (int)eYield) continue;
+			GreatPersonTypes eGP = GetGreatPersonFromUnitClass((UnitClassTypes)vGP[i].m_iUnitClassType);
+			if (eGP == NO_GREATPERSON) continue;
+			iMod += GetBornGreatPersonCount(eGP) * vGP[i].m_iYieldMod;
+		}
+	}
+	// Bogota CS UA: per owned city matching a special city type, ALL cities gain a yield % modifier, nation-wide.
+	// (YieldMod is a plain percent; the matching-city count is cached once per doTurn, so multiply by 100
+	// here because GetCSUAYieldPercentModifier normalizes by /100 at the end.)
+	if (m_pCityStateUA->HasSpecialCityCountYieldModifiers())
+	{
+		const std::vector<SpecialCityCountYieldModifierEntry>& vSpecCount = m_pCityStateUA->GetSpecialCityCountYieldModifiers();
+		for (size_t i = 0; i < vSpecCount.size(); i++)
+		{
+			if (vSpecCount[i].m_iYieldType != (int)eYield) continue;
+			iMod += m_pCityStateUA->GetCachedSpecialCityCount(vSpecCount[i].m_iSpecialCityType) * vSpecCount[i].m_iYieldMod * 100;
+		}
+	}
+	// Singapore CS UA: each owned building class grants a nation-wide yield % modifier. The count is read
+	// live from the player's building-class counter (CvPlayer::getBuildingClassCount), so no per-turn cache
+	// is needed. YieldMod is a plain percent; multiply by 100 because this function accumulates basis points
+	// and divides by 100 at the end.
+	if (m_pCityStateUA->HasBuildingClassGlobalYieldModifiers())
+	{
+		const std::vector<BuildingClassGlobalYieldModifierEntry>& vBC = m_pCityStateUA->GetBuildingClassGlobalYieldModifiers();
+		for (size_t i = 0; i < vBC.size(); i++)
+		{
+			if (vBC[i].m_iYieldType != (int)eYield) continue;
+			iMod += getBuildingClassCount((BuildingClassTypes)vBC[i].m_iBuildingClass) * vBC[i].m_iYieldMod * 100;
+		}
+	}
+	// Manila CS UA: per happy luxury type owned, a nation-wide food % modifier (plain percent,
+	// capped by FoodModifierPerHappyLuxuryCap; 0 = uncapped). The luxury count is cached once per
+	// doTurn (CvPlayerCityStateUA::CacheHappyLuxuryCount), and the plain percent is converted to
+	// basis points here because GetCSUAYieldPercentModifier normalizes by /100 at the end.
+	if (eYield == YIELD_FOOD)
+	{
+		int iPerLuxury = m_pCityStateUA->GetFoodModifierPerHappyLuxuryType();
+		if (iPerLuxury != 0)
+		{
+			int iTotal = m_pCityStateUA->GetCachedHappyLuxuryCount() * iPerLuxury;
+			int iCap = m_pCityStateUA->GetFoodModifierPerHappyLuxuryCap();
+			if (iCap > 0 && iTotal > iCap) iTotal = iCap;
+			iMod += iTotal * 100;
+		}
+	}
+	// Bucharest CS UA: each world wonder owned grants a yield % modifier per YieldType, nation-wide.
+	// (YieldMod is a plain percent; the wonder count is cached once per doTurn, so multiply by 100
+	// here because GetCSUAYieldPercentModifier normalizes by /100 at the end.)
+	if (m_pCityStateUA->HasWorldWonderYieldModifiers())
+	{
+		const std::vector<WorldWonderYieldModifierEntry>& vWW = m_pCityStateUA->GetWorldWonderYieldModifiers();
+		for (size_t i = 0; i < vWW.size(); i++)
+		{
+			if (vWW[i].m_iYieldType != (int)eYield) continue;
+			int iTotal = m_pCityStateUA->GetCachedWorldWonderCount() * vWW[i].m_iYieldMod;
+			if (vWW[i].m_iCap > 0 && iTotal > vWW[i].m_iCap) iTotal = vWW[i].m_iCap;
+			iMod += iTotal * 100;
+		}
+	}
+	// Bucharest CS UA: each diplomat stationed in a foreign major civilization's city grants a yield %
+	// modifier per YieldType, nation-wide. (Plain percent; count cached once per doTurn.)
+	if (m_pCityStateUA->HasDiplomatAbroadYieldModifiers())
+	{
+		const std::vector<DiplomatAbroadYieldModifierEntry>& vDA = m_pCityStateUA->GetDiplomatAbroadYieldModifiers();
+		for (size_t i = 0; i < vDA.size(); i++)
+		{
+			if (vDA[i].m_iYieldType != (int)eYield) continue;
+			int iTotal = m_pCityStateUA->GetCachedDiplomatAbroadCount() * vDA[i].m_iYieldMod;
+			if (vDA[i].m_iCap > 0 && iTotal > vDA[i].m_iCap) iTotal = vDA[i].m_iCap;
+			iMod += iTotal * 100;
+		}
+	}
+	// Quebec CS UA: for each met major civilization whose influence level toward this player is Unknown
+	// (the lowest level), grant a yield % modifier per YieldType, nation-wide. (YieldMod is a plain percent;
+	// the count is cached once per doTurn, so multiply by 100 here because GetCSUAYieldPercentModifier
+	// normalizes by /100 at the end. Cap is a plain percent cap; 0 = uncapped.)
+	if (m_pCityStateUA->HasUnknownInfluenceYieldModifiers())
+	{
+		const std::vector<UnknownInfluenceYieldModifierEntry>& vUI = m_pCityStateUA->GetUnknownInfluenceYieldModifiers();
+		for (size_t i = 0; i < vUI.size(); i++)
+		{
+			if (vUI[i].m_iYieldType != (int)eYield) continue;
+			int iTotal = m_pCityStateUA->GetCachedUnknownInfluenceCount() * vUI[i].m_iYieldMod;
+			if (vUI[i].m_iCap > 0 && iTotal > vUI[i].m_iCap) iTotal = vUI[i].m_iCap;
+			iMod += iTotal * 100;
+		}
+	}
+	// Kiev CS UA: each League delegate vote the player holds grants a yield % modifier per YieldType,
+	// nation-wide. (YieldMod is in basis points per vote, so no x100 conversion here; the vote count is
+	// cached once per doTurn because recomputing it walks the League.)
+	if (m_pCityStateUA->HasLeagueVoteYieldModifiers())
+	{
+		const std::vector<LeagueVoteYieldModifierEntry>& vLV = m_pCityStateUA->GetLeagueVoteYieldModifiers();
+		const int iVotes = m_pCityStateUA->GetCachedLeagueVotes();
+		for (size_t i = 0; i < vLV.size(); i++)
+		{
+			if (vLV[i].m_iYieldType != (int)eYield) continue;
+			iMod += iVotes * vLV[i].m_iYieldMod;
+		}
+	}
+	// Kuala Lumpur CS UA: per N population living in cities matching a special city type, a yield % per
+	// YieldType, nation-wide. (YieldMod is a plain percent, so it is multiplied by 100 here because
+	// GetCSUAYieldPercentModifier accumulates basis points; the per-type population is cached once per
+	// doTurn by CacheSpecialCityMatches.)
+	if (m_pCityStateUA->HasSpecialCityPopulationYieldModifiers())
+	{
+		const std::vector<SpecialCityPopulationYieldModifierEntry>& vPop = m_pCityStateUA->GetSpecialCityPopulationYieldModifiers();
+		for (size_t i = 0; i < vPop.size(); i++)
+		{
+			if (vPop[i].m_iYieldType != (int)eYield) continue;
+			if (vPop[i].m_iPerPopulation <= 0) continue;
+			const int iPop = m_pCityStateUA->GetCachedSpecialCityPopulation(vPop[i].m_iSpecialCityType);
+			iMod += (iPop / vPop[i].m_iPerPopulation) * vPop[i].m_iYieldMod * 100;
+		}
+	}
+	// Mogadishu CS UA: per international trade route the player runs TO a city-state, a nation-wide
+	// yield % modifier per YieldType (plain percent, 5 = +5% per route). Mirrors the existing building
+	// effect (CvPlayer::GetCityStateTradeRouteYieldModifierGlobal): the stored value is multiplied by
+	// the live city-state trade route count; the plain percent is converted to basis points here
+	// because GetCSUAYieldPercentModifier normalizes by /100 at the end.
+	if (m_pCityStateUA->HasCityStateTradeRouteYieldModifiersGlobal() && GetTrade() != NULL)
+	{
+		const std::vector<CityStateTradeRouteYieldModifierGlobalEntry>& vTR = m_pCityStateUA->GetCityStateTradeRouteYieldModifiersGlobal();
+		for (size_t i = 0; i < vTR.size(); i++)
+		{
+			if (vTR[i].m_iYieldType != (int)eYield) continue;
+			iMod += GetTrade()->GetNumberOfCityStateTradeRoutes() * vTR[i].m_iYieldMod * 100;
+		}
+	}
+	// Hanoi CS UA: each completed war peace treaty grants a nation-wide Culture % modifier (plain percent,
+	// so multiply by 100 because this function accumulates basis points and divides by 100 at the end).
+	// The counter is a serialized CvPlayer member, incremented live on each peace treaty, so no per-turn
+	// cache is required. Only the ally effect sets CulturePerWarPeace (friend = 0).
+	if (eYield == YIELD_CULTURE)
+	{
+		int iPerPeace = m_pCityStateUA->GetCulturePerWarPeace();
+		if (iPerPeace != 0)
+			iMod += GetNumWarPeacesCompleted() * iPerPeace * 100;
+	}
+	// Kabul CS UA: each international land trade route the player runs to any other player (city-states
+	// included) grants a nation-wide yield % modifier per YieldType, scaled by era (value * (era+1)).
+	// Mirrors Colombo's per-era handling. The route count is read live (the connection list is small),
+	// and the plain percent is converted to basis points because this function normalizes by /100.
+	if (m_pCityStateUA->HasInternationalLandTradeRouteYieldPerEra() && GetTrade() != NULL)
+	{
+		const std::vector<InternationalLandTradeRouteYieldEntry>& vML = m_pCityStateUA->GetInternationalLandTradeRouteYieldPerEra();
+		const int iRoutes = GetTrade()->GetNumberOfInternationalLandTradeRoutes();
+		if (iRoutes > 0)
+		{
+			for (size_t i = 0; i < vML.size(); i++)
+			{
+				if (vML[i].m_iYieldType != (int)eYield) continue;
+				iMod += iRoutes * vML[i].m_iYieldMod * (GetCurrentEra() + 1) * 100;
+			}
+		}
+	}
+	// Milan CS UA: per point of luxury happiness the player has, a nation-wide yield % modifier per
+	// YieldType. YieldMod is already in basis points per point (50 = +0.5% per point), so it is added
+	// directly; Cap is a plain percent and is converted to basis points.
+	if (m_pCityStateUA->HasLuxuryHappinessYieldModifiers())
+	{
+		const int iHappy = m_pCityStateUA->GetCachedLuxuryHappiness();
+		if (iHappy > 0)
+		{
+			const std::vector<LuxuryHappinessYieldModifierEntry>& vLH = m_pCityStateUA->GetLuxuryHappinessYieldModifiers();
+			for (size_t i = 0; i < vLH.size(); i++)
+			{
+				if (vLH[i].m_iYieldType != (int)eYield) continue;
+				int iTotal = iHappy * vLH[i].m_iYieldMod;
+				const int iCap = vLH[i].m_iCap * 100;
+				if (iCap > 0 && iTotal > iCap) iTotal = iCap;
+				iMod += iTotal;
+			}
+		}
+	}
 	return iMod / 100;
+}
+// Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
+// this plot gains +Yield of eYield (flat yield, e.g. +1 culture next to a worked holy site).
+// Callers apply the "adjacent is a worked holy site" gate separately (see CvPlot::computePeakYield).
+int CvPlayer::GetCSUAAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eAdjacentImprovement, YieldTypes eYield) const
+{
+	if (!m_pCityStateUA || !m_pCityStateUA->HasAdjacentImprovementYieldChanges()) return 0;
+	const std::vector<AdjacentImprovementYieldChangeEntry>& vEntries = m_pCityStateUA->GetAdjacentImprovementYieldChanges();
+	int iResult = 0;
+	for (size_t i = 0; i < vEntries.size(); i++)
+	{
+		const AdjacentImprovementYieldChangeEntry& entry = vEntries[i];
+		// Strict match: the LOCAL plot's improvement must equal the configured ImprovementType.
+		// (Entries are fully enumerated for every improvement by SP SQL, so there is no wildcard here.)
+		if (entry.m_iAdjacentImprovementType == (int)eAdjacentImprovement &&
+			entry.m_iYieldType == (int)eYield &&
+			entry.m_iImprovementType == (int)eImprovement)
+		{
+			iResult += entry.m_iYield;
+		}
+	}
+	return iResult;
+}
+// Malacca / Panama / Hormuz: total CSUA trade-route gold % modifier for this connection
+// (used by settlement, preview-total and AI evaluation paths via GetTradeConnectionValueTimes100)
+int CvPlayer::GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnection) const
+{
+	if (!m_pCityStateUA) return 0;
+	// these bonuses only apply to international connections
+	if (!GC.getGame().GetGameTrade()->IsConnectionInternational(kTradeConnection)) return 0;
+
+	int iModifier = 0;
+
+	// Malacca UA: trade route gold percentage per happy luxury type
+	iModifier += GetHappyLuxuryTypeCount() * m_pCityStateUA->GetTradeRouteGoldModifierPerLuxuryType() / 100;
+
+	// Manila UA: flat gold percentage on every international trade route the player runs
+	iModifier += m_pCityStateUA->GetTradeRouteGoldPercentInternational();
+
+	// Manila UA: additional gold percentage per international trade route the player runs
+	// (routes to city-states count as international; the count is applied to every route)
+	int iManilaPerRoute = m_pCityStateUA->GetTradeRouteGoldModifierPerInternationalRoute();
+	if (iManilaPerRoute != 0)
+	{
+		int iNumInternationalRoutes = 0;
+		const TradeConnectionList& aTradeConnections = GC.getGame().GetGameTrade()->m_aTradeConnections;
+		for (uint i = 0; i < aTradeConnections.size(); i++)
+		{
+			const TradeConnection& kConnection = aTradeConnections[i];
+			if (kConnection.m_eOriginOwner == GetID() && GC.getGame().GetGameTrade()->IsConnectionInternational(kConnection))
+			{
+				iNumInternationalRoutes++;
+			}
+		}
+		iModifier += iNumInternationalRoutes * iManilaPerRoute;
+	}
+
+	// Panama UA: trade route gold percentage per distance tile
+	int iDistanceModifier = m_pCityStateUA->GetTradeRouteGoldModifierPerDistance();
+	if (iDistanceModifier != 0)
+	{
+		CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
+		CvPlot* pDestPlot = GC.getMap().plot(kTradeConnection.m_iDestX, kTradeConnection.m_iDestY);
+		if (pOriginPlot && pDestPlot)
+		{
+			int iDistance = plotDistance(pOriginPlot->getX(), pOriginPlot->getY(), pDestPlot->getX(), pDestPlot->getY());
+			iModifier += iDistance * iDistanceModifier / 100;
+		}
+	}
+
+	// Hormuz UA: trade route gold percentage per surplus strategic resource
+	// (surplus = getNumResourceAvailable, clamped to >= 0; a deficit must never reduce route gold)
+	int iNumResources = GC.getNumResourceInfos();
+	for (int iRes = 0; iRes < iNumResources; iRes++)
+	{
+		int iSurplusModifier = m_pCityStateUA->GetTradeRouteGoldPerSurplusResource((ResourceTypes)iRes);
+		if (iSurplusModifier != 0)
+		{
+			int iSurplus = getNumResourceAvailable((ResourceTypes)iRes);
+			if (iSurplus > 0)
+			{
+				iModifier += iSurplus * iSurplusModifier / 100;
+			}
+		}
+	}
+
+	// Kabul UA: each international land trade route grants gold %, plus an extra bonus when the origin
+	// city sits on hills. Only land routes qualify; this function already returns early for
+	// non-international connections, so no international check is needed here.
+	if (m_pCityStateUA->HasLandTradeRouteGoldModifiers() && kTradeConnection.m_eDomain == DOMAIN_LAND)
+	{
+		CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
+		const bool bHillsOrigin = (pOriginPlot != NULL && pOriginPlot->isHills());
+		const std::vector<LandTradeRouteGoldModifierEntry>& vLT = m_pCityStateUA->GetLandTradeRouteGoldModifiers();
+		for (size_t i = 0; i < vLT.size(); i++)
+		{
+			iModifier += vLT[i].m_iYieldMod;
+			if (bHillsOrigin) iModifier += vLT[i].m_iHillsBonus;
+		}
+	}
+
+	// Kyzyl UA: +% route gold when the destination is NOT one of our neighbors. Uses the cached
+	// distance-based proximity (city-states included); anything other than PLAYER_PROXIMITY_NEIGHBORS
+	// counts as a non-neighbor.
+	int iNonNeighborMod = m_pCityStateUA->GetTradeRouteGoldPercentNonNeighbor();
+	if (iNonNeighborMod != 0 && kTradeConnection.m_eDestOwner != NO_PLAYER
+		&& GetProximityToPlayer(kTradeConnection.m_eDestOwner) != PLAYER_PROXIMITY_NEIGHBORS)
+	{
+		iModifier += iNonNeighborMod;
+	}
+
+	return iModifier;
+}
+// Kyzyl CS UA: land trade-route range % gained per trade-route slot the player has (plain percent,
+// 10 = +10% per slot). Consumed by CvPlayerTrade::GetTradeRouteRange for DOMAIN_LAND.
+int CvPlayer::GetCSUALandTradeRouteRangePerSlot() const
+{
+	return m_pCityStateUA ? m_pCityStateUA->GetLandTradeRouteDistancePerTradeSlot() : 0;
+}
+int CvPlayer::GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const
+{
+	if (!m_pCityStateUA) return 0;
+	const int iPerImmigrant = m_pCityStateUA->GetImmigrantYieldModifier(eYield);
+	if (iPerImmigrant != 0)
+	{
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+		return iPerImmigrant * m_iTotalImmigrantsReceived / 100;
+#else
+		return 0;
+#endif
+	}
+	return 0;
+}
+// Bucharest CS UA: the receiving side's immigration rate bonus, derived from how many immigrants it has
+// already received (per-immigrant percent, capped by ImmigrationRateMax). Returns a percent to be ADDED
+// to the immigration rate multiplier.
+int CvPlayer::GetCSUAImmigrationRateModifier() const
+{
+	if (!m_pCityStateUA) return 0;
+	const int iPerImmigrant = m_pCityStateUA->GetImmigrationRatePerImmigrant();
+	if (iPerImmigrant == 0) return 0;
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	int iTotal = iPerImmigrant * m_iTotalImmigrantsReceived;
+	const int iMax = m_pCityStateUA->GetImmigrationRateMax();
+	if (iMax > 0 && iTotal > iMax) iTotal = iMax;
+	return iTotal;
+#else
+	return 0;
+#endif
+}
+// Bucharest CS UA: the leaving side's emigration rate reduction, derived from how many emigrants it has
+// already lost (per-immigrant percent, capped by EmigrationRateMax). Returns a positive percent to be
+// SUBTRACTED from the emigration rate multiplier.
+int CvPlayer::GetCSUAEmigrationRateModifier() const
+{
+	if (!m_pCityStateUA) return 0;
+	const int iPerImmigrant = m_pCityStateUA->GetEmigrationRatePerImmigrant();
+	if (iPerImmigrant == 0) return 0;
+#if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
+	int iTotal = iPerImmigrant * m_iTotalImmigrantsEmigrated;
+	const int iMax = m_pCityStateUA->GetEmigrationRateMax();
+	if (iMax > 0 && iTotal > iMax) iTotal = iMax;
+	return iTotal;
+#else
+	return 0;
+#endif
 }
 int CvPlayer::GetTotalGoldDonated() const
 {
@@ -18618,7 +19248,19 @@ int CvPlayer::GetDomainFreeExperiencesPerTurnGlobal(DomainTypes eIndex) const
 	int iRtnValue = m_aiDomainFreeExperiencesPerTurnGlobal[eIndex];
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	if (eIndex == DOMAIN_LAND)
+	{
 		iRtnValue += GetCSLandXPPerTurn();
+	}
+	else
+	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// Sidon UA: allied militaristic city-state per-turn XP also applies to sea and air domains
+		if (MOD_SP_UNIQUE_CITYSTATE && IsCSAMilitaryXPSeaAir())
+		{
+			iRtnValue += GetCSLandXPPerTurn();
+		}
+#endif
+	}
 #endif
 	return iRtnValue;
 }
@@ -18975,7 +19617,7 @@ int CvPlayer::GetImmigrationRate(PlayerTypes eTargetPlayer) const
 	CvTeam& kMoveInTeam = GET_TEAM(eMoveInTeam);
 	CvTeam& kMoveOutTeam = GET_TEAM(eMoveOutTeam);
 	if(kMoveInTeam.isAtWar(eMoveOutTeam)) return 0;
-	if(kMoveInTeam.IsAllowsOpenBordersToTeam(eMoveOutTeam))
+	if(kMoveInPlayer->IsAllowsOpenBordersToPlayer(kMoveOutPlayer->GetID()))
 	{
 		iMoveOutCounterMod += 100;
 	}
@@ -19018,6 +19660,12 @@ int CvPlayer::GetImmigrationRate(PlayerTypes eTargetPlayer) const
 	iMoveOutCounterMod += kMoveInPlayer->getPolicyModifiers(POLICYMOD_IMMIGRATION_IN_MODIFIER);
 	iMoveOutCounterMod += kMoveOutPlayer->getPolicyModifiers(POLICYMOD_IMMIGRATION_OUT_MODIFIER);
 
+	//CityState UA (Bucharest) Modifier: the receiving side gains immigration speed per immigrant already
+	//received, the leaving side loses emigration speed per emigrant already lost. kMoveInPlayer/kMoveOutPlayer
+	//are derived from iMoveOutCounterBase's sign, so A->B and B->A yield the same multiplier (symmetric).
+	iMoveOutCounterMod += kMoveInPlayer->GetCSUAImmigrationRateModifier();
+	iMoveOutCounterMod -= kMoveOutPlayer->GetCSUAEmigrationRateModifier();
+
 	//Trait Modifier
 	if(iInExcessHappiness > iOutExcessHappiness)
 	{
@@ -19029,6 +19677,199 @@ int CvPlayer::GetImmigrationRate(PlayerTypes eTargetPlayer) const
 	iRtnValue /= 100;
 
 	return iRtnValue;
+}
+int CvPlayer::GetTotalImmigrantsReceived() const
+{
+	VALIDATE_OBJECT
+	return m_iTotalImmigrantsReceived;
+}
+void CvPlayer::ChangeTotalImmigrantsReceived(int iChange)
+{
+	VALIDATE_OBJECT
+	m_iTotalImmigrantsReceived += iChange;
+}
+
+// Sydney CS UA: an arriving immigrant grants cash (a % of the treasury, capped by era and game speed).
+// Deliberately kept out of ChangeTotalImmigrantsReceived - that setter is a plain counter exposed to
+// Lua, and the cash must only follow an actual population transfer.
+void CvPlayer::DoImmigrantCashReward()
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (m_pCityStateUA == NULL) return;
+
+	const int iCashPercent = m_pCityStateUA->GetImmigrantCashPercent();
+	if (iCashPercent <= 0) return;
+
+	int iReward = GetTreasury()->GetGold() * iCashPercent / 100;
+	// A bankrupt treasury yields a negative reward - the UA grants cash, it must not drain it.
+	if (iReward <= 0) return;
+
+	const int iCapBase = m_pCityStateUA->GetImmigrantCashCapBase();
+	if (iCapBase > 0)
+	{
+		const int iCap = iCapBase * (GetCurrentEra() + 1) * GC.getGame().getGameSpeedInfo().getCulturePercent() / 100;
+		if (iReward > iCap) iReward = iCap;
+	}
+	GetTreasury()->ChangeGold(iReward);
+#endif
+}
+int CvPlayer::GetTotalImmigrantsEmigrated() const
+{
+	VALIDATE_OBJECT
+	return m_iTotalImmigrantsEmigrated;
+}
+void CvPlayer::ChangeTotalImmigrantsEmigrated(int iChange)
+{
+	VALIDATE_OBJECT
+	m_iTotalImmigrantsEmigrated += iChange;
+}
+
+// International immigration main loop, per human player turn.
+// Mirrors the former Lua InternationalImmigration(TargetPlayerID) handler.
+void CvPlayer::DoInternationalImmigration()
+{
+	if (GC.getGame().isOption(GAMEOPTION_SP_IMMIGRATION_OFF)) return;
+
+	// The former Lua handler only registered GameEvents.PlayerDoTurn when the regressand
+	// was positive. Without this guard a zero regressand collapses the counter threshold
+	// (iRegressand * 2) to 0 and fires an immigration every single turn.
+	// Pass the acting player explicitly: the Lua handler implicitly used getActivePlayer(),
+	// which differs per client in MP and would let the counters diverge.
+	const int iRegressand = GC.getGame().GetImmigrationRegressand(GetID());
+	if (iRegressand <= 0) return;
+
+	for (int iOther = 0; iOther < MAX_MAJOR_CIVS; ++iOther)
+	{
+		PlayerTypes eOther = (PlayerTypes)iOther;
+		if (eOther == GetID()) continue;
+
+		CvPlayer& kOther = GET_PLAYER(eOther);
+		if (!kOther.isAlive() || !kOther.isMajorCiv()) continue;
+
+		int iCounter = kOther.GetImmigrationCounter(GetID());
+		if (iCounter <= 0 || iCounter >= iRegressand * 2)
+		{
+			kOther.SetImmigrationCounter(GetID(), iRegressand);
+		}
+
+		// GetImmigrationRate(X) on player P means "X's population moves into P". The acting
+		// player is the receiver here, so the rate must be queried from this player's side
+		// (GetImmigrationRate(eOther)), matching the former Lua thisPlayer:GetImmigrationRate(playerID).
+		iCounter = kOther.GetImmigrationCounter(GetID()) + GetImmigrationRate(eOther);
+		if (iCounter < 0) iCounter = 0;
+		else if (iCounter > iRegressand * 2) iCounter = iRegressand * 2;
+		kOther.SetImmigrationCounter(GetID(), iCounter);
+
+		PlayerTypes eOut = NO_PLAYER, eIn = NO_PLAYER;
+		if (iCounter == 0)
+		{
+			eOut = GetID();
+			eIn = eOther;
+		}
+		else if (iCounter == iRegressand * 2)
+		{
+			eOut = eOther;
+			eIn = GetID();
+		}
+
+		if (eOut != NO_PLAYER && eIn != NO_PLAYER)
+		{
+			if (DoImmigration(eOut, eIn))
+			{
+				kOther.SetImmigrationCounter(GetID(), iRegressand);
+			}
+			else
+			{
+				kOther.ChangeImmigrationCounter(GetID(), (iCounter == 0) ? 1 : -1);
+			}
+		}
+	}
+}
+
+// Execute one immigration transfer.
+// Mirrors the former Lua DoInternationalImmigration(OutPlayer, InPlayer).
+bool CvPlayer::DoImmigration(PlayerTypes eOutPlayer, PlayerTypes eInPlayer)
+{
+	CvPlayer& kOutPlayer = GET_PLAYER(eOutPlayer);
+	CvPlayer& kInPlayer = GET_PLAYER(eInPlayer);
+
+	if (kOutPlayer.getNumCities() < 1 || kInPlayer.getNumCities() < 1) return false;
+
+	std::vector<int> vOutCityIDs;
+	std::vector<int> vInCityIDs;
+	CvCity* pLoopCity = NULL;
+	int iLoop = 0;
+
+	for (pLoopCity = kOutPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kOutPlayer.nextCity(&iLoop))
+	{
+		if (pLoopCity->CanImmigrantOut()) vOutCityIDs.push_back(pLoopCity->GetID());
+	}
+	iLoop = 0;
+	for (pLoopCity = kInPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kInPlayer.nextCity(&iLoop))
+	{
+		if (pLoopCity->CanImmigrantIn()) vInCityIDs.push_back(pLoopCity->GetID());
+	}
+
+	if (vOutCityIDs.empty() || vInCityIDs.empty()) return false;
+
+	// Pick both cities before moving any population: if either lookup fails the whole
+	// transfer must abort, otherwise the source city loses a citizen for nothing.
+	int iRand = GC.getGame().getJonRandNum((int)vOutCityIDs.size(), "Immigration choose out city");
+	CvCity* pOutCity = kOutPlayer.getCity(vOutCityIDs[iRand]);
+	if (pOutCity == NULL) return false;
+
+	iRand = GC.getGame().getJonRandNum((int)vInCityIDs.size(), "Immigration choose in city");
+	CvCity* pInCity = kInPlayer.getCity(vInCityIDs[iRand]);
+	if (pInCity == NULL) return false;
+
+	// Immigrant leaves
+	pOutCity->changePopulation(-1, true);
+	pOutCity->SetCanDoImmigration(false);
+
+	if (kOutPlayer.isHuman())
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_LEFT_CITY");
+		strText << pOutCity->getName().c_str();
+		Localization::String strHeading = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_LEFT_CITY_SHORT");
+		kOutPlayer.AddNotification(NOTIFICATION_STARVING, strText.toUTF8(), strHeading.toUTF8(), pOutCity->plot(), -1, -1);
+	}
+
+	// AI boosts culture output to counter the population loss
+	if (pOutCity->getPopulation() > 15 && !kOutPlayer.isHuman())
+	{
+		pOutCity->GetCityCitizens()->SetFocusType(CITY_AI_FOCUS_TYPE_CULTURE);
+	}
+
+	// Immigrant arrives
+	pInCity->changePopulation(1, true);
+	pInCity->SetCanDoImmigration(false);
+
+	if (kInPlayer.isHuman())
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_REACHED_CITY");
+		strText << pInCity->getName().c_str();
+		Localization::String strHeading = Localization::Lookup("TXT_KEY_SP_NOTIFICATION_IMMIGRANT_REACHED_CITY_SHORT");
+		kInPlayer.AddNotification(NOTIFICATION_CITY_GROWTH, strText.toUTF8(), strHeading.toUTF8(), pInCity->plot(), -1, -1);
+	}
+
+	// Player-level counters, then the Sydney CS UA cash reward for the receiving civ
+	kInPlayer.ChangeTotalImmigrantsReceived(1);
+	kInPlayer.DoImmigrantCashReward();
+	kOutPlayer.ChangeTotalImmigrantsEmigrated(1);
+
+	// City-level counters
+	pInCity->ChangeTotalImmigrantsReceived(1);
+	pOutCity->ChangeTotalImmigrantsEmigrated(1);
+
+	// Notify Lua mods of the immigration event
+#if defined(MOD_EVENTS_INTERNATIONAL_IMMIGRATION)
+	if (MOD_EVENTS_INTERNATIONAL_IMMIGRATION)
+	{
+		GAMEEVENTINVOKE_HOOK(GAMEEVENT_InternationalImmigration, eInPlayer, eOutPlayer, pInCity->GetID(), pOutCity->GetID());
+	}
+#endif
+
+	return true;
 }
 #endif
 
@@ -19348,6 +20189,12 @@ void CvPlayer::RefreshCSAllUAEffects()
 	if (!m_pCityStateUA)
 		return;
 
+	// Belgrade UA: capture the previous garrison-defense modifier before the rebuild below, so the
+	// city-strength refresh at the end of this function can also run when the bonus is being lost
+	// (old != 0 while new == 0). Players never affected by this modifier skip that full-city recompute,
+	// which would otherwise be redundant with the per-turn CvCity::doTurn refresh.
+	int iOldGarrisonCityDefenseModifier = m_pCityStateUA->GetGarrisonCityDefenseModifier();
+
 	m_pCityStateUA->Reset();
 
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
@@ -19377,6 +20224,79 @@ void CvPlayer::RefreshCSAllUAEffects()
 		{
 			m_pCityStateUA->ApplyEffect(pUAEntry->GetFriendEffectID(), 1);
 		}
+	}
+
+	// Born-yield contribution is dynamic (per-specialist extra yield). Re-sync all cities so
+	// the rebuilt effect list takes effect idempotently (delta-based, never stacks per turn).
+	updateExtraSpecialistYield();
+
+	// Ife UA: cache the player's per-GreatWorkClass great-work count once per turn so the
+	// per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning cities.
+	m_pCityStateUA->CacheGreatWorkCounts();
+
+	// Yerevan UA: cache literacy rate and worked holy-site count once per turn so the per-yield
+	// (GetCSUAYieldPercentModifier) and global-happiness (GetHappinessFromMinorCivs) hot paths read flat ints.
+	m_pCityStateUA->ComputeLiteracyPercent();
+	m_pCityStateUA->CacheWorkedHolySites();
+
+	// Bogota UA: cache the owned cities matching each special city type once per turn so the per-yield
+	// hot paths (GetCSUAYieldPercentModifier, CvCity::GetBaseYieldRateModifier) read a flat table
+	// instead of re-running the predicate against every plot of every city.
+	m_pCityStateUA->CacheSpecialCityMatches();
+
+	// Kuala Lumpur UA: cache the puppet count once per turn so the tech-threshold hot path
+	// (CvPlayerTechs::GetResearchCost) reads a flat int instead of re-scanning every city. The puppet
+	// population is cached by CacheSpecialCityMatches above, for the per-yield path.
+	m_pCityStateUA->CachePuppetStats();
+
+	// Manila UA: cache the happy-luxury type count once per turn so the per-yield hot path
+	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
+	m_pCityStateUA->CacheHappyLuxuryCount();
+
+	// Milan UA: cache the luxury happiness total once per turn so the per-yield hot path
+	// (GetCSUAYieldPercentModifier) reads a flat int instead of re-scanning every resource per city.
+	m_pCityStateUA->CacheLuxuryHappiness();
+
+	// Bucharest UA: cache the world-wonder count and the number of diplomats stationed abroad once per
+	// turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads flat ints.
+	m_pCityStateUA->CacheWorldWonderCount();
+	m_pCityStateUA->CacheDiplomatAbroadCount();
+
+	// Quebec UA: cache the count of met major civilizations at Unknown influence toward this player once
+	// per turn so the per-yield hot path (GetCSUAYieldPercentModifier) reads a flat int instead of
+	// re-running the influence query against every other civilization.
+	m_pCityStateUA->CacheUnknownInfluenceCount();
+
+	// Kiev UA: cache the national-wonder count and the player's current League delegate votes once per
+	// turn so the per-city (CvCity::getGreatPeopleRateModifier) and per-yield (GetCSUAYieldPercentModifier)
+	// hot paths read flat ints instead of re-scanning cities / recomputing League votes.
+	m_pCityStateUA->CacheNationalWonderCount();
+	m_pCityStateUA->CacheLeagueVotes();
+
+	// Almaty UA: cache the surplus of each configured resource once per turn so the very hot
+	// CvUnit::GetMaxHitPoints path reads a flat int instead of walking every city.
+	m_pCityStateUA->CacheKillMaxHpSurplus();
+
+	// Vancouver UA: cache the coastal-city count once per turn so the global-happiness hot path
+	// (GetHappinessFromMinorCivs) reads a flat int instead of re-scanning every city.
+	RefreshCoastalCityCount();
+
+	// Refresh the cached per-turn spy rates (m_aiRate in CvCityEspionage). It is only
+	// recomputed by UpdateSpies/UpdateCity, so without this Sofia's steal-tech speed bonus
+	// (and changes in alive spy count) would not affect the actual gathering progress or the
+	// turns-left display until a policy/building/espionage-speed change happens.
+	if (GetEspionage())
+	{
+		GetEspionage()->UpdateSpies();
+	}
+
+	// Belgrade UA: the garrison city-defense bonus depends on the ally/friend relationship, which does
+	// not otherwise invalidate the cached city strength. Recompute all cities only when this player holds
+	// the modifier now or held it last turn, so both gaining and losing the relationship take effect on
+	// the same turn while unaffected players avoid the (CvCity::doTurn already covers) redundant pass.
+	if (iOldGarrisonCityDefenseModifier != 0 || m_pCityStateUA->GetGarrisonCityDefenseModifier() != 0)
+	{
+		UpdateCityStrength();
 	}
 }
 #endif
@@ -22132,8 +23052,10 @@ void CvPlayer::setLeaderType(LeaderHeadTypes eNewLeader)
 		setPersonalityType(eNewLeader);
 	
 		// Update the player's traits (Leader_Traits)
+		int iOldSpyPoints = GetPlayerTraits()->GetSpyPoints();
 		GetPlayerTraits()->Reset();
 		GetPlayerTraits()->InitPlayerTraits();
+		ChangeSpyPointsPerTurn(GetPlayerTraits()->GetSpyPoints() - iOldSpyPoints);
 		recomputePolicyCostModifier();
 		
 		if (!isHuman()) {
@@ -22168,6 +23090,49 @@ void CvPlayer::setPersonalityType(LeaderHeadTypes eNewValue)
 EraTypes CvPlayer::GetCurrentEra() const
 {
 	return GET_TEAM(getTeam()).GetCurrentEra();
+}
+
+//	--------------------------------------------------------------------------------
+//	Player-level open borders: "this player allows open borders to ePlayer".
+bool CvPlayer::IsAllowsOpenBordersToPlayer(PlayerTypes ePlayer) const
+{
+	if(ePlayer < 0 || ePlayer >= MAX_PLAYERS)
+	{
+		return false;
+	}
+
+	if(m_bPlayerOBsValid)
+	{
+		return m_abPlayerOpenBorders[ePlayer];
+	}
+
+	// Old save (written before player-level open borders existed): fall back to the legacy
+	// team-level rule so pre-existing games keep exactly their intended behavior.
+	return GET_TEAM(getTeam()).IsAllowsOpenBordersToTeam(GET_PLAYER(ePlayer).getTeam());
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::SetAllowsOpenBordersToPlayer(PlayerTypes ePlayer, bool bNewValue)
+{
+	if(ePlayer < 0 || ePlayer >= MAX_PLAYERS)
+	{
+		return;
+	}
+
+	// Any write means we are now authoritative on player-level open borders.
+	m_bPlayerOBsValid = true;
+
+	if(IsAllowsOpenBordersToPlayer(ePlayer) != bNewValue)
+	{
+		m_abPlayerOpenBorders[ePlayer] = bNewValue;
+
+		GC.getMap().verifyUnitValidPlot();
+
+		if((GetID() == GC.getGame().getActivePlayer()) || (ePlayer == GC.getGame().getActivePlayer()))
+		{
+			DLLUI->setDirty(Score_DIRTY_BIT, true);
+		}
+	}
 }
 
 //	--------------------------------------------------------------------------------
@@ -23731,6 +24696,17 @@ inline static bool MeetCityResourceRequirement(const PolicyResourceInfo& info,  
 	return okPolicy && okCoastal && okCityScale;
 }
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+// Same condition set as MeetCityResourceRequirement, minus the policy check: a CityState UA effect is
+// already gated by the ally/friend relationship, so only the city-level conditions remain.
+inline static bool MeetCSUAResourceRequirement(const ResourcePerCityEntry& info, const CvCity* city)
+{
+	bool okCoastal = (!info.m_bMustCoastal || city->isCoastal());
+	bool okCityScale = (info.m_iCityScale == NO_CITY_SCALE || (info.m_bLargerScaleValid ? city->GetScale() >= (CityScaleTypes)info.m_iCityScale : city->GetScale() == (CityScaleTypes)info.m_iCityScale));
+	return okCoastal && okCityScale;
+}
+#endif
+
 //	--------------------------------------------------------------------------------
 int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) const
 {
@@ -23753,6 +24729,7 @@ int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) con
 		int iLoop = 0;
 		int iCityPOPResource = 0;
 		int iCityResourceFromPolicy = 0;
+		int iCityResourceFromCSUA = 0;
 		for (pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
 		{
 			if (pLoopCity != NULL)
@@ -23768,11 +24745,29 @@ int CvPlayer::getNumResourceTotal(ResourceTypes eIndex, bool bIncludeImport) con
 						iCityResourceFromPolicy += info.iQuantity;
 					}
 				}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Mbanza Kongo CS UA: each owned city provides the resources listed in CityStateUAEffect_ResourcePerCity
+				if (MOD_SP_UNIQUE_CITYSTATE)
+				{
+					CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+					if (pCSUA != NULL)
+					{
+						for (const auto& info : pCSUA->GetResourcePerCityEntries())
+						{
+							if ((ResourceTypes)info.m_iResource == eIndex && MeetCSUAResourceRequirement(info, pLoopCity))
+							{
+								iCityResourceFromCSUA += info.m_iQuantity;
+							}
+						}
+					}
+				}
+#endif
 			}
 		}
 
 		iTotalNumResource += iCityPOPResource / 100;
 		iTotalNumResource += iCityResourceFromPolicy;
+		iTotalNumResource += iCityResourceFromCSUA;
 
 		if(GetStrategicResourceMod() != 0)
 		{
@@ -27884,8 +28879,10 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 #if defined(MOD_TRAITS_OTHER_PREREQS)
 	if (MOD_TRAITS_OTHER_PREREQS) {
 		// Update our traits (some may have become obsolete)
+		int iOldSpyPoints = GetPlayerTraits()->GetSpyPoints();
 		GetPlayerTraits()->Reset();
 		GetPlayerTraits()->InitPlayerTraits();
+		ChangeSpyPointsPerTurn(GetPlayerTraits()->GetSpyPoints() - iOldSpyPoints);
 		recomputePolicyCostModifier();
 	}
 #endif
@@ -27923,6 +28920,7 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 	changePolicyModifiers(POLICYMOD_CULTURAL_PLUNDER_MULTIPLIER, pPolicy->GetCulturalPlunderMultiplier() * iChange);
 	changePolicyModifiers(POLICYMOD_STEAL_TECH_SLOWER_MODIFIER, pPolicy->GetStealTechSlowerModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_CATCH_SPIES_MODIFIER, pPolicy->GetCatchSpiesModifier() * iChange);
+	ChangeSpyPointsPerTurn(pPolicy->GetSpyPoints() * iChange);
 	changePolicyModifiers(POLICYMOD_GREAT_ADMIRAL_RATE, pPolicy->GetGreatAdmiralRateModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_GREAT_WRITER_RATE, pPolicy->GetGreatWriterRateModifier() * iChange);
 	changePolicyModifiers(POLICYMOD_GREAT_ARTIST_RATE, pPolicy->GetGreatArtistRateModifier() * iChange);
@@ -29335,6 +30333,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderFirstFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderTech, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iLastVeniceBuyFoodTurn, -1);
 	kStream >> m_iProductionBeakerMod;
 	if (uiVersion >= 13)
 	{
@@ -29504,7 +30503,14 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(162, kStream, m_iCityStateAllyCount, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iMinorCivAlliesThresholdModifier, 0);
 	MOD_SERIALIZE_READ(163, kStream, m_iCityStateUASpyKillProgress, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iNumWarPeacesCompleted, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iNumTimesDeclaredWarOn, 0);
 #endif
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPoints, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsTotal, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsThresholdModifier, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsCreated, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsPerTurn, 0);
 	MOD_SERIALIZE_READ(162, kStream, m_iPrestigeExemptAllyCount, 0);
 	{
 		int iCount = 0;
@@ -30060,6 +31066,8 @@ void CvPlayer::Read(FDataStream& kStream)
 #endif
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream >> m_aiImmigrationCounter;
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsReceived, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsEmigrated, 0);
 #endif
 	kStream >> m_aiNegateWarmongerTurn;
 
@@ -30087,6 +31095,11 @@ void CvPlayer::Read(FDataStream& kStream)
 	kStream >> m_iBossLevel;
 	kStream >> m_iNumGreatPersonSincePolicy;
 	kStream >> m_iNumSpaceshipPartPurchased;
+
+	// Player-level open borders (version-gated tail). Saves written before this feature skip the
+	// reads, leaving the bits at their defaults (false) so legacy team-level behavior is preserved.
+	MOD_SERIALIZE_READ(164, kStream, m_bPlayerOBsValid, false);
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, &m_abPlayerOpenBorders[0], bool, REALLY_MAX_PLAYERS, false);
 
 	if(GetID() < MAX_MAJOR_CIVS)
 	{
@@ -30235,6 +31248,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderFirstFinderPolicies);
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderPolicies);
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderTech);
+	MOD_SERIALIZE_WRITE(kStream, m_iLastVeniceBuyFoodTurn);
 	kStream << m_iProductionBeakerMod;
 	kStream << m_iGreatEngineerRateModifier;
 	kStream << m_iGreatPersonExpendGold;
@@ -30369,7 +31383,14 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateAllyCount);
 	MOD_SERIALIZE_WRITE(kStream, m_iMinorCivAlliesThresholdModifier);
 	MOD_SERIALIZE_WRITE(kStream, m_iCityStateUASpyKillProgress);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumWarPeacesCompleted);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumTimesDeclaredWarOn);
 #endif
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPoints);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsTotal);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsThresholdModifier);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsCreated);
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsPerTurn);
 	MOD_SERIALIZE_WRITE(kStream, m_iPrestigeExemptAllyCount);
 	{
 		int iCount = (int)m_vecPermanentAllies.size();
@@ -30811,6 +31832,8 @@ void CvPlayer::Write(FDataStream& kStream) const
 #endif
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream << m_aiImmigrationCounter;
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsReceived);
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsEmigrated);
 #endif
 	kStream << m_aiNegateWarmongerTurn;
 
@@ -30838,6 +31861,13 @@ void CvPlayer::Write(FDataStream& kStream) const
 	kStream << m_iBossLevel;
 	kStream << m_iNumGreatPersonSincePolicy;
 	kStream << m_iNumSpaceshipPartPurchased;
+
+	{
+		// Player-level open borders (appended to the tail). Write the valid-flag then the array; the
+		// versions-gated read on load keeps pre-feature saves recognizing this as legacy data.
+		MOD_SERIALIZE_WRITE(kStream, m_bPlayerOBsValid);
+		MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, &m_abPlayerOpenBorders[0], bool, REALLY_MAX_PLAYERS);
+	}
 }
 
 //	--------------------------------------------------------------------------------
@@ -31554,6 +32584,25 @@ int CvPlayer::GetDiplomaticPrestige() const
 		int iPerCity = pUA->GetDiplomaticPrestigePerCity();
 		if (iPerCity > 0)
 			iResult += (getNumCities() * iPerCity) / 100;
+
+		// Geneva CS UA: "World Recognition" - +1 diplomatic prestige per 2 major civilizations
+		// whose majority religion is the religion the ally leads (counting the ally itself).
+		int iPerMajorityCiv = pUA->GetDiplomaticPrestigePerMajorityCiv();
+		if (iPerMajorityCiv > 0)
+		{
+			ReligionTypes eMyReligion = GetReligions()->GetReligionCreatedByPlayer();
+			if (eMyReligion != NO_RELIGION)
+			{
+				int iCount = 0;
+				for (int j = 0; j < MAX_MAJOR_CIVS; j++)
+				{
+					CvPlayer& kCiv = GET_PLAYER((PlayerTypes)j);
+					if (kCiv.isAlive() && !kCiv.isMinorCiv() && kCiv.GetReligions()->HasReligionInMostCities(eMyReligion))
+						iCount++;
+				}
+				iResult += (iCount * iPerMajorityCiv) / 100;
+			}
+		}
 	}
 #endif
 
@@ -31668,7 +32717,51 @@ int CvPlayer::GetCSImmigrationRegressandModifier() const
 //	------------------------------------------------------------------------
 int CvPlayer::GetCSLandXPPerTurn() const
 {
-	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MILITARISTIC) * GC.getCS_MILITARISTIC_LAND_XP_PER_TURN();
+	int iXP = GetCSAllyCountByTrait(MINOR_CIV_TRAIT_MILITARISTIC) * GC.getCS_MILITARISTIC_LAND_XP_PER_TURN();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Sidon UA: allied military city-states grant +X% per-turn XP
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		int iMod = GetCSAMilitaryXPPerTurnModifier();
+		if (iMod != 0)
+			iXP = iXP * (100 + iMod) / 100;
+	}
+#endif
+
+	return iXP;
+}
+
+//	------------------------------------------------------------------------
+// Sidon UA: portion (in %) of a defended city's building defense that this player's attacking units bypass
+int CvPlayer::GetCSACityAttackIgnoreBuildingDefensePercent() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) ? pCSUA->GetCityAttackIgnoreBuildingDefensePercent() : 0;
+}
+
+//	------------------------------------------------------------------------
+// Sidon UA: percentage modifier on the per-turn XP granted by allied militaristic city-states
+int CvPlayer::GetCSAMilitaryXPPerTurnModifier() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) ? pCSUA->GetMilitaryXPPerTurnModifier() : 0;
+}
+
+//	------------------------------------------------------------------------
+// Sidon UA: whether the militaristic per-turn XP is extended to sea and air domains
+bool CvPlayer::IsCSAMilitaryXPSeaAir() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) && (pCSUA->GetMilitaryXPSeaAir() > 0);
+}
+
+//	------------------------------------------------------------------------
+// Budapest UA: extra flat damage this player's units deal against an already-wounded target
+int CvPlayer::GetCSAWoundedFixedDamage() const
+{
+	CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+	return (pCSUA != NULL) ? pCSUA->GetWoundedFixedDamage() : 0;
 }
 
 //	------------------------------------------------------------------------
@@ -31690,6 +32783,436 @@ int CvPlayer::GetCSReligiousPressureModifier() const
 {
 	return GetCSAllyCountByTrait(MINOR_CIV_TRAIT_RELIGIOUS) * GC.getCS_RELIGIOUS_PRESSURE_MODIFIER();
 }
+
+//	------------------------------------------------------------------------
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+int CvPlayer::GetCapturedHolyCityCount()
+{
+	if (m_iCachedHolyCityCount < 0)
+		RefreshHolyCityCount();
+	return m_iCachedHolyCityCount;
+}
+
+//	------------------------------------------------------------------------
+// Jerusalem CS UA: recompute the cached count of holy cities owned by the player (called once per turn in doTurn())
+void CvPlayer::RefreshHolyCityCount()
+{
+	int iCount = 0;
+	int iLoop = 0;
+	for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	{
+		if (pLoopCity->GetCityReligions()->IsHolyCityAnyReligion())
+			iCount++;
+	}
+	m_iCachedHolyCityCount = iCount;
+}
+
+//	------------------------------------------------------------------------
+// Jerusalem CS UA: religious pressure bonus for the founder's religion per holy city owned
+int CvPlayer::GetCSUAReligiousPressureModifier()
+{
+	if (!m_pCityStateUA) return 0;
+	int iPerHolyCity = m_pCityStateUA->GetReligiousPressureModifierPerHolyCity();
+	if (iPerHolyCity == 0) return 0;
+	int iHolyCityCount = GetCapturedHolyCityCount();
+	if (iHolyCityCount == 0) return 0;
+	return iPerHolyCity * iHolyCityCount;
+}
+
+//	------------------------------------------------------------------------
+// Jerusalem CS UA: player who is the ally of a DenounceImmunity city-state cannot be denounced
+bool CvPlayer::IsDenounceImmunity() const
+{
+	return m_pCityStateUA && m_pCityStateUA->IsDenounceImmunity();
+}
+
+//	------------------------------------------------------------------------
+// Jerusalem / Wittenberg CS UA: per city worldwide following the player's religion, capital gains +Modifier% of the yield (100 = +1%)
+int CvPlayer::GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) const
+{
+	if (!m_pCityStateUA) return 0;
+	int iPerCity = m_pCityStateUA->GetCapitalYieldModifierPerFollowingCity(eYield);
+	if (iPerCity == 0) return 0;
+	CvPlayerReligions* pReligions = GetReligions();
+	if (!pReligions->HasCreatedReligion()) return 0;
+	ReligionTypes eReligion = pReligions->GetReligionCreatedByPlayer();
+	if (eReligion == NO_RELIGION) return 0;
+	int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eReligion);
+	return (iCities * iPerCity) / 100;
+}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: religion spread speed modifier (ally +50% / friend +20%)
+	int CvPlayer::GetCSUAReligionSpreadSpeedModifier() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetReligionSpreadSpeedModifier() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
+	int CvPlayer::GetCSUAPapalRecognitionVotes() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetPapalRecognitionVotes() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: Papal Recognition league delegate votes granted to the ally per following civilization (including itself)
+	int CvPlayer::GetCSUAPapalRecognitionAllyVotes() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetPapalRecognitionAllyVotes() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: per city worldwide following the player's religion, the holy city gains +Modifier% of the yield (100 = +1% per city)
+	int CvPlayer::GetCSUAHolyCityYieldModifierPerFollowingCity(YieldTypes eYield) const
+	{
+		if (!m_pCityStateUA) return 0;
+		int iPerCity = m_pCityStateUA->GetHolyCityYieldModifierPerFollowingCity(eYield);
+		if (iPerCity == 0) return 0;
+		CvPlayerReligions* pReligions = GetReligions();
+		if (!pReligions->HasCreatedReligion()) return 0;
+		ReligionTypes eReligion = pReligions->GetReligionCreatedByPlayer();
+		if (eReligion == NO_RELIGION) return 0;
+		int iCities = GC.getGame().GetGameReligions()->GetNumCitiesFollowing(eReligion);
+		return (iCities * iPerCity) / 100;
+	}
+
+	//	------------------------------------------------------------------------
+	// Vatican CS UA: number of major civilizations (including this player) whose majority of cities
+	// follow the religion founded by this player. Cached once per turn in doTurn() like Jerusalem's
+	// holy-city count (lazy fallback: -1 triggers a recompute on first access).
+	int CvPlayer::GetCSUAPapalRecognitionFollowerCount()
+	{
+		if (m_iCachedPapalRecognitionFollowerCount < 0)
+			RefreshPapalRecognitionFollowerCount();
+		return m_iCachedPapalRecognitionFollowerCount;
+	}
+
+	//	------------------------------------------------------------------------
+	void CvPlayer::RefreshPapalRecognitionFollowerCount()
+	{
+		m_iCachedPapalRecognitionFollowerCount = 0;
+		if (GetCSUAPapalRecognitionVotes() <= 0 && GetCSUAPapalRecognitionAllyVotes() <= 0)
+			return; // not a papal ally: no followers to count
+		ReligionTypes eReligion = GetReligions()->GetReligionCreatedByPlayer();
+		if (eReligion == NO_RELIGION)
+			return;
+		int iCount = 0;
+		for (int j = 0; j < MAX_MAJOR_CIVS; j++)
+		{
+			PlayerTypes eCiv = (PlayerTypes)j;
+			if (!GET_PLAYER(eCiv).isAlive() || GET_PLAYER(eCiv).isMinorCiv())
+				continue;
+			if (GET_PLAYER(eCiv).GetReligions()->HasReligionInMostCities(eReligion))
+				iCount++;
+		}
+		m_iCachedPapalRecognitionFollowerCount = iCount;
+	}
+
+	//	------------------------------------------------------------------------
+	// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
+	int CvPlayer::GetCSUAHappinessPerFollowingCity() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetHappinessPerFollowingCity() : 0;
+	}
+
+	// Vancouver CS UA: global happiness per coastal city (100 = +1 happiness per coastal city)
+	int CvPlayer::GetCSUACoastalCityHappiness() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetCoastalCityHappiness() : 0;
+	}
+	// Vancouver CS UA: number of the player's coastal cities, cached once per turn (lazy on first access).
+	// -1 means "not computed yet"; the cache is rebuilt by RefreshCoastalCityCount().
+	int CvPlayer::GetNumCoastalCities() const
+	{
+		if (m_iCachedCoastalCityCount < 0)
+			const_cast<CvPlayer*>(this)->RefreshCoastalCityCount();
+		return m_iCachedCoastalCityCount;
+	}
+
+	// Vancouver CS UA: recompute the cached coastal-city count (called once per turn in RefreshCSAllUAEffects)
+	void CvPlayer::RefreshCoastalCityCount()
+	{
+		int iCount = 0;
+		int iLoop = 0;
+		for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+		{
+			if (pLoopCity->isCoastal())
+				iCount++;
+		}
+		m_iCachedCoastalCityCount = iCount;
+	}
+
+	//	------------------------------------------------------------------------
+	// Gangtok CS UA: buy influence at ANY city-state with faith (gold price / divisor faith; divisor > 0 enables the feature)
+	int CvPlayer::GetCSUAFaithInfluencePurchaseCostDivisor() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetFaithInfluencePurchaseCostDivisor() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Gangtok CS UA: how many faith influence purchases the ally may make per turn (globally)
+	int CvPlayer::GetCSUAFaithInfluencePurchasePerTurnLimit() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetFaithInfluencePurchasePerTurnLimit() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	int CvPlayer::GetCSUAFaithInfluencePurchaseUsed() const
+	{
+		return m_iCSUAFaithInfluencePurchaseUsed;
+	}
+
+	int CvPlayer::GetCSUAFaithInfluencePurchaseRemaining() const
+	{
+		int iLimit = GetCSUAFaithInfluencePurchasePerTurnLimit();
+		if (iLimit <= 0) return 0;
+		return max(0, iLimit - m_iCSUAFaithInfluencePurchaseUsed);
+	}
+
+	void CvPlayer::ChangeCSUAFaithInfluencePurchaseUsed(int iChange)
+	{
+		m_iCSUAFaithInfluencePurchaseUsed = max(0, m_iCSUAFaithInfluencePurchaseUsed + iChange);
+	}
+
+	//	------------------------------------------------------------------------
+	// Hanoi CS UA: cumulative completed war peace treaties (serialized, never decays)
+	int CvPlayer::GetNumWarPeacesCompleted() const
+	{
+		return m_iNumWarPeacesCompleted;
+	}
+
+	void CvPlayer::ChangeNumWarPeacesCompleted(int iChange)
+	{
+		m_iNumWarPeacesCompleted = max(0, m_iNumWarPeacesCompleted + iChange);
+	}
+
+	//	------------------------------------------------------------------------
+	// Hanoi CS UA: cumulative times this player has been declared war on (serialized, never decays)
+	int CvPlayer::GetNumTimesDeclaredWarOn() const
+	{
+		return m_iNumTimesDeclaredWarOn;
+	}
+
+	void CvPlayer::ChangeNumTimesDeclaredWarOn(int iChange)
+	{
+		m_iNumTimesDeclaredWarOn = max(0, m_iNumTimesDeclaredWarOn + iChange);
+	}
+
+	//	------------------------------------------------------------------------
+	// Wittenberg CS UA: ally may spend faith to add one belief to the city-state's religion
+	bool CvPlayer::GetCSUAAnyFaithBeliefPurchase() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->AnyFaithBeliefPurchase() : false;
+	}
+
+	//	------------------------------------------------------------------------
+	// Wittenberg CS UA: keep this % of the followers when an inquisitor clears the city-state's religion
+	int CvPlayer::GetCSUAInquisitorRetentionPercent() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetInquisitorRetentionPercent() : 0;
+	}
+
+	// Wittenberg CS UA: does this city-state's own UA grant the faith-belief-purchase ability?
+	bool CvPlayer::HasCSUABeliefPurchaseUA() const
+	{
+		if (!isMinorCiv()) return false;
+		CvMinorCivAI* pMinorAI = GetMinorCivAI();
+		if (!pMinorAI) return false;
+		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+		if (!pkMinorCivInfo) return false;
+		const char* szUAType = pkMinorCivInfo->GetUAType();
+		if (!szUAType || szUAType[0] == '\0') return false;
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		if (!pUAEntry) return false;
+		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+		return pEffect && pEffect->GetFaithBeliefPurchase();
+	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: +X% great-person rate per masterpiece/artifact the player owns
+	int CvPlayer::GetCSUAGreatPersonRateModifierPerGreatWork() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetGreatPersonRateModifierPerGreatWork() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: total great-person rate modifier from every masterpiece/artifact the player owns
+	int CvPlayer::GetCSUAGreatPersonRateModifierFromGreatWorks() const
+	{
+		const int iPerGreatWork = GetCSUAGreatPersonRateModifierPerGreatWork();
+		if (iPerGreatWork != 0)
+		{
+			return iPerGreatWork * GetCulture()->GetNumGreatWorks(false);
+		}
+		return 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Kiev CS UA: total great-person rate modifier from every national wonder the player has completed.
+	// The wonder count is cached once per doTurn (CvPlayerCityStateUA::CacheNationalWonderCount) because
+	// CvCity::getGreatPeopleRateModifier, the caller, runs per city; a national wonder completed this turn
+	// therefore starts counting on the next turn, same as the other cached CSUA counts.
+	int CvPlayer::GetCSUAGreatPersonRateModifierFromNationalWonders() const
+	{
+		if (!m_pCityStateUA) return 0;
+		const int iPerWonder = m_pCityStateUA->GetGreatPersonRateModifierPerNationalWonder();
+		if (iPerWonder == 0) return 0;
+		return iPerWonder * m_pCityStateUA->GetCachedNationalWonderCount();
+	}
+
+	//	------------------------------------------------------------------------
+	// Kiev CS UA: League delegate votes granted per civilization the player has a Declaration of
+	// Friendship with. Called from CvLeague::CalculateStartingVotesForMember; the DoF count is read live
+	// because it is cheap compared to the rest of that function.
+	int CvPlayer::GetCSUALeagueVotesFromDoF() const
+	{
+		if (!m_pCityStateUA) return 0;
+		const int iPerDoF = m_pCityStateUA->GetLeagueVotesPerDoF();
+		if (iPerDoF == 0) return 0;
+		if (!GetDiplomacyAI()) return 0;
+		return iPerDoF * GetDiplomacyAI()->GetNumDoF();
+	}
+
+	//	------------------------------------------------------------------------
+	// Kiev CS UA: number of national wonders this player has completed, summed over all cities.
+	// Note: the palace counts as a national wonder (MaxPlayerInstances == 1), so any player with a
+	// capital always scores at least 1.
+	int CvPlayer::GetNumNationalWonders()
+	{
+		int iCount = 0;
+
+		int iLoop;
+		for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+		{
+			iCount += pLoopCity->getNumNationalWonders();
+		}
+
+		return iCount;
+	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: ally may spend faith to add an idle pantheon belief to the religion the ally leads
+	bool CvPlayer::GetCSUAAnyFaithPantheonPurchase() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->AnyFaithPantheonPurchase() : false;
+	}
+
+	//	------------------------------------------------------------------------
+	// La Venta CS UA: does this city-state's own UA grant the faith-pantheon-purchase ability?
+	bool CvPlayer::HasCSUAFaithPantheonPurchaseUA() const
+	{
+		if (!isMinorCiv()) return false;
+		CvMinorCivAI* pMinorAI = GetMinorCivAI();
+		if (!pMinorAI) return false;
+		CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+		if (!pkMinorCivInfo) return false;
+		const char* szUAType = pkMinorCivInfo->GetUAType();
+		if (!szUAType || szUAType[0] == '\0') return false;
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		if (!pUAEntry) return false;
+		CvCityStateUAEffectEntry* pEffect = GC.getCityStateUAEffectEntry(pUAEntry->GetAllyEffectID());
+		return pEffect && pEffect->GetFaithPantheonPurchase();
+	}
+
+	//	------------------------------------------------------------------------
+	// Kathmandu CS UA: the first gold donation to the city-state each turn refunds this % of the amount as faith
+	int CvPlayer::GetCSUAFaithRefundPerDonationPercent() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetFaithRefundPerDonationPercent() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Monaco CS UA: does the player's activated CSUA grant the first-donation wager?
+	bool CvPlayer::HasCSUAGoldDonationGamble() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->HasGoldDonationGamble() : false;
+	}
+
+	//	------------------------------------------------------------------------
+	// Monaco CS UA: roll the first-donation wager, returning the refund multiplier (0 = no payout).
+	// Each row is one outcome with probability Weight / max(sum(Weight), 10000); any mass below 10000
+	// not covered by the rows is a "no payout" outcome.
+	int CvPlayer::GetCSUAGoldDonationGambleMultiplier() const
+	{
+		if (!m_pCityStateUA)
+			return 0;
+
+		const std::vector<GoldDonationGambleEntry>& vGamble = m_pCityStateUA->GetGoldDonationGambleEntries();
+		int iWeightTotal = 0;
+		for (size_t i = 0; i < vGamble.size(); i++)
+			iWeightTotal += vGamble[i].m_iWeight;
+
+		if (iWeightTotal <= 0)
+			return 0;
+
+		const int iDenom = (iWeightTotal > 10000) ? iWeightTotal : 10000;
+		const int iRoll = GC.getGame().getJonRandNum(iDenom, "Monaco gold donation gamble");
+
+		int iCumulative = 0;
+		for (size_t i = 0; i < vGamble.size(); i++)
+		{
+			iCumulative += vGamble[i].m_iWeight;
+			if (iRoll < iCumulative)
+				return vGamble[i].m_iMultiplier;
+		}
+
+		return 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// Monaco CS UA: building gold maintenance modifier applied while this player is in a golden age
+	int CvPlayer::GetCSUABuildingMaintenanceMod() const
+	{
+		const int iMod = m_pCityStateUA ? m_pCityStateUA->GetGoldenAgeBuildingMaintenanceMod() : 0;
+		if (iMod == 0 || !isGoldenAge())
+			return 0;
+
+		return iMod;
+	}
+
+	//	------------------------------------------------------------------------
+	// Quebec CS UA: percent by which this player's lifetime culture is inflated when another
+	// civilization computes its culture-victory progress against this player
+	int CvPlayer::GetCSUACultureVictoryProgressModifier() const
+	{
+		return m_pCityStateUA ? m_pCityStateUA->GetCultureVictoryProgressModifier() : 0;
+	}
+
+	//	------------------------------------------------------------------------
+	// CSUA: does any city-state whose UA this player has activated (ally/friend effect) grant the given effect id?
+	bool CvPlayer::HasCSUAEffect(int eEffect) const
+	{
+		if (eEffect < 0)
+			return false;
+
+		for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+		{
+			PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
+			if (!GET_PLAYER(eMinor).isAlive() || !GET_PLAYER(eMinor).isMinorCiv())
+				continue;
+
+			CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+			CvMinorCivInfo* pkMinorCivInfo = GC.getMinorCivInfo(pMinorAI->GetMinorCivType());
+			if (!pkMinorCivInfo)
+				continue;
+
+			const char* szUAType = pkMinorCivInfo->GetUAType();
+			if (!szUAType || szUAType[0] == '\0')
+				continue;
+
+			CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+			if (!pUAEntry)
+				continue;
+
+			if (pMinorAI->IsAllies(GetID()) && pUAEntry->GetAllyEffectID() == eEffect)
+				return true;
+			if (pMinorAI->IsFriends(GetID()) && pUAEntry->GetFriendEffectID() == eEffect)
+				return true;
+		}
+		return false;
+	}
+#endif
 
 //	------------------------------------------------------------------------
 int CvPlayer::GetCSLuxuryHappinessModifier() const
@@ -32741,10 +34264,92 @@ int CvPlayer::GetMaxEffectiveCities(bool bIncludePuppets)
 
 	if (bIncludePuppets)
 	{
-		return m_iMaxEffectiveCities + iNumPuppetCities - iNumNoResearchCostWLKDCity;
+		// A city turned into a puppet in place drops the non-puppet count without ever leaving the empire,
+		// so the stale peak would count it once as a regular city and once again as a puppet. Capping the
+		// peak against the live total keeps the protection for cities that were genuinely lost while never
+		// counting a converted city twice.
+		const int iTotalCities = iNumCities + iNumPuppetCities;
+		const int iEffectiveCities = (m_iMaxEffectiveCities > iTotalCities) ? m_iMaxEffectiveCities : iTotalCities;
+		return iEffectiveCities - iNumNoResearchCostWLKDCity;
 	}
 
 	return m_iMaxEffectiveCities;
+}
+//	--------------------------------------------------------------------------------
+// Research threshold (the city-count tech cost modifier) broken into its component parts, for UI display.
+// Mirrors the threshold math in CvPlayerTechs::GetResearchCost, which calls this function.
+int CvPlayer::GetResearchThresholdMod(int* piModPerCity, int* piEffectiveCities,
+	int* piPuppetDiscount, int* piBuildingClassPercent, int* piGoldenAgePercent)
+{
+	const int iModPerCity = GC.getMap().getWorldInfo().GetNumCitiesTechCostMod();	// Default is 40, gets smaller on larger maps
+	const int iEffectiveCities = GetMaxEffectiveCities(/*bIncludePuppets*/ true);
+	int iMod = iModPerCity * iEffectiveCities;
+
+	int iPuppetDiscount = 0;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Kuala Lumpur CS UA: puppet cities stop (ally) or only half (friend) raising the tech threshold.
+	// The discount is taken off the total modifier rather than off the puppet count, so "half" still
+	// works with a single puppet (iNumPuppets * 50 / 100 would round down to 0 there).
+	{
+		CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+		if (pCSUA != NULL)
+		{
+			int iPuppetPartial = pCSUA->IsPuppetNoTechCostPenalty() ? 0
+			                         : 100 - pCSUA->GetPuppetTechCostPartial();
+			// Guard a stored value above 100, which would drive iPuppetPartial negative and let the
+			// discount exceed the puppet share.
+			if (iPuppetPartial < 0) iPuppetPartial = 0;
+			if (iPuppetPartial < 100)
+			{
+				const int iNumPuppets = pCSUA->GetCachedPuppetCount();
+				if (iNumPuppets > 0)
+				{
+					iPuppetDiscount = iModPerCity * iNumPuppets * (100 - iPuppetPartial) / 100;
+					iMod -= iPuppetDiscount;
+				}
+			}
+		}
+	}
+#endif
+
+	int iBuildingClassPercent = 0;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Singapore CS UA: each owned building class lowers the city-count research threshold by TechCostMod
+	// percent. Clamp the sum at 100 so the threshold can never go negative.
+	{
+		CvPlayerCityStateUA* pCSUA = GetPlayerCityStateUA();
+		if (pCSUA != NULL && pCSUA->HasBuildingClassTechCostModifiers())
+		{
+			const std::vector<BuildingClassTechCostModifierEntry>& vTC = pCSUA->GetBuildingClassTechCostModifiers();
+			int iPercent = 0;
+			for (size_t i = 0; i < vTC.size(); i++)
+				iPercent += getBuildingClassCount((BuildingClassTypes)vTC[i].m_iBuildingClass) * vTC[i].m_iTechCostMod;
+			if (iPercent > 100) iPercent = 100;
+			if (iPercent > 0)
+			{
+				iBuildingClassPercent = iPercent;
+				iMod = iMod * (100 - iPercent) / 100;
+			}
+		}
+	}
+#endif
+
+	int iGoldenAgePercent = 0;
+	if (isGoldenAge())
+	{
+		iGoldenAgePercent = GetPlayerTraits()->GetGoldenAgeResearchCityCountCostModifier();
+		iMod = iMod * (iGoldenAgePercent + 100) / 100;
+	}
+
+	if (piModPerCity != NULL) *piModPerCity = iModPerCity;
+	if (piEffectiveCities != NULL) *piEffectiveCities = iEffectiveCities;
+	if (piPuppetDiscount != NULL) *piPuppetDiscount = iPuppetDiscount;
+	if (piBuildingClassPercent != NULL) *piBuildingClassPercent = iBuildingClassPercent;
+	if (piGoldenAgePercent != NULL) *piGoldenAgePercent = iGoldenAgePercent;
+
+	return iMod;
 }
 //	--------------------------------------------------------------------------------
 /// How many Natural Wonders has this player found in its area?
@@ -33275,6 +34880,12 @@ void CvPlayer::processBelief(BeliefTypes eBelief, int iChange, bool bFirst)
 	if(iGoldenAgeModifier != 0)
 	{
 		changeGoldenAgeModifier(iGoldenAgeModifier * iChange);
+	}
+
+	int iSpyPoints = belief->GetSpyPoints();
+	if(iSpyPoints != 0)
+	{
+		ChangeSpyPointsPerTurn(iSpyPoints * iChange);
 	}
 
 	PromotionTypes eFounderPromotion = (PromotionTypes)belief->GetFounderFreePromotion();
@@ -34987,7 +36598,14 @@ int CvPlayer::GetHappinessFromFaith() const
 		return 0;
 	}
 
-	return m_iGlobalHappinessFromFaithPercent * GetCachedTotalFaithPerTurn() / 100;
+	// Faith income can go negative (e.g. faith tribute to an overlord), which would invert this conversion into a happiness penalty.
+	if (GetCachedTotalFaithPerTurn() <= 0)
+	{
+		return 0;
+	}
+
+	// This conversion is a bonus only - clamp to non-negative so a negative percent can never invert it either.
+	return std::max(0, m_iGlobalHappinessFromFaithPercent * GetCachedTotalFaithPerTurn() / 100);
 }
 
 LuaFormulaTypes CvPlayer::GetCaptureCityResistanceTurnsChangeFormula() const

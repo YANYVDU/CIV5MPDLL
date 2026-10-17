@@ -90,6 +90,7 @@ CvDiplomacyAI::DiplomacyAIData::DiplomacyAIData() :
 	, m_aiNumTimesNuked()
 	, m_aiNumTimesRobbedBy()
 	, m_aiNumTimesIntrigueSharedBy()
+	, m_aiCSUAPlunderedNeutralTradeRoute()
 	, m_abPlayerMadeMilitaryPromise()
 	, m_abPlayerBrokenMilitaryPromise()
 	, m_abPlayerIgnoredMilitaryPromise()
@@ -259,6 +260,7 @@ CvDiplomacyAI::CvDiplomacyAI():
 	m_paiNumTimesNuked(NULL),
 	m_paiNumTimesRobbedBy(NULL),
 	m_paiNumTimesIntrigueSharedBy(NULL),
+	m_paiCSUAPlunderedNeutralTradeRoute(NULL),
 
 	m_paiBrokenExpansionPromiseValue(NULL),
 	m_paiIgnoredExpansionPromiseValue(NULL),
@@ -459,6 +461,7 @@ void CvDiplomacyAI::Init(CvPlayer* pPlayer)
 	m_paiNumTimesNuked = &m_pDiploData->m_aiNumTimesNuked[0];
 	m_paiNumTimesRobbedBy = &m_pDiploData->m_aiNumTimesRobbedBy[0];
 	m_paiNumTimesIntrigueSharedBy = &m_pDiploData->m_aiNumTimesIntrigueSharedBy[0];
+	m_paiCSUAPlunderedNeutralTradeRoute = &m_pDiploData->m_aiCSUAPlunderedNeutralTradeRoute[0];
 
 	m_paiBrokenExpansionPromiseValue = &m_pDiploData->m_aiBrokenExpansionPromiseValue[0];
 	m_paiIgnoredExpansionPromiseValue = &m_pDiploData->m_aiIgnoredExpansionPromiseValue[0];
@@ -713,6 +716,7 @@ void CvDiplomacyAI::Uninit()
 	m_paiNumTimesNuked = NULL;
 	m_paiNumTimesRobbedBy = NULL;
 	m_paiNumTimesIntrigueSharedBy = NULL;
+	m_paiCSUAPlunderedNeutralTradeRoute = NULL;
 
 	m_paiBrokenExpansionPromiseValue = NULL;
 	m_paiIgnoredExpansionPromiseValue = NULL;
@@ -912,6 +916,7 @@ void CvDiplomacyAI::Reset()
 		m_paiNumTimesNuked[iI] = 0;
 		m_paiNumTimesRobbedBy[iI] = 0;
 		m_paiNumTimesIntrigueSharedBy[iI] = 0;
+		m_paiCSUAPlunderedNeutralTradeRoute[iI] = 0;
 
 		m_paiBrokenExpansionPromiseValue[iI] = 0;
 		m_paiIgnoredExpansionPromiseValue[iI] = 0;
@@ -1594,6 +1599,9 @@ void CvDiplomacyAI::Read(FDataStream& kStream)
 	ArrayWrapper<DeclarationLogData> wrapm_paDeclarationsLog(MAX_DIPLO_LOG_STATEMENTS, m_paDeclarationsLog);
 	kStream >> wrapm_paDeclarationsLog;
 	kStream >> m_eStateAllWars;
+
+	// Almaty CSUA: opinion weight from neutral trade-route plundering (appended so older saves skip it)
+	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_paiCSUAPlunderedNeutralTradeRoute, short, MAX_MAJOR_CIVS, 0);
 }
 
 /// Serialization write
@@ -1826,6 +1834,9 @@ void CvDiplomacyAI::Write(FDataStream& kStream) const
 
 	kStream << ArrayWrapper<DeclarationLogData>(MAX_DIPLO_LOG_STATEMENTS, m_paDeclarationsLog);
 	kStream << m_eStateAllWars;
+
+	// Almaty CSUA: opinion weight from neutral trade-route plundering (mirrors the read appended above)
+	MOD_SERIALIZE_WRITE_ARRAY(kStream, m_paiCSUAPlunderedNeutralTradeRoute, short, MAX_MAJOR_CIVS);
 }
 
 //	-----------------------------------------------------------------------------------------------
@@ -2027,6 +2038,13 @@ void CvDiplomacyAI::DoTurn(PlayerTypes eTargetPlayer)
 #endif
 	AI_PERF_FORMAT("AI-perf.csv", ("DiplomacyAI DoTurn, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription()) );
 		m_eTargetPlayer = eTargetPlayer;
+	// Almaty CSUA: the neutral trade-route plunder opinion penalty decays by 1 per turn and is never
+	// reset (not by peace). Runs for every major civ each turn regardless of the target-player scope.
+	for (int iDecayLoop = 0; iDecayLoop < MAX_MAJOR_CIVS; iDecayLoop++)
+	{
+		if (m_paiCSUAPlunderedNeutralTradeRoute[iDecayLoop] > 0)
+			m_paiCSUAPlunderedNeutralTradeRoute[iDecayLoop]--;
+	}
 	// Military Stuff
 	DoWarDamageDecay();
 	DoUpdateWarDamageLevel();
@@ -2552,6 +2570,8 @@ int CvDiplomacyAI::GetMajorCivOpinionWeight(PlayerTypes ePlayer)
 	
 	//iOpinionWeight += GetTimesNukedScore(ePlayer); DUPLICATE of GetNukedScore below. Removing this from scoring.
 	iOpinionWeight += GetTimesRobbedScore(ePlayer);
+	// Almaty CSUA: neutral trade-route plundering (decays 1/turn, never reset)
+	iOpinionWeight += GetCSUAPlunderedTradeRouteScore(ePlayer);
 
 	//////////////////////////////////////
 	// BROKEN PROMISES ;_;
@@ -3908,7 +3928,72 @@ void CvDiplomacyAI::DoUpdateMinorCivApproaches()
 		}
 	}
 #endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11): AI decides whether to join / leave economic aid for each known city-state
+	DoEconomicAidAI();
+#endif
 }
+
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+/// AI decides whether to join or leave economic aid for each known city-state (per turn).
+/// Rule: join when GPT > X*10; leave (non-ally only) when GPT < X*5 and own influence is too low to be worth it.
+void CvDiplomacyAI::DoEconomicAidAI()
+{
+	if(!MOD_SP_UNIQUE_CITYSTATE)
+		return;
+	if(!GC.getGame().IsEconomicAidActive())
+		return;
+
+	// Human players decide participation manually via the city-state diplomacy screen;
+	// never let the shadow AI behind a human player join/leave economic aid for them.
+	if(GetPlayer()->isHuman())
+		return;
+
+	PlayerTypes eMinor;
+	int iX = GC.getGame().GetEconomicAidWorldEra();
+	int iGPT = GetPlayer()->GetTreasury()->CalculateBaseNetGold();
+
+	for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		eMinor = (PlayerTypes) iMinorLoop;
+
+		if(!IsPlayerValid(eMinor))
+			continue;
+
+		CvMinorCivAI* pMinor = GET_PLAYER(eMinor).GetMinorCivAI();
+
+		if(pMinor->IsEconomicAidFromMajor(GetPlayer()->GetID()))
+		{
+			// Already aiding: consider leaving (never leave an ally's aid)
+			if(pMinor->IsAllies(GetPlayer()->GetID()))
+				continue;
+
+			int iMyInfluence = pMinor->GetEffectiveFriendshipWithMajor(GetPlayer()->GetID());
+			int iAllyInfluence = 0;
+			if(pMinor->GetAlly() != NO_PLAYER)
+				iAllyInfluence = pMinor->GetEffectiveFriendshipWithMajor(pMinor->GetAlly());
+			else
+				iAllyInfluence = pMinor->GetAlliesThresholdForPlayer(GetPlayer()->GetID());
+
+			int iThreshold = min(iAllyInfluence / 2, iAllyInfluence - 40);
+			if(iGPT < iX * 5 && iMyInfluence < iThreshold)
+			{
+				pMinor->DoChangeEconomicAidFromMajor(GetPlayer()->GetID(), false, ECON_AID_TERM_PLAYER_QUIT);
+			}
+		}
+		else
+		{
+			// Not aiding: consider joining
+			if(pMinor->CanMajorStartEconomicAid(GetPlayer()->GetID()) && iGPT > iX * 10)
+			{
+				pMinor->DoChangeEconomicAidFromMajor(GetPlayer()->GetID(), true, ECON_AID_TERM_NONE);
+			}
+		}
+	}
+}
+#endif
 
 
 /// What is the best approach to take towards a Minor Civ?  Can also pass in iHighestWeight by reference if you just want to know what the player feels most strongly about without actually caring about WHAT it is
@@ -5930,6 +6015,14 @@ void CvDiplomacyAI::SetMusteringForAttack(PlayerTypes ePlayer, bool bValue)
 /// Player was attacked by another!  Change appropriate Diplomacy stuff
 void CvDiplomacyAI::DoSomeoneDeclaredWarOnMe(TeamTypes eTeam)
 {
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Hanoi CS UA: this player has been declared war on. Any non-barbarian declaration counts,
+	// city-states included (design: "for each time the ally has been declared war on"). Cumulative
+	// and serialized on CvPlayer. This function is invoked once per player on the defending team.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		m_pPlayer->ChangeNumTimesDeclaredWarOn(1);
+#endif
+
 	PlayerTypes eLoopPlayer;
 
 	// Loop through all players on our attacker's Team
@@ -13644,6 +13737,9 @@ void CvDiplomacyAI::DoContactMinorCivs()
 	}
 
 	int iGoldReserve = GetPlayer()->GetTreasury()->GetGold();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int iFaithReserve = GetPlayer()->GetFaith(); // Gangtok CS UA: faith-gift fallback never spends more than half of turn-start faith (mirrors the gold rule)
+#endif
 
 	// Do we want to buyout a minor?
 	if(veMinorsToBuyout.size() > 0)
@@ -13713,6 +13809,35 @@ void CvDiplomacyAI::DoContactMinorCivs()
 			// Can't afford gift yet, so start saving
 			else
 			{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// Gangtok CS UA: when we want to gift gold but can't afford any tier, buy influence with faith instead
+				// (faith price = gold price / divisor, once per turn globally)
+				if (MOD_SP_UNIQUE_CITYSTATE && sGift.iGoldAmount == 0)
+				{
+					int iFaithDivisor = GetPlayer()->GetCSUAFaithInfluencePurchaseCostDivisor();
+					if (iFaithDivisor > 0 && GetPlayer()->GetCSUAFaithInfluencePurchaseRemaining() > 0)
+					{
+						int iFaith = GetPlayer()->GetFaith();
+						int iFaithGiftGold = 0;
+						if (sGift.bQuickBoost && iFaith >= iSmallGift / iFaithDivisor)
+							iFaithGiftGold = iSmallGift;
+						else if (iFaith >= iLargeGift / iFaithDivisor)
+							iFaithGiftGold = iLargeGift;
+						else if (iFaith >= iMediumGift / iFaithDivisor)
+							iFaithGiftGold = iMediumGift;
+
+						// Don't let a single gift cost more than half of our turn-start faith
+						if (iFaithGiftGold > 0 && (iFaithGiftGold / iFaithDivisor) <= (iFaithReserve / 2))
+						{
+							GET_PLAYER(sGift.eMinor).GetMinorCivAI()->DoFaithGiftFromMajor(GetPlayer()->GetID(), iFaithGiftGold);
+							LogMinorCivGiftGold(sGift.eMinor, iOldFriendship, iFaithGiftGold, /*bSaving*/ false, sGift.bQuickBoost, sGift.eMajorRival);
+							if (GetPlayer()->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT))
+								GetPlayer()->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT);
+							continue;
+						}
+					}
+				}
+#endif
 				if(!GetPlayer()->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT))
 				{
 					int iAmountToSaveFor = iMediumGift;
@@ -19845,6 +19970,70 @@ void CvDiplomacyAI::DoFromUIDiploEvent(PlayerTypes eFromPlayer, FromUIDiploEvent
 			break;
 		}
 
+	// *********************************************
+	// Economic Aid (Super Power V11): human joins / leaves a city-state's economic aid.
+	// Routed to the city-state's DiplomacyAI (GetPlayer() is the city-state);
+	// the acting major civ id is carried in iArg1.
+	// *********************************************
+	case FROM_UI_DIPLO_EVENT_HUMAN_JOIN_ECONOMIC_AID:
+	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if(MOD_SP_UNIQUE_CITYSTATE && GetPlayer()->isMinorCiv())
+		{
+			GET_PLAYER(eMyPlayer).GetMinorCivAI()->DoChangeEconomicAidFromMajor((PlayerTypes)iArg1, /*bAid*/ true, ECON_AID_TERM_NONE);
+		}
+#endif
+		break;
+	}
+	case FROM_UI_DIPLO_EVENT_HUMAN_LEAVE_ECONOMIC_AID:
+	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if(MOD_SP_UNIQUE_CITYSTATE && GetPlayer()->isMinorCiv())
+		{
+			GET_PLAYER(eMyPlayer).GetMinorCivAI()->DoChangeEconomicAidFromMajor((PlayerTypes)iArg1, /*bAid*/ false, ECON_AID_TERM_PLAYER_QUIT);
+		}
+#endif
+		break;
+	}
+
+	// Diplomacy Bargain (Super Power V11): a human is trying to swing a diplomatic
+	// bargain against the routed civ. We evaluate it inside the on-host authoritative
+	// command handler so TryDiplomacyBargain's getJonRandNum is consumed in lock-step
+	// across every client (deterministic outcome, safe in multiplayer).
+	case FROM_UI_DIPLO_EVENT_HUMAN_DIPLOMACY_BARGAIN:
+	{
+		CvPlayerEspionage* pkBargainEspionage = GET_PLAYER(eFromPlayer).GetEspionage();
+		if(pkBargainEspionage)
+		{
+			const PlayerTypes eBargainTarget = (PlayerTypes)eMyPlayer;
+			const int iBargainResult = pkBargainEspionage->TryDiplomacyBargain(eBargainTarget);
+
+			// Only the initiating active player needs the outcome feedback.
+			if(bActivePlayer)
+			{
+				CvCity* pBargainCity = GET_PLAYER(eBargainTarget).getCapitalCity();
+				const int iNoticeX = pBargainCity ? pBargainCity->getX() : -1;
+				const int iNoticeY = pBargainCity ? pBargainCity->getY() : -1;
+				CvNotifications* pkNotifications = GET_PLAYER(eFromPlayer).GetNotifications();
+				// Keep the composed String alive for the whole block: toUTF8() returns a pointer
+				// into the String's own buffer, which dies with the temporary at the end of the
+				// statement it was created in.
+				Localization::String strBargainTitle = Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_BUTTON");
+				const char* szBargainTitle = strBargainTitle.toUTF8();
+
+				if(iBargainResult == 1)
+				{
+					pkNotifications->Add(NOTIFICATION_GENERIC, Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_SUCCESS").toUTF8(), szBargainTitle, iNoticeX, iNoticeY, -1);
+				}
+				else if(iBargainResult == 0)
+				{
+					pkNotifications->Add(NOTIFICATION_GENERIC, Localization::Lookup("TXT_KEY_DIPLO_BARGAIN_FAILURE").toUTF8(), szBargainTitle, iNoticeX, iNoticeY, -1);
+				}
+			}
+		}
+		break;
+	}
+
 	// Should always have a state we're handling
 	default:
 		CvAssert(false);
@@ -21571,6 +21760,12 @@ void CvDiplomacyAI::DoDenouncePlayer(PlayerTypes ePlayer)
 	// Block denouncement between overlord and vassal
 	CvPlayer& kMyPlayer = *GetPlayer();
 	if (kMyPlayer.IsVassalOf(ePlayer) || kMyPlayer.IsOverlordOf(ePlayer))
+		return;
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Jerusalem CS UA: a player who is the ally of a DenounceImmunity city-state cannot be denounced
+	if (GET_PLAYER(ePlayer).IsDenounceImmunity())
 		return;
 #endif
 
@@ -23440,6 +23635,36 @@ void CvDiplomacyAI::ChangeNumTimesRobbedBy(PlayerTypes ePlayer, int iChange)
 		m_paiNumTimesRobbedBy[ePlayer] += iChange;
 		CvAssertMsg(m_paiNumTimesRobbedBy[ePlayer] >= 0, "DIPLOMACY_AI: Invalid # of Robbed By returned. Please send slewis this with your last 5 autosaves and what changelist # you're playing.");
 	}
+}
+
+/// Almaty CSUA: opinion weight accumulated from ePlayer plundering our trade routes while neutral.
+int CvDiplomacyAI::GetCSUAPlunderedNeutralTradeRoute(PlayerTypes ePlayer) const
+{
+	CvAssertMsg(ePlayer >= 0, "DIPLOMACY_AI: Invalid Player Index.");
+	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "DIPLOMACY_AI: Invalid Player Index.");
+
+	return m_paiCSUAPlunderedNeutralTradeRoute[ePlayer];
+}
+
+/// Almaty CSUA: add to the accumulated neutral-plunder opinion weight for ePlayer.
+void CvDiplomacyAI::ChangeCSUAPlunderedNeutralTradeRoute(PlayerTypes ePlayer, int iChange)
+{
+	if(iChange != 0)
+	{
+		CvAssertMsg(ePlayer >= 0, "DIPLOMACY_AI: Invalid Player Index.");
+		CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "DIPLOMACY_AI: Invalid Player Index.");
+
+		m_paiCSUAPlunderedNeutralTradeRoute[ePlayer] += iChange;
+		if(m_paiCSUAPlunderedNeutralTradeRoute[ePlayer] < 0)
+			m_paiCSUAPlunderedNeutralTradeRoute[ePlayer] = 0;
+	}
+}
+
+/// Almaty CSUA: opinion score from neutral trade-route plundering by ePlayer (positive = worse opinion).
+/// The stored value is already in opinion-weight units and decays by 1 per turn, never reset.
+int CvDiplomacyAI::GetCSUAPlunderedTradeRouteScore(PlayerTypes ePlayer) const
+{
+	return GetCSUAPlunderedNeutralTradeRoute(ePlayer);
 }
 
 /// Intrigue was shared by the player?

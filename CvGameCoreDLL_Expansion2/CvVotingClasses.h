@@ -588,6 +588,8 @@ public:
 	int GetWorldWonderYieldChange(YieldTypes eYield);
 	bool IsNoTrainingNuclearWeapons();
 	int GetExtraVotesForFollowingReligion(PlayerTypes ePlayer);
+	// Vatican CS UA: Papal Recognition league delegate votes (1 = +1 vote per recognizing civilization)
+	int GetPapalRecognitionVotes(PlayerTypes ePlayer);
 	int GetCityTourismModifier(const CvCity* pCity);
 	int GetReligionSpreadStrengthModifier(ReligionTypes eReligion);
 	int GetExtraVotesForFollowingIdeology(PlayerTypes ePlayer);
@@ -1289,6 +1291,16 @@ public:
 	bool IsVassalForcePeace() const;
 	bool IsVassalNoDenounce() const;
 	bool IsVassalGetUC() const;
+	bool IsVassalCountPermanentAllyCities() const;
+	bool IsVassalCountVassalCities() const;
+	bool IsVassalCountPermanentAllyPopulation() const;
+	bool IsVassalCountVassalPopulation() const;
+	bool IsVassalCountVassalMilitaryMight() const;
+	int GetVassalPermanentAllyCitiesPercent() const;
+	int GetVassalVassalCitiesPercent() const;
+	int GetVassalPermanentAllyPopulationPercent() const;
+	int GetVassalVassalPopulationPercent() const;
+	int GetVassalVassalMilitaryMightPercent() const;
 #endif
 protected:
 	ResolutionDecisionTypes m_eVoterDecision;
@@ -1339,6 +1351,16 @@ protected:
 	bool m_bVassalForcePeace;
 	bool m_bVassalNoDenounce;
 	bool m_bVassalGetUC;
+	bool m_bVassalCountPermanentAllyCities;
+	bool m_bVassalCountVassalCities;
+	bool m_bVassalCountPermanentAllyPopulation;
+	bool m_bVassalCountVassalPopulation;
+	bool m_bVassalCountVassalMilitaryMight;
+	int m_iVassalPermanentAllyCitiesPercent;
+	int m_iVassalVassalCitiesPercent;
+	int m_iVassalPermanentAllyPopulationPercent;
+	int m_iVassalVassalPopulationPercent;
+	int m_iVassalVassalMilitaryMightPercent;
 #endif
 
 private:

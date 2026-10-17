@@ -21,6 +21,7 @@ enum CvSpyRank
     SPY_RANK_RECRUIT,
     SPY_RANK_AGENT,
     SPY_RANK_SPECIAL_AGENT,
+    SPY_RANK_MASTER_SPY,
     NUM_SPY_RANKS
 };
 
@@ -92,6 +93,10 @@ public:
 #if defined(MOD_API_ESPIONAGE)
 	bool m_bPassive;
 #endif
+	// Master Spy promotion conditions (rank 2 -> 3 requires all three)
+	bool m_bHasStolenTech;
+	bool m_bHasKilledSpy;
+	bool m_bHasCoupSuccess;
 };
 
 FDataStream& operator>>(FDataStream&, CvEspionageSpy&);
@@ -139,6 +144,21 @@ typedef FStaticVector<int, MAX_MAJOR_CIVS, false, c_eCiv5GameplayDLL> NumTechsTo
 typedef Firaxis::Array<int, MAX_MAJOR_CIVS> MaxTechCost;
 typedef Firaxis::Array<std::vector<HeistLocation>, MAX_MAJOR_CIVS> HeistLocationList;
 
+// Breakdown of the per-turn gathering intel (steal tech) production, exposed to UI tooltips
+struct SpyGatheringIntelInfo
+{
+	int iBaseRate;          // base = city science * rate base percent * game speed spy rate (x100)
+	int iCityMod;           // target city buildings espionage modifier
+	int iPlayerMod;         // target civilization global espionage modifier (e.g. Great Firewall -25)
+	int iTheirPolicyMod;    // target civilization STEAL_TECH_SLOWER policy modifier (negative)
+	int iMyPolicyMod;       // my STEAL_TECH_FASTER policy modifier (city-state UA excluded)
+	int iCSUAMod;           // city-state UA: StealTechSpeedPerSpy * alive spies
+	int iSpyRank;           // effective spy rank (includes culture influence bonus)
+	int iSpyRankMod;        // spy rank percent modifier
+	int iSpeedMod;          // my global espionage speed modifier
+	int iResult;            // final per-turn production
+};
+
 class CvPlayerEspionage
 {
 public:
@@ -179,6 +199,7 @@ public:
 
 	int CalcPerTurn(int iSpyState, CvCity* pCity, int iSpyIndex);
 	int CalcRequired(int iSpyState, CvCity* pCity, int iSpyIndex);
+	int CalcGatheringIntelPerTurn(CvCity* pCity, int iSpyIndex, SpyGatheringIntelInfo* pkInfo = NULL);
 
 	const char* GetSpyRankName(int iRank) const;
 
@@ -209,6 +230,21 @@ public:
 
 	bool IsMyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
 	bool IsOtherDiplomatVisitingMe(PlayerTypes ePlayer);
+	int GetSpyRankVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
+	// Master Spy helpers
+	int GetNumMasterSpyCounterIntel() const;
+	bool HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bool bIncludeTravelling = false);
+	// Diplomacy Bargain: using a stationed diplomat to boost the value of our GPT during this turn's AI valuation
+	bool HasDiplomacyBargainBuff(PlayerTypes eTargetPlayer) const;
+	int  GetDiplomacyBargainCooldown(PlayerTypes eTargetPlayer) const;
+	int  GetDiplomacyBargainChance(PlayerTypes eTargetPlayer);
+	int  TryDiplomacyBargain(PlayerTypes eTargetPlayer);
+	void ClearDiplomacyBargainBuff(PlayerTypes eTargetPlayer);
+	// Diplomacy Bargain dishonesty punishment: remember a deal struck while our bargaining buff was active on eTargetPlayer,
+	// and demote the diplomat stationed there if we later cheat on that deal (dishonesty counter).
+	void MarkDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer);
+	bool HasDiplomacyBargainOnDeal(PlayerTypes eTargetPlayer) const;
+	bool DemoteDiplomatToRecruit(PlayerTypes eTargetPlayer);
 
 	void AddSpyMessage(int iCityX, int iCityY, PlayerTypes ePlayer, int iSpyResult, TechTypes eStolenTech);
 	void ProcessSpyMessages(void);
@@ -234,6 +270,10 @@ public:
 	HeistLocationList m_aHeistLocations;
 	std::vector<SpyNotificationMessage> m_aSpyNotificationMessages; // cleared every turn after displayed for the player
 	std::vector<IntrigueNotificationMessage> m_aIntrigueNotificationMessages; // cleared only between games
+	// Diplomacy Bargain: per-target-player cooldown turns (0 = ready) and the game turn the buff was activated (-1 = inactive)
+	int m_aiDiplomacyBargainCooldown[MAX_MAJOR_CIVS];
+	int m_aiDiplomacyBargainBuffTurn[MAX_MAJOR_CIVS];
+	bool m_abDiplomacyBargainDeal[MAX_MAJOR_CIVS]; // a deal was struck while our bargaining buff was active on this target
 
 private:
 	CvPlayer* m_pPlayer;

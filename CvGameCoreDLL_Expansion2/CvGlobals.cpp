@@ -349,6 +349,7 @@ CvGlobals::CvGlobals() :
 	m_iMINOR_FRIENDSHIP_DROP_PER_TURN_HOSTILE(-150),
 	m_iMINOR_FRIENDSHIP_DROP_PER_TURN_AGGRESSOR(-200),
 	m_iMINOR_FRIENDSHIP_DROP_DISHONOR_PLEDGE_TO_PROTECT(-2000),
+	m_iECONOMIC_AID_ROUND_LENGTH(20),
 	m_iMINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS(-1500),
 	m_iMINOR_FRIENDSHIP_DROP_BULLY_GOLD_FAILURE(0),
 	m_iMINOR_FRIENDSHIP_DROP_BULLY_WORKER_SUCCESS(-5000),
@@ -1549,6 +1550,7 @@ CvGlobals::CvGlobals() :
 	m_iMINOR_FRIENDSHIP_ANCHOR_DEFAULT(0),
 	m_iMINOR_FRIENDSHIP_ANCHOR_MOD_PROTECTED(10),
 	m_iMINOR_FRIENDSHIP_ANCHOR_MOD_WARY_OF(-20),
+	m_iMINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID(20),
 	m_iMINOR_UNIT_GIFT_TRAVEL_TURNS(3),
 	m_iPLOT_UNIT_LIMIT(1),
 	m_iZONE_OF_CONTROL_ENABLED(1),
@@ -1622,6 +1624,8 @@ CvGlobals::CvGlobals() :
 	m_iGREAT_GENERALS_THRESHOLD_INCREASE(50),
 	m_iGREAT_GENERALS_THRESHOLD_INCREASE_TEAM(50),
 	m_iGREAT_GENERALS_THRESHOLD(200),
+	m_iSPY_POINTS_THRESHOLD_BASE(100),
+	m_iSPY_POINTS_THRESHOLD_INCREASE(50),
 	m_iUNIT_DEATH_XP_GREAT_GENERAL_LOSS(50),
 	m_iMIN_EXPERIENCE_PER_COMBAT(1),
 	m_iMAX_EXPERIENCE_PER_COMBAT(10),
@@ -1995,6 +1999,7 @@ CvGlobals::CvGlobals() :
 	m_pTechs(NULL),
 	m_pBuildings(NULL),
 	m_pCityStateUAEffects(NULL),
+	m_pCityStateUASpecialCityTypes(NULL),
 	m_pCityStateUAs(NULL),
 	m_pEmphases(NULL),
 	m_pTraits(NULL),
@@ -2043,7 +2048,15 @@ void CreateMiniDump(EXCEPTION_POINTERS *pep)
 	mdei.ExceptionPointers  = pep;
 	mdei.ClientPointers     = FALSE;
 
-	MINIDUMP_TYPE mdt       = MiniDumpNormal;
+	// We write the dump on the crashing thread itself, so MiniDumpWriteDump pushes
+	// a few extra frames onto the faulting stack.  To still be able to unwind the
+	// REAL load-game (deserialization) call chain afterwards we must:
+	//   1) keep the full stack (MiniDumpWithFullMemory), not just a small slice,
+	//   2) record every thread's raw stack + register context
+	//      (MiniDumpWithProcessThreadData),
+	//   3) keep the original crashing CONTEXT (this is already captured into the
+	//      exception stream because mdei.ExceptionPointers = pep points at it).
+	MINIDUMP_TYPE mdt       = (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithFullMemory | MiniDumpWithProcessThreadData);
 
 	MINIDUMP_USER_STREAM userStream;
 	userStream.Type = CommentStreamA;
@@ -2286,6 +2299,7 @@ void CvGlobals::init()
 	m_pTechs = FNEW(CvTechXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pBuildings = FNEW(CvBuildingXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pCityStateUAEffects = FNEW(CvCityStateUAEffectXMLEntries, c_eCiv5GameplayDLL, 0);
+	m_pCityStateUASpecialCityTypes = FNEW(CvCityStateUASpecialCityTypeXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pCityStateUAs = FNEW(CvCityStateUAXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pUnits = FNEW(CvUnitXMLEntries, c_eCiv5GameplayDLL, 0);
 	m_pProjects = FNEW(CvProjectXMLEntries, c_eCiv5GameplayDLL, 0);
@@ -2388,6 +2402,7 @@ void CvGlobals::uninit()
 	SAFE_DELETE(m_pPolicies);
 	SAFE_DELETE(m_pBuildings);
 	SAFE_DELETE(m_pCityStateUAEffects);
+	SAFE_DELETE(m_pCityStateUASpecialCityTypes);
 	SAFE_DELETE(m_pCityStateUAs);
 	SAFE_DELETE(m_pUnits);
 	SAFE_DELETE(m_pProjects);
@@ -4121,6 +4136,10 @@ CvCityStateUAEffectXMLEntries* CvGlobals::GetGameCityStateUAEffects() const
 {
 	return m_pCityStateUAEffects;
 }
+CvCityStateUASpecialCityTypeXMLEntries* CvGlobals::GetGameCityStateUASpecialCityTypes() const
+{
+	return m_pCityStateUASpecialCityTypes;
+}
 CvCityStateUAXMLEntries* CvGlobals::GetGameCityStateUAs() const
 {
 	return m_pCityStateUAs;
@@ -4933,6 +4952,14 @@ void CvGlobals::cacheGlobals()
 	m_iMINOR_FRIENDSHIP_DROP_PER_TURN_HOSTILE = getDefineINT("MINOR_FRIENDSHIP_DROP_PER_TURN_HOSTILE");
 	m_iMINOR_FRIENDSHIP_DROP_PER_TURN_AGGRESSOR = getDefineINT("MINOR_FRIENDSHIP_DROP_PER_TURN_AGGRESSOR");
 	m_iMINOR_FRIENDSHIP_DROP_DISHONOR_PLEDGE_TO_PROTECT = getDefineINT("MINOR_FRIENDSHIP_DROP_DISHONOR_PLEDGE_TO_PROTECT");
+	// Economic Aid: keep the constructor default (20) if the define is missing (e.g. a DLL-only setup)
+	{
+		int iEconomicAidRoundLength = 0;
+		if (getDefineValue("ECONOMIC_AID_ROUND_LENGTH", iEconomicAidRoundLength, /*bReportErrors*/ false))
+		{
+			m_iECONOMIC_AID_ROUND_LENGTH = iEconomicAidRoundLength;
+		}
+	}
 	m_iMINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS = getDefineINT("MINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS");
 	m_iMINOR_FRIENDSHIP_DROP_BULLY_GOLD_FAILURE = getDefineINT("MINOR_FRIENDSHIP_DROP_BULLY_GOLD_FAILURE");
 	m_iMINOR_FRIENDSHIP_DROP_BULLY_WORKER_SUCCESS = getDefineINT("MINOR_FRIENDSHIP_DROP_BULLY_WORKER_SUCCESS");
@@ -6143,6 +6170,7 @@ void CvGlobals::cacheGlobals()
 	m_iMINOR_FRIENDSHIP_ANCHOR_DEFAULT = getDefineINT("MINOR_FRIENDSHIP_ANCHOR_DEFAULT");
 	m_iMINOR_FRIENDSHIP_ANCHOR_MOD_PROTECTED = getDefineINT("MINOR_FRIENDSHIP_ANCHOR_MOD_PROTECTED");
 	m_iMINOR_FRIENDSHIP_ANCHOR_MOD_WARY_OF = getDefineINT("MINOR_FRIENDSHIP_ANCHOR_MOD_WARY_OF");
+	m_iMINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID = getDefineINT("MINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID");
 	m_iMINOR_UNIT_GIFT_TRAVEL_TURNS = getDefineINT("MINOR_UNIT_GIFT_TRAVEL_TURNS");
 	m_iPLOT_UNIT_LIMIT = getDefineINT("PLOT_UNIT_LIMIT");
 	m_iZONE_OF_CONTROL_ENABLED = getDefineINT("ZONE_OF_CONTROL_ENABLED");
@@ -6211,6 +6239,8 @@ void CvGlobals::cacheGlobals()
 	m_iGREAT_GENERALS_THRESHOLD_INCREASE = getDefineINT("GREAT_GENERALS_THRESHOLD_INCREASE");
 	m_iGREAT_GENERALS_THRESHOLD_INCREASE_TEAM = getDefineINT("GREAT_GENERALS_THRESHOLD_INCREASE_TEAM");
 	m_iGREAT_GENERALS_THRESHOLD = getDefineINT("GREAT_GENERALS_THRESHOLD");
+	m_iSPY_POINTS_THRESHOLD_BASE = getDefineINT("SPY_POINTS_THRESHOLD_BASE");
+	m_iSPY_POINTS_THRESHOLD_INCREASE = getDefineINT("SPY_POINTS_THRESHOLD_INCREASE");
 	m_iUNIT_DEATH_XP_GREAT_GENERAL_LOSS = getDefineINT("UNIT_DEATH_XP_GREAT_GENERAL_LOSS");
 	m_iMIN_EXPERIENCE_PER_COMBAT = getDefineINT("MIN_EXPERIENCE_PER_COMBAT");
 	m_iMAX_EXPERIENCE_PER_COMBAT = getDefineINT("MAX_EXPERIENCE_PER_COMBAT");

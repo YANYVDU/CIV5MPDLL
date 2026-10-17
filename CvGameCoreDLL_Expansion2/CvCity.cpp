@@ -1645,6 +1645,8 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	m_bCanDoImmigration = true;
 	m_iNumAllScaleImmigrantIn = 0;
+	m_iTotalImmigrantsReceived = 0;
+	m_iTotalImmigrantsEmigrated = 0;
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	m_eCityScale = NO_CITY_SCALE;
@@ -3547,6 +3549,13 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 	{
 		return false;
 	}
+	// CSUA special building: requires the player to have activated the prereq effect (e.g. Kathmandu ally UA)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pkBuildingInfo->GetPrereqEffect() >= 0 && !kPlayer.HasCSUAEffect(pkBuildingInfo->GetPrereqEffect()))
+	{
+		return false;
+	}
+#endif
 	// Holy city requirement
 	if (pkBuildingInfo->IsRequiresHolyCity() && !GetCityReligions()->IsHolyCityAnyReligion())
 	{
@@ -6229,8 +6238,28 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 										iCost = iCostPrev + iDelta * (100 + iMod) / 100;
 									}
 								}
+						}
+						}
+#endif
+					// Ife UA: per-unitclass FAITH great-people final-cost discount (negative = discount).
+					// Deliberately outside the Florence/iNum block above so it applies to EVERY purchase of this
+					// unit class (including the first, iNum == 0), as a final-price correction applied after all
+					// other modifiers (era rise, policy, Florence) so the more the base cost rises the more offsets.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+					if (MOD_SP_UNIQUE_CITYSTATE && iCost > 0)
+					{
+						CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+						if (pCSUA)
+						{
+							int iIfeClassMod = pCSUA->GetFaithGPClassCostModifier((UnitClassTypes)eUnitClass);
+							if (iIfeClassMod < 0)
+							{
+								const int iIfeCap = 90;  // Ife design: final-cost discount cap -90%
+								if (iIfeClassMod < -iIfeCap) iIfeClassMod = -iIfeCap;
+								iCost = iCost * (100 + iIfeClassMod) / 100;
 							}
 						}
+					}
 #endif
 				}
 			}
@@ -6275,6 +6304,24 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 #endif
 			iCost = iCost * iModifier / 100;
 		}
+		// Ife UA: per-unitclass FAITH cost discount for non-great-people units (negative = discount)
+		// Applied last, after all other modifiers above, so it is a final-price correction.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE && iCost > 0)
+		{
+			CvPlayerCityStateUA* pCSUA = kPlayer.GetPlayerCityStateUA();
+			if (pCSUA)
+			{
+				int iIfeClassMod = pCSUA->GetFaithGPClassCostModifier((UnitClassTypes)pkUnitInfo->GetUnitClassType());
+				if (iIfeClassMod < 0)
+				{
+					const int iIfeCap = 90;  // Ife design: final-cost discount cap -90%
+					if (iIfeClassMod < -iIfeCap) iIfeClassMod = -iIfeCap;
+					iCost = iCost * (100 + iIfeClassMod) / 100;
+				}
+			}
+		}
+#endif
 	}
 
 	// Adjust for game speed
@@ -8073,7 +8120,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 				int iGlobalValue = pBuildingInfo->GetSpecialistYieldModifierGlobal(eSpecialist, eYield2);
 				if (iGlobalValue > 0)
 				{
-					GET_PLAYER(getOwner()).ChangeYieldModifierFromSpecialistGlobal(eSpecialist, eYield2, iGlobalValue);
+					GET_PLAYER(getOwner()).ChangeYieldModifierFromSpecialistGlobal(eSpecialist, eYield2, iGlobalValue * iChange);
 					int iLoop = 0;
 					for (CvCity* pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
 					{
@@ -8189,7 +8236,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 				if(iCulture != 0)
 				{
-					ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, iCulture * m_paiNumResourcesLocal[eResource]);
+					ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, iCulture * m_paiNumResourcesLocal[eResource] * iChange);
 				}
 
 				// What about faith?
@@ -8197,7 +8244,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 				if(iFaith != 0)
 				{
-					ChangeBaseYieldRateFromBuildings(YIELD_FAITH, iFaith* m_paiNumResourcesLocal[eResource]);
+					ChangeBaseYieldRateFromBuildings(YIELD_FAITH, iFaith* m_paiNumResourcesLocal[eResource] * iChange);
 				}
 			}
 		}
@@ -8285,7 +8332,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 			if (iBuildingCulture > 0)
 			{
-				ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, owningPlayer.GetPlayerTraits()->GetCultureBuildingYieldChange());
+				ChangeBaseYieldRateFromBuildings(YIELD_CULTURE, owningPlayer.GetPlayerTraits()->GetCultureBuildingYieldChange() * iChange);
 				//iBuildingCulture += owningPlayer.GetPlayerTraits()->GetCultureBuildingYieldChange();
 			}
 
@@ -8334,7 +8381,7 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 				int iGlobalConversionYield = pBuildingInfo->GetYieldFromYieldGlobal(eYield, eYield2);
 				if (iGlobalConversionYield > 0)
 				{
-					GET_PLAYER(getOwner()).changeYieldFromYieldGlobal(eYield, eYield2, iGlobalConversionYield);
+					GET_PLAYER(getOwner()).changeYieldFromYieldGlobal(eYield, eYield2, iGlobalConversionYield * iChange);
 					int iLoop = 0;
 					for (CvCity* pLoopCity = GET_PLAYER(getOwner()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwner()).nextCity(&iLoop))
 					{
@@ -8678,22 +8725,7 @@ void CvCity::processSpecialist(SpecialistTypes eSpecialist, int iChange)
 	for(iI = 0; iI < NUM_YIELD_TYPES; iI++)
 	{
 		int iSpecialistYield = pkSpecialist->getYieldChange(iI);
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-		if (MOD_SP_UNIQUE_CITYSTATE)
-		{
-			CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
-			if (pUA)
-			{
-				int iBornYield = pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, (YieldTypes)iI);
-				if (iBornYield > 0)
-				{
-					LOGFILEMGR.GetLog("Zurich_debug.log", FILogFile::kDontTimeStamp)->Msg("processSpecialist: Specialst=%d Yield=%d BornYield=%d", (int)eSpecialist, iI, iBornYield);
-				}
-				iSpecialistYield += iBornYield;
-			}
-		}
-#endif
-	ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (iSpecialistYield * iChange));
+		ChangeBaseYieldRateFromSpecialists(((YieldTypes)iI), (iSpecialistYield * iChange));
 
 		//int globalModifier = GET_PLAYER(getOwner()).GetYieldModifierFromSpecialistGlobal(eSpecialist, ((YieldTypes)iI));
 		int LocalModifier = getYieldModifierFromSpecialist(eSpecialist, ((YieldTypes)iI));
@@ -10388,7 +10420,25 @@ void CvCity::changeBaseGreatPeopleRate(int iChange)
 int CvCity::getGreatPeopleRateModifier() const
 {
 	VALIDATE_OBJECT
-	return m_iGreatPeopleRateModifier;
+	int iModifier = m_iGreatPeopleRateModifier;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// La Venta CS UA: +X% great-person rate per masterpiece/artifact the player owns (global count, all cities).
+	// Kept here (not in getTotalGreatPeopleRateModifier) so it also shows up in the great-person progress UI
+	// and AI city/population scoring, which read this city-level modifier directly.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		iModifier += GET_PLAYER(getOwner()).GetCSUAGreatPersonRateModifierFromGreatWorks();
+	}
+	// Kiev CS UA: +X% great-person rate per national wonder the player has completed (global count, all cities).
+	// Same rationale as the La Venta bonus above.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		iModifier += GET_PLAYER(getOwner()).GetCSUAGreatPersonRateModifierFromNationalWonders();
+	}
+#endif
+
+	return iModifier;
 }
 
 
@@ -10694,6 +10744,14 @@ int CvCity::getJONSCulturePerTurn(bool bStatic) const
 	iCulture *= iModifier;
 	iCulture /= 100;
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//Mogadishu: culture has its own per-turn function that parallels getBaseYieldRate, so the UCS
+	//conversion is added here as a final value (after the culture modifiers). Adding it inside the
+	//base-yield accumulation would let those modifiers scale the converted amount.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		iCulture += GetYieldRateFromUCSConversion(YIELD_CULTURE);
+#endif
+
 	return iCulture;
 }
 
@@ -10996,6 +11054,14 @@ int CvCity::GetFaithPerTurn(bool bStatic) const
 		iFaith *= (100 + iModifier);
 		iFaith /= 100;
 	}
+#endif
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//CityState UA: faith has its own per-turn function that parallels getBaseYieldRate, so the UCS
+	//conversion is added here as a final value (after the faith modifiers). Adding it inside the
+	//base-yield accumulation would let those modifiers scale the converted amount.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+		iFaith += GetYieldRateFromUCSConversion(YIELD_FAITH);
 #endif
 
 	return iFaith;
@@ -12710,6 +12776,18 @@ int CvCity::GetLocalHappiness() const
 			}
 		}
 	}
+	// CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
+	if (pCityStateUA && pCityStateUA->HasBuildingClassHappiness())
+	{
+		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+		{
+			int iBCHappy = pCityStateUA->GetBuildingClassHappiness((BuildingClassTypes)iBC);
+			if (iBCHappy != 0)
+			{
+				iLocalHappiness += iBCHappy * GetNumBuildingClass((BuildingClassTypes)iBC);
+			}
+		}
+	}
 #endif
 
 	if (GetWeLoveTheKingDayCounter() > 0)
@@ -12726,6 +12804,18 @@ int CvCity::GetLocalHappiness() const
 		iLocalHappinessCap = (iLocalHappinessCap * 20) + 15;
 		iLocalHappinessCap /= 30;
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// CityState UA (Ragusa): percent modifier on the city's local-happiness cap
+	if (pCityStateUA)
+	{
+		int iCapMod = pCityStateUA->GetLocalHappinessCapModifier();
+		if (iCapMod != 0)
+		{
+			iLocalHappinessCap = iLocalHappinessCap * (100 + iCapMod) / 100;
+		}
+	}
+#endif
 
 	if(iLocalHappinessCap < iLocalHappiness)
 	{
@@ -13493,6 +13583,42 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	}
 #endif
 
+	//CityState UA (Bogota): a city matching a special city type grants a yield percentage modifier.
+	//Reads the per-turn cache (CvPlayerCityStateUA::CacheSpecialCityMatches) instead of re-running the
+	//predicate, which scans every plot of the city for each yield type.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pCityStateUA && pCityStateUA->HasSpecialCityYieldModifiers())
+	{
+		const std::vector<SpecialCityYieldModifierEntry>& vSpecialCityMods = pCityStateUA->GetSpecialCityYieldModifiers();
+		for (size_t i = 0; i < vSpecialCityMods.size(); i++)
+		{
+			if (vSpecialCityMods[i].m_iYieldType != (int)eIndex) continue;
+			if (pCityStateUA->IsCachedSpecialCityTypeMatch(GetID(), vSpecialCityMods[i].m_iSpecialCityType))
+			{
+				iModifier += vSpecialCityMods[i].m_iYieldMod;
+				if (toolTipSink)
+					GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_YIELD", vSpecialCityMods[i].m_iYieldMod);
+			}
+		}
+	}
+#endif
+
+	//CityState UA (Bratislava): the capital and the second capital grant a culture percentage modifier.
+	//Reported under the city-state modifier line (like the Jerusalem/Vatican capital effects below), not the
+	//generic yield-modifier line, because the bonus is tied to the city's capital status rather than the yield itself.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (pCityStateUA && eIndex == YIELD_CULTURE && (isCapital() || IsSecondCapital()))
+	{
+		const int iCapitalCultureMod = pCityStateUA->GetCapitalAndSecondCapitalCultureModifier();
+		if (iCapitalCultureMod != 0)
+		{
+			iModifier += iCapitalCultureMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iCapitalCultureMod);
+		}
+	}
+#endif
+
 	//CityState UA (Antananarivo): each worked plot holding a configured improvement grants a yield percentage modifier
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (pCityStateUA && pCityStateUA->HasImprovementYieldModifiers())
@@ -13524,6 +13650,47 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 		iModifier += iTempMod;
 		if (toolTipSink)
 			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+	}
+#endif
+
+	//CityState UA (Sydney): per immigrant received, a yield % modifier (per YieldType, applied per city for the tooltip)
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	iTempMod = owner.GetCSUAImmigrantYieldModifierFromImmigrants(eIndex);
+	if (iTempMod != 0)
+	{
+		iModifier += iTempMod;
+		if (toolTipSink)
+			GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+	}
+#endif
+
+	//CityState UA (Jerusalem/Wittenberg): per city worldwide following the player's religion, capital gains a yield % modifier
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (isCapital())
+	{
+		iTempMod = owner.GetCSUACapitalYieldModifierPerFollowingCity(eIndex);
+		if (iTempMod != 0)
+		{
+			iModifier += iTempMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+		}
+	}
+#endif
+
+	//CityState UA (Vatican): per city worldwide following the player's religion, the holy city of the founded religion gains a yield % modifier.
+	//O(1) holy-city check runs first so non-holy cities skip the full-map following-city scan inside GetCSUAHolyCityYieldModifierPerFollowingCity.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	ReligionTypes eFounded = owner.GetReligions()->GetReligionCreatedByPlayer();
+	if (eFounded != NO_RELIGION && GetCityReligions()->IsHolyCityForReligion(eFounded))
+	{
+		iTempMod = owner.GetCSUAHolyCityYieldModifierPerFollowingCity(eIndex);
+		if (iTempMod != 0)
+		{
+			iModifier += iTempMod;
+			if (toolTipSink)
+				GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CITYSTATE_UA", iTempMod);
+		}
 	}
 #endif
 
@@ -14062,6 +14229,16 @@ int CvCity::getBasicYieldRateTimes100(const YieldTypes eIndex, const bool bIgnor
 		iModifiedYield += iTradeYield;
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	//CityState UA: a yield converted from other yields is a final value. It must not be scaled by
+	//this yield's percentage modifiers, so it is added only after getBaseYieldRateModifier has been
+	//applied. bIgnoreFromOtherYield stays guarded to keep the conversion source free of recursion.
+	if (MOD_SP_UNIQUE_CITYSTATE && !bIgnoreFromOtherYield)
+	{
+		iModifiedYield += GetYieldRateFromUCSConversion(eIndex) * 100;
+	}
+#endif
+
 	return iModifiedYield;
 }
 
@@ -14148,13 +14325,6 @@ int CvCity::getBaseYieldRate(YieldTypes eIndex, const bool bIgnoreFromOtherYield
 	if (MOD_BUILDINGS_YIELD_FROM_OTHER_YIELD && !bIgnoreFromOtherYield)
 	{
 		iValue += GetBaseYieldRateFromOtherYield(eIndex);
-	}
-#endif
-
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (MOD_SP_UNIQUE_CITYSTATE && !bIgnoreFromOtherYield)
-	{
-		iValue += GetYieldRateFromUCSConversion(eIndex);
 	}
 #endif
 
@@ -15120,9 +15290,12 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 		if (!pEffectEntry)
 			continue;
 
-		// the conversion only applies to cities that actually run a trade route to this city-state
-		if (!GET_PLAYER(ePlayer).GetTrade()->HasTradeRouteToPlayer(this, eMinor))
-			continue;
+		// Colombo / Cape Town: entries with RequireRouteToThisCS=1 require a trade route TO this
+		// city-state. Mogadishu: entries with RequireRouteToThisCS=0 apply to any international trade
+		// route originating from this city (city-state destinations included). Each predicate is
+		// evaluated at most once per city-state, lazily (-1 = not yet computed).
+		int iHasRouteToThisCS = -1;
+		int iHasAnyIntlRoute = -1;
 
 		// iterate all input yields that convert into the requested OUT yield; the source
 		// base yield is computed without other-yield conversions to avoid recursion
@@ -15132,8 +15305,37 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 			if (iPercent <= 0)
 				continue;
 
+			if (pEffectEntry->YieldToYieldViaTRToUCSRequiresRouteToThisCS((YieldTypes)iIn, eYield))
+			{
+				if (iHasRouteToThisCS < 0)
+					iHasRouteToThisCS = GET_PLAYER(ePlayer).GetTrade()->HasTradeRouteToPlayer(this, eMinor) ? 1 : 0;
+				if (iHasRouteToThisCS == 0)
+					continue;
+			}
+			else
+			{
+				if (iHasAnyIntlRoute < 0)
+					iHasAnyIntlRoute = GET_PLAYER(ePlayer).GetTrade()->HasInternationalTradeRouteFromCity(this) ? 1 : 0;
+				if (iHasAnyIntlRoute == 0)
+					continue;
+			}
+
 			int iInBase = getBasicYieldRateTimes100((YieldTypes)iIn, false, true) / 100;
 			iResult += (iInBase * iPercent) / 100;
+		}
+
+		// Monaco: unconditional yield-to-yield conversion (no trade route required). For YIELD_TOURISM the
+		// source is the city's total tourism (incl. great works); other inputs use the standard base rate.
+		for (int iIn = 0; iIn < NUM_YIELD_TYPES; iIn++)
+		{
+			int iMod = pEffectEntry->GetYieldToYield((YieldTypes)iIn, eYield);
+			if (iMod <= 0)
+				continue;
+
+			int iInBase = ((YieldTypes)iIn == YIELD_TOURISM)
+				? GetBaseTourism()
+				: getBasicYieldRateTimes100((YieldTypes)iIn, false, true) / 100;
+			iResult += (iInBase * iMod) / 100;
 		}
 	}
 
@@ -15948,6 +16150,15 @@ int CvCity::getExtraYieldPerSpecialist(YieldTypes eIndex, SpecialistTypes eSpeci
 		}
 	}
 #endif
+	// Born-great-person specialist yield (Zurich CS UA): per-specialist yield derived from
+	// the count of great persons born. Kept dynamic and synced into the city yield through
+	// updateExtraSpecialistYield (delta-based), so it never stacks per turn and self-heals
+	// on load.
+	CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pUA)
+	{
+		iYieldMultiplier += pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, eIndex);
+	}
 	return iYieldMultiplier;
 }
 
@@ -15967,14 +16178,6 @@ int CvCity::getSpecialistYield(YieldTypes eIndex, SpecialistTypes eSpecialist) c
 	}
 	int iRtnValue = pkSpecialistInfo->getYieldChange(eIndex);
 	iRtnValue += getExtraYieldPerSpecialist(eIndex, eSpecialist);
-#if defined(MOD_SP_UNIQUE_CITYSTATE)
-	if (MOD_SP_UNIQUE_CITYSTATE)
-	{
-		CvPlayerCityStateUA* pUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
-		if (pUA)
-			iRtnValue += pUA->GetSpecialistYieldFromBornGreatPerson(eSpecialist, eIndex);
-	}
-#endif
 	return iRtnValue;
 }
 //	--------------------------------------------------------------------------------
@@ -16847,6 +17050,20 @@ void CvCity::updateStrengthValue()
 		iStrengthFromUnits = pGarrisonedUnit->GetBaseCombatStrength() * 100 * (iMaxHits - pGarrisonedUnit->getDamage()) / iMaxHits;
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Belgrade UA: the ally's garrisoned units provide +X% city defense (X = GarrisonCityDefenseModifier).
+	// Applied to the garrison contribution only, not to the base or building defense.
+	if (MOD_SP_UNIQUE_CITYSTATE && iStrengthFromUnits > 0)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+		int iCSUADefMod = (pCSUA != NULL) ? pCSUA->GetGarrisonCityDefenseModifier() : 0;
+		if (iCSUADefMod != 0)
+		{
+			iStrengthFromUnits = iStrengthFromUnits * (100 + iCSUADefMod) / 100;
+		}
+	}
+#endif
+
 	iStrengthValue += ((iStrengthFromUnits * 100) / /*300*/ GC.getCITY_STRENGTH_UNIT_DIVISOR());
 
 	// Tech Progress increases City Strength
@@ -16906,7 +17123,7 @@ void CvCity::updateStrengthValue()
 }
 
 //	--------------------------------------------------------------------------------
-int CvCity::getStrengthValue(bool bForRangeStrike) const
+int CvCity::getStrengthValue(bool bForRangeStrike, int iIgnoreBuildingDefensePercent) const
 {
 	VALIDATE_OBJECT
 	// Strike strikes are weaker
@@ -16973,6 +17190,27 @@ int CvCity::getStrengthValue(bool bForRangeStrike) const
 		iValue *= (100 + GET_PLAYER(getOwner()).GetGlobalRangedStrikeModifier());
 		iValue /= 100;
 #endif
+
+		return iValue;
+	}
+
+	// Sidon UA: the attacker bypasses part of this city's building defense.
+	// Building defense enters m_iStrengthValue via updateStrengthValue() with the same
+	// (100 + BuildingDefenseMod + cityDefenseModifierGlobal) scaling, so it must be mirrored here -
+	// otherwise the amount deducted would not match what was actually added.
+	if (iIgnoreBuildingDefensePercent > 0)
+	{
+		if (iIgnoreBuildingDefensePercent > 100)
+			iIgnoreBuildingDefensePercent = 100;
+
+		int iBuildingDefense = m_pCityBuildings->GetBuildingDefense();
+		int iBuildingDefenseMod = 100 + m_pCityBuildings->GetBuildingDefenseMod() + GET_PLAYER(m_eOwner).getCityDefenseModifierGlobal();
+		iBuildingDefense *= iBuildingDefenseMod;
+		iBuildingDefense /= 100;
+
+		int iValue = m_iStrengthValue - (iBuildingDefense * iIgnoreBuildingDefensePercent) / 100;
+		if (iValue < 1)
+			iValue = 1;
 
 		return iValue;
 	}
@@ -17046,6 +17284,24 @@ void CvCity::changeDamage(int iChange)
 	VALIDATE_OBJECT
 	if(0 != iChange)
 	{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		// CityState UA (Tyre): cities matching a special city type take Percent% less damage. Only
+		// positive changes (damage dealt) are reduced; healing (negative) is left untouched. Evaluated
+		// live rather than from the per-turn special-city cache because this is a low-frequency path and
+		// the predicates (coastal / other-continent) are cheap. Clamped so a hit still deals at least 1.
+		// Note: nuclear explosions call setDamage directly in CvUnitCombat::ApplyNuclearExplosionDamage
+		// and so intentionally bypass this reduction.
+		if (iChange > 0)
+		{
+			int iReduction = GetCSUADamageReductionPercent();
+			if (iReduction > 0)
+			{
+				iChange = iChange * (100 - iReduction) / 100;
+				if (iChange < 1)
+					iChange = 1;
+			}
+		}
+#endif
 		setDamage(getDamage() + iChange);
 	}
 }
@@ -21039,6 +21295,8 @@ void CvCity::read(FDataStream& kStream)
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream >> m_bCanDoImmigration;
 	kStream >> m_iNumAllScaleImmigrantIn;
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsReceived, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iTotalImmigrantsEmigrated, 0);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	int iCityScale;
@@ -21452,6 +21710,8 @@ void CvCity::write(FDataStream& kStream) const
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	kStream << m_bCanDoImmigration;
 	kStream << m_iNumAllScaleImmigrantIn;
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsReceived);
+	MOD_SERIALIZE_WRITE(kStream, m_iTotalImmigrantsEmigrated);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	kStream << (int) m_eCityScale;
@@ -23705,6 +23965,43 @@ bool CvCity::HasTradeRouteToAnyCity() const
 	return false;
 }
 
+//CityState UA: true when this city satisfies the named special city type's predicate
+bool CvCity::IsSpecialCityType(int iSpecialCityType) const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (iSpecialCityType < 0) return false;
+
+	CvSpecialCityTypeEntry* pEntry = GC.GetGameCityStateUASpecialCityTypes()->GetEntry(iSpecialCityType);
+	if (pEntry == NULL) return false;
+
+	return pEntry->IsCityMatch(this);
+#else
+	return false;
+#endif
+}
+
+//CityState UA: summed percent damage reduction this city receives (matching rows add up, clamped to 90)
+int CvCity::GetCSUADamageReductionPercent() const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	CvPlayerCityStateUA* pCityStateUA = GET_PLAYER(getOwner()).GetPlayerCityStateUA();
+	if (pCityStateUA && pCityStateUA->HasSpecialCityDamageReduction())
+	{
+		const std::vector<SpecialCityDamageReductionEntry>& vEntries = pCityStateUA->GetSpecialCityDamageReductions();
+		int iReduction = 0;
+		for (size_t i = 0; i < vEntries.size(); i++)
+		{
+			if (IsSpecialCityType(vEntries[i].m_iSpecialCityType))
+				iReduction += vEntries[i].m_iPercent;
+		}
+		if (iReduction > 90)
+			iReduction = 90;
+		return iReduction;
+	}
+#endif
+	return 0;
+}
+
 bool CvCity::HasTradeRouteTo(CvCity* pCity) const
 {
 	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
@@ -24302,6 +24599,22 @@ void CvCity::ChangeNumAllScaleImmigrantIn(int iChange)
 {
 	m_iNumAllScaleImmigrantIn += iChange;
 }
+int CvCity::GetTotalImmigrantsReceived() const
+{
+	return m_iTotalImmigrantsReceived;
+}
+void CvCity::ChangeTotalImmigrantsReceived(int iChange)
+{
+	m_iTotalImmigrantsReceived += iChange;
+}
+int CvCity::GetTotalImmigrantsEmigrated() const
+{
+	return m_iTotalImmigrantsEmigrated;
+}
+void CvCity::ChangeTotalImmigrantsEmigrated(int iChange)
+{
+	m_iTotalImmigrantsEmigrated += iChange;
+}
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 void CvCity::SetScale(CityScaleTypes eNewScale)
@@ -24589,6 +24902,7 @@ int CvCity::CalculateTotalCorruptionScore() const
 	// Score Modifier
 	int modifier = 100;
 	modifier += CalculateCorruptionScoreModifierFromSpy();
+	modifier += CalculateCorruptionScoreModifierFromMasterSpy();
 	modifier += CalculateCorruptionScoreModifierFromTrait();
 	modifier += owner.GetCorruptionScoreModifierFromPolicy();
 	modifier = std::max(0, modifier);
@@ -24690,6 +25004,19 @@ int CvCity::CalculateCorruptionScoreModifierFromSpy() const
 		return -67;
 	}
 	return -100;
+}
+
+int CvCity::CalculateCorruptionScoreModifierFromMasterSpy() const
+{
+	CvPlayerAI& owner = GET_PLAYER(getOwner());
+	auto* espionage = owner.GetEspionage();
+	if (espionage == nullptr)
+	{
+		return 0;
+	}
+
+	// -5% corruption modifier for every Master Spy currently on counter-intel duty
+	return -5 * espionage->GetNumMasterSpyCounterIntel();
 }
 
 int CvCity::CalculateCorruptionScoreModifierFromTrait()  const

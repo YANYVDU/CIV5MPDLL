@@ -1123,7 +1123,7 @@ int PathCost(CvAStarNode* parent, CvAStarNode* node, int data, const void* point
 				if (!pDestPlot || pDestPlot->getOwner() != ePlotOwner)
 				{
 					TeamTypes ePlotTeam = pToPlot->getTeam();
-					if (ePlotOwner != NO_PLAYER && !GET_PLAYER(ePlotOwner).isMinorCiv() && ePlotTeam != pCacheData->getTeam() && !GET_TEAM(ePlotTeam).IsAllowsOpenBordersToTeam(pCacheData->getTeam()))
+					if (ePlotOwner != NO_PLAYER && !GET_PLAYER(ePlotOwner).isMinorCiv() && ePlotTeam != pCacheData->getTeam() && !GET_PLAYER(ePlotOwner).IsAllowsOpenBordersToPlayer(pUnit->getOwner()))
 					{
 						iCost += PATH_END_TURN_MISSIONARY_OTHER_TERRITORY;
 					}

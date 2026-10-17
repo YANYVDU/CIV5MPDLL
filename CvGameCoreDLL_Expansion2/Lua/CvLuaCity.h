@@ -234,6 +234,10 @@ protected:
 	static int lGetChangeDamageValue(lua_State* L);
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	static int lGetCSUADamageReductionPercent(lua_State* L);
+#endif
+
 	static int lGetHighestPopulation(lua_State* L);
 	static int lSetHighestPopulation(lua_State* L);
 	//static int lGetWorkingPopulation(lua_State* L);
@@ -713,6 +717,10 @@ protected:
 	LUAAPIEXTN(SetCanDoImmigration, void);
 	LUAAPIEXTN(CanImmigrantIn, bool);
 	LUAAPIEXTN(CanImmigrantOut, bool);
+	LUAAPIEXTN(GetTotalImmigrantsReceived, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsReceived, void, iChange);
+	LUAAPIEXTN(GetTotalImmigrantsEmigrated, int);
+	LUAAPIEXTN(ChangeTotalImmigrantsEmigrated, void, iChange);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	LUAAPIEXTN(GetScale, int);

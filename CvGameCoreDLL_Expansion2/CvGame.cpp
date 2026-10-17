@@ -108,7 +108,14 @@ CvGame::CvGame() :
 #ifdef MOD_API_MP_PLOT_SIGNAL
 	, m_uiLastMPSignalInvokeTime(0)
 #endif // MOD_API_MP_PLOT_SIGNAL
-	
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	, m_iEconomicAidRound(0)
+	, m_iEconomicAidRoundStartTurn(-1)
+	, m_iEconomicAidWorldEra(1)
+	, m_bEconomicAidActive(false)
+#endif
+	, m_eCurrentEraCache(NO_ERA)
+	, m_iCurrentEraCacheTurn(-1)
 {
 	m_iSuppressHappinessUpdate = 0; // reset transient suppression counter (guards against residue across game restarts)
 	m_aiEndTurnMessagesReceived = FNEW(int[MAX_PLAYERS], c_eCiv5GameplayDLL, 0);
@@ -422,7 +429,10 @@ static void ApplySelectedMinorCivs()
 		sprintf_s(szBuf, 64, "GAMEOPTION_SP_CS_%d", slot);
 		int iValue = -1;
 		CvPreGame::GetGameOption(szBuf, iValue);
-		if(iValue >= 0 && iValue < GC.getNumMinorCivInfos())
+		// Unset options fall back to their database default (0), and the info
+		// array leaves NULL holes for unused database ids, so both must be
+		// rejected here or a NULL id reaches CvGame::InitPlayers.
+		if(iValue >= 0 && iValue < GC.getNumMinorCivInfos() && GC.getMinorCivInfo((MinorCivTypes)iValue) != NULL)
 			aChosen.push_back((MinorCivTypes)iValue);
 	}
 	if(aChosen.empty())
@@ -442,17 +452,26 @@ static void ApplySelectedMinorCivs()
 	}
 
 	const int iSlots = iLastMinor - iFirstMinor;
-	const int iPool = GC.getNumMinorCivInfos();
+
+	// The info array is indexed by database id, so unused ids show up as NULL
+	// holes. Build the random pool from valid entries only: shuffling raw
+	// indices would let a NULL id reach CvGame::InitPlayers and crash it.
+	std::vector<int> aPool;
+	for(int i = 0; i < GC.getNumMinorCivInfos(); ++i)
+	{
+		if(GC.getMinorCivInfo((MinorCivTypes)i) != NULL)
+			aPool.push_back(i);
+	}
+	const int iPool = (int)aPool.size();
 	if(iPool == 0)
 		return;
 
-	std::vector<bool> bUsed(iPool, false);
+	std::vector<bool> bUsed(GC.getNumMinorCivInfos(), false);
 	for(size_t i = 0; i < aUnique.size(); ++i)
 		bUsed[aUnique[i]] = true;
 
-	// Fisher-Yates shuffle of the full pool using the persistent (MP-synced) RNG.
-	std::vector<int> iShuffle(iPool);
-	shuffleArray(&iShuffle[0], iPool, GC.getGame().getJonRand());
+	// Fisher-Yates shuffle of the valid pool using the persistent (MP-synced) RNG.
+	shuffleArray(&aPool[0], iPool, GC.getGame().getJonRand());
 
 	int iFill = 0;
 	for(int s = 0; s < iSlots; ++s)
@@ -464,11 +483,11 @@ static void ApplySelectedMinorCivs()
 		}
 		else
 		{
-			while(iFill < iPool && bUsed[iShuffle[iFill]])
+			while(iFill < iPool && bUsed[aPool[iFill]])
 				++iFill;
 			if(iFill >= iPool)
 				break; // Pool exhausted; leave the remaining slots at their default.
-			mc = (MinorCivTypes)iShuffle[iFill];
+			mc = (MinorCivTypes)aPool[iFill];
 			bUsed[mc] = true;
 			++iFill;
 		}
@@ -775,6 +794,15 @@ void CvGame::InitPlayers()
 #else
 				CvMinorCivInfo* pMinorCivInfo = GC.getMinorCivInfo(CvPreGame::minorCivType(eMinorPlayer));
 #endif
+
+				// A pregame slot can hold an id that has no CvMinorCivInfo (the info
+				// array keeps NULL holes for unused database ids). Close the slot
+				// rather than dereferencing a NULL pointer below.
+				if(pMinorCivInfo == NULL)
+				{
+					CvPreGame::setSlotStatus(eMinorPlayer, SS_CLOSED);
+					continue;
+				}
 
 				CvPreGame::setSlotStatus(eMinorPlayer, SS_COMPUTER);
 				CvPreGame::setNetID(eMinorPlayer, -1);
@@ -4476,6 +4504,140 @@ EraTypes CvGame::getCurrentEra() const
 	return NO_ERA;
 }
 
+//------------------------------------------------------------------------------
+// Cached world era (average of all alive teams). Recomputed once per game turn.
+EraTypes CvGame::getCurrentEraCached() const
+{
+	if (m_iCurrentEraCacheTurn != getGameTurn())
+	{
+		m_eCurrentEraCache = getCurrentEra();
+		m_iCurrentEraCacheTurn = getGameTurn();
+	}
+	return m_eCurrentEraCache;
+}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//	--------------------------------------------------------------------------------
+// Economic Aid (Super Power V11): all city-states share a single global round
+void CvGame::DoEconomicAidRoundTurn()
+{
+	if(!MOD_SP_UNIQUE_CITYSTATE)
+		return;
+
+	if(!m_bEconomicAidActive)
+	{
+		// Activate on the opening turn regardless of starting era (ancient / classical / later).
+		// Also activates on the first turn after loading an old save (where getGameTurn() > getStartTurn()).
+		m_bEconomicAidActive = true;
+		StartNewEconomicAidRound();
+		return;
+	}
+
+	int iRoundLength = GC.getECONOMIC_AID_ROUND_LENGTH();
+	int iSpeedMod = GC.getGameSpeedInfo(getGameSpeedType())->getTrainPercent();
+	if(iSpeedMod != 0)
+	{
+		iRoundLength = (iRoundLength * iSpeedMod) / 100;
+	}
+	if(iRoundLength < 1)
+	{
+		iRoundLength = 1;
+	}
+
+	if(getGameTurn() - m_iEconomicAidRoundStartTurn >= iRoundLength)
+	{
+		StartNewEconomicAidRound();
+	}
+}
+
+//	--------------------------------------------------------------------------------
+void CvGame::StartNewEconomicAidRound()
+{
+	m_iEconomicAidRound++;
+	m_iEconomicAidRoundStartTurn = getGameTurn();
+	m_iEconomicAidWorldEra = (int)getCurrentEra() + 1; // era index + 1 => era coefficient (fixed for the whole round)
+
+	// Re-open economic aid for all living city-states (re-founded city-states rejoin from this round)
+	for(int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
+		if(kMinor.isAlive() && kMinor.isMinorCiv())
+		{
+			kMinor.GetMinorCivAI()->SetEconomicAidOpenThisRound(true);
+		}
+	}
+
+	// Auto-renew: majors that opted in rejoin the aid program automatically each round.
+	// DoChangeEconomicAidFromMajor internally skips city-states that are locked this round,
+	// at war, not open, or already receiving this major's aid, so no extra checks needed here.
+	for(int iMajor = 0; iMajor < MAX_MAJOR_CIVS; iMajor++)
+	{
+		if(!GET_PLAYER((PlayerTypes)iMajor).isAlive())
+			continue;
+		for(int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+		{
+			CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinor);
+			if(!(kMinor.isAlive() && kMinor.isMinorCiv()))
+				continue;
+			CvMinorCivAI* pMinor = kMinor.GetMinorCivAI();
+			if(pMinor->IsEconomicAidAutoRenew((PlayerTypes)iMajor))
+			{
+				pMinor->DoChangeEconomicAidFromMajor((PlayerTypes)iMajor, true, ECON_AID_TERM_NONE);
+			}
+		}
+	}
+}
+
+//	--------------------------------------------------------------------------------
+bool CvGame::IsEconomicAidActive() const
+{
+	// Also respect the runtime CustomModOptions switch (SP_UNIQUE_CITYSTATE) so that
+	// disabling the option disables economic aid entirely, even for save games that
+	// had it activated before (m_bEconomicAidActive is read back from the save).
+	return m_bEconomicAidActive && MOD_SP_UNIQUE_CITYSTATE;
+}
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidRound() const
+{
+	return m_iEconomicAidRound;
+}
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidRoundStartTurn() const
+{
+	return m_iEconomicAidRoundStartTurn;
+}
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidWorldEra() const
+{
+	return m_iEconomicAidWorldEra;
+}
+
+//	--------------------------------------------------------------------------------
+int CvGame::GetEconomicAidRoundTurnsLeft() const
+{
+	if(!m_bEconomicAidActive)
+		return 0;
+
+	int iRoundLength = GC.getECONOMIC_AID_ROUND_LENGTH();
+	int iSpeedMod = GC.getGameSpeedInfo(getGameSpeedType())->getTrainPercent();
+	if(iSpeedMod != 0)
+	{
+		iRoundLength = (iRoundLength * iSpeedMod) / 100;
+	}
+	if(iRoundLength < 1)
+	{
+		iRoundLength = 1;
+	}
+
+	int iElapsed = getGameTurn() - m_iEconomicAidRoundStartTurn;
+	int iTurnsLeft = iRoundLength - iElapsed;
+	return iTurnsLeft > 0 ? iTurnsLeft : 0;
+}
+#endif
+
 
 //	--------------------------------------------------------------------------------
 TeamTypes CvGame::getActiveTeam()
@@ -7867,6 +8029,11 @@ void CvGame::doTurn()
 
 	CvBarbarians::BeginTurn();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Advance the shared economic-aid round before per-player / per-city-state turn logic
+	DoEconomicAidRoundTurn();
+#endif
+
 	doUpdateCacheOnTurn();
 
 	DoUpdateCachedWorldReligionTechProgress();
@@ -9641,6 +9808,36 @@ int CvGame::getAsyncRandNum(int iNum, const char* pszLog)
 #endif
 }
 
+//	--------------------------------------------------------------------------------
+// International immigration: regression base (IMMIGRATION_BASE_RATE) scaled by game speed
+// and the given player's regressand modifier. Extracted from the former Lua export
+// (CvLuaGame::lGetImmigrationRegressand) so C++ core logic and Lua share one source.
+// ePlayer == NO_PLAYER falls back to the active player, which keeps the Lua-facing behaviour;
+// the turn simulation must pass an explicit player so every client derives the same value.
+int CvGame::GetImmigrationRegressand(PlayerTypes ePlayer) const
+{
+	int iRtnValue = 0;
+	if(!isOption(GAMEOPTION_SP_IMMIGRATION_OFF))
+	{
+		iRtnValue = GC.getIMMIGRATION_BASE_RATE() * getGameSpeedInfo().getCulturePercent();
+		if(ePlayer == NO_PLAYER)
+		{
+			ePlayer = getActivePlayer();
+		}
+		if(ePlayer != NO_PLAYER)
+		{
+			CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+			int iModifier = kPlayer.GetImmigrationRegressandModifier();
+			iRtnValue = iRtnValue * (100 + iModifier) / 100;
+		}
+
+		iRtnValue /= 100;
+
+		if(iRtnValue < 0) iRtnValue = 0;
+	}
+	return iRtnValue;
+}
+
 
 
 //	--------------------------------------------------------------------------------
@@ -9946,6 +10143,13 @@ void CvGame::Read(FDataStream& kStream)
 	kStream >> m_iEndTurnMessagesSent;
 	kStream >> m_iElapsedGameTurns;
 	kStream >> m_iStartTurn;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11) - version 164 gated for old save compatibility
+	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidRound, 0);
+	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidRoundStartTurn, -1);
+	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidWorldEra, 1);
+	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidActive, false);
+#endif
 	kStream >> m_iWinningTurn;
 	kStream >> m_iStartYear;
 	kStream >> m_iEstimateEndTurn;
@@ -10205,6 +10409,13 @@ void CvGame::Write(FDataStream& kStream) const
 	kStream << m_iEndTurnMessagesSent;
 	kStream << m_iElapsedGameTurns;
 	kStream << m_iStartTurn;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Economic Aid (Super Power V11)
+	kStream << m_iEconomicAidRound;
+	kStream << m_iEconomicAidRoundStartTurn;
+	kStream << m_iEconomicAidWorldEra;
+	kStream << m_bEconomicAidActive;
+#endif
 	kStream << m_iWinningTurn;
 	kStream << m_iStartYear;
 	kStream << m_iEstimateEndTurn;
@@ -11041,6 +11252,160 @@ void CvGame::DoMinorGiftGold(PlayerTypes eMinor, int iNumGold)
 	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
 
 	gDLL->sendMinorGiftGold(eMinor, iNumGold);
+}
+
+//	--------------------------------------------------------------------------------
+// Gangtok CS UA: buy influence at ANY city-state with faith at (gold price / divisor) faith.
+// Executed locally for the active player (single-player focused; intentionally no network message).
+void CvGame::DoMinorFaithGift(PlayerTypes eMinor, int iEquivalentGold)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		GET_PLAYER(eMinor).GetMinorCivAI()->DoFaithGiftFromMajor(eMajor, iEquivalentGold);
+	}
+}
+
+//	--------------------------------------------------------------------------------
+// Gangtok CS UA: network-synced variant of DoMinorFaithGift taking an explicit eMajor.
+// Broadcast via SendAndExecuteLuaFunction so every client acts on the same major.
+void CvGame::DoMinorFaithGiftFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iEquivalentGold)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		GET_PLAYER(eMinor).GetMinorCivAI()->DoFaithGiftFromMajor(eMajor, iEquivalentGold);
+	}
+}
+
+//	--------------------------------------------------------------------------------
+// Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion.
+// Executed locally for the active player (single-player focused; intentionally no network message).
+bool CvGame::DoCityStateFaithBeliefPurchase(PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithBeliefPurchase(eMajor, eBelief);
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+// Wittenberg CS UA: network-synced variant of DoCityStateFaithBeliefPurchase taking an explicit eMajor.
+// Broadcast via SendAndExecuteLuaFunction so every client acts on the same major.
+bool CvGame::DoCityStateFaithBeliefPurchaseFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithBeliefPurchase(eMajor, eBelief);
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+// Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available).
+int CvGame::GetCityStateFaithBeliefPurchaseCost(PlayerTypes eMinor)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return 0;
+
+	CvPlayer& kMinor = GET_PLAYER(eMinor);
+	CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+	if(!pMinorAI || !kMinor.isAlive())
+		return 0;
+	if(!pMinorAI->IsAllies(eMajor))
+		return 0;
+	// The ability comes from the city-state's own UA (Wittenberg), aggregated onto the ally.
+	if(!kMinor.HasCSUABeliefPurchaseUA())
+		return 0;
+	if(pMinorAI->IsFaithBeliefPurchasedByMajor(eMajor))
+		return 0;
+	// The religion to augment is the one the major leads.
+	if(GET_PLAYER(eMajor).GetReligions()->GetReligionCreatedByPlayer() <= RELIGION_PANTHEON)
+		return 0;
+
+	int iCost = gCustomMods.getOption("SP_FAITH_BELIEF_PURCHASE_COST", 2500);
+	iCost = iCost * GC.getGame().getGameSpeedInfo().getFaithPercent() / 100;
+	return iCost;
+}
+
+//	--------------------------------------------------------------------------------
+// Wittenberg CS UA: has the active player already faith-purchased a belief at this city-state?
+bool CvGame::IsCityStateFaithBeliefPurchased(PlayerTypes eMinor)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	return GET_PLAYER(eMinor).GetMinorCivAI()->IsFaithBeliefPurchasedByMajor(eMajor);
+}
+
+//	--------------------------------------------------------------------------------
+// La Venta CS UA: faith cost for the active player to purchase an idle pantheon belief at this city-state (0 = not available).
+int CvGame::GetCityStateFaithPantheonPurchaseCost(PlayerTypes eMinor)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return 0;
+
+	return GET_PLAYER(eMinor).GetMinorCivAI()->GetCityStateFaithPantheonPurchaseCost(eMajor);
+}
+
+//	--------------------------------------------------------------------------------
+// La Venta CS UA: faith-purchase an idle pantheon belief for the active player into this city-state's religion
+bool CvGame::DoCityStateFaithPantheonPurchase(PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	PlayerTypes eMajor = getActivePlayer();
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithPantheonPurchase(eMajor, eBelief);
+	}
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
+// La Venta CS UA: network-synced variant of DoCityStateFaithPantheonPurchase taking an explicit eMajor.
+// Broadcast via SendAndExecuteLuaFunction so every client acts on the same major.
+bool CvGame::DoCityStateFaithPantheonPurchaseFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, BeliefTypes eBelief)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	if (eMajor >= 0 && eMajor < MAX_MAJOR_CIVS)
+	{
+		return GET_PLAYER(eMinor).GetMinorCivAI()->DoCityStateFaithPantheonPurchase(eMajor, eBelief);
+	}
+	return false;
 }
 
 //	--------------------------------------------------------------------------------

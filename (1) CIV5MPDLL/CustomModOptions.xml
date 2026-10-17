@@ -1137,6 +1137,9 @@
 
     <Row Class="6" Name="INTERNATIONAL_IMMIGRATION_FOR_SP" Value="0"/>
 
+    <!-- Fires GameEvents.InternationalImmigration(eInPlayer, eOutPlayer, iInCity, iOutCity) -->
+    <Row Class="3" Name="EVENTS_INTERNATIONAL_IMMIGRATION" Value="0"/>
+
     <Row Class="6" Name="NUCLEAR_WINTER_FOR_SP" Value="0"/>
 
     <Row Class="6" Name="UNIT_COST_DONOT_INCTEASE_WITH_TURN" Value="0"/> 
@@ -1194,6 +1197,12 @@
     <Row Class="6" Name="SP_FASTER_AI" Value="0"/>
     <Row Class="6" Name="SP_UNIQUE_CITYSTATE" Value="0"/>
     <Row Class="6" Name="SP_CITYSTATE_BASIC" Value="0"/>
+    <Row Class="6" Name="LUXURY_ERA_DECAY" Value="0"/>
+
+    <!-- Wittenberg: base faith cost of the CSUA self-chosen belief purchase, scaled by the game speed FaithPercent -->
+    <Row Class="5" Name="SP_FAITH_BELIEF_PURCHASE_COST" Value="2500"/>
+    <!-- La Venta: base faith cost of the CSUA idle pantheon belief purchase, doubled per purchase, scaled by FaithPercent -->
+    <Row Class="5" Name="SP_PANTHEON_BELIEF_PURCHASE_BASE_COST" Value="500"/>
 
     <Row Class="6" Name="TRAITS_SPREAD_RELIGION_AFTER_KILLING" Value="0"/>
     <Row Class="6" Name="TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY" Value="0"/>

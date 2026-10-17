@@ -138,6 +138,9 @@ public:
 	// Minor Civs
 	void DoUpdateMinorCivApproaches();
 	MinorCivApproachTypes GetBestApproachTowardsMinorCiv(PlayerTypes ePlayer, int& iHighestWeight, bool bLookAtOtherPlayers, bool bLog);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	void DoEconomicAidAI();
+#endif
 
 	MinorCivApproachTypes GetMinorCivApproach(PlayerTypes ePlayer) const;
 	void SetMinorCivApproach(PlayerTypes ePlayer, MinorCivApproachTypes eApproach);
@@ -975,6 +978,13 @@ public:
 	int GetNumTimesRobbedBy(PlayerTypes ePlayer) const;
 	void ChangeNumTimesRobbedBy(PlayerTypes ePlayer, int iChange);
 
+	// Almaty CSUA: accumulated opinion weight penalty because ePlayer plundered our trade routes while
+	// neutral (not at war). Stored directly in opinion-weight units (positive = worse opinion), decays by
+	// 1 per turn and is never reset (not by peace). See GetCSUAPlunderedTradeRouteScore.
+	int GetCSUAPlunderedNeutralTradeRoute(PlayerTypes ePlayer) const;
+	void ChangeCSUAPlunderedNeutralTradeRoute(PlayerTypes ePlayer, int iChange);
+	int GetCSUAPlunderedTradeRouteScore(PlayerTypes ePlayer) const;
+
 	int GetNumTimesIntrigueSharedBy(PlayerTypes ePlayer) const;
 	void ChangeNumTimesIntrigueSharedBy(PlayerTypes ePlayer, int iChange);
 
@@ -1278,6 +1288,9 @@ private:
 		short m_aiNumTimesRobbedBy[MAX_MAJOR_CIVS];
 		short m_aiNumTimesIntrigueSharedBy[MAX_MAJOR_CIVS];
 
+		// Almaty CSUA: opinion weight from neutral trade-route plundering by ePlayer (decays 1/turn)
+		short m_aiCSUAPlunderedNeutralTradeRoute[MAX_MAJOR_CIVS];
+
 		short m_aiBrokenExpansionPromiseValue[MAX_MAJOR_CIVS];
 		short m_aiIgnoredExpansionPromiseValue[MAX_MAJOR_CIVS];
 		short m_aiBrokenBorderPromiseValue[MAX_MAJOR_CIVS];
@@ -1507,6 +1520,7 @@ private:
 	short* m_paiNumTimesNuked;
 	short* m_paiNumTimesRobbedBy;
 	short* m_paiNumTimesIntrigueSharedBy;
+	short* m_paiCSUAPlunderedNeutralTradeRoute;
 
 	short* m_paiBrokenExpansionPromiseValue;
 	short* m_paiIgnoredExpansionPromiseValue;

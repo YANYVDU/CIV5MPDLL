@@ -115,6 +115,8 @@ class CvTraitEntry;
 class CvTraitXMLEntries;
 class CvCityStateUAEffectEntry;
 class CvCityStateUAEffectXMLEntries;
+class CvSpecialCityTypeEntry;
+class CvCityStateUASpecialCityTypeXMLEntries;
 class CvCityStateUAEntry;
 class CvCityStateUAXMLEntries;
 class CvNotificationEntry;
@@ -592,6 +594,7 @@ public:
 	_Ret_maybenull_ CvTraitEntry* getTraitInfo(TraitTypes eTraitNum);
 	CvTraitXMLEntries* GetGameTraits() const;
 	CvCityStateUAEffectXMLEntries* GetGameCityStateUAEffects() const;
+	CvCityStateUASpecialCityTypeXMLEntries* GetGameCityStateUASpecialCityTypes() const;
 	CvCityStateUAXMLEntries* GetGameCityStateUAs() const;
 	CvCityStateUAEffectEntry* getCityStateUAEffectEntry(int index) const;
 
@@ -1674,6 +1677,10 @@ public:
 	inline int getMINOR_FRIENDSHIP_DROP_DISHONOR_PLEDGE_TO_PROTECT()
 	{
 		return m_iMINOR_FRIENDSHIP_DROP_DISHONOR_PLEDGE_TO_PROTECT;
+	}
+	inline int getECONOMIC_AID_ROUND_LENGTH()
+	{
+		return m_iECONOMIC_AID_ROUND_LENGTH;
 	}
 	inline int getMINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS()
 	{
@@ -6465,6 +6472,10 @@ public:
 	{
 		return m_iMINOR_FRIENDSHIP_ANCHOR_MOD_PROTECTED;
 	}
+	inline int getMINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID()
+	{
+		return m_iMINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID;
+	}
 	inline int getMINOR_FRIENDSHIP_ANCHOR_MOD_WARY_OF()
 	{
 		return m_iMINOR_FRIENDSHIP_ANCHOR_MOD_WARY_OF;
@@ -6732,6 +6743,14 @@ public:
 	inline int getGREAT_GENERALS_THRESHOLD()
 	{
 		return m_iGREAT_GENERALS_THRESHOLD;
+	}
+	inline int getSPY_POINTS_THRESHOLD_BASE()
+	{
+		return m_iSPY_POINTS_THRESHOLD_BASE;
+	}
+	inline int getSPY_POINTS_THRESHOLD_INCREASE()
+	{
+		return m_iSPY_POINTS_THRESHOLD_INCREASE;
 	}
 	inline int getUNIT_DEATH_XP_GREAT_GENERAL_LOSS()
 	{
@@ -8070,6 +8089,7 @@ protected:
 	CvTraitXMLEntries* m_pTraits;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	CvCityStateUAEffectXMLEntries* m_pCityStateUAEffects;
+	CvCityStateUASpecialCityTypeXMLEntries* m_pCityStateUASpecialCityTypes;
 	CvCityStateUAXMLEntries* m_pCityStateUAs;
 #endif
 	CvReligionXMLEntries* m_pReligions;
@@ -8383,6 +8403,7 @@ protected:
 	int m_iMINOR_FRIENDSHIP_DROP_PER_TURN_HOSTILE;
 	int m_iMINOR_FRIENDSHIP_DROP_PER_TURN_AGGRESSOR;
 	int m_iMINOR_FRIENDSHIP_DROP_DISHONOR_PLEDGE_TO_PROTECT;
+	int m_iECONOMIC_AID_ROUND_LENGTH;
 	int m_iMINOR_FRIENDSHIP_DROP_BULLY_GOLD_SUCCESS;
 	int m_iMINOR_FRIENDSHIP_DROP_BULLY_GOLD_FAILURE;
 	int m_iMINOR_FRIENDSHIP_DROP_BULLY_WORKER_SUCCESS;
@@ -9593,6 +9614,7 @@ protected:
 	int m_iMINOR_FRIENDSHIP_ANCHOR_DEFAULT;
 	int m_iMINOR_FRIENDSHIP_ANCHOR_MOD_PROTECTED;
 	int m_iMINOR_FRIENDSHIP_ANCHOR_MOD_WARY_OF;
+	int m_iMINOR_FRIENDSHIP_ANCHOR_MOD_ECONOMIC_AID;
 	int m_iMINOR_UNIT_GIFT_TRAVEL_TURNS;
 	int m_iPLOT_UNIT_LIMIT;
 	int m_iZONE_OF_CONTROL_ENABLED;
@@ -9661,6 +9683,8 @@ protected:
 	int m_iGREAT_GENERALS_THRESHOLD_INCREASE;
 	int m_iGREAT_GENERALS_THRESHOLD_INCREASE_TEAM;
 	int m_iGREAT_GENERALS_THRESHOLD;
+	int m_iSPY_POINTS_THRESHOLD_BASE;
+	int m_iSPY_POINTS_THRESHOLD_INCREASE;
 	int m_iUNIT_DEATH_XP_GREAT_GENERAL_LOSS;
 	int m_iMIN_EXPERIENCE_PER_COMBAT;
 	int m_iMAX_EXPERIENCE_PER_COMBAT;

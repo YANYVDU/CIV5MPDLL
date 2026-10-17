@@ -191,6 +191,8 @@ public:
 
 	int GetTradeValuesAtCityTimes100 (const CvCity* const pCity, YieldTypes eYield);
 	bool HasTradeRouteToPlayer (const CvCity* pOriginCity, PlayerTypes eDestPlayer);
+	// Mogadishu: does this city originate at least one international trade route (city-state destinations count)?
+	bool HasInternationalTradeRouteFromCity (const CvCity* pOriginCity);
 
 	int GetAllTradeValueTimes100 (YieldTypes eYield);
 	int GetAllTradeValueFromPlayerTimes100 (YieldTypes eYield, PlayerTypes ePlayer);
@@ -206,6 +208,7 @@ public:
 	TradeConnection* GetTradeConnection(CvCity* pOriginCity, CvCity* pDestCity);
 	int GetNumberOfCityStateTradeRoutes();
 	int GetNumberOfSeaTradeRoutes();
+	int GetNumberOfInternationalLandTradeRoutes();
 
 	bool IsPreviousTradeRoute(CvCity* pOriginCity, CvCity* pDestCity, DomainTypes eDomain, TradeConnectionType eConnectionType);
 

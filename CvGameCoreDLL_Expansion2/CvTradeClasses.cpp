@@ -12,6 +12,7 @@
 #include "CvInfosSerializationHelper.h" 
 #include "CvCitySpecializationAI.h"
 #include "CvCityStateUAClasses.h"
+#include "CvDiplomacyAI.h"
 
 #include "CvBarbarians.h"
 
@@ -2663,25 +2664,8 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 					if (MOD_SP_UNIQUE_CITYSTATE)
 					{
-						CvPlayerCityStateUA* pUA = kOriginPlayer.GetPlayerCityStateUA();
-						if (pUA)
-						{
-							// Malacca UA: trade route gold percentage per happy luxury type
-							iModifier += kOriginPlayer.GetHappyLuxuryTypeCount() * pUA->GetTradeRouteGoldModifierPerLuxuryType() / 100;
-
-							// Panama UA: trade route gold percentage per distance tile
-							int iDistanceModifier = pUA->GetTradeRouteGoldModifierPerDistance();
-							if (iDistanceModifier != 0)
-							{
-								CvPlot* pOriginPlot = GC.getMap().plot(kTradeConnection.m_iOriginX, kTradeConnection.m_iOriginY);
-								CvPlot* pDestPlot = GC.getMap().plot(kTradeConnection.m_iDestX, kTradeConnection.m_iDestY);
-								if (pOriginPlot && pDestPlot)
-								{
-									int iDistance = plotDistance(pOriginPlot->getX(), pOriginPlot->getY(), pDestPlot->getX(), pDestPlot->getY());
-									iModifier += iDistance * iDistanceModifier / 100;
-								}
-							}
-						}
+						// Malacca / Panama / Hormuz: summed CSUA trade-route gold % modifiers
+						iModifier += kOriginPlayer.GetCSUATradeRouteGoldModifier(kTradeConnection);
 					}
 #endif
 
@@ -3137,6 +3121,46 @@ bool CvPlayerTrade::HasTradeRouteToPlayer (const CvCity* pOriginCity, PlayerType
 }
 
 //	--------------------------------------------------------------------------------
+// Mogadishu: does this city originate at least one international trade route? City-state destinations
+// count as international, matching the team-based IsConnectionInternational test used everywhere else.
+bool CvPlayerTrade::HasInternationalTradeRouteFromCity (const CvCity* pOriginCity)
+{
+	if (!pOriginCity)
+	{
+		return false;
+	}
+
+	const PlayerTypes eCityOwnerPlayer = pOriginCity->getOwner();
+	const int iCityX = pOriginCity->getX();
+	const int iCityY = pOriginCity->getY();
+
+	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+	if (pTrade == NULL)
+	{
+		return false;
+	}
+
+	for (uint ui = 0; ui < pTrade->m_aTradeConnections.size(); ui++)
+	{
+		if (pTrade->IsTradeRouteIndexEmpty(ui))
+		{
+			continue;
+		}
+
+		const TradeConnection* pConnection = &(pTrade->m_aTradeConnections[ui]);
+
+		if (pConnection->m_eOriginOwner == eCityOwnerPlayer &&
+			pConnection->m_iOriginX == iCityX && pConnection->m_iOriginY == iCityY &&
+			pTrade->IsConnectionInternational(*pConnection))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
 int CvPlayerTrade::GetAllTradeValueTimes100 (YieldTypes eYield)
 {
 	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
@@ -3433,6 +3457,27 @@ int CvPlayerTrade::GetNumberOfCityStateTradeRoutes()
 			{
 				iNumConnections++;
 			}
+		}
+	}
+
+	return iNumConnections;
+}
+
+//Returns the number of international land trade routes this player runs to any other player
+//(city-state destinations included). Used by the Kabul CS UA nation-wide yield modifier.
+int CvPlayerTrade::GetNumberOfInternationalLandTradeRoutes()
+{
+	CvGameTrade* pTrade = GC.getGame().GetGameTrade();
+	int iNumConnections = 0;
+	for (uint ui = 0; ui < pTrade->m_aTradeConnections.size(); ui++)
+	{
+		TradeConnection* pConnection = &(pTrade->m_aTradeConnections[ui]);
+
+		if (pConnection->m_eOriginOwner == m_pPlayer->GetID()
+			&& pConnection->m_eDomain == DOMAIN_LAND
+			&& pTrade->IsConnectionInternational(*pConnection))
+		{
+			iNumConnections++;
 		}
 	}
 
@@ -3786,11 +3831,59 @@ bool CvPlayerTrade::PlunderTradeRoute(int iTradeConnectionID)
 	iPlunderGoldValue /= 100;
 	m_pPlayer->GetTreasury()->ChangeGold(iPlunderGoldValue);
 
+	// Almaty CS UA pays extra gold on top of the vanilla amount. Track the sum separately so the floating
+	// popup and the notification below report what the player actually received, while iPlunderGoldValue
+	// keeps meaning "vanilla gold".
+	int iPlunderGoldTotal = iPlunderGoldValue;
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Almaty CS UA: the ally/friend gains extra gold and XP for plundering ANY trade route. Plundering a
+	// player the plunderer is NOT at war with (a "neutral" plunder) adds an opinion penalty to that player
+	// that decays over time; plundering a player already at war adds none. The extra gold is era-scaled via
+	// the unified era coefficient (设计全局规则 14): GetCurrentEra() + 1.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pCSUA = m_pPlayer->GetPlayerCityStateUA();
+		if (pCSUA != NULL)
+		{
+			int iCSUAGold = pCSUA->GetPlunderTradeRouteGold();
+			if (iCSUAGold > 0)
+			{
+				iCSUAGold *= (m_pPlayer->GetCurrentEra() + 1);
+				m_pPlayer->GetTreasury()->ChangeGold(iCSUAGold);
+				iPlunderGoldTotal += iCSUAGold;
+			}
+
+#if defined(MOD_API_EXTENSIONS)
+			int iCSUAXP = pCSUA->GetPlunderTradeRouteXP();
+			if (iCSUAXP > 0 && pUnit != NULL)
+			{
+#if defined(MOD_UNITS_XP_TIMES_100)
+				pUnit->changeExperienceTimes100(iCSUAXP * 100);
+#else
+				pUnit->changeExperience(iCSUAXP);
+#endif
+			}
+#endif
+
+			int iOpinionPenalty = pCSUA->GetPlunderTradeRouteOpinionPenalty();
+			if (iOpinionPenalty > 0 && !GET_TEAM(m_pPlayer->getTeam()).isAtWar(eOwningTeam))
+			{
+				CvPlayer& kPlundered = GET_PLAYER(eOwningPlayer);
+				if (kPlundered.isMajorCiv() && kPlundered.GetDiplomacyAI() != NULL)
+				{
+					kPlundered.GetDiplomacyAI()->ChangeCSUAPlunderedNeutralTradeRoute(m_pPlayer->GetID(), iOpinionPenalty);
+				}
+			}
+		}
+	}
+#endif
+
 	// do the floating popup
 	if (GC.getGame().getActivePlayer() == m_pPlayer->GetID())
 	{
 		char text[256] = {0};
-		sprintf_s(text, "[COLOR_YELLOW]+%d[ENDCOLOR][ICON_GOLD]", iPlunderGoldValue);
+		sprintf_s(text, "[COLOR_YELLOW]+%d[ENDCOLOR][ICON_GOLD]", iPlunderGoldTotal);
 #if defined(SHOW_PLOT_POPUP)
 		SHOW_PLOT_POPUP(pPlunderPlot, m_pPlayer->GetID(), text, 0.0f);
 #else
@@ -3800,15 +3893,15 @@ bool CvPlayerTrade::PlunderTradeRoute(int iTradeConnectionID)
 		CvString strBuffer;
 
 #if defined(MOD_BUGFIX_UNITCLASS_NOT_UNIT)
-		strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldValue, GC.getUnitInfo(GetTradeUnit(eDomain, m_pPlayer))->GetDescriptionKey());
+		strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldTotal, GC.getUnitInfo(GetTradeUnit(eDomain, m_pPlayer))->GetDescriptionKey());
 #else
 		if (eDomain == DOMAIN_LAND)
 		{
-			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldValue, "TXT_KEY_UNIT_CARAVAN");
+			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldTotal, "TXT_KEY_UNIT_CARAVAN");
 		}
 		else
 		{
-			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldValue, "TXT_KEY_UNIT_CARGO_SHIP");
+			strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPlunderGoldTotal, "TXT_KEY_UNIT_CARGO_SHIP");
 		}
 #endif
 		
@@ -4033,6 +4126,14 @@ int CvPlayerTrade::GetTradeRouteRange (DomainTypes eDomain, CvCity* pOriginCity)
 	}
 
 	int iRangeModifier = pOriginCity->getTradeRouteDomainRangeModifier(eDomain);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Kyzyl CS UA: +X% land trade-route range per trade-route slot the player has.
+	if (eDomain == DOMAIN_LAND)
+	{
+		iRangeModifier += (int)GetNumTradeRoutesPossible() * m_pPlayer->GetCSUALandTradeRouteRangePerSlot();
+	}
+#endif
 
 	iRange = iBaseRange;
 	iRange += iTraitRange;

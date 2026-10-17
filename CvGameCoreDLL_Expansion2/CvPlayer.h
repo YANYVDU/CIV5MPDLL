@@ -56,6 +56,7 @@ class CvDiplomacyRequests;
 class CvPlayerEspionage;
 class CvEspionageAI;
 class CvPlayerTrade;
+struct TradeConnection;
 class CvTradeAI;
 class CvLeagueAI;
 class CvPlayerCulture;
@@ -607,6 +608,14 @@ public:
 	int GetStartingSpyRank() const;
 	void ChangeStartingSpyRank(int iChange);
 	int GetSpyLevelUpWhenRiggingCount() const;
+	int GetSpyPoints(bool bTotal = false) const;
+	int GetSpyPointsThreshold() const;
+	int GetSpyPointsCreated() const;
+	int GetSpyPointsPerTurn() const;
+	void ChangeSpyPoints(int iChange);
+	int getSpyPointsThresholdModifier() const;
+	void changeSpyPointsThresholdModifier(int iChange);
+	void ChangeSpyPointsPerTurn(int iChange);
 	// END Espionage
 
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
@@ -807,6 +816,11 @@ public:
 	int GetNaturalWonderSubsequentFinderTech() const;
 	void SetNaturalWonderSubsequentFinderTech(int iValue);
 	void ChangeNaturalWonderSubsequentFinderTech(int iChange);
+
+	// Venice buy-food: authoritative per-player cooldown (returns 1=success, 0=cooldown, 2=not enough gold).
+	int TryBuyFoodFromVenice(int iFood, int iGold);
+	int GetLastVeniceBuyFoodTurn() const;
+	void SetLastVeniceBuyFoodTurn(int iTurn);
 
 
 	int GetGreatScientistBeakerMod() const;
@@ -1152,6 +1166,38 @@ public:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetCSUAGoldDonationInfluenceModifier() const;
 	int GetCSUAYieldPercentModifier(YieldTypes eYield) const;
+	int GetCSUAImmigrantYieldModifierFromImmigrants(YieldTypes eYield) const;
+	// Sum of all CSUA trade-route gold % modifiers for this connection (settlement/preview/AI paths)
+	int GetCSUATradeRouteGoldModifier(const TradeConnection& kTradeConnection) const;
+	// Kyzyl CS UA: land trade-route range % gained per trade-route slot the player has (plain percent,
+	// 10 = +10% per slot). Consumed by CvPlayerTrade::GetTradeRouteRange for DOMAIN_LAND.
+	int GetCSUALandTradeRouteRangePerSlot() const;
+	// Yerevan CS UA: if this plot is an improvement and an adjacent plot's improvement is eAdjacentImprovement,
+	// this plot gains +Yield of eYield (flat yield, e.g. +1 culture next to a worked holy site).
+	int GetCSUAAdjacentImprovementYieldChange(ImprovementTypes eImprovement, ImprovementTypes eAdjacentImprovement, YieldTypes eYield) const;
+	// Bucharest CS UA: immigration / emigration rate modifiers derived from the player's cumulative
+	// immigrant counts (applied in GetImmigrationRate).
+	int GetCSUAImmigrationRateModifier() const;
+	int GetCSUAEmigrationRateModifier() const;
+	// Quebec CS UA: percent by which this player's lifetime culture is inflated when another
+	// civilization computes its culture-victory progress against this player (0 = no effect).
+	int GetCSUACultureVictoryProgressModifier() const;
+	// Kiev CS UA: total national wonders completed by this player (used by the great-person rate modifier).
+	int GetNumNationalWonders();
+	// Kiev CS UA: great-person rate % modifier granted per national wonder completed (applied in
+	// CvCity::getGreatPeopleRateModifier).
+	int GetCSUAGreatPersonRateModifierFromNationalWonders() const;
+	// Kiev CS UA: extra League delegate votes, one per civilization this player has a Declaration of
+	// Friendship with (applied in CvLeague::CalculateStartingVotesForMember).
+	int GetCSUALeagueVotesFromDoF() const;
+	// Hanoi CS UA: cumulative number of war peace treaties this player has completed (serialized, never
+	// decays). Consumed by GetCSUAYieldPercentModifier for a nation-wide Culture % modifier.
+	int GetNumWarPeacesCompleted() const;
+	void ChangeNumWarPeacesCompleted(int iChange);
+	// Hanoi CS UA: cumulative number of times this player has been declared war on (serialized, never
+	// decays). Consumed by CvUnit::GetGenericMaxStrengthModifier for an in-borders enemy strength penalty.
+	int GetNumTimesDeclaredWarOn() const;
+	void ChangeNumTimesDeclaredWarOn(int iChange);
 #endif
 
 	int GetMinorFriendshipAnchorMod() const;
@@ -1377,6 +1423,11 @@ public:
 
 	void setTeam(TeamTypes eTeam);
 	bool IsAITeammateOfHuman() const;
+
+	// Player-level open borders (team-level counterpart lives on CvTeam and stays intact).
+	// "This player allows its open borders to ePlayer."
+	bool IsAllowsOpenBordersToPlayer(PlayerTypes ePlayer) const;
+	void SetAllowsOpenBordersToPlayer(PlayerTypes ePlayer, bool bNewValue);
 
 	PlayerColorTypes getPlayerColor() const;
 	const CvColorA& getPlayerTextColor() const;
@@ -1798,6 +1849,74 @@ public:
 	int GetCSTreasuryInterestRate() const;
 #endif
 
+	// Jerusalem CS UA: per holy city religious pressure / per following-city capital yield / denounce immunity
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int GetCSUAReligiousPressureModifier();
+	int GetCSUACapitalYieldModifierPerFollowingCity(YieldTypes eYield) const;
+	int GetCapturedHolyCityCount();
+	void RefreshHolyCityCount();
+	bool IsDenounceImmunity() const;
+	// Sidon CS UA: % of a defended city's building defense bypassed by this player's attacking units
+	int GetCSACityAttackIgnoreBuildingDefensePercent() const;
+	// Sidon CS UA: % modifier on the per-turn XP granted by allied militaristic city-states
+	int GetCSAMilitaryXPPerTurnModifier() const;
+	// Sidon CS UA: whether the militaristic per-turn XP also applies to sea and air domains
+	bool IsCSAMilitaryXPSeaAir() const;
+	// Budapest CS UA: extra flat damage this player's units deal against an already-wounded target
+	int GetCSAWoundedFixedDamage() const;
+	// Vatican CS UA: spread speed of the founder's religion (ally +50% / friend +20%)
+	int GetCSUAReligionSpreadSpeedModifier() const;
+	// Vatican CS UA: Papal Recognition league delegate votes granted to each following civilization (mainstream votes)
+	int GetCSUAPapalRecognitionVotes() const;
+	// Vatican CS UA: Papal Recognition league delegate votes granted to the ally per following civilization (including itself)
+	int GetCSUAPapalRecognitionAllyVotes() const;
+	// Vatican CS UA: per city worldwide following the player's religion, the holy city gains +Modifier% of the yield (100 = +1% per city)
+	int GetCSUAHolyCityYieldModifierPerFollowingCity(YieldTypes eYield) const;
+	// Vatican CS UA: number of major civs (including this player) following the founded religion, cached once per turn in doTurn()
+	int GetCSUAPapalRecognitionFollowerCount();
+	void RefreshPapalRecognitionFollowerCount();
+	// Gangtok CS UA: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
+	int GetCSUAHappinessPerFollowingCity() const;
+	// Vancouver CS UA: global happiness per coastal city owned by the player (100 = +1 happiness per coastal city)
+	int GetCSUACoastalCityHappiness() const;
+	// Vancouver CS UA: number of the player's coastal cities (cached once per turn; lazy on first access)
+	int GetNumCoastalCities() const;
+	// Vancouver CS UA: recompute the cached coastal-city count (called once per turn in RefreshCSAllUAEffects)
+	void RefreshCoastalCityCount();
+	// Gangtok CS UA: buy influence at ANY city-state with faith (gold price / divisor faith; divisor > 0 enables the feature)
+	int GetCSUAFaithInfluencePurchaseCostDivisor() const;
+	// Gangtok CS UA: how many faith influence purchases the ally may make per turn (globally)
+	int GetCSUAFaithInfluencePurchasePerTurnLimit() const;
+	// Gangtok CS UA: faith influence purchases already made this turn (reset in doTurn())
+	int GetCSUAFaithInfluencePurchaseUsed() const;
+	int GetCSUAFaithInfluencePurchaseRemaining() const;
+	void ChangeCSUAFaithInfluencePurchaseUsed(int iChange);
+	// Wittenberg CS UA: ally may spend faith to add one belief to the city-state's religion
+	bool GetCSUAAnyFaithBeliefPurchase() const;
+	// Wittenberg CS UA: keep this % of the followers when an inquisitor clears the city-state's religion
+	int GetCSUAInquisitorRetentionPercent() const;
+	// Wittenberg CS UA: does this city-state's own UA grant the faith-belief-purchase ability?
+	bool HasCSUABeliefPurchaseUA() const;
+	// La Venta CS UA: +X% great-person rate per masterpiece/artifact the player owns
+	int GetCSUAGreatPersonRateModifierPerGreatWork() const;
+	// La Venta CS UA: total great-person rate modifier from every masterpiece/artifact the player owns
+	int GetCSUAGreatPersonRateModifierFromGreatWorks() const;
+	// La Venta CS UA: ally may spend faith to add an idle pantheon belief to the religion the ally leads
+	bool GetCSUAAnyFaithPantheonPurchase() const;
+	// La Venta CS UA: does this city-state's own UA grant the faith-pantheon-purchase ability?
+	bool HasCSUAFaithPantheonPurchaseUA() const;
+	// Kathmandu CS UA: the first gold donation each turn refunds this % of the amount as faith
+	int GetCSUAFaithRefundPerDonationPercent() const;
+	// Monaco CS UA: does the player's activated CSUA grant the first-donation wager?
+	bool HasCSUAGoldDonationGamble() const;
+	// Monaco CS UA: roll the first-donation wager and return the refund multiplier (0 = no payout)
+	int GetCSUAGoldDonationGambleMultiplier() const;
+	// Monaco CS UA: building gold maintenance modifier while the player is in a golden age
+	int GetCSUABuildingMaintenanceMod() const;
+	// CSUA: does any city-state UA this player has activated (as ally or friend) grant the given effect id?
+	bool HasCSUAEffect(int eEffect) const;
+#endif
+
 	int GetPrestigeExemptAllyCount() const;
 	void SetPrestigeExemptAllyCount(int iValue);
 	void ChangePrestigeExemptAllyCount(int iChange);
@@ -1929,6 +2048,12 @@ public:
 
 	int GetNumPuppetCities() const;
 	int GetMaxEffectiveCities(bool bIncludePuppets = false);
+
+	// Research threshold (the city-count tech cost modifier) broken into its component parts, for UI display.
+	// Returns the final modifier; any non-NULL out-param receives one component. Shared with
+	// CvPlayerTechs::GetResearchCost so the tooltip can never drift from the real math.
+	int GetResearchThresholdMod(int* piModPerCity = NULL, int* piEffectiveCities = NULL,
+		int* piPuppetDiscount = NULL, int* piBuildingClassPercent = NULL, int* piGoldenAgePercent = NULL);
 
 	int GetNumNaturalWondersDiscoveredInArea() const;
 	void SetNumNaturalWondersDiscoveredInArea(int iValue);
@@ -2400,6 +2525,13 @@ public:
 	void ChangeImmigrationCounter(int iIndex, int iChange);
 	void SetImmigrationCounter(int iIndex, int iValue);
 	int GetImmigrationRate(PlayerTypes eTargetPlayer) const;
+	int GetTotalImmigrantsReceived() const;
+	void ChangeTotalImmigrantsReceived(int iChange);
+	void DoImmigrantCashReward();
+	int GetTotalImmigrantsEmigrated() const;
+	void ChangeTotalImmigrantsEmigrated(int iChange);
+	void DoInternationalImmigration();
+	bool DoImmigration(PlayerTypes eOutPlayer, PlayerTypes eInPlayer);
 #endif
 	int GetNegateWarmongerTurn(int iIndex) const;
 	void SetNegateWarmongerTurn(int iIndex, int iValue);
@@ -2561,6 +2693,11 @@ protected:
 	int m_iEspionageModifier;
 	int m_iEspionageSpeedModifier;
 	int m_iSpyStartingRank;
+	int m_iSpyPoints;
+	int m_iSpyPointsTotal;
+	int m_iSpyPointsThresholdModifier;
+	int m_iSpyPointsCreated;
+	mutable int m_iSpyPointsPerTurn;
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
 	int m_iConversionModifier;
 #endif
@@ -2637,6 +2774,7 @@ protected:
 	int m_iNaturalWonderFirstFinderTech;
 	int m_iNaturalWonderSubsequentFinderPolicies;
 	int m_iNaturalWonderSubsequentFinderTech;
+	int m_iLastVeniceBuyFoodTurn; // authoritative per-player Venice buy-food cooldown (MP-synced via broadcast)
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;
@@ -3044,6 +3182,12 @@ protected:
 	FAutoVariable<bool, CvPlayer> m_bEverTrainedBuilder;
 	// end slewis's tutorial variables
 
+	// Player-level open borders, indexed by the player we allow into our territory.
+	Firaxis::Array< bool, REALLY_MAX_PLAYERS > m_abPlayerOpenBorders;
+	// True after a save written by this code path is loaded; used to distinguish new saves from
+	// old saves (which only carry legacy team-level open borders).
+	bool m_bPlayerOBsValid;
+
 	EndTurnBlockingTypes  m_eEndTurnBlockingType;
 	int  m_iEndTurnBlockingNotificationIndex;
 
@@ -3144,6 +3288,12 @@ protected:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	CvPlayerCityStateUA* m_pCityStateUA;
 	int m_iCityStateUASpyKillProgress;
+	int m_iCachedHolyCityCount; // Jerusalem CS UA: cached holy-city count, refreshed once per turn in doTurn(); -1 = not computed yet
+	int m_iCachedPapalRecognitionFollowerCount; // Vatican CS UA: cached follower-civ count, refreshed once per turn in doTurn(); -1 = not computed yet
+	int m_iCachedCoastalCityCount; // Vancouver CS UA: cached coastal-city count, refreshed once per turn in RefreshCSAllUAEffects(); -1 = not computed yet
+	int m_iCSUAFaithInfluencePurchaseUsed; // Gangtok CS UA: faith influence purchases made this turn (reset each turn in doTurn())
+	int m_iNumWarPeacesCompleted; // Hanoi CS UA: cumulative completed war peace treaties (serialized, never decays)
+	int m_iNumTimesDeclaredWarOn; // Hanoi CS UA: cumulative times declared war on (serialized, never decays)
 #endif
 
 	// human player wanted to end turn processing but hasn't received
@@ -3227,6 +3377,8 @@ protected:
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	std::vector<int> m_aiImmigrationCounter;
+	int m_iTotalImmigrantsReceived = 0;
+	int m_iTotalImmigrantsEmigrated = 0;
 #endif
 	std::vector<int> m_aiNegateWarmongerTurn;
 

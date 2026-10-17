@@ -359,6 +359,10 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(GetChangeDamageValue);
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	Method(GetCSUADamageReductionPercent);
+#endif
+
 	Method(GetHighestPopulation);
 	Method(SetHighestPopulation);
 	//Method(GetWorkingPopulation);
@@ -780,9 +784,16 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 	Method(IsCanDoImmigration);
+	// MP: SetCanDoImmigration and the ChangeTotalImmigrants* setters mutate local state only - a
+	// direct Lua call desyncs the other clients. The flag is reset each turn by CvCity::doTurn and
+	// cleared by CvPlayer::DoImmigration; mods must not call them.
 	Method(SetCanDoImmigration);
 	Method(CanImmigrantIn);
 	Method(CanImmigrantOut);
+	Method(GetTotalImmigrantsReceived);
+	Method(ChangeTotalImmigrantsReceived);
+	Method(GetTotalImmigrantsEmigrated);
+	Method(ChangeTotalImmigrantsEmigrated);
 #endif
 #ifdef MOD_GLOBAL_CITY_SCALES
 	Method(GetScale);
@@ -4609,7 +4620,8 @@ int CvLuaCity::lGetStrengthValue(lua_State* L)
 {
 	CvCity* pkCity = GetInstance(L);
 	bool bForRangeStrike = luaL_optbool(L, 2, false);
-	const int iResult = pkCity->getStrengthValue(bForRangeStrike);
+	int iIgnoreBuildingDefensePercent = luaL_optint(L, 3, 0);
+	const int iResult = pkCity->getStrengthValue(bForRangeStrike, iIgnoreBuildingDefensePercent);
 
 	lua_pushinteger(L, iResult);
 	return 1;
@@ -5246,6 +5258,18 @@ int CvLuaCity::lGetChangeDamageValue(lua_State* L)
 }
 #endif
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+//int GetCSUADamageReductionPercent() const;
+int CvLuaCity::lGetCSUADamageReductionPercent(lua_State* L)
+{
+	CvCity* pCity = GetInstance(L);
+
+	const int iResult = pCity->GetCSUADamageReductionPercent();
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+#endif
+
 
 
 #if defined(MOD_API_LUA_EXTENSIONS)
@@ -5356,9 +5380,14 @@ int CvLuaCity::lIsSecondaryReligionActive(lua_State* L)
 
 #if defined(MOD_INTERNATIONAL_IMMIGRATION_FOR_SP)
 LUAAPIIMPL(City, IsCanDoImmigration)
+// MP: raw setters, see the registration note above.
 LUAAPIIMPL(City, SetCanDoImmigration)
 LUAAPIIMPL(City, CanImmigrantIn)
 LUAAPIIMPL(City, CanImmigrantOut)
+LUAAPIIMPL(City, GetTotalImmigrantsReceived)
+LUAAPIIMPL(City, ChangeTotalImmigrantsReceived)
+LUAAPIIMPL(City, GetTotalImmigrantsEmigrated)
+LUAAPIIMPL(City, ChangeTotalImmigrantsEmigrated)
 #endif
 
 #ifdef MOD_GLOBAL_CITY_SCALES

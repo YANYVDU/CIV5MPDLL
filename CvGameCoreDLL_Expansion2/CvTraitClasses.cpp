@@ -111,6 +111,7 @@ CvTraitEntry::CvTraitEntry() :
 	m_iExtraSupplyPerPopulation(0),
 #endif
 	m_iExtraSpies(0),
+	m_iSpyPoints(0),
 	m_iUnresearchedTechBonusFromKills(0),
 	m_iExtraFoundedCityTerritoryClaimRange(0),
 	m_iFreeSocialPoliciesPerEra(0),
@@ -737,6 +738,12 @@ int CvTraitEntry::GetExtraSupplyPerPopulation() const
 int CvTraitEntry::GetExtraSpies() const
 {
 	return m_iExtraSpies;
+}
+
+/// Accessor: spy points provided per turn
+int CvTraitEntry::GetSpyPoints() const
+{
+	return m_iSpyPoints;
 }
 
 /// Accessor: modifier for beaker bonus towards unresearched tech upon killing unit from that tech
@@ -1879,6 +1886,7 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	}
 #endif
 	m_iExtraSpies							= kResults.GetInt("ExtraSpies");
+	m_iSpyPoints							= kResults.GetInt("SpyPoints");
 	m_iUnresearchedTechBonusFromKills		= kResults.GetInt("UnresearchedTechBonusFromKills");
 	m_iExtraFoundedCityTerritoryClaimRange  = kResults.GetInt("ExtraFoundedCityTerritoryClaimRange");
 	m_iFreeSocialPoliciesPerEra				= kResults.GetInt("FreeSocialPoliciesPerEra");
@@ -2961,6 +2969,7 @@ void CvPlayerTraits::InitPlayerTraits()
 			m_iExtraSupplyPerPopulation += trait->GetExtraSupplyPerPopulation();
 #endif
 			m_iExtraSpies += trait->GetExtraSpies();
+			m_iSpyPoints += trait->GetSpyPoints();
 			m_iUnresearchedTechBonusFromKills += trait->GetUnresearchedTechBonusFromKills();
 			m_iExtraFoundedCityTerritoryClaimRange += trait->GetExtraFoundedCityTerritoryClaimRange();
 			m_iFreeSocialPoliciesPerEra += trait->GetFreeSocialPoliciesPerEra();
@@ -3460,6 +3469,10 @@ void CvPlayerTraits::InitPlayerTraits()
 	}
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Diplomatic prestige from traits is NOT applied here (no symmetric add/remove): it is re-applied
+	// reload-safe by CvPlayer::InitPlayerTraits (ChangeExtraDiplomaticPrestige) after CvPlayer::Reset
+	// zeroes the player counter each (re)start, mirroring ExtraUnitPlayerInstances. This avoids the
+	// hot-restart bug where Reset used the runtime m_iDiplomaticPrestige (possibly garbage) to subtract.
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(m_iMinorCivAlliesThresholdModifier);
 #endif
@@ -3519,6 +3532,9 @@ void CvPlayerTraits::Reset()
 	m_iCityStateFriendshipModifier = 0;
 	m_iCityStateCombatModifier = 0;
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// No reverse-subtract of diplomatic prestige here (see note in Init above): the player counter is
+	// reset to 0 by CvPlayer::Reset and re-populated by CvPlayer::InitPlayerTraits, so a stale/garbage
+	// m_iDiplomaticPrestige during hot restart can no longer be pushed into the persisted player value.
 	m_iDiplomaticPrestige = 0;
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
@@ -3582,6 +3598,7 @@ void CvPlayerTraits::Reset()
 	m_iExtraSupplyPerPopulation = 0;
 #endif
 	m_iExtraSpies = 0;
+	m_iSpyPoints = 0;
 	m_iUnresearchedTechBonusFromKills = 0;
 	m_iExtraFoundedCityTerritoryClaimRange = 0;
 	m_iFreeSocialPoliciesPerEra = 0;
@@ -5049,6 +5066,7 @@ void CvPlayerTraits::Read(FDataStream& kStream)
 #endif
 
 	kStream >> m_iExtraSpies;
+	MOD_SERIALIZE_READ(164, kStream, m_iSpyPoints, 0);
 
 	kStream >> m_iUnresearchedTechBonusFromKills;
 
@@ -5587,6 +5605,7 @@ void CvPlayerTraits::Write(FDataStream& kStream)
 	MOD_SERIALIZE_WRITE(kStream, m_iExtraSupplyPerPopulation);
 #endif
 	kStream << m_iExtraSpies;
+	MOD_SERIALIZE_WRITE(kStream, m_iSpyPoints);
 	kStream << m_iUnresearchedTechBonusFromKills;
 	kStream << m_iExtraFoundedCityTerritoryClaimRange;
 	kStream << m_iFreeSocialPoliciesPerEra;

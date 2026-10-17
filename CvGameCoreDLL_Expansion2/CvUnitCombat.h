@@ -30,6 +30,14 @@ struct InflictDamageContext
 	// output
 	int *piAttackInflictDamage = nullptr;
 	int *piDefenseInflictDamage = nullptr;
+
+	// Hanoi CS UA: fixed-damage scaling (percent, 0..100) applied to every fixed-damage contribution,
+	// keyed by the unit that owns the contribution (100 = unaffected). Computed once in
+	// CvUnitCombat::InterveneInflictDamage from the battle plot owner's CSUA effect. When the battle
+	// plot is inside the territory of an enemy holding this UA, the enemy unit's fixed damage and fixed
+	// damage reduction are scaled down (ally: 100% nullified -> scale 0, friend: 50% -> scale 50).
+	int iAttackerFixedDamageScale = 100;
+	int iDefenderFixedDamageScale = 100;
 };
 
 // Combat controller for CvUnits
