@@ -86,8 +86,7 @@ create table Building_AutoUpgrade (
     UpgradeGroup text NOT NULL,
     OldBuildingClass text NOT NULL references BuildingClasses(Type),
     NewBuildingClass text NOT NULL references BuildingClasses(Type),
-    SPriority integer NOT NULL default 0,
-    primary key (TechType, UpgradeGroup, OldBuildingClass)
+    SPriority integer NOT NULL default 0
 );
 
 -- 1 = AI players on this handicap also run the automatic building upgrade.
