@@ -77,3 +77,20 @@ create table Build_AdjacentTerrainRequired (
     TerrainType text references Terrains(Type)
 );
 
+-- Tech-triggered automatic building upgrade rules.
+-- One UpgradeGroup upgrades at most once per city; SPriority decides which old
+-- building is reported when several are present (lower = higher priority).
+-- Human players always upgrade; AI players follow HandicapInfos.AIAutoBuildingUpgrade.
+create table Building_AutoUpgrade (
+    TechType text NOT NULL references Technologies(Type),
+    UpgradeGroup text NOT NULL,
+    OldBuildingClass text NOT NULL references BuildingClasses(Type),
+    NewBuildingClass text NOT NULL references BuildingClasses(Type),
+    SPriority integer NOT NULL default 0,
+    primary key (TechType, UpgradeGroup, OldBuildingClass)
+);
+
+-- 1 = AI players on this handicap also run the automatic building upgrade.
+-- Human players are unaffected by this column.
+alter table HandicapInfos add AIAutoBuildingUpgrade boolean default 0;
+

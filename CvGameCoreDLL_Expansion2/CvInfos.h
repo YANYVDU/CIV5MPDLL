@@ -893,6 +893,7 @@ public:
 	int getNumGoodies() const;
 	int getStrategicResourceMod() const;
 	int getStrategicResourceModPerEra() const;
+	int getAIAutoBuildingUpgrade() const;
 
 	// Arrays
 	int getGoodies(int i) const;
@@ -966,6 +967,7 @@ protected:
 	int m_iNumGoodies;
 	int m_iStrategicResourceMod;
 	int m_iStrategicResourceModPerEra;
+	int m_iAIAutoBuildingUpgrade;
 
 	CvString m_strHandicapName;
 

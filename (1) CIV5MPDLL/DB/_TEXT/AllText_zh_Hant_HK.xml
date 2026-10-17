@@ -1012,5 +1012,20 @@
 		<Row Tag="TXT_KEY_AIRSWEEP_BY_ENEMY">
 			<Text>你的{@2_UnitName}單位受到敵方進行空中游獵的{@1_EnUName}造成的[COLOR_NEGATIVE_TEXT]{3_Damage}[ENDCOLOR]點傷害！</Text>
 		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE">
+			<Text>新科技使全國的{1_OldBuildings}升級為[COLOR_POSITIVE_TEXT]{@2_NewBuilding}[ENDCOLOR]。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE_SUMMARY">
+			<Text>建築升級：{1_OldBuildings} → {@2_NewBuilding}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_SP_UPGRADE_LIST_SEPARATOR">
+			<Text>、</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE">
+			<Text>你研發了[ICON_RESEARCH][COLOR_RESEARCH_STORED]鐵路技術[ENDCOLOR]，全世界的道路自動升級為[COLOR_POSITIVE_TEXT]鐵路[ENDCOLOR]！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE_SUMMARY">
+			<Text>鐵路技術</Text>
+		</Row>
 </Language_zh_Hant_HK>
 </GameData>

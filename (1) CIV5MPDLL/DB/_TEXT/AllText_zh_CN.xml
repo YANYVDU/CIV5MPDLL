@@ -1018,6 +1018,21 @@
 		<Row Tag="TXT_KEY_AIRSWEEP_BY_ENEMY">
 			<Text>你的{@2_UnitName}受到敌方进行空中游猎的{@1_EnUName}造成的[COLOR_NEGATIVE_TEXT]{3_Damage}[ENDCOLOR]点伤害！</Text>
 		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE">
+			<Text>新科技使全国的{1_OldBuildings}升级为[COLOR_POSITIVE_TEXT]{@2_NewBuilding}[ENDCOLOR]。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE_SUMMARY">
+			<Text>建筑升级：{1_OldBuildings} → {@2_NewBuilding}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_SP_UPGRADE_LIST_SEPARATOR">
+			<Text>、</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE">
+			<Text>你研发了[ICON_RESEARCH][COLOR_RESEARCH_STORED]铁路技术[ENDCOLOR]，全世界的道路自动升级为[COLOR_POSITIVE_TEXT]铁路[ENDCOLOR]！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE_SUMMARY">
+			<Text>铁路技术</Text>
+		</Row>
 </Language_zh_CN>
 
 </GameData>
