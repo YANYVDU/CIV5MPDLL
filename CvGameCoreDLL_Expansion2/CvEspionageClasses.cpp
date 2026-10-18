@@ -1443,7 +1443,15 @@ int CvPlayerEspionage::GetSpyIndexInCity(CvCity* pCity)
 		return -1;
 	}
 
-	return pCity->GetCityEspionage()->m_aiSpyAssignment[m_pPlayer->GetID()];
+	// m_aiSpyAssignment is sized MAX_MAJOR_CIVS; non-major players (city-states) own no
+	// spies, and indexing the per-city array with their player id reads past its end.
+	const PlayerTypes ePlayer = m_pPlayer->GetID();
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+	{
+		return -1;
+	}
+
+	return pCity->GetCityEspionage()->m_aiSpyAssignment[ePlayer];
 }
 
 

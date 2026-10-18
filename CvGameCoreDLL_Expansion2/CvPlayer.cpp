@@ -33113,8 +33113,9 @@ int CvPlayer::GetDiplomaticPrestige() const
 
 	//Master Spy diplomat: every Master Spy we keep stationed abroad as a diplomat is worth +1 prestige.
 	//Computed on the fly so it tracks the diplomat's presence immediately, with no stored state.
+	//City-states have no spies and must not walk the per-major espionage arrays.
 	CvPlayerEspionage* pMasterSpyEspionage = GetEspionage();
-	if (pMasterSpyEspionage != NULL)
+	if (!isMinorCiv() && pMasterSpyEspionage != NULL)
 	{
 		for (int iLoop = 0; iLoop < MAX_MAJOR_CIVS; iLoop++)
 		{
