@@ -5286,6 +5286,13 @@ const char* CvPlayer::getCivilizationShortDescription() const
 	}
 	else if(CvPreGame::civilizationShortDescription(GetID()).GetLength() == 0)
 	{
+		// Unused player slots have NO_CIVILIZATION and CvGlobals::getCivilizationInfo()
+		// asserts then returns NULL for them, so never dereference the info here.
+		if(CvPreGame::civilization(GetID()) == NO_CIVILIZATION)
+		{
+			return "";
+		}
+
 		return getCivilizationInfo().getShortDescription();
 	}
 	else
@@ -20440,10 +20447,20 @@ void CvPlayer::RefreshCSAllUAEffects()
 	if (!m_pCityStateUA)
 		return;
 
+	// Unused player slots (NO_CIVILIZATION) still get CS friendship refreshes from
+	// CvMinorCivAI::DoChangeAliveStatus, which walks every slot below MAX_MAJOR_CIVS.
+	// Such a slot has no civ and no CS UA state to refresh, and the AI perf logging
+	// below would dereference a NULL CvCivilizationInfo (crash at 0x120 in c_str).
+	if (getCivilizationType() == NO_CIVILIZATION)
+		return;
+
 	// CSUA perf profiling: one CSV row per player per call, written to CSUA-perf.csv when AI perf
 	// logging is enabled (CustomModOption GLOBAL_AI_PERF_LOGGING=1 or Lua SetAIPerfLogging(true)).
-	// Near-zero cost when logging is off. The per-step AI_PERF rows below are nested under this one.
-	AI_PERF_FORMAT("CSUA-perf.csv", ("CSUA RefreshCSAllUAEffects, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), getCivilizationShortDescription()));
+	// Only format the row when logging is on; the macro builds the CvString unconditionally.
+	if (GC.getAIPerfLogging())
+	{
+		AI_PERF_FORMAT("CSUA-perf.csv", ("CSUA RefreshCSAllUAEffects, Turn %03d, %s", GC.getGame().getElapsedGameTurns(), getCivilizationShortDescription()));
+	}
 
 	// Belgrade UA: capture the previous garrison-defense modifier before the rebuild below, so the
 	// city-strength refresh at the end of this function can also run when the bonus is being lost
