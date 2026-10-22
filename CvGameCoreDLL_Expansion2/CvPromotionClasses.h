@@ -114,6 +114,7 @@ public:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool IsNoSupply() const;
 #endif
+	bool IsIrregularForce() const;
 
 #if defined(MOD_UNITS_MAX_HP)
 	int  GetMaxHitPointsChange() const;
@@ -624,6 +625,7 @@ protected:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool m_bNoSupply;
 #endif
+	bool m_bIrregularForce;
 #if defined(MOD_UNITS_MAX_HP)
 	int m_iMaxHitPointsChange;
 	int m_iMaxHitPointsModifier;

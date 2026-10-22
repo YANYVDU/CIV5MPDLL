@@ -70,6 +70,7 @@ CvUnitEntry::CvUnitEntry(void) :
 #if defined(MOD_UNITS_NO_SUPPLY)
 	m_bNoSupply(false),
 #endif
+	m_bExpansionUnit(false),
 #if defined(MOD_UNITS_MAX_HP)
 	m_iMaxHitPoints(100),
 #endif
@@ -292,6 +293,7 @@ bool CvUnitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 		m_bNoSupply = (kResults.GetInt("NoSupply") != 0);
 	}
 #endif
+	m_bExpansionUnit = (kResults.GetInt("ExpansionUnit") != 0);
 #if defined(MOD_UNITS_MAX_HP)
 	if (MOD_UNITS_MAX_HP) {
 		m_iMaxHitPoints = kResults.GetInt("MaxHitPoints");
@@ -916,6 +918,12 @@ bool CvUnitEntry::IsNoSupply() const
 	return m_bNoSupply;
 }
 #endif
+
+/// Expansion unit (settler, merchant) that can be blocked by foreign regular military
+bool CvUnitEntry::IsExpansionUnit() const
+{
+	return m_bExpansionUnit;
+}
 
 #if defined(MOD_UNITS_MAX_HP)
 /// Maximum hit points, usually 100

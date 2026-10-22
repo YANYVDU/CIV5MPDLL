@@ -47,6 +47,8 @@
     <Row Class="6" Name="GLOBAL_BREAK_CIVILIAN_1UPT" Value="0"/>
     <!-- Now not allow civilian enter others city to avoid bug -->
     <Row Class="6" Name="GLOBAL_BREAK_CIVILIAN_RESTRICTIONS" Value="0"/>
+    <!-- Expansion civilian units (settlers, etc) cannot pass through foreign regular military units (v164) -->
+    <Row Class="6" Name="GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK" Value="0" DbUpdates="1"/>
 
     <!-- Great Generals and Admirals gained from combat experience spawn in the war-zone and not in a distant city (v19) -->
     <!-- See also: "Global - Local Generals" -->

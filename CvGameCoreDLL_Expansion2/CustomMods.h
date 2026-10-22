@@ -136,6 +136,8 @@
 #if defined(MOD_GLOBAL_BREAK_CIVILIAN_1UPT)
 #define MOD_GLOBAL_BREAK_CIVILIAN_RESTRICTIONS     (MOD_GLOBAL_BREAK_CIVILIAN_1UPT && gCustomMods.isGLOBAL_BREAK_CIVILIAN_RESTRICTIONS())
 #endif
+// Expansion civilian units (settlers, etc) cannot pass through foreign regular military units
+#define MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK  (MOD_GLOBAL_BREAK_CIVILIAN_1UPT && gCustomMods.isGLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK())
 // Great Generals and Admirals gained from combat experience spawn in the war-zone and not in a distant city
 #define MOD_GLOBAL_LOCAL_GENERALS                   gCustomMods.isGLOBAL_LOCAL_GENERALS()
 // Separates out the repair fleet and change port abilities of the Great Admiral (v61)
@@ -1505,6 +1507,7 @@ public:
 	MOD_OPT_DECL(GLOBAL_STACKING_RULES);
 	MOD_OPT_DECL(GLOBAL_BREAK_CIVILIAN_1UPT);
 	MOD_OPT_DECL(GLOBAL_BREAK_CIVILIAN_RESTRICTIONS);
+	MOD_OPT_DECL(GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK);
 	MOD_OPT_DECL(GLOBAL_LOCAL_GENERALS);
 	MOD_OPT_DECL(GLOBAL_SEPARATE_GREAT_ADMIRAL);
 	MOD_OPT_DECL(GLOBAL_PROMOTION_CLASSES);

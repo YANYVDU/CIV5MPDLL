@@ -87,6 +87,7 @@ public:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool IsNoSupply() const;
 #endif
+	bool IsExpansionUnit() const;
 #if defined(MOD_UNITS_MAX_HP)
 	int GetMaxHitPoints() const;
 #endif
@@ -295,6 +296,7 @@ private:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool m_bNoSupply;
 #endif
+	bool m_bExpansionUnit;
 #if defined(MOD_UNITS_MAX_HP)
 	int m_iMaxHitPoints;
 #endif

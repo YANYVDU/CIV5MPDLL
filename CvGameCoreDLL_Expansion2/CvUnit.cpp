@@ -408,6 +408,7 @@ CvUnit::CvUnit() :
 	, m_iAttacksMade("CvUnit::m_iAttacksMade", m_syncArchive)
 	, m_iGreatGeneralCount("CvUnit::m_iGreatGeneralCount", m_syncArchive)
 	, m_iGreatAdmiralCount(0)
+	, m_iIrregularForce(0)
 #if defined(MOD_PROMOTIONS_AURA_CHANGE)
 	, m_iAuraRangeChange(0)
 	, m_iAuraEffectChange(0)
@@ -1381,6 +1382,7 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iAOEDamageOnPillage = 0;
 #endif
 	m_iImmueMeleeAttack = 0;
+	m_iIrregularForce = 0;
 
 #if defined(MOD_ROG_CORE)
 	m_iNumOriginalCapitalAttackMod = 0;
@@ -4083,6 +4085,12 @@ bool CvUnit::canMoveInto(const CvPlot& plot, byte bMoveFlags) const
 				return FALSE;
 			}
 		}
+	}
+
+	// Expansion civilians are blocked by foreign regular military units (also when passing through)
+	if (MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK && IsBlockedByForeignRegularMilitary(plot))
+	{
+		return false;
 	}
 
 	if(isNoCapture())
@@ -25321,6 +25329,80 @@ void CvUnit::ChangeImmueMeleeAttackCount(int iChange)
 }
 
 //	--------------------------------------------------------------------------------
+bool CvUnit::IsExpansionUnit() const
+{
+	return getUnitInfo().IsExpansionUnit();
+}
+
+//	--------------------------------------------------------------------------------
+bool CvUnit::IsIrregularForce() const
+{
+	return m_iIrregularForce > 0;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::ChangeIrregularForceCount(int iChange)
+{
+	m_iIrregularForce += iChange;
+}
+
+//	--------------------------------------------------------------------------------
+/// True if this expansion civilian cannot pass through the plot because it contains a foreign regular military unit
+bool CvUnit::IsBlockedByForeignRegularMilitary(const CvPlot& plot) const
+{
+	if (!MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK)
+	{
+		return false;
+	}
+
+	if (!IsCivilianUnit() || !IsExpansionUnit())
+	{
+		return false;
+	}
+
+	for (int iUnitLoop = 0; iUnitLoop < plot.getNumUnits(); iUnitLoop++)
+	{
+		const CvUnit* pLoopUnit = plot.getUnitByIndex(iUnitLoop);
+		if (pLoopUnit == NULL || pLoopUnit == this)
+		{
+			continue;
+		}
+
+		// Units of our own team never block us
+		if (pLoopUnit->getTeam() == getTeam())
+		{
+			continue;
+		}
+
+		if (!pLoopUnit->IsCombatUnit())
+		{
+			continue;
+		}
+
+		// Irregular forces never block expansion units
+		if (pLoopUnit->IsIrregularForce())
+		{
+			continue;
+		}
+
+		// Allied or friendly city-states never block us
+		CvPlayer& kLoopPlayer = GET_PLAYER(pLoopUnit->getOwner());
+		if (kLoopPlayer.isMinorCiv())
+		{
+			CvMinorCivAI* pMinorCivAI = kLoopPlayer.GetMinorCivAI();
+			if (pMinorCivAI != NULL && (pMinorCivAI->IsAllies(getOwner()) || pMinorCivAI->IsFriends(getOwner())))
+			{
+				continue;
+			}
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
 bool CvUnit::IsIgnoreZOC() const
 {
 	return m_iIgnoreZOC > 0;
@@ -27456,6 +27538,7 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeCanParadropAnyWhereCount(thisPromotion.IsCanParadropAnyWhere() ? iChange : 0);
 		ChangeIsCanParadropUnLimitCount(thisPromotion.IsCanParadropUnLimit() ? iChange : 0);
 		ChangeImmueMeleeAttackCount(thisPromotion.IsImmueMeleeAttack() ? iChange : 0);
+		ChangeIrregularForceCount(thisPromotion.IsIrregularForce() ? iChange : 0);
 #if defined(MOD_UNITS_NO_SUPPLY)
 		changeNoSupply(thisPromotion.IsNoSupply() ? iChange : 0);
 #endif
@@ -28103,6 +28186,7 @@ void CvUnit::read(FDataStream& kStream)
 #endif
 
 	kStream >> m_iImmueMeleeAttack;
+	MOD_SERIALIZE_READ(164, kStream, m_iIrregularForce, 0);
 
 #if defined(MOD_UNITS_NO_SUPPLY)
 	MOD_SERIALIZE_READ(77, kStream, m_iNoSupply, 0);
@@ -28525,6 +28609,7 @@ void CvUnit::write(FDataStream& kStream) const
 
 
 	kStream << m_iImmueMeleeAttack;
+	MOD_SERIALIZE_WRITE(kStream, m_iIrregularForce);
 
 
 #if defined(MOD_UNITS_NO_SUPPLY)

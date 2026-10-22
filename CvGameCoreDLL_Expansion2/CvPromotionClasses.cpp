@@ -91,6 +91,7 @@ CvPromotionEntry::CvPromotionEntry():
 #if defined(MOD_UNITS_NO_SUPPLY)
 	m_bNoSupply(false),
 #endif
+	m_bIrregularForce(false),
 #if defined(MOD_UNITS_MAX_HP)
 	m_iMaxHitPointsChange(0),
 	m_iMaxHitPointsModifier(0),
@@ -742,6 +743,7 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 		m_bNoSupply = (kResults.GetInt("NoSupply") != 0);
 	}
 #endif
+	m_bIrregularForce = (kResults.GetInt("IrregularForce") != 0);
 #if defined(MOD_UNITS_MAX_HP)
 	if (MOD_UNITS_MAX_HP) {
 		m_iMaxHitPointsChange = kResults.GetInt("MaxHitPointsChange");
@@ -2553,6 +2555,12 @@ bool CvPromotionEntry::IsNoSupply() const
 	return m_bNoSupply;
 }
 #endif
+
+/// Accessor: Irregular force, which does not block foreign expansion units
+bool CvPromotionEntry::IsIrregularForce() const
+{
+	return m_bIrregularForce;
+}
 
 #if defined(MOD_UNITS_MAX_HP)
 /// Accessor: Absolute change of max hit points

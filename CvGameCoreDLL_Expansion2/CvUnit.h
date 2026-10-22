@@ -212,6 +212,7 @@ public:
 	bool canMoveInto(const CvPlot& pPlot, byte bMoveFlags = 0) const;
 	bool canMoveOrAttackInto(const CvPlot& pPlot, byte bMoveFlags = 0) const;
 	bool canMoveThrough(const CvPlot& pPlot, byte bMoveFlags = 0) const;
+	bool IsBlockedByForeignRegularMilitary(const CvPlot& pPlot) const;
 
 	int  GetWithdrawChance(const CvUnit& pAttacker, const bool bCheckChances) const;
 
@@ -1026,6 +1027,10 @@ public:
 
 	bool IsImmueMeleeAttack() const;
 	void ChangeImmueMeleeAttackCount(int iChange);
+
+	bool IsExpansionUnit() const;
+	bool IsIrregularForce() const;
+	void ChangeIrregularForceCount(int iChange);
 
 #if defined(MOD_ROG_CORE)
 	int getHPHealedIfDefeatEnemyGlobal() const;
@@ -2478,6 +2483,7 @@ protected:
 	int m_iCanParadropAnyWhere;
 	FAutoVariable<int, CvUnit> m_iIsCanParadropUnLimit;
 	int m_iImmueMeleeAttack;
+	int m_iIrregularForce;
 #if defined(MOD_UNITS_NO_SUPPLY)
 	int m_iNoSupply;
 #endif

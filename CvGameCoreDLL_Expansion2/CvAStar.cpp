@@ -1481,6 +1481,12 @@ int PathValid(CvAStarNode* parent, CvAStarNode* node, int data, const void* poin
 	}
 #endif
 
+	// Expansion civilians are blocked by foreign regular military units
+	if (MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK && pUnit->IsBlockedByForeignRegularMilitary(*pToPlot))
+	{
+		return FALSE;
+	}
+
 	// slewis - Added to catch when the unit is adjacent to an enemy unit while it is stacked with a friendly unit.
 	//          The logic above (with bPreviousNodeHostile) catches this problem with a path that's longer than one step
 	//          but does not catch when the path is only one step.
@@ -3694,6 +3700,12 @@ int TacticalAnalysisMapPathValid(CvAStarNode* parent, CvAStarNode* node, int dat
 #if defined(MOD_GLOBAL_BREAK_CIVILIAN_RESTRICTIONS)
 	}
 #endif
+
+	// Expansion civilians are blocked by foreign regular military units
+	if (MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK && pUnit->IsBlockedByForeignRegularMilitary(*pToPlot))
+	{
+		return FALSE;
+	}
 
 	// slewis - Added to catch when the unit is adjacent to an enemy unit while it is stacked with a friendly unit.
 	//          The logic above (with bPreviousNodeHostile) catches this problem with a path that's longer than one step
