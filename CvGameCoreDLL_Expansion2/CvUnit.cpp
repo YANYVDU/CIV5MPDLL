@@ -12437,15 +12437,12 @@ bool CvUnit::buyCityState()
 	PlayerTypes eMinor = pPlot->getOwner();
 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-	// Venice-style buyout: remember the bought city-state's ally/friend-tier UA before DoAcquire
-	// runs, because the city-state stops existing the moment its cities are transferred. The
-	// permanent record lives in CvPlayer so the effect survives that disappearance.
-	const bool bGainAllyUA = m_pUnitInfo->IsGainAllyCityStateUAOnBuy();
-	const bool bGainFriendUA = m_pUnitInfo->IsGainFriendCityStateUAOnBuy();
-	if ((bGainAllyUA || bGainFriendUA) && eMinor >= MAX_MAJOR_CIVS && eMinor < MAX_CIV_PLAYERS)
-	{
-		GET_PLAYER(getOwner()).GainCityStateUAOnBuyout(eMinor, bGainAllyUA, bGainFriendUA);
-	}
+	// Venice-style buyout: remember the bought city-state's ally/friend-tier UA. The record itself is
+	// written below, only once the acquisition is known to succeed; it lives in CvPlayer so the
+	// effect survives the city-state disappearing when its cities are transferred.
+	const bool bGainAllyUA = MOD_SP_UNIQUE_CITYSTATE && m_pUnitInfo->IsGainAllyCityStateUAOnBuy();
+	const bool bGainFriendUA = MOD_SP_UNIQUE_CITYSTATE && m_pUnitInfo->IsGainFriendCityStateUAOnBuy();
+	bool bRecordedBuyoutUA = false;
 #endif
 	CvAssertMsg(eMinor != NO_PLAYER, "Trying to buy a city state and not in city state territory. This is bad. Please send slewis this with your last 5 autosaves and what changelist # you're playing.");
 
@@ -12456,6 +12453,14 @@ bool CvUnit::buyCityState()
 		{
 			pMinorCapital = NULL; // we shouldn't use this pointer because DoAcquire invalidates it
 			int iNumUnits, iCapitalX, iCapitalY;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Record before DoAcquire: the city-state stops existing the moment its cities are transferred.
+			if ((bGainAllyUA || bGainFriendUA) && eMinor >= MAX_MAJOR_CIVS && eMinor < MAX_CIV_PLAYERS)
+			{
+				GET_PLAYER(getOwner()).GainCityStateUAOnBuyout(eMinor, bGainAllyUA, bGainFriendUA);
+				bRecordedBuyoutUA = true;
+			}
+#endif
 #if defined(MOD_GLOBAL_VENICE_KEEPS_RESOURCES)
 			// CvUnit::buyCityState() is only ever called via CvTypes::getMISSION_BUY_CITY_STATE(), so this MUST be a "Merchant of Venice" type unit
 			GET_PLAYER(eMinor).GetMinorCivAI()->DoAcquire(getOwner(), iNumUnits, iCapitalX, iCapitalY, MOD_GLOBAL_VENICE_KEEPS_RESOURCES);
@@ -12476,7 +12481,7 @@ bool CvUnit::buyCityState()
 	// Apply the permanently gained UA effect this turn instead of waiting for the next doTurn.
 	// buyCityState runs deterministically on every client via the mission queue, so a plain local
 	// call is multiplayer-safe - same pattern as the conquest refresh in CvPlayer::acquireCity.
-	if (bGainAllyUA || bGainFriendUA)
+	if (bRecordedBuyoutUA)
 		GET_PLAYER(getOwner()).RefreshCSAllUAEffects();
 #endif
 
