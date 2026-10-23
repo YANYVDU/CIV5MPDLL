@@ -491,6 +491,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetLeague);
 	Method(GetActiveLeague);
 
+	Method(GetLeagueWorldBankIntervalTurns);
 #if defined(MOD_API_LUA_EXTENSIONS)
 	Method(IsAchievementUnlocked);
 	Method(GetSteamStat);
@@ -3261,6 +3262,12 @@ int CvLuaGame::lGetActiveLeague(lua_State* L)
 	{
 		lua_pushnil(L);
 	}
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueWorldBankIntervalTurns(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWorldBankIntervalTurns());
 	return 1;
 }
 //------------------------------------------------------------------------------

@@ -696,6 +696,28 @@ int CvGameTrade::CountNumPlayerConnectionsToPlayer (PlayerTypes eFirstPlayer, Pl
 }
 
 //	--------------------------------------------------------------------------------
+int CvGameTrade::GetNumInternationalTradeRoutes (PlayerTypes ePlayer)
+{
+	int iCount = 0;
+
+	for (uint ui = 0; ui < m_aTradeConnections.size(); ui++)
+	{
+		if (IsTradeRouteIndexEmpty(ui))
+		{
+			continue;
+		}
+
+		const TradeConnection* pConnection = &(m_aTradeConnections[ui]);
+		if (pConnection->m_eOriginOwner == ePlayer && IsConnectionInternational(*pConnection))
+		{
+			iCount++;
+		}
+	}
+
+	return iCount;
+}
+
+//	--------------------------------------------------------------------------------
 bool CvGameTrade::IsCityConnectedToCity (CvCity* pFirstCity, CvCity* pSecondCity)
 {
 	int iFirstCityX = pFirstCity->getX();

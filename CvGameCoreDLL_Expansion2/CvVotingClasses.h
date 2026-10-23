@@ -129,6 +129,9 @@ struct CvResolutionEffects
 	int iGlobalWarCasualtiesChanges;
 	bool bEmbargoIdeology;
 	bool bInternationalLawProtection;
+	int iWorldBankInterestBasisPoints;
+	int iWorldBankRouteInterestBasisPoints;
+	int iWorldBankIntervalTurns;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bool bPermanentAlly;
@@ -757,6 +760,12 @@ public:
 	bool IsIdeologyEmbargoed(PlayerTypes eTrader, PlayerTypes eRecipient);
 	bool IsColdWarActive();
 	void SetColdWarActive(int iValue);
+	int GetWorldBankInterestBasisPoints() const;
+	void ChangeWorldBankInterestBasisPoints(int iChange);
+	int GetWorldBankRouteInterestBasisPoints() const;
+	void ChangeWorldBankRouteInterestBasisPoints(int iChange);
+	int GetWorldBankIntervalTurns() const;
+	void ChangeWorldBankIntervalTurns(int iChange);
 #endif
 
 	// General Logging
@@ -772,6 +781,9 @@ public:
 	int m_iGlobalAttackModifier;
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
+	int m_iWorldBankInterestBasisPoints;
+	int m_iWorldBankRouteInterestBasisPoints;
+	int m_iWorldBankIntervalTurns;
 #endif
 
 private:
@@ -1287,6 +1299,9 @@ public:
 	int GetGlobalWarCasualtiesChanges() const;
 	bool IsEmbargoIdeology() const;
 	bool IsInternationalLawProtection() const;
+	int GetWorldBankInterestBasisPoints() const;
+	int GetWorldBankRouteInterestBasisPoints() const;
+	int GetWorldBankIntervalTurns() const;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int GetVassalTaxPercent() const;
@@ -1348,6 +1363,9 @@ protected:
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
 	bool m_bInternationalLawProtection;
+	int m_iWorldBankInterestBasisPoints;
+	int m_iWorldBankRouteInterestBasisPoints;
+	int m_iWorldBankIntervalTurns;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int m_iVassalTaxPercent;

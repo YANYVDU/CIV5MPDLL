@@ -29,3 +29,8 @@ ALTER TABLE Resolutions ADD COLUMN 'VassalVassalPopulationPercent'        INTEGE
 ALTER TABLE Resolutions ADD COLUMN 'VassalVassalMilitaryMightPercent'     INTEGER DEFAULT 0;
 -- International law protection: marks a CITY_CSD resolution that places a city-state under international law protection
 ALTER TABLE Resolutions ADD COLUMN 'InternationalLawProtection' BOOLEAN DEFAULT 0;
+-- World Bank: treasury interest every 10 turns, plus a per-international-trade-route bonus (basis points)
+ALTER TABLE Resolutions ADD COLUMN 'WorldBankInterestBasisPoints' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'WorldBankRouteInterestBasisPoints' INTEGER DEFAULT 0;
+-- World Bank: the interval in turns between interest payments (0 falls back to 10 in code)
+ALTER TABLE Resolutions ADD COLUMN 'WorldBankIntervalTurns' INTEGER DEFAULT 0;

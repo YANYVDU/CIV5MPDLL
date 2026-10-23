@@ -5446,6 +5446,47 @@ void CvPlayer::doTurn()
 
 	doUpdateCacheOnTurn();
 
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+	// World Bank resolution: the treasury pays interest every N turns (10 by default),
+	// plus an extra share for each international trade route the player runs.
+	// City-states and barbarians do not receive interest.
+	if (MOD_VOTING_NEW_EFFECT_FOR_SP && !isMinorCiv() && !isBarbarian())
+	{
+		int iBasisPoints = GC.getGame().GetGameLeagues()->GetWorldBankInterestBasisPoints();
+		if (iBasisPoints != 0)
+		{
+			int iInterval = GC.getGame().GetGameLeagues()->GetWorldBankIntervalTurns();
+			if (iInterval <= 0)
+				iInterval = 10;
+
+			if ((GC.getGame().getGameTurn() % iInterval) == 0)
+			{
+				int iRouteBasisPoints = GC.getGame().GetGameLeagues()->GetWorldBankRouteInterestBasisPoints();
+				if (iRouteBasisPoints != 0)
+				{
+					iBasisPoints += iRouteBasisPoints * GC.getGame().GetGameTrade()->GetNumInternationalTradeRoutes(GetID());
+				}
+
+				if (iBasisPoints > 0)
+				{
+					long long iInterest = (long long)GetTreasury()->GetGold() * iBasisPoints / 10000;
+					if (iInterest > 0)
+					{
+						GetTreasury()->ChangeGold((int)iInterest);
+
+						if (isHuman())
+						{
+							CvString strMessage = GetLocalizedText("TXT_KEY_NOTIFICATION_WORLD_BANK_INTEREST", (int)iInterest);
+							CvString strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_WORLD_BANK_INTEREST_S");
+							AddNotification(NOTIFICATION_GENERIC, strMessage, strSummary, -1, -1);
+						}
+					}
+				}
+			}
+		}
+	}
+#endif
+
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Jerusalem CS UA: refresh the cached holy-city count once per turn
 	RefreshHolyCityCount();

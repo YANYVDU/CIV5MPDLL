@@ -216,6 +216,9 @@ CvResolutionEffects::CvResolutionEffects(void)
 	iGlobalWarCasualtiesChanges = 0;
 	bEmbargoIdeology = false;
 	bInternationalLawProtection = false;
+	iWorldBankInterestBasisPoints = 0;
+	iWorldBankRouteInterestBasisPoints = 0;
+	iWorldBankIntervalTurns = 0;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -269,6 +272,9 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		iGlobalWarCasualtiesChanges 		= pInfo->GetGlobalWarCasualtiesChanges();
 		bEmbargoIdeology					= pInfo->IsEmbargoIdeology();
 		bInternationalLawProtection			= pInfo->IsInternationalLawProtection();
+		iWorldBankInterestBasisPoints		= pInfo->GetWorldBankInterestBasisPoints();
+		iWorldBankRouteInterestBasisPoints	= pInfo->GetWorldBankRouteInterestBasisPoints();
+		iWorldBankIntervalTurns				= pInfo->GetWorldBankIntervalTurns();
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -364,6 +370,10 @@ bool CvResolutionEffects::HasOngoingEffects() const
 		return true;
 	if (bInternationalLawProtection)
 		return true;
+	if (iWorldBankInterestBasisPoints != 0)
+		return true;
+	if (iWorldBankRouteInterestBasisPoints != 0)
+		return true;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (bPermanentAlly)
@@ -410,6 +420,9 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iGlobalWarCasualtiesChanges				+= pOtherEffects->iGlobalWarCasualtiesChanges;
 	bEmbargoIdeology						|= pOtherEffects->bEmbargoIdeology; // target ideology	
 	bInternationalLawProtection				|= pOtherEffects->bInternationalLawProtection; // target city-state
+	iWorldBankInterestBasisPoints			+= pOtherEffects->iWorldBankInterestBasisPoints;
+	iWorldBankRouteInterestBasisPoints		+= pOtherEffects->iWorldBankRouteInterestBasisPoints;
+	iWorldBankIntervalTurns					+= pOtherEffects->iWorldBankIntervalTurns;
 #if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
 	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
@@ -534,6 +547,9 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	loadFrom >> writeTo.iGlobalWarCasualtiesChanges;
 	loadFrom >> writeTo.bEmbargoIdeology;
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.bInternationalLawProtection, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankRouteInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankIntervalTurns, 0);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (uiVersion >= 10)
@@ -595,6 +611,9 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	saveTo << readFrom.iGlobalWarCasualtiesChanges;
 	saveTo << readFrom.bEmbargoIdeology;
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.bInternationalLawProtection);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankRouteInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankIntervalTurns);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	saveTo << readFrom.bPermanentAlly;
@@ -6524,6 +6543,9 @@ void CvLeague::DoEnactResolution(CvEnactProposal* pProposal)
 		GC.getGame().GetGameLeagues()->SetColdWarActive(true);
 	}
 	
+	GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(resolution.GetEffects()->iWorldBankInterestBasisPoints);
+	GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(resolution.GetEffects()->iWorldBankRouteInterestBasisPoints);
+	GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(resolution.GetEffects()->iWorldBankIntervalTurns);
 	// Active Resolutions with only one-time effects immediately expire
 	if (resolution.HasOngoingEffects())
 	{
@@ -6575,6 +6597,9 @@ void CvLeague::DoRepealResolution(CvRepealProposal* pProposal)
 			{
 				GC.getGame().GetGameLeagues()->SetColdWarActive(false);
 			}
+			GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(-it->GetEffects()->iWorldBankInterestBasisPoints);
+			GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(-it->GetEffects()->iWorldBankRouteInterestBasisPoints);
+			GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(-it->GetEffects()->iWorldBankIntervalTurns);
 #endif
 			m_vActiveResolutions.erase(it);
 			//antonjs: todo: relocate these league-level effects:
@@ -7569,6 +7594,9 @@ CvGameLeagues::CvGameLeagues(void)
 	m_iGlobalAttackModifier = 0;
 	m_iGlobalWarCasualtiesChanges = 0;
 	m_bEmbargoIdeology = false;
+	m_iWorldBankInterestBasisPoints = 0;
+	m_iWorldBankRouteInterestBasisPoints = 0;
+	m_iWorldBankIntervalTurns = 0;
 }
 
 CvGameLeagues::~CvGameLeagues(void)
@@ -8203,6 +8231,30 @@ void CvGameLeagues::ChangeGlobalWarCasualtiesChanges(int iChange)
 {
 	m_iGlobalWarCasualtiesChanges += iChange;
 }
+int CvGameLeagues::GetWorldBankInterestBasisPoints() const
+{
+	return m_iWorldBankInterestBasisPoints;
+}
+void CvGameLeagues::ChangeWorldBankInterestBasisPoints(int iChange)
+{
+	m_iWorldBankInterestBasisPoints += iChange;
+}
+int CvGameLeagues::GetWorldBankRouteInterestBasisPoints() const
+{
+	return m_iWorldBankRouteInterestBasisPoints;
+}
+void CvGameLeagues::ChangeWorldBankRouteInterestBasisPoints(int iChange)
+{
+	m_iWorldBankRouteInterestBasisPoints += iChange;
+}
+int CvGameLeagues::GetWorldBankIntervalTurns() const
+{
+	return m_iWorldBankIntervalTurns;
+}
+void CvGameLeagues::ChangeWorldBankIntervalTurns(int iChange)
+{
+	m_iWorldBankIntervalTurns += iChange;
+}
 bool CvGameLeagues::IsIdeologyEmbargoed(PlayerTypes eTrader, PlayerTypes eRecipient)
 {
 	if(!m_bEmbargoIdeology) return false;
@@ -8363,9 +8415,12 @@ FDataStream& operator>>(FDataStream& loadFrom, CvGameLeagues& writeTo)
 	}
 
 #if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
-	loadFrom >> writeTo.m_iGlobalAttackModifier;
-	loadFrom >> writeTo.m_iGlobalWarCasualtiesChanges;
-	loadFrom >> writeTo.m_bEmbargoIdeology;
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iGlobalAttackModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iGlobalWarCasualtiesChanges, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bEmbargoIdeology, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankRouteInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankIntervalTurns, 0);
 #endif
 
 	return loadFrom;
@@ -8389,9 +8444,12 @@ FDataStream& operator<<(FDataStream& saveTo, const CvGameLeagues& readFrom)
 	saveTo << readFrom.m_eLastEraTrigger;
 
 #if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
-	saveTo << readFrom.m_iGlobalAttackModifier;
-	saveTo << readFrom.m_iGlobalWarCasualtiesChanges;
-	saveTo << readFrom.m_bEmbargoIdeology;
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iGlobalAttackModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iGlobalWarCasualtiesChanges);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bEmbargoIdeology);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankRouteInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankIntervalTurns);
 #endif
 	
 	return saveTo;
@@ -11601,6 +11659,9 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_iGlobalAttackModifier				= 0;
 	m_iGlobalWarCasualtiesChanges		= 0;
 	m_bEmbargoIdeology					= false;
+	m_iWorldBankInterestBasisPoints		= 0;
+	m_iWorldBankRouteInterestBasisPoints= 0;
+	m_iWorldBankIntervalTurns			= 0;
 	m_bInternationalLawProtection		= false;
 #endif
 	m_eCivilizationType = NO_CIVILIZATION;
@@ -11677,6 +11738,9 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iGlobalWarCasualtiesChanges		= kResults.GetInt("GlobalWarCasualtiesChanges");
 	m_bEmbargoIdeology					= kResults.GetBool("EmbargoIdeology");
 	m_bInternationalLawProtection		= kResults.GetBool("InternationalLawProtection");
+	m_iWorldBankInterestBasisPoints		= kResults.GetInt("WorldBankInterestBasisPoints");
+	m_iWorldBankRouteInterestBasisPoints= kResults.GetInt("WorldBankRouteInterestBasisPoints");
+	m_iWorldBankIntervalTurns			= kResults.GetInt("WorldBankIntervalTurns");
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
@@ -11886,6 +11950,18 @@ bool CvResolutionEntry::IsEmbargoIdeology() const
 bool CvResolutionEntry::IsInternationalLawProtection() const
 {
 	return m_bInternationalLawProtection;
+}
+int CvResolutionEntry::GetWorldBankInterestBasisPoints() const
+{
+	return m_iWorldBankInterestBasisPoints;
+}
+int CvResolutionEntry::GetWorldBankRouteInterestBasisPoints() const
+{
+	return m_iWorldBankRouteInterestBasisPoints;
+}
+int CvResolutionEntry::GetWorldBankIntervalTurns() const
+{
+	return m_iWorldBankIntervalTurns;
 }
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
