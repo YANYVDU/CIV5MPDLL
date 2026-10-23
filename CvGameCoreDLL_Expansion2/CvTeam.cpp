@@ -5589,6 +5589,16 @@ namespace
 		int iPrio;
 	};
 
+	// Restores the ordering the old per-tech query asked for with
+	// "ORDER BY UpgradeGroup, SPriority". SelectAll returns rows in physical
+	// order, so rules must be sorted explicitly once after loading.
+	bool CompareRuleOrder(const AutoUpgradeRule& kLeft, const AutoUpgradeRule& kRight)
+	{
+		if (kLeft.strGroup != kRight.strGroup)
+			return kLeft.strGroup < kRight.strGroup;
+		return kLeft.iPrio < kRight.iPrio;
+	}
+
 	struct AutoUpgradeHit
 	{
 		CvString strGroup;
@@ -5596,34 +5606,51 @@ namespace
 		std::vector<std::pair<int, BuildingClassTypes> > aOldClasses;    // (SPriority, old class)
 	};
 
+	// SPriority first; equal priorities fall back to the class id so the
+	// notification text is identical on every client.
 	bool CompareOldClassPriority(const std::pair<int, BuildingClassTypes>& kLeft, const std::pair<int, BuildingClassTypes>& kRight)
 	{
-		return kLeft.first < kRight.first;
+		if (kLeft.first != kRight.first)
+			return kLeft.first < kRight.first;
+		return kLeft.second < kRight.second;
 	}
 
-	// Load the Building_AutoUpgrade rules for one tech. Most techs have none.
-	void LoadAutoUpgradeRules(TechTypes eTech, std::vector<AutoUpgradeRule>& aRules)
-	{
-		CvTechEntry* pkTechInfo = GC.getTechInfo(eTech);
-		if (pkTechInfo == NULL)
-			return;
+	// All Building_AutoUpgrade rules, bucketed by tech. Loaded once per process:
+	// the game database is fixed for a session (switching mods restarts the game),
+	// so setHasTech never needs to query the database again.
+	std::vector<std::vector<AutoUpgradeRule> > s_aaAutoUpgradeRules;
+	bool s_bAutoUpgradeRulesLoaded = false;
+	TechTypes s_eAutoUpgradeRailroadTech = NO_TECH;
 
-		CvString strWhere;
-		strWhere.Format("TechType='%s' ORDER BY UpgradeGroup, SPriority", pkTechInfo->GetType());
+	void EnsureAutoUpgradeRulesLoaded()
+	{
+		if (s_bAutoUpgradeRulesLoaded)
+			return;
+		s_bAutoUpgradeRulesLoaded = true;
+
+		s_eAutoUpgradeRailroadTech = (TechTypes)GC.getInfoTypeForString("TECH_RAILROAD");
+
+		const int iNumTechs = GC.getNumTechInfos();
+		if (iNumTechs <= 0)
+			return;
+		s_aaAutoUpgradeRules.resize(iNumTechs);
+
 		Database::Results kResults;
-		if (!DB.SelectWhere(kResults, "Building_AutoUpgrade", strWhere.GetCString()))
+		if (!DB.SelectAll(kResults, "Building_AutoUpgrade"))
 			return;
 
 		while (kResults.Step())
 		{
+			const char* szTech = kResults.GetText("TechType");
 			const char* szOldClass = kResults.GetText("OldBuildingClass");
 			const char* szNewClass = kResults.GetText("NewBuildingClass");
-			if (szOldClass == NULL || szNewClass == NULL)
+			if (szTech == NULL || szOldClass == NULL || szNewClass == NULL)
 				continue;
 
+			const int eTech = GC.getInfoTypeForString(szTech);
 			const int eOld = GC.getInfoTypeForString(szOldClass);
 			const int eNew = GC.getInfoTypeForString(szNewClass);
-			if (eOld < 0 || eNew < 0)
+			if (eTech < 0 || eTech >= iNumTechs || eOld < 0 || eNew < 0)
 				continue;
 
 			AutoUpgradeRule kRule;
@@ -5631,8 +5658,28 @@ namespace
 			kRule.eOld = (BuildingClassTypes)eOld;
 			kRule.eNew = (BuildingClassTypes)eNew;
 			kRule.iPrio = kResults.GetInt("SPriority");
-			aRules.push_back(kRule);
+			s_aaAutoUpgradeRules[eTech].push_back(kRule);
 		}
+
+		for (size_t i = 0; i < s_aaAutoUpgradeRules.size(); ++i)
+			std::stable_sort(s_aaAutoUpgradeRules[i].begin(), s_aaAutoUpgradeRules[i].end(), CompareRuleOrder);
+	}
+
+	// Returns NULL when this tech has no building upgrade rule (the common case).
+	const std::vector<AutoUpgradeRule>* GetAutoUpgradeRules(TechTypes eTech)
+	{
+		EnsureAutoUpgradeRulesLoaded();
+		if (eTech < 0 || (size_t)eTech >= s_aaAutoUpgradeRules.size())
+			return NULL;
+
+		const std::vector<AutoUpgradeRule>& aRules = s_aaAutoUpgradeRules[eTech];
+		return aRules.empty() ? NULL : &aRules;
+	}
+
+	TechTypes GetAutoUpgradeRailroadTech()
+	{
+		EnsureAutoUpgradeRulesLoaded();
+		return s_eAutoUpgradeRailroadTech;
 	}
 
 	// Human players always upgrade; AI players only when the handicap column is set.
@@ -5647,20 +5694,26 @@ namespace
 		if (!kPlayer.isHuman() && kPlayer.getHandicapInfo().getAIAutoBuildingUpgrade() <= 0)
 			return;
 
-		std::vector<AutoUpgradeHit> aHits;	// one entry per UpgradeGroup
+		const bool bHuman = kPlayer.isHuman();
+
+		// Resolve the civ-specific target once per rule instead of once per city.
+		std::vector<BuildingTypes> aNewBuildings(aRules.size(), NO_BUILDING);
+		for (size_t i = 0; i < aRules.size(); ++i)
+			aNewBuildings[i] = kPlayer.GetCivBuilding(aRules[i].eNew);
+
+		std::vector<AutoUpgradeHit> aHits;	// one entry per UpgradeGroup, humans only
 		int iLoop;
 		for (CvCity* pCity = kPlayer.firstCity(&iLoop); pCity != NULL; pCity = kPlayer.nextCity(&iLoop))
 		{
 			for (size_t i = 0; i < aRules.size(); ++i)
 			{
 				const AutoUpgradeRule& kRule = aRules[i];
+				const BuildingTypes eNewBuilding = aNewBuildings[i];
+				if (eNewBuilding == NO_BUILDING)
+					continue;
 
 				// GetNumBuildingClass (not HasBuildingClass) so UB/UU variants count.
 				if (pCity->GetNumBuildingClass(kRule.eOld) <= 0)
-					continue;
-
-				const BuildingTypes eNewBuilding = kPlayer.GetCivBuilding(kRule.eNew);
-				if (eNewBuilding == NO_BUILDING)
 					continue;
 
 				// Give exactly one copy; never overwrite a count the city already has.
@@ -5668,6 +5721,9 @@ namespace
 				// working by design, while base buildings stop via Buildings.ObsoleteTech.
 				if (pCity->GetCityBuildings()->GetNumRealBuilding(eNewBuilding) <= 0)
 					pCity->GetCityBuildings()->SetNumRealBuilding(eNewBuilding, 1);
+
+				if (!bHuman)
+					continue;
 
 				AutoUpgradeHit* pHit = NULL;
 				for (size_t j = 0; j < aHits.size(); ++j)
@@ -5704,7 +5760,7 @@ namespace
 			}
 		}
 
-		if (!kPlayer.isHuman())
+		if (!bHuman)
 			return;
 
 		CvNotifications* pNotifications = kPlayer.GetNotifications();
@@ -6031,28 +6087,32 @@ void CvTeam::setHasTech(TechTypes eIndex, bool bNewValue, PlayerTypes ePlayer, b
 	// effects such as EnhancedYieldTech, matching the old Lua event timing.
 	if (bNewValue && GC.getGame().isFinalInitialized())
 	{
-		// Query once per tech, not once per team member.
-		std::vector<AutoUpgradeRule> aRules;
-		LoadAutoUpgradeRules(eIndex, aRules);
+		// Rules are preloaded and bucketed by tech, so this is a map lookup.
+		const std::vector<AutoUpgradeRule>* paRules = GetAutoUpgradeRules(eIndex);
+		const bool bRailroadTech = (eIndex == GetAutoUpgradeRailroadTech());
 
-		const TechTypes eRailroadTech = (TechTypes)GC.getInfoTypeForString("TECH_RAILROAD");
-		std::vector<PlayerTypes> aHumans;
-
-		for (int iI = 0; iI < MAX_PLAYERS; iI++)
+		// Most techs have no building rule and are not the railroad tech.
+		if (paRules != NULL || bRailroadTech)
 		{
-			const PlayerTypes eLoopPlayer = static_cast<PlayerTypes>(iI);
-			CvPlayerAI& kLoopPlayer = GET_PLAYER(eLoopPlayer);
-			if (kLoopPlayer.isAlive() && kLoopPlayer.getTeam() == GetID())
-			{
-				DoAutoBuildingUpgrade(kLoopPlayer, aRules);
-				if (kLoopPlayer.isHuman())
-					aHumans.push_back(eLoopPlayer);
-			}
-		}
+			std::vector<PlayerTypes> aHumans;
 
-		// Scan the map once per team, then notify every human member.
-		if (eIndex == eRailroadTech)
-			DoAutoRoadUpgrade(aHumans);
+			for (int iI = 0; iI < MAX_PLAYERS; iI++)
+			{
+				const PlayerTypes eLoopPlayer = static_cast<PlayerTypes>(iI);
+				CvPlayerAI& kLoopPlayer = GET_PLAYER(eLoopPlayer);
+				if (kLoopPlayer.isAlive() && kLoopPlayer.getTeam() == GetID())
+				{
+					if (paRules != NULL)
+						DoAutoBuildingUpgrade(kLoopPlayer, *paRules);
+					if (bRailroadTech && kLoopPlayer.isHuman())
+						aHumans.push_back(eLoopPlayer);
+				}
+			}
+
+			// Scan the map once per team, then notify every human member.
+			if (bRailroadTech)
+				DoAutoRoadUpgrade(aHumans);
+		}
 	}
 
 	processTech(eIndex, ((bNewValue) ? 1 : -1));
