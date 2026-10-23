@@ -412,6 +412,8 @@ protected:
 	static int lGetLeague(lua_State* L);
 	static int lGetActiveLeague(lua_State* L);
 	static int lGetLeagueWorldBankIntervalTurns(lua_State* L);
+	static int lGetLeagueWHOFoodConsumptionModifier(lua_State* L);
+	static int lGetLeagueWHOSanitationFoodKeptPercent(lua_State* L);
 	static int lIsProcessingMessages(lua_State* L);
 
 #if defined(MOD_API_LUA_EXTENSIONS)

@@ -5520,6 +5520,11 @@ int CvLuaCity::lGetFoodConsumptionPerPopTimes100(lua_State* L)
 	{
 		iConsumptionModifier += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetTerrainCityFoodConsumption(eTerrain);
 	}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+	// Keep this UI helper in sync with CvCity::foodConsumption() (WHO resolution)
+	if (MOD_VOTING_NEW_EFFECT_FOR_SP)
+		iConsumptionModifier += GC.getGame().GetGameLeagues()->GetWHOFoodConsumptionModifier();
+#endif
 	iResult = iResult * iConsumptionModifier;
 	iResult /= 100;
 	lua_pushinteger(L, iResult);

@@ -492,6 +492,8 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetActiveLeague);
 
 	Method(GetLeagueWorldBankIntervalTurns);
+	Method(GetLeagueWHOFoodConsumptionModifier);
+	Method(GetLeagueWHOSanitationFoodKeptPercent);
 #if defined(MOD_API_LUA_EXTENSIONS)
 	Method(IsAchievementUnlocked);
 	Method(GetSteamStat);
@@ -3268,6 +3270,18 @@ int CvLuaGame::lGetActiveLeague(lua_State* L)
 int CvLuaGame::lGetLeagueWorldBankIntervalTurns(lua_State* L)
 {
 	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWorldBankIntervalTurns());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueWHOFoodConsumptionModifier(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWHOFoodConsumptionModifier());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueWHOSanitationFoodKeptPercent(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWHOSanitationFoodKeptPercent());
 	return 1;
 }
 //------------------------------------------------------------------------------

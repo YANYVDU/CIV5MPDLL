@@ -9423,6 +9423,11 @@ int CvCity::foodConsumption(bool /*bNoAngry*/, int iExtra) const
 	{
 		iConsumptionModifier += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetTerrainCityFoodConsumption(eTerrain);
 	}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+	// WHO resolution: all cities eat less food per citizen
+	if (MOD_VOTING_NEW_EFFECT_FOR_SP)
+		iConsumptionModifier += GC.getGame().GetGameLeagues()->GetWHOFoodConsumptionModifier();
+#endif
 	iNum = iNum * iConsumptionModifier / 100;
 	
 	return iNum;
@@ -11944,7 +11949,14 @@ int CvCity::getMaxFoodKeptPercent() const
 	VALIDATE_OBJECT
 #ifdef MOD_GLOBAL_CITY_SCALES
 	if (MOD_GLOBAL_CITY_SCALES && !CanGrowNormally())
+	{
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// WHO resolution: a city without the required sanitation building still keeps part of its surplus
+		if (MOD_VOTING_NEW_EFFECT_FOR_SP)
+			return GC.getGame().GetGameLeagues()->GetWHOSanitationFoodKeptPercent();
+#endif
 		return 0;
+	}
 #endif
 	int iPercent = m_iMaxFoodKeptPercent + std::min(0, GetFoodKeptFromPollution());
 
@@ -24848,8 +24860,14 @@ void CvCity::SetScale(CityScaleTypes eNewScale)
 
 	if (!CanGrowNormally())
 	{
-		setFood(0);
-		setFoodKept(0);
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// WHO resolution: keep the accumulated surplus instead of wiping it when sanitation is lacking
+		if (!(MOD_VOTING_NEW_EFFECT_FOR_SP && GC.getGame().GetGameLeagues()->GetWHOSanitationFoodKeptPercent() > 0))
+#endif
+		{
+			setFood(0);
+			setFoodKept(0);
+		}
 	}
 
 #ifdef MOD_EVENTS_CITY_SCALES

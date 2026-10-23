@@ -132,6 +132,8 @@ struct CvResolutionEffects
 	int iWorldBankInterestBasisPoints;
 	int iWorldBankRouteInterestBasisPoints;
 	int iWorldBankIntervalTurns;
+	int iWHOFoodConsumptionModifier;
+	int iWHOSanitationFoodKeptPercent;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bool bPermanentAlly;
@@ -766,6 +768,10 @@ public:
 	void ChangeWorldBankRouteInterestBasisPoints(int iChange);
 	int GetWorldBankIntervalTurns() const;
 	void ChangeWorldBankIntervalTurns(int iChange);
+	int GetWHOFoodConsumptionModifier() const;
+	void ChangeWHOFoodConsumptionModifier(int iChange);
+	int GetWHOSanitationFoodKeptPercent() const;
+	void ChangeWHOSanitationFoodKeptPercent(int iChange);
 #endif
 
 	// General Logging
@@ -784,6 +790,8 @@ public:
 	int m_iWorldBankInterestBasisPoints;
 	int m_iWorldBankRouteInterestBasisPoints;
 	int m_iWorldBankIntervalTurns;
+	int m_iWHOFoodConsumptionModifier;
+	int m_iWHOSanitationFoodKeptPercent;
 #endif
 
 private:
@@ -1302,6 +1310,8 @@ public:
 	int GetWorldBankInterestBasisPoints() const;
 	int GetWorldBankRouteInterestBasisPoints() const;
 	int GetWorldBankIntervalTurns() const;
+	int GetWHOFoodConsumptionModifier() const;
+	int GetWHOSanitationFoodKeptPercent() const;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int GetVassalTaxPercent() const;
@@ -1366,6 +1376,8 @@ protected:
 	int m_iWorldBankInterestBasisPoints;
 	int m_iWorldBankRouteInterestBasisPoints;
 	int m_iWorldBankIntervalTurns;
+	int m_iWHOFoodConsumptionModifier;
+	int m_iWHOSanitationFoodKeptPercent;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int m_iVassalTaxPercent;

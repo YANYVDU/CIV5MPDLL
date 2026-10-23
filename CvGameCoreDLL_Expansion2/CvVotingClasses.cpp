@@ -219,6 +219,8 @@ CvResolutionEffects::CvResolutionEffects(void)
 	iWorldBankInterestBasisPoints = 0;
 	iWorldBankRouteInterestBasisPoints = 0;
 	iWorldBankIntervalTurns = 0;
+	iWHOFoodConsumptionModifier = 0;
+	iWHOSanitationFoodKeptPercent = 0;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -275,6 +277,8 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		iWorldBankInterestBasisPoints		= pInfo->GetWorldBankInterestBasisPoints();
 		iWorldBankRouteInterestBasisPoints	= pInfo->GetWorldBankRouteInterestBasisPoints();
 		iWorldBankIntervalTurns				= pInfo->GetWorldBankIntervalTurns();
+		iWHOFoodConsumptionModifier			= pInfo->GetWHOFoodConsumptionModifier();
+		iWHOSanitationFoodKeptPercent		= pInfo->GetWHOSanitationFoodKeptPercent();
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -374,6 +378,10 @@ bool CvResolutionEffects::HasOngoingEffects() const
 		return true;
 	if (iWorldBankRouteInterestBasisPoints != 0)
 		return true;
+	if (iWHOFoodConsumptionModifier != 0)
+		return true;
+	if (iWHOSanitationFoodKeptPercent != 0)
+		return true;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (bPermanentAlly)
@@ -423,6 +431,8 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iWorldBankInterestBasisPoints			+= pOtherEffects->iWorldBankInterestBasisPoints;
 	iWorldBankRouteInterestBasisPoints		+= pOtherEffects->iWorldBankRouteInterestBasisPoints;
 	iWorldBankIntervalTurns					+= pOtherEffects->iWorldBankIntervalTurns;
+	iWHOFoodConsumptionModifier				+= pOtherEffects->iWHOFoodConsumptionModifier;
+	iWHOSanitationFoodKeptPercent			+= pOtherEffects->iWHOSanitationFoodKeptPercent;
 #if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
 	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
@@ -550,6 +560,8 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankInterestBasisPoints, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankRouteInterestBasisPoints, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankIntervalTurns, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWHOFoodConsumptionModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWHOSanitationFoodKeptPercent, 0);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (uiVersion >= 10)
@@ -614,6 +626,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankInterestBasisPoints);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankRouteInterestBasisPoints);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankIntervalTurns);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWHOFoodConsumptionModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWHOSanitationFoodKeptPercent);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	saveTo << readFrom.bPermanentAlly;
@@ -6546,6 +6560,8 @@ void CvLeague::DoEnactResolution(CvEnactProposal* pProposal)
 	GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(resolution.GetEffects()->iWorldBankInterestBasisPoints);
 	GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(resolution.GetEffects()->iWorldBankRouteInterestBasisPoints);
 	GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(resolution.GetEffects()->iWorldBankIntervalTurns);
+	GC.getGame().GetGameLeagues()->ChangeWHOFoodConsumptionModifier(resolution.GetEffects()->iWHOFoodConsumptionModifier);
+	GC.getGame().GetGameLeagues()->ChangeWHOSanitationFoodKeptPercent(resolution.GetEffects()->iWHOSanitationFoodKeptPercent);
 	// Active Resolutions with only one-time effects immediately expire
 	if (resolution.HasOngoingEffects())
 	{
@@ -6600,6 +6616,8 @@ void CvLeague::DoRepealResolution(CvRepealProposal* pProposal)
 			GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(-it->GetEffects()->iWorldBankInterestBasisPoints);
 			GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(-it->GetEffects()->iWorldBankRouteInterestBasisPoints);
 			GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(-it->GetEffects()->iWorldBankIntervalTurns);
+			GC.getGame().GetGameLeagues()->ChangeWHOFoodConsumptionModifier(-it->GetEffects()->iWHOFoodConsumptionModifier);
+			GC.getGame().GetGameLeagues()->ChangeWHOSanitationFoodKeptPercent(-it->GetEffects()->iWHOSanitationFoodKeptPercent);
 #endif
 			m_vActiveResolutions.erase(it);
 			//antonjs: todo: relocate these league-level effects:
@@ -7597,6 +7615,8 @@ CvGameLeagues::CvGameLeagues(void)
 	m_iWorldBankInterestBasisPoints = 0;
 	m_iWorldBankRouteInterestBasisPoints = 0;
 	m_iWorldBankIntervalTurns = 0;
+	m_iWHOFoodConsumptionModifier = 0;
+	m_iWHOSanitationFoodKeptPercent = 0;
 }
 
 CvGameLeagues::~CvGameLeagues(void)
@@ -8255,6 +8275,22 @@ void CvGameLeagues::ChangeWorldBankIntervalTurns(int iChange)
 {
 	m_iWorldBankIntervalTurns += iChange;
 }
+int CvGameLeagues::GetWHOFoodConsumptionModifier() const
+{
+	return m_iWHOFoodConsumptionModifier;
+}
+void CvGameLeagues::ChangeWHOFoodConsumptionModifier(int iChange)
+{
+	m_iWHOFoodConsumptionModifier += iChange;
+}
+int CvGameLeagues::GetWHOSanitationFoodKeptPercent() const
+{
+	return m_iWHOSanitationFoodKeptPercent;
+}
+void CvGameLeagues::ChangeWHOSanitationFoodKeptPercent(int iChange)
+{
+	m_iWHOSanitationFoodKeptPercent += iChange;
+}
 bool CvGameLeagues::IsIdeologyEmbargoed(PlayerTypes eTrader, PlayerTypes eRecipient)
 {
 	if(!m_bEmbargoIdeology) return false;
@@ -8421,6 +8457,8 @@ FDataStream& operator>>(FDataStream& loadFrom, CvGameLeagues& writeTo)
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankInterestBasisPoints, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankRouteInterestBasisPoints, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankIntervalTurns, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWHOFoodConsumptionModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWHOSanitationFoodKeptPercent, 0);
 #endif
 
 	return loadFrom;
@@ -8450,6 +8488,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvGameLeagues& readFrom)
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankInterestBasisPoints);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankRouteInterestBasisPoints);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankIntervalTurns);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWHOFoodConsumptionModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWHOSanitationFoodKeptPercent);
 #endif
 	
 	return saveTo;
@@ -11662,6 +11702,8 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_iWorldBankInterestBasisPoints		= 0;
 	m_iWorldBankRouteInterestBasisPoints= 0;
 	m_iWorldBankIntervalTurns			= 0;
+	m_iWHOFoodConsumptionModifier		= 0;
+	m_iWHOSanitationFoodKeptPercent		= 0;
 	m_bInternationalLawProtection		= false;
 #endif
 	m_eCivilizationType = NO_CIVILIZATION;
@@ -11741,6 +11783,8 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iWorldBankInterestBasisPoints		= kResults.GetInt("WorldBankInterestBasisPoints");
 	m_iWorldBankRouteInterestBasisPoints= kResults.GetInt("WorldBankRouteInterestBasisPoints");
 	m_iWorldBankIntervalTurns			= kResults.GetInt("WorldBankIntervalTurns");
+	m_iWHOFoodConsumptionModifier		= kResults.GetInt("WHOFoodConsumptionModifier");
+	m_iWHOSanitationFoodKeptPercent		= kResults.GetInt("WHOSanitationFoodKeptPercent");
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
@@ -11962,6 +12006,14 @@ int CvResolutionEntry::GetWorldBankRouteInterestBasisPoints() const
 int CvResolutionEntry::GetWorldBankIntervalTurns() const
 {
 	return m_iWorldBankIntervalTurns;
+}
+int CvResolutionEntry::GetWHOFoodConsumptionModifier() const
+{
+	return m_iWHOFoodConsumptionModifier;
+}
+int CvResolutionEntry::GetWHOSanitationFoodKeptPercent() const
+{
+	return m_iWHOSanitationFoodKeptPercent;
 }
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
