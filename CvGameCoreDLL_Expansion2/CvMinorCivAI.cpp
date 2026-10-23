@@ -11197,7 +11197,7 @@ bool CvMinorCivAI::CanMajorBuyout(PlayerTypes eMajor)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Super Power V11: the buyout also costs aid points (the Austria UA surcharge), charged from the
 	// pool this city-state has accumulated for eMajor. 0 disables the extra cost entirely.
-	const int iAidPointCost = GC.getGame().GetAidPointCostAnnexCityState();
+	const int iAidPointCost = MOD_SP_UNIQUE_CITYSTATE ? GC.getGame().GetAidPointCostAnnexCityState() : 0;
 	if (iAidPointCost > 0 && GetEconomicAidPoints(eMajor) < iAidPointCost)
 		return false;
 #endif
@@ -11276,7 +11276,7 @@ void CvMinorCivAI::DoBuyout(PlayerTypes eMajor)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Super Power V11 (Austria UA): the buyout also burns aid points banked with this city-state, and
 	// with the GainAnnexedCityStateUA trait it permanently keeps the city-state's ally-tier UA effect.
-	const int iAidPointCost = GC.getGame().GetAidPointCostAnnexCityState();
+	const int iAidPointCost = MOD_SP_UNIQUE_CITYSTATE ? GC.getGame().GetAidPointCostAnnexCityState() : 0;
 	if (iAidPointCost > 0)
 	{
 		ChangeEconomicAidPoints(eMajor, -iAidPointCost);
@@ -11286,7 +11286,7 @@ void CvMinorCivAI::DoBuyout(PlayerTypes eMajor)
 	// moment its cities are transferred. It goes into the same per-city-state record the Venice-style
 	// unit buyout writes (CvPlayer::m_abBoughtCityStateAllyUA) - both paths mean exactly the same
 	// thing, "bought out, so the ally-tier effect stays ours forever".
-	const bool bGainAnnexedUA = GET_PLAYER(eMajor).GetPlayerTraits()->IsGainAnnexedCityStateUA();
+	const bool bGainAnnexedUA = MOD_SP_UNIQUE_CITYSTATE && GET_PLAYER(eMajor).GetPlayerTraits()->IsGainAnnexedCityStateUA();
 	if (bGainAnnexedUA)
 	{
 		GET_PLAYER(eMajor).GainCityStateUAOnBuyout(GetPlayer()->GetID(), true, false);

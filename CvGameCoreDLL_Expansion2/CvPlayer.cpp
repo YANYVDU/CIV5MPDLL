@@ -20444,6 +20444,9 @@ void CvPlayer::RefreshCSAlliesFriends()
 //	--------------------------------------------------------------------------------
 void CvPlayer::RefreshCSAllUAEffects()
 {
+	if (!MOD_SP_UNIQUE_CITYSTATE)
+		return;
+
 	if (!m_pCityStateUA)
 		return;
 
