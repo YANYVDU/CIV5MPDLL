@@ -491,9 +491,13 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetLeague);
 	Method(GetActiveLeague);
 
+	// Resolution state queries used by the UI (World Bank / WHO / IMO)
 	Method(GetLeagueWorldBankIntervalTurns);
 	Method(GetLeagueWHOFoodConsumptionModifier);
 	Method(GetLeagueWHOSanitationFoodKeptPercent);
+	Method(GetLeagueIMOOceanRouteGoldModifier);
+	Method(IsLeagueIMOForbidWeakPlunder);
+
 #if defined(MOD_API_LUA_EXTENSIONS)
 	Method(IsAchievementUnlocked);
 	Method(GetSteamStat);
@@ -3282,6 +3286,18 @@ int CvLuaGame::lGetLeagueWHOFoodConsumptionModifier(lua_State* L)
 int CvLuaGame::lGetLeagueWHOSanitationFoodKeptPercent(lua_State* L)
 {
 	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWHOSanitationFoodKeptPercent());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueIMOOceanRouteGoldModifier(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetIMOOceanRouteGoldModifier());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lIsLeagueIMOForbidWeakPlunder(lua_State* L)
+{
+	lua_pushboolean(L, GC.getGame().GetGameLeagues()->IsIMOForbidWeakPlunder());
 	return 1;
 }
 //------------------------------------------------------------------------------

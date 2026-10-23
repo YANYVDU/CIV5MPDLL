@@ -2689,6 +2689,12 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					iModifier += iDomainModifier;
 					iModifier += iOriginRiverModifier;
 
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+					// IMO resolution: extra gold on ocean international trade routes (origin side)
+					if (MOD_VOTING_NEW_EFFECT_FOR_SP && kTradeConnection.m_eDomain == DOMAIN_SEA)
+						iModifier += GC.getGame().GetGameLeagues()->GetIMOOceanRouteGoldModifier();
+#endif
+
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 					if (MOD_SP_UNIQUE_CITYSTATE)
 					{
@@ -2841,6 +2847,12 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 
 						iModifier += iDomainModifier;
 						iModifier += iDestRiverModifier;
+
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+						// IMO resolution: extra gold on ocean international trade routes (destination side)
+						if (MOD_VOTING_NEW_EFFECT_FOR_SP && kTradeConnection.m_eDomain == DOMAIN_SEA)
+							iModifier += GC.getGame().GetGameLeagues()->GetIMOOceanRouteGoldModifier();
+#endif
 					}
 					break;
 #if defined(MOD_API_UNIFIED_YIELDS)

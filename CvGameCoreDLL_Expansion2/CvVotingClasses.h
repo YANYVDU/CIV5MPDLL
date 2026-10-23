@@ -129,11 +129,14 @@ struct CvResolutionEffects
 	int iGlobalWarCasualtiesChanges;
 	bool bEmbargoIdeology;
 	bool bInternationalLawProtection;
+	// World Bank / World Health Organization / International Maritime Organization
 	int iWorldBankInterestBasisPoints;
 	int iWorldBankRouteInterestBasisPoints;
 	int iWorldBankIntervalTurns;
 	int iWHOFoodConsumptionModifier;
 	int iWHOSanitationFoodKeptPercent;
+	int iIMOOceanRouteGoldModifier;
+	bool bIMOForbidWeakPlunder;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bool bPermanentAlly;
@@ -762,6 +765,7 @@ public:
 	bool IsIdeologyEmbargoed(PlayerTypes eTrader, PlayerTypes eRecipient);
 	bool IsColdWarActive();
 	void SetColdWarActive(int iValue);
+	// World Bank / World Health Organization / International Maritime Organization
 	int GetWorldBankInterestBasisPoints() const;
 	void ChangeWorldBankInterestBasisPoints(int iChange);
 	int GetWorldBankRouteInterestBasisPoints() const;
@@ -772,6 +776,10 @@ public:
 	void ChangeWHOFoodConsumptionModifier(int iChange);
 	int GetWHOSanitationFoodKeptPercent() const;
 	void ChangeWHOSanitationFoodKeptPercent(int iChange);
+	int GetIMOOceanRouteGoldModifier() const;
+	void ChangeIMOOceanRouteGoldModifier(int iChange);
+	bool IsIMOForbidWeakPlunder() const;
+	void SetIMOForbidWeakPlunder(bool bValue);
 #endif
 
 	// General Logging
@@ -787,11 +795,14 @@ public:
 	int m_iGlobalAttackModifier;
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
+	// World Bank / World Health Organization / International Maritime Organization
 	int m_iWorldBankInterestBasisPoints;
 	int m_iWorldBankRouteInterestBasisPoints;
 	int m_iWorldBankIntervalTurns;
 	int m_iWHOFoodConsumptionModifier;
 	int m_iWHOSanitationFoodKeptPercent;
+	int m_iIMOOceanRouteGoldModifier;
+	bool m_bIMOForbidWeakPlunder;
 #endif
 
 private:
@@ -1307,11 +1318,14 @@ public:
 	int GetGlobalWarCasualtiesChanges() const;
 	bool IsEmbargoIdeology() const;
 	bool IsInternationalLawProtection() const;
+	// World Bank / World Health Organization / International Maritime Organization
 	int GetWorldBankInterestBasisPoints() const;
 	int GetWorldBankRouteInterestBasisPoints() const;
 	int GetWorldBankIntervalTurns() const;
 	int GetWHOFoodConsumptionModifier() const;
 	int GetWHOSanitationFoodKeptPercent() const;
+	int GetIMOOceanRouteGoldModifier() const;
+	bool IsIMOForbidWeakPlunder() const;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int GetVassalTaxPercent() const;
@@ -1373,11 +1387,14 @@ protected:
 	int m_iGlobalWarCasualtiesChanges;
 	bool m_bEmbargoIdeology;
 	bool m_bInternationalLawProtection;
+	// World Bank / World Health Organization / International Maritime Organization
 	int m_iWorldBankInterestBasisPoints;
 	int m_iWorldBankRouteInterestBasisPoints;
 	int m_iWorldBankIntervalTurns;
 	int m_iWHOFoodConsumptionModifier;
 	int m_iWHOSanitationFoodKeptPercent;
+	int m_iIMOOceanRouteGoldModifier;
+	bool m_bIMOForbidWeakPlunder;
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	int m_iVassalTaxPercent;

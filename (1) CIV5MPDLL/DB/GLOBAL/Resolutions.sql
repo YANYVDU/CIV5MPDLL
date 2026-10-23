@@ -36,5 +36,9 @@ ALTER TABLE Resolutions ADD COLUMN 'WorldBankRouteInterestBasisPoints' INTEGER D
 -- percentage a city keeps when it lacks the sanitation building required for its scale
 ALTER TABLE Resolutions ADD COLUMN 'WHOFoodConsumptionModifier' INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'WHOSanitationFoodKeptPercent' INTEGER DEFAULT 0;
+-- International Maritime Organization: extra gold percent on ocean international trade routes,
+-- and forbids weak civs (minor/barbarian/below-average score) from plundering them
+ALTER TABLE Resolutions ADD COLUMN 'IMOOceanRouteGoldModifier' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'IMOForbidWeakPlunder' BOOLEAN DEFAULT 0;
 -- World Bank: the interval in turns between interest payments (0 falls back to 10 in code)
 ALTER TABLE Resolutions ADD COLUMN 'WorldBankIntervalTurns' INTEGER DEFAULT 0;

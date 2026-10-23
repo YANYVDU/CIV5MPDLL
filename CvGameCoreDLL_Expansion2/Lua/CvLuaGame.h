@@ -411,9 +411,14 @@ protected:
 	static int lGetNumLeaguesEverFounded(lua_State* L);
 	static int lGetLeague(lua_State* L);
 	static int lGetActiveLeague(lua_State* L);
+
+	// Resolution state queries used by the UI (World Bank / WHO / IMO)
 	static int lGetLeagueWorldBankIntervalTurns(lua_State* L);
 	static int lGetLeagueWHOFoodConsumptionModifier(lua_State* L);
 	static int lGetLeagueWHOSanitationFoodKeptPercent(lua_State* L);
+	static int lGetLeagueIMOOceanRouteGoldModifier(lua_State* L);
+	static int lIsLeagueIMOForbidWeakPlunder(lua_State* L);
+
 	static int lIsProcessingMessages(lua_State* L);
 
 #if defined(MOD_API_LUA_EXTENSIONS)

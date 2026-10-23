@@ -9787,6 +9787,35 @@ bool CvUnit::canPlunderTradeRoute(const CvPlot* pPlot, bool bOnlyTestVisibility)
 			}
 		}
 
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// IMO resolution: city-states, barbarians and below-average civs may not plunder ocean
+		// trade routes even when at war with the route owner.
+		if (MOD_VOTING_NEW_EFFECT_FOR_SP && pPlot->isWater()
+			&& GC.getGame().GetGameLeagues()->IsIMOForbidWeakPlunder())
+		{
+			CvPlayer& kPlunderer = GET_PLAYER(m_eOwner);
+			bool bForbidden = kPlunderer.isMinorCiv() || kPlunderer.isBarbarian();
+			if (!bForbidden)
+			{
+				int iTotalScore = 0;
+				int iNumMajors = 0;
+				for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+				{
+					CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+					if (kLoopPlayer.isAlive())
+					{
+						iTotalScore += kLoopPlayer.GetScore();
+						iNumMajors++;
+					}
+				}
+				if (iNumMajors > 0)
+					bForbidden = kPlunderer.GetScore() < (iTotalScore / iNumMajors);
+			}
+			if (bForbidden)
+				return false;
+		}
+#endif
+
 		return true;
 	}
 	else

@@ -221,6 +221,8 @@ CvResolutionEffects::CvResolutionEffects(void)
 	iWorldBankIntervalTurns = 0;
 	iWHOFoodConsumptionModifier = 0;
 	iWHOSanitationFoodKeptPercent = 0;
+	iIMOOceanRouteGoldModifier = 0;
+	bIMOForbidWeakPlunder = false;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -279,6 +281,8 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		iWorldBankIntervalTurns				= pInfo->GetWorldBankIntervalTurns();
 		iWHOFoodConsumptionModifier			= pInfo->GetWHOFoodConsumptionModifier();
 		iWHOSanitationFoodKeptPercent		= pInfo->GetWHOSanitationFoodKeptPercent();
+		iIMOOceanRouteGoldModifier			= pInfo->GetIMOOceanRouteGoldModifier();
+		bIMOForbidWeakPlunder				= pInfo->IsIMOForbidWeakPlunder();
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -382,6 +386,10 @@ bool CvResolutionEffects::HasOngoingEffects() const
 		return true;
 	if (iWHOSanitationFoodKeptPercent != 0)
 		return true;
+	if (iIMOOceanRouteGoldModifier != 0)
+		return true;
+	if (bIMOForbidWeakPlunder)
+		return true;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (bPermanentAlly)
@@ -433,6 +441,8 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iWorldBankIntervalTurns					+= pOtherEffects->iWorldBankIntervalTurns;
 	iWHOFoodConsumptionModifier				+= pOtherEffects->iWHOFoodConsumptionModifier;
 	iWHOSanitationFoodKeptPercent			+= pOtherEffects->iWHOSanitationFoodKeptPercent;
+	iIMOOceanRouteGoldModifier				+= pOtherEffects->iIMOOceanRouteGoldModifier;
+	bIMOForbidWeakPlunder					|= pOtherEffects->bIMOForbidWeakPlunder;
 #if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
 	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
@@ -562,6 +572,8 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankIntervalTurns, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWHOFoodConsumptionModifier, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWHOSanitationFoodKeptPercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iIMOOceanRouteGoldModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.bIMOForbidWeakPlunder, false);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (uiVersion >= 10)
@@ -628,6 +640,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankIntervalTurns);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWHOFoodConsumptionModifier);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWHOSanitationFoodKeptPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iIMOOceanRouteGoldModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bIMOForbidWeakPlunder);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	saveTo << readFrom.bPermanentAlly;
@@ -6557,11 +6571,18 @@ void CvLeague::DoEnactResolution(CvEnactProposal* pProposal)
 		GC.getGame().GetGameLeagues()->SetColdWarActive(true);
 	}
 	
+	// World Bank / WHO / IMO: league-level effects applied to every player
 	GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(resolution.GetEffects()->iWorldBankInterestBasisPoints);
 	GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(resolution.GetEffects()->iWorldBankRouteInterestBasisPoints);
 	GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(resolution.GetEffects()->iWorldBankIntervalTurns);
 	GC.getGame().GetGameLeagues()->ChangeWHOFoodConsumptionModifier(resolution.GetEffects()->iWHOFoodConsumptionModifier);
 	GC.getGame().GetGameLeagues()->ChangeWHOSanitationFoodKeptPercent(resolution.GetEffects()->iWHOSanitationFoodKeptPercent);
+	GC.getGame().GetGameLeagues()->ChangeIMOOceanRouteGoldModifier(resolution.GetEffects()->iIMOOceanRouteGoldModifier);
+	if (resolution.GetEffects()->bIMOForbidWeakPlunder)
+	{
+		GC.getGame().GetGameLeagues()->SetIMOForbidWeakPlunder(true);
+	}
+
 	// Active Resolutions with only one-time effects immediately expire
 	if (resolution.HasOngoingEffects())
 	{
@@ -6613,11 +6634,17 @@ void CvLeague::DoRepealResolution(CvRepealProposal* pProposal)
 			{
 				GC.getGame().GetGameLeagues()->SetColdWarActive(false);
 			}
+			// World Bank / WHO / IMO: league-level effects applied to every player
 			GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(-it->GetEffects()->iWorldBankInterestBasisPoints);
 			GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(-it->GetEffects()->iWorldBankRouteInterestBasisPoints);
 			GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(-it->GetEffects()->iWorldBankIntervalTurns);
 			GC.getGame().GetGameLeagues()->ChangeWHOFoodConsumptionModifier(-it->GetEffects()->iWHOFoodConsumptionModifier);
 			GC.getGame().GetGameLeagues()->ChangeWHOSanitationFoodKeptPercent(-it->GetEffects()->iWHOSanitationFoodKeptPercent);
+			GC.getGame().GetGameLeagues()->ChangeIMOOceanRouteGoldModifier(-it->GetEffects()->iIMOOceanRouteGoldModifier);
+			if (it->GetEffects()->bIMOForbidWeakPlunder)
+			{
+				GC.getGame().GetGameLeagues()->SetIMOForbidWeakPlunder(false);
+			}
 #endif
 			m_vActiveResolutions.erase(it);
 			//antonjs: todo: relocate these league-level effects:
@@ -7617,6 +7644,8 @@ CvGameLeagues::CvGameLeagues(void)
 	m_iWorldBankIntervalTurns = 0;
 	m_iWHOFoodConsumptionModifier = 0;
 	m_iWHOSanitationFoodKeptPercent = 0;
+	m_iIMOOceanRouteGoldModifier = 0;
+	m_bIMOForbidWeakPlunder = false;
 }
 
 CvGameLeagues::~CvGameLeagues(void)
@@ -8291,6 +8320,22 @@ void CvGameLeagues::ChangeWHOSanitationFoodKeptPercent(int iChange)
 {
 	m_iWHOSanitationFoodKeptPercent += iChange;
 }
+int CvGameLeagues::GetIMOOceanRouteGoldModifier() const
+{
+	return m_iIMOOceanRouteGoldModifier;
+}
+void CvGameLeagues::ChangeIMOOceanRouteGoldModifier(int iChange)
+{
+	m_iIMOOceanRouteGoldModifier += iChange;
+}
+bool CvGameLeagues::IsIMOForbidWeakPlunder() const
+{
+	return m_bIMOForbidWeakPlunder;
+}
+void CvGameLeagues::SetIMOForbidWeakPlunder(bool bValue)
+{
+	m_bIMOForbidWeakPlunder = bValue;
+}
 bool CvGameLeagues::IsIdeologyEmbargoed(PlayerTypes eTrader, PlayerTypes eRecipient)
 {
 	if(!m_bEmbargoIdeology) return false;
@@ -8459,6 +8504,8 @@ FDataStream& operator>>(FDataStream& loadFrom, CvGameLeagues& writeTo)
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankIntervalTurns, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWHOFoodConsumptionModifier, 0);
 	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWHOSanitationFoodKeptPercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iIMOOceanRouteGoldModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bIMOForbidWeakPlunder, false);
 #endif
 
 	return loadFrom;
@@ -8490,6 +8537,8 @@ FDataStream& operator<<(FDataStream& saveTo, const CvGameLeagues& readFrom)
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankIntervalTurns);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWHOFoodConsumptionModifier);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWHOSanitationFoodKeptPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iIMOOceanRouteGoldModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bIMOForbidWeakPlunder);
 #endif
 	
 	return saveTo;
@@ -11704,6 +11753,8 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_iWorldBankIntervalTurns			= 0;
 	m_iWHOFoodConsumptionModifier		= 0;
 	m_iWHOSanitationFoodKeptPercent		= 0;
+	m_iIMOOceanRouteGoldModifier		= 0;
+	m_bIMOForbidWeakPlunder				= false;
 	m_bInternationalLawProtection		= false;
 #endif
 	m_eCivilizationType = NO_CIVILIZATION;
@@ -11785,6 +11836,8 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iWorldBankIntervalTurns			= kResults.GetInt("WorldBankIntervalTurns");
 	m_iWHOFoodConsumptionModifier		= kResults.GetInt("WHOFoodConsumptionModifier");
 	m_iWHOSanitationFoodKeptPercent		= kResults.GetInt("WHOSanitationFoodKeptPercent");
+	m_iIMOOceanRouteGoldModifier		= kResults.GetInt("IMOOceanRouteGoldModifier");
+	m_bIMOForbidWeakPlunder				= kResults.GetBool("IMOForbidWeakPlunder");
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
@@ -12014,6 +12067,14 @@ int CvResolutionEntry::GetWHOFoodConsumptionModifier() const
 int CvResolutionEntry::GetWHOSanitationFoodKeptPercent() const
 {
 	return m_iWHOSanitationFoodKeptPercent;
+}
+int CvResolutionEntry::GetIMOOceanRouteGoldModifier() const
+{
+	return m_iIMOOceanRouteGoldModifier;
+}
+bool CvResolutionEntry::IsIMOForbidWeakPlunder() const
+{
+	return m_bIMOForbidWeakPlunder;
 }
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
