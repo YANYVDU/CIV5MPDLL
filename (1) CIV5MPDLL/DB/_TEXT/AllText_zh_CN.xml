@@ -2,7 +2,15 @@
 <GameData>
 	<!-- Espionage.xml -->
 	<Language_zh_CN>
-
+<Row Tag="TXT_KEY_RANGED_ATTACK_INTERCEPTED">
+    <Text>我方远程攻击 {1_attacker} 被 {2_interceptor} 拦截！</Text>
+</Row>
+<Row Tag="TXT_KEY_RANGED_ATTACK_INTERCEPTED_DEFENDER">
+    <Text>{1_interceptor} 拦截了敌方远程攻击 {2_attacker}！</Text>
+</Row>
+<Row Tag="TXT_KEY_PROMOTION_RANGED_INTERCEPTOR_HELP">
+    <Text>当自身 [ICON_RANGE_ATTACK] 范围内的友军被远程攻击时，有几率拦截该攻击。</Text>
+</Row>
 		<Row Tag="TXT_KEY_UNIT_PLAGUE_CHANCE">
 			<Text>[COLOR_CYAN]受到({1_Name})状态影响的几率[ENDCOLOR]</Text>
 		</Row>

@@ -63,6 +63,9 @@ public:
 	int  GetInterceptChanceChange() const;
 	int  GetNumInterceptionChange() const;
 	int  GetAirInterceptRangeChange() const;
+	int GetRangedInterceptChance() const;
+	int GetRangedInterceptRange() const;
+	int GetRangedInterceptCount() const;
 	int  GetEvasionChange() const;
 	int  GetCargoChange() const;
 	int  GetEnemyHealChange() const;
@@ -575,6 +578,9 @@ protected:
 	int m_iInterceptChanceChange;
 	int m_iNumInterceptionChange;
 	int m_iAirInterceptRangeChange;
+	int m_iRangedInterceptChance;
+	int m_iRangedInterceptRange;
+	int m_iRangedInterceptCount;
 	int m_iEvasionChange;
 	int m_iCargoChange;
 	int m_iEnemyHealChange;

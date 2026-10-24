@@ -3949,6 +3949,51 @@ CvUnitCombat::ATTACK_RESULT CvUnitCombat::AttackRanged(CvUnit& kAttacker, int iX
 	// Unit that attacks loses his Fort bonus
 	kAttacker.setFortifyTurns(0);
 
+	//
+	if (pPlot != NULL && !pPlot->isCity())
+	{
+		CvUnit* pDefender = kAttacker.airStrikeTarget(*pPlot, true);
+		if (pDefender != NULL)
+		{
+			CvUnit* pInterceptor = GetRangedInterceptor(
+				pDefender->getOwner(), pDefender->getX(), pDefender->getY(), &kAttacker);
+
+			if (pInterceptor != NULL)
+			{
+				int iRoll = GC.getGame().getJonRandNum(100, "Ranged Intercept Roll");
+				if (iRoll < pInterceptor->GetRangedInterceptChance())
+				{
+					// 
+					if (kAttacker.getOwner() == GC.getGame().getActivePlayer())
+					{
+						Localization::String strMsg =
+							Localization::Lookup("TXT_KEY_RANGED_ATTACK_INTERCEPTED");
+						strMsg << kAttacker.getNameKey() << pInterceptor->getNameKey();
+						GC.GetEngineUserInterface()->AddMessage(
+							0, kAttacker.getOwner(), true, GC.getEVENT_MESSAGE_TIME(),
+							strMsg.toUTF8());
+					}
+					else if (pDefender->getOwner() == GC.getGame().getActivePlayer())
+					{
+						Localization::String strMsg =
+							Localization::Lookup("TXT_KEY_RANGED_ATTACK_INTERCEPTED_DEFENDER");
+						strMsg << pInterceptor->getNameKey() << kAttacker.getNameKey();
+						GC.GetEngineUserInterface()->AddMessage(
+							0, pDefender->getOwner(), true, GC.getEVENT_MESSAGE_TIME(),
+							strMsg.toUTF8());
+					}
+
+					// 
+					kAttacker.setMadeAttack(true);
+					kAttacker.finishMoves();
+					GC.GetEngineUserInterface()->changeCycleSelectionCounter(1);
+					return CvUnitCombat::ATTACK_COMPLETED;
+				}
+			}
+		}
+	}
+	// 
+	
 	// New test feature - attacking/range striking uses up all moves for most Units
 	if(!kAttacker.canMoveAfterAttacking() && !kAttacker.isRangedSupportFire())
 	{
@@ -4356,6 +4401,33 @@ CvUnitCombat::ATTACK_RESULT CvUnitCombat::AttackCity(CvUnit& kAttacker, CvPlot& 
 		ResolveCombat(kCombatInfo, uiParentEventID);
 	}
 	return eResult;
+}
+
+CvUnit* CvUnitCombat::GetRangedInterceptor(PlayerTypes eDefender, int iTargetX, int iTargetY,
+	CvUnit* pAttacker)
+{
+	if (eDefender == NO_PLAYER) return NULL;
+
+	CvPlayerAI& kDefenderPlayer = GET_PLAYER(eDefender);
+	int iLoop;
+	CvUnit* pLoopUnit;
+
+	for (pLoopUnit = kDefenderPlayer.firstUnit(&iLoop); pLoopUnit != NULL;
+		pLoopUnit = kDefenderPlayer.nextUnit(&iLoop))
+	{
+		if (pLoopUnit == pAttacker)          continue;
+		if (pLoopUnit->IsDead())             continue;
+		if (pLoopUnit->isDelayedDeath())     continue;
+		if (!pLoopUnit->IsRangedInterceptor()) continue;
+
+		// 
+		if (plotDistance(pLoopUnit->getX(), pLoopUnit->getY(), iTargetX, iTargetY)
+				> pLoopUnit->GetRangedInterceptRange())
+			continue;
+
+		return pLoopUnit;
+	}
+	return NULL;
 }
 
 //	-------------------------------------------------------------------------------------------

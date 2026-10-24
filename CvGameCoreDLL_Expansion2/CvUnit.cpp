@@ -430,6 +430,10 @@ CvUnit::CvUnit() :
 	, m_iNumInterceptions("CvUnit::m_iNumInterceptions", m_syncArchive)
 	, m_iExtraAirInterceptRange("CvUnit::m_iExtraAirInterceptRange", m_syncArchive)
 	, m_iMadeInterceptionCount("CvUnit::m_iMadeInterceptionCount", m_syncArchive)
+	, m_iRangedInterceptChance("CvUnit::m_iRangedInterceptChance", m_syncArchive)
+	, m_iRangedInterceptRange("CvUnit::m_iRangedInterceptRange", m_syncArchive)
+	, m_iNumRangedInterceptions("CvUnit::m_iNumRangedInterceptions", m_syncArchive)
+	, m_iMadeRangedInterceptionCount("CvUnit::m_iMadeRangedInterceptionCount", m_syncArchive)
 	, m_iEverSelectedCount(0)
 	, m_bIgnoreDangerWakeup(false) // slewis - make autovariable when saved games are broken
 	, m_iEmbarkedAllWaterCount(0)
@@ -1481,6 +1485,12 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iNumInterceptions = 1;
 	m_iExtraAirInterceptRange = 0;
 	m_iMadeInterceptionCount = 0;
+
+	m_iRangedInterceptChance = 0;
+	m_iRangedInterceptRange = 0;
+	m_iNumRangedInterceptions = 1;  
+	m_iMadeRangedInterceptionCount = 0;
+
 	m_iEverSelectedCount = 0;
 
 	m_bIgnoreDangerWakeup = false;
@@ -2907,9 +2917,8 @@ void CvUnit::doTurn()
 #if defined(MOD_ROG_CORE)
 	ChangeNumTimesDoFallBackThisTurn(-1 * GetNumTimesDoFallBackThisTurn());
 	ChangeNumTimesBeFallBackThisTurn(-1 * GetNumTimesBeFallBackThisTurn());
-
 	ClearNumTimesAttackedThisTurn();
-
+	SetMadeRangedInterception(false);
 	int turndamage = GetTurnDamage()+ (GetMaxHitPoints() * GetTurnDamagePercent()/100);
 	if (0 != turndamage)
 	{
@@ -23602,6 +23611,51 @@ void CvUnit::changeInterceptChance(int iChange)
 	m_iInterceptChance += iChange;
 }
 
+bool CvUnit::IsRangedInterceptor() const
+{
+	return m_iRangedInterceptChance > 0 && m_iRangedInterceptRange > 0;
+}
+
+int CvUnit::GetRangedInterceptChance() const
+{
+	if (getDomainType() == DOMAIN_AIR)
+		return (m_iRangedInterceptChance * GetCurrHitPoints()) / GetMaxHitPoints();
+	return m_iRangedInterceptChance;
+}
+
+int CvUnit::GetRangedInterceptRange() const { return m_iRangedInterceptRange; }
+
+int CvUnit::GetNumRangedInterceptions() const { return m_iNumRangedInterceptions; }
+
+int CvUnit::GetMadeRangedInterceptionCount() const { return m_iMadeRangedInterceptionCount; }
+
+void CvUnit::ChangeNumRangedInterceptions(int iChange)
+{
+	if (iChange != 0) m_iNumRangedInterceptions += iChange;
+}
+
+void CvUnit::SetMadeRangedInterception(bool bNewValue)
+{
+	if (bNewValue)
+		m_iMadeRangedInterceptionCount++;
+	else
+		m_iMadeRangedInterceptionCount = 0;
+}
+
+bool CvUnit::IsOutOfRangedInterceptions() const
+{
+	return m_iMadeRangedInterceptionCount >= m_iNumRangedInterceptions;
+}
+
+void CvUnit::ChangeRangedInterceptChance(int iChange)
+{
+	if (iChange != 0) m_iRangedInterceptChance += iChange;
+}
+
+void CvUnit::ChangeRangedInterceptRange(int iChange)
+{
+	if (iChange != 0) m_iRangedInterceptRange += iChange;
+}
 
 //	--------------------------------------------------------------------------------
 int CvUnit::getExtraEvasion() const
@@ -27247,6 +27301,9 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeInterceptionDefenseDamageModifier(thisPromotion.GetInterceptionDefenseDamageModifier() * iChange);
 		ChangeAirSweepCombatModifier(thisPromotion.GetAirSweepCombatModifier() * iChange);
 		changeInterceptChance(thisPromotion.GetInterceptChanceChange() * iChange);
+		ChangeRangedInterceptChance(thisPromotion.GetRangedInterceptChance() * iChange);
+		ChangeRangedInterceptRange(thisPromotion.GetRangedInterceptRange() * iChange);
+		ChangeNumRangedInterceptions(thisPromotion.GetRangedInterceptCount() * iChange);
 		changeExtraEvasion(thisPromotion.GetEvasionChange() * iChange);
 		changeExtraEnemyHeal(thisPromotion.GetEnemyHealChange() * iChange);
 		changeExtraNeutralHeal(thisPromotion.GetNeutralHealChange() * iChange);
