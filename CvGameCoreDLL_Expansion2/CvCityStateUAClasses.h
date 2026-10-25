@@ -806,9 +806,16 @@ public:
 	int GetAllyEffectID() const;
 	int GetFriendEffectID() const;
 
+	// AI attraction tables (CityStateUA_ExtraFlavors / CityStateUA_VictoryFlavors). Both return 0
+	// when the entry has no row for the given index.
+	int GetExtraFlavorValue(int i) const;
+	int GetVictoryFlavorValue(int i) const;
+
 private:
 	int m_iAllyEffectID;
 	int m_iFriendEffectID;
+	int* m_piExtraFlavorValue;
+	int* m_piVictoryFlavorValue;
 };
 
 //======================================================================================================

@@ -1085,6 +1085,12 @@ public:
 	bool IsGoingForCultureVictory();
 	bool IsGoingForSpaceshipVictory();
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// CSUA attraction: personality flavors ("wants") + current victory grand strategy ("needs").
+	// Returned on the gold-gift value scale (gift threshold is 100).
+	int GetCSUAAIDesirability(PlayerTypes eMinor);
+#endif
+
 	bool IsPlayerValid(PlayerTypes eOtherPlayer, bool bMyTeamIsValid = false);
 
 	// Messages sent to other players about protected Minor Civs

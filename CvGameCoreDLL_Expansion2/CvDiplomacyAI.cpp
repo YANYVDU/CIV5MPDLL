@@ -19,6 +19,7 @@
 #include "CvGameCoreUtils.h"
 #include "CvNotifications.h"
 #include "CvDiplomacyRequests.h"
+#include "CvCityStateUAClasses.h"
 #include "CustomMods.h"
 
 // must be included after all other headers
@@ -4328,6 +4329,138 @@ MinorCivApproachTypes CvDiplomacyAI::GetBestApproachTowardsMinorCiv(PlayerTypes 
 		viApproachWeights[MINOR_CIV_APPROACH_CONQUEST] -= 200;
 	}
 
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	////////////////////////////////////
+	// CITY-STATE UNIQUE ABILITY ATTRACTION - three refinements on top of the plain linear push:
+	//   * a predatory leader still courts a rich city-state: capturing it would destroy the
+	//     very ability he wants, so conquest is suppressed above the gift threshold.
+	//   * the same leader conquers/bullies worthless city-states instead, where there is no
+	//     ability worth preserving.
+	//   * a friendly leader stops courting city-states whose UA is a poor fit (below average),
+	//     so he actively lets the incompatible ones go instead of befriending everything.
+	////////////////////////////////////
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		int iCSUAValue = GetCSUAAIDesirability(ePlayer);
+		if (iCSUAValue != 0)
+		{
+			// Gold-gift scale (threshold 100) -> approach weight scale (typically 1-20)
+			int iCSUAWeight = iCSUAValue / 10;
+
+			// Set below when taking the city-state is deliberate even for a valuable UA.
+			bool bConquestReversal = false;
+
+			// Which way is this leader leaning? Personality decides the baseline, the current
+			// approach weights can override it for this particular city-state.
+			int iOffenseFlavor = 0;
+			CvFlavorManager* pFlavorMgr = GetPlayer()->GetFlavorManager();
+			if (pFlavorMgr != NULL)
+				iOffenseFlavor = pFlavorMgr->GetPersonalityIndividualFlavor((FlavorTypes)GC.getInfoTypeForString("FLAVOR_OFFENSE"));
+
+			bool bPredatory = GetMinorCivCompetitiveness() >= 6
+			                || iOffenseFlavor >= 7
+			                || (viApproachWeights[MINOR_CIV_APPROACH_CONQUEST] + viApproachWeights[MINOR_CIV_APPROACH_BULLY])
+			                 > (viApproachWeights[MINOR_CIV_APPROACH_FRIENDLY] + viApproachWeights[MINOR_CIV_APPROACH_PROTECTIVE]);
+
+			if (bPredatory)
+			{
+				// Capturing a city-state destroys its unique ability, so a rich UA is never a
+				// conquest target: the leader courts it instead. Worthless ones remain fair game.
+				int iRich = max(0, iCSUAValue - 100) / 10;
+				int iPoor = min(0, iCSUAValue - 60) / 10;
+
+				viApproachWeights[MINOR_CIV_APPROACH_FRIENDLY] += iRich;
+				viApproachWeights[MINOR_CIV_APPROACH_PROTECTIVE] += iRich / 2;
+				viApproachWeights[MINOR_CIV_APPROACH_CONQUEST] += -iRich * 2 - iPoor * 2;
+				viApproachWeights[MINOR_CIV_APPROACH_BULLY] += -iRich - iPoor;
+
+				if (iRich > 0)
+					viApproachWeights[MINOR_CIV_APPROACH_IGNORE] -= iRich;
+
+				// Two reversals where capturing beats courting even for a rich city-state:
+				//   * a conquest-grants-UA civilization (Rome) next to it can take the ability by
+				//     force, so proximity flips the decision;
+				//   * the city-state is already allied to an enemy whose influence dwarfs ours
+				//     (more than 3x our influence or our own ally threshold), so courting is
+				//     hopeless and denying the enemy its UA is the better play.
+				PlayerProximityTypes eProximity = GetPlayer()->GetProximityToPlayer(ePlayer);
+				bool bConquestGrantsUA = GetPlayer()->GetPlayerTraits()->IsGainConqueredCityStateUA()
+					&& (eProximity == PLAYER_PROXIMITY_NEIGHBORS || eProximity == PLAYER_PROXIMITY_CLOSE);
+
+				bool bEnemyLocked = false;
+				CvMinorCivAI* pMinorAI = GET_PLAYER(ePlayer).GetMinorCivAI();
+				if (pMinorAI != NULL)
+				{
+					for (int iMajorLoop = 0; iMajorLoop < MAX_MAJOR_CIVS; iMajorLoop++)
+					{
+						PlayerTypes eMajor = (PlayerTypes)iMajorLoop;
+						if (eMajor == GetPlayer()->GetID())
+							continue;
+						if (!GET_PLAYER(eMajor).isAlive())
+							continue;
+						if (!pMinorAI->IsAllies(eMajor))
+							continue;
+						// "Enemy" is not limited to an active war: a leader who is already
+						// hostile (or biding his time to declare) counts as well.
+						MajorCivApproachTypes eTheirApproach = GetMajorCivApproach(eMajor, false);
+						bool bEnemy = IsAtWar(eMajor)
+							|| eTheirApproach == MAJOR_CIV_APPROACH_WAR
+							|| eTheirApproach == MAJOR_CIV_APPROACH_HOSTILE;
+						if (!bEnemy)
+							continue;
+
+						int iTheirInfluence = pMinorAI->GetEffectiveFriendshipWithMajor(eMajor);
+						int iMyInfluence = pMinorAI->GetEffectiveFriendshipWithMajor(GetPlayer()->GetID());
+						int iMyAllyThreshold = pMinorAI->GetAlliesThresholdForPlayer(GetPlayer()->GetID());
+						int iMyFloor = max(iMyInfluence, iMyAllyThreshold);
+
+						if (iTheirInfluence > iMyFloor * 3)
+						{
+							bEnemyLocked = true;
+							break;
+						}
+					}
+				}
+
+				if (bConquestGrantsUA || bEnemyLocked)
+				{
+					bConquestReversal = true;
+
+					viApproachWeights[MINOR_CIV_APPROACH_CONQUEST] += 60;
+					viApproachWeights[MINOR_CIV_APPROACH_BULLY] += 20;
+					viApproachWeights[MINOR_CIV_APPROACH_FRIENDLY] -= 15;
+					viApproachWeights[MINOR_CIV_APPROACH_PROTECTIVE] -= 10;
+					viApproachWeights[MINOR_CIV_APPROACH_IGNORE] -= 20;
+				}
+			}
+			else
+			{
+				// Below average fit: stop courting it and let it go
+				int iMisfit = min(0, iCSUAValue - 80) / 10;
+
+				viApproachWeights[MINOR_CIV_APPROACH_FRIENDLY] += iCSUAWeight + iMisfit;
+				viApproachWeights[MINOR_CIV_APPROACH_PROTECTIVE] += iCSUAWeight / 2 + iMisfit / 2;
+				viApproachWeights[MINOR_CIV_APPROACH_CONQUEST] -= iCSUAWeight;
+				viApproachWeights[MINOR_CIV_APPROACH_BULLY] -= iCSUAWeight / 2;
+
+				if (iMisfit < 0)
+					viApproachWeights[MINOR_CIV_APPROACH_IGNORE] -= iMisfit / 2;
+			}
+
+			// A nearby city-state whose UA is worth courting is never treated as a conquest
+			// target. Vanilla neighbor and "good war target" bonuses (up to +11) plus the
+			// target-value multiplier drown out any flat subtraction, so conquest is dropped
+			// to zero outright instead of being chipped at. Only +1 proximity and +1 hostile-
+			// personality weight follow, too small to flip the decision.
+			// Reversals above keep conquest alive: there taking the city-state is the point.
+			if (!bConquestReversal && iCSUAValue >= 100
+				&& GetPlayer()->GetProximityToPlayer(ePlayer) == PLAYER_PROXIMITY_NEIGHBORS)
+			{
+				viApproachWeights[MINOR_CIV_APPROACH_CONQUEST] = 0;
+			}
+		}
+	}
+#endif
 	////////////////////////////////////
 	// RELIGION
 	////////////////////////////////////
@@ -13513,6 +13646,13 @@ void CvDiplomacyAI::DoContactMinorCivs()
 			if(bWantsToMakeGoldGift && !bWantsToBuyoutThisMinor)
 			{
 				int iValue = /*100*/ GC.getMC_GIFT_WEIGHT_THRESHOLD();
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+				// CSUA attraction: this city-state's unique ability is what we want or need.
+				// Negative values mean the UA conflicts with our playstyle, so they lower the
+				// willingness to spend gold here rather than merely failing to raise it.
+				int iCSUAValue = MOD_SP_UNIQUE_CITYSTATE ? GetCSUAAIDesirability(eMinor) : 0;
+				iValue += iCSUAValue;
+#endif
 				// If we're not protective or friendly, then don't bother with minor diplo
 				if(eApproach == MINOR_CIV_APPROACH_PROTECTIVE || eApproach == MINOR_CIV_APPROACH_FRIENDLY)
 				{
@@ -13667,9 +13807,15 @@ void CvDiplomacyAI::DoContactMinorCivs()
 							iValue += /*125*/ GC.getMC_GIFT_WEIGHT_ALMOST_NOT_FRIENDS();
 							sGiftInfo.bQuickBoost = true;
 						}
-						// Not going to lose status, so not worth going after this guy
+						// Not going to lose status, so not worth going after this guy - unless its
+						// CSUA alone is valuable enough to justify upgrading friendship to alliance
 						else if(!IsGoingForDiploVictory() || !GC.getGame().IsUnitedNationsActive())
-							iValue = 0;
+						{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+							if (!MOD_SP_UNIQUE_CITYSTATE || iCSUAValue < GC.getMC_GIFT_WEIGHT_THRESHOLD())
+#endif
+								iValue = 0;
+						}
 					}
 
 					// Did we bully you recently?  If so, giving you gold now would be very odd.
@@ -24981,6 +25127,55 @@ bool CvDiplomacyAI::IsGoingForSpaceshipVictory()
 
 	return false;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+/// AI attraction to a city-state's unique ability, on the gold-gift value scale (threshold = 100).
+/// "Wants": CityStateUA_ExtraFlavors scales with this leader's personality flavor, using the same
+///          math as Belief_ExtraFlavors.
+/// "Needs": CityStateUA_VictoryFlavors adds a flat value for the grand strategy we pursue now.
+int CvDiplomacyAI::GetCSUAAIDesirability(PlayerTypes eMinor)
+{
+	if (!MOD_SP_UNIQUE_CITYSTATE)
+		return 0;
+
+	if (eMinor < 0 || eMinor >= MAX_CIV_PLAYERS)
+		return 0;
+
+	if (!GET_PLAYER(eMinor).isMinorCiv())
+		return 0;
+
+	CvMinorCivInfo* pMinorInfo = GC.getMinorCivInfo(GET_PLAYER(eMinor).GetMinorCivAI()->GetMinorCivType());
+	if (pMinorInfo == NULL || pMinorInfo->GetCityStateUAIndex() < 0)
+		return 0;
+
+	CvCityStateUAEntry* pEntry = GC.GetGameCityStateUAs()->GetEntry(pMinorInfo->GetCityStateUAIndex());
+	if (pEntry == NULL)
+		return 0;
+
+	int iScore = 0;
+
+	CvFlavorManager* pFlavorManager = GetPlayer()->GetFlavorManager();
+	if (pFlavorManager != NULL)
+	{
+		for (int iFlavor = 0; iFlavor < GC.getNumFlavorTypes(); iFlavor++)
+		{
+			int iExtra = pEntry->GetExtraFlavorValue(iFlavor);
+			if (iExtra == 0)
+				continue;
+
+			int iLeaderFlavor = pFlavorManager->GetPersonalityIndividualFlavor((FlavorTypes)iFlavor);
+			if (iLeaderFlavor == 0)
+				continue;
+
+			iScore += (iExtra * iLeaderFlavor) / 100;
+		}
+	}
+
+	iScore += pEntry->GetVictoryFlavorValue(GetPlayer()->GetGrandStrategyAI()->GetActiveGrandStrategy());
+
+	return iScore;
+}
+#endif
 
 
 /// Helper function: is this a valid player to be looking at?  (e.g. are they alive, do we know them, etc.)

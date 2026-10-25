@@ -1635,11 +1635,15 @@ void CvCityStateUAEffectXMLEntries::DeleteArray()
 CvCityStateUAEntry::CvCityStateUAEntry(void)
 	: m_iAllyEffectID(-1)
 	, m_iFriendEffectID(-1)
+	, m_piExtraFlavorValue(NULL)
+	, m_piVictoryFlavorValue(NULL)
 {
 }
 
 CvCityStateUAEntry::~CvCityStateUAEntry(void)
 {
+	SAFE_DELETE_ARRAY(m_piExtraFlavorValue);
+	SAFE_DELETE_ARRAY(m_piVictoryFlavorValue);
 }
 
 bool CvCityStateUAEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -1650,11 +1654,32 @@ bool CvCityStateUAEntry::CacheResults(Database::Results& kResults, CvDatabaseUti
 	m_iAllyEffectID = GC.getInfoTypeForString(kResults.GetText("AllyEffectType"), true);
 	m_iFriendEffectID = GC.getInfoTypeForString(kResults.GetText("FriendEffectType"), true);
 
+	const char* szType = GetType();
+	kUtility.SetFlavors(m_piExtraFlavorValue, "CityStateUA_ExtraFlavors", "CityStateUAType", szType);
+	kUtility.PopulateArrayByValue(m_piVictoryFlavorValue, "AIGrandStrategies", "CityStateUA_VictoryFlavors",
+	                              "AIGrandStrategyType", "CityStateUAType", szType, "Flavor");
+
 	return true;
 }
 
 int CvCityStateUAEntry::GetAllyEffectID() const { return m_iAllyEffectID; }
 int CvCityStateUAEntry::GetFriendEffectID() const { return m_iFriendEffectID; }
+
+int CvCityStateUAEntry::GetExtraFlavorValue(int i) const
+{
+	if (i < 0 || i >= GC.getNumFlavorTypes())
+		return 0;
+
+	return m_piExtraFlavorValue ? m_piExtraFlavorValue[i] : 0;
+}
+
+int CvCityStateUAEntry::GetVictoryFlavorValue(int i) const
+{
+	if (i < 0 || i >= GC.getNumAIGrandStrategyInfos())
+		return 0;
+
+	return m_piVictoryFlavorValue ? m_piVictoryFlavorValue[i] : 0;
+}
 
 //======================================================================================================
 // CvCityStateUAXMLEntries

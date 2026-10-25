@@ -253,6 +253,22 @@ CREATE TABLE CityStateUAs (
     FriendEffectType TEXT NOT NULL REFERENCES CityStateUAEffects(Type)
 );
 
+-- AI personality attraction: how much a leader whose personality has the given flavor wants this
+-- city-state's UA. Mirrors Belief_ExtraFlavors; the AI score is (Flavor * leader flavor) / 100.
+create table CityStateUA_ExtraFlavors (
+    CityStateUAType text references CityStateUAs(Type),
+    FlavorType text references Flavors(Type),
+    Flavor integer default 0 not null
+);
+
+-- AI victory preference: extra desirability of this city-state's UA for an AI that is currently
+-- pursuing the given grand strategy. Flavor is on the gold-gift value scale (gift threshold is 100).
+create table CityStateUA_VictoryFlavors (
+    CityStateUAType text references CityStateUAs(Type),
+    AIGrandStrategyType text references AIGrandStrategies(Type),
+    Flavor integer default 0 not null
+);
+
 -- MinorCivilizations reference UAType directly (no mapping table needed)
 alter table MinorCivilizations add column UAType text default null references CityStateUAs(Type);
 
