@@ -110,7 +110,7 @@ public:
 #ifdef MOD_ROG_CORE
 	static void InterveneInflictDamage(InflictDamageContext* ctx);
 #endif
-	static CvUnit* GetRangedInterceptor(PlayerTypes eDefender, int iTargetX, int iTargetY,CvUnit* pAttacker);
+
 protected:
 	static void ResolveRangedUnitVsCombat(const CvCombatInfo& kInfo, uint uiParentEventID);
 	static void ResolveRangedCityVsUnitCombat(const CvCombatInfo& kCombatInfo, uint uiParentEventID);

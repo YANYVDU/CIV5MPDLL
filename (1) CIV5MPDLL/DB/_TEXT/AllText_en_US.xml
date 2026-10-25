@@ -2,15 +2,6 @@
 <GameData>
 	<!-- Espionage.xml -->
 	<Language_en_US>
-<Row Tag="TXT_KEY_RANGED_ATTACK_INTERCEPTED"> 
-<Text>Our ranged attack {1_attacker} was intercepted by {2_interceptor}!</Text> 
-</Row> 
-<Row Tag="TXT_KEY_RANGED_ATTACK_INTERCEPTED_DEFENDER"> 
-<Text>{1_interceptor} intercepted an enemy ranged attack from {2_attacker}!</Text> 
-</Row> 
-<Row Tag="TXT_KEY_PROMOTION_RANGED_INTERCEPTOR_HELP"> 
-<Text>When friendly units within [ICON_RANGE_ATTACK] range are attacked by ranged attacks, there is a chance to intercept the attack.</Text> 
-</Row>
 		<Row Tag="TXT_KEY_UNIT_PLAGUE_CHANCE">
 			<Text>[COLOR_CYAN]Status Effect Chance ({1_Name})[ENDCOLOR]</Text>
 		</Row>

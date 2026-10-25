@@ -676,17 +676,6 @@ public:
 	bool canIntercept() const;
 	int GetAirInterceptRange() const;
 
-	bool IsRangedInterceptor() const;
-	int  GetRangedInterceptChance() const;
-	int  GetRangedInterceptRange()  const;
-	int  GetNumRangedInterceptions() const;          
-	int  GetMadeRangedInterceptionCount() const;     
-	void ChangeNumRangedInterceptions(int iChange);  
-	void SetMadeRangedInterception(bool bNewValue);  
-	bool IsOutOfRangedInterceptions() const;         
-	void ChangeRangedInterceptChance(int iChange);
-	void ChangeRangedInterceptRange(int iChange);
-
 #if defined(MOD_PROMOTIONS_CROSS_MOUNTAINS)
 	bool canCrossMountains() const;
 	int getCanCrossMountainsCount() const;
@@ -2500,11 +2489,6 @@ protected:
 	FAutoVariable<int, CvUnit> m_iNumInterceptions;
 	FAutoVariable<int, CvUnit> m_iExtraAirInterceptRange;
 	FAutoVariable<int, CvUnit> m_iMadeInterceptionCount;
-
-	FAutoVariable<int, CvUnit> m_iRangedInterceptChance;
-	FAutoVariable<int, CvUnit> m_iRangedInterceptRange;
-	FAutoVariable<int, CvUnit> m_iNumRangedInterceptions;      
-	FAutoVariable<int, CvUnit> m_iMadeRangedInterceptionCount;
 	int m_iEverSelectedCount;
 	int m_iSapperCount;
 	int m_iCanHeavyCharge;

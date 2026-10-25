@@ -5,10 +5,6 @@ alter table UnitPromotions add AntiHigherPopMod integer default 0;
 alter table UnitPromotions add GoldenAgeMod integer default 0;
 alter table UnitPromotions add WoundedMod integer default 0;
 
-alter table UnitPromotions add RangedInterceptChance integer default 0;
-alter table UnitPromotions add RangedInterceptRange integer default 0;
-alter table UnitPromotions add RangedInterceptCount integer default 0;
-
 alter table UnitPromotions add MoveLfetAttackMod integer default 0;
 alter table UnitPromotions add MoveLeftDefenseMod integer default 0;
 alter table UnitPromotions add MoveUsedAttackMod integer default 0;

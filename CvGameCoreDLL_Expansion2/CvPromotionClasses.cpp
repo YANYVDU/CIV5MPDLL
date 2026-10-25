@@ -42,9 +42,6 @@ CvPromotionEntry::CvPromotionEntry():
 	m_iInterceptChanceChange(0),
 	m_iNumInterceptionChange(0),
 	m_iAirInterceptRangeChange(0),
-	m_iRangedInterceptChance(0),
-	m_iRangedInterceptRange(0),
-	m_iRangedInterceptCount(0),
 	m_iEvasionChange(0),
 	m_iCargoChange(0),
 	m_iEnemyHealChange(0),
@@ -693,9 +690,6 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_iInterceptChanceChange = kResults.GetInt("InterceptChanceChange");
 	m_iNumInterceptionChange = kResults.GetInt("NumInterceptionChange");
 	m_iAirInterceptRangeChange = kResults.GetInt("AirInterceptRangeChange");
-	m_iRangedInterceptChance = kResults.GetInt("RangedInterceptChance");
-	m_iRangedInterceptRange = kResults.GetInt("RangedInterceptRange");
-	m_iRangedInterceptCount = kResults.GetInt("RangedInterceptCount");
 	m_iEvasionChange = kResults.GetInt("EvasionChange");
 	m_iCargoChange = kResults.GetInt("CargoChange");
 	m_iEnemyHealChange = kResults.GetInt("EnemyHealChange");
@@ -1946,21 +1940,6 @@ int CvPromotionEntry::GetNumInterceptionChange() const
 int CvPromotionEntry::GetAirInterceptRangeChange() const
 {
 	return m_iAirInterceptRangeChange;
-}
-
-int CvPromotionEntry::GetRangedInterceptChance() const 
-{ 
-	return m_iRangedInterceptChance; 
-}
-
-int CvPromotionEntry::GetRangedInterceptRange()  const 
-{ 
-	return m_iRangedInterceptRange; 
-}
-
-int CvPromotionEntry::GetRangedInterceptCount()  const 
-{ 
-	return m_iRangedInterceptCount; 
 }
 
 /// Accessor: How well an air unit can evade interception
