@@ -1675,7 +1675,8 @@ if (MOD_API_UNIT_CANNOT_BE_RANGED_ATTACKED)
 	m_iSiegeInflictDamageChangeMaxHPPercent = 0;
 
 	m_iNumRangeBackWhenDefense = 0;
-
+	m_iMeleeAttackCityReduceDamage = 0;
+	m_iMeleeAttackUnitReduceDamage = 0;
 	m_iHeavyChargeAddMoves = 0;
 	m_iHeavyChargeExtraDamage = 0;
 	m_iHeavyChargeCollateralFixed = 0;
@@ -27543,6 +27544,8 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeAttackInflictDamageChangeMaxHPPercent(iChange * thisPromotion.GetAttackInflictDamageChangeMaxHPPercent());
 		ChangeDefenseInflictDamageChange(iChange * thisPromotion.GetDefenseInflictDamageChange());
 		ChangeDefenseInflictDamageChangeMaxHPPercent(iChange * thisPromotion.GetDefenseInflictDamageChangeMaxHPPercent());
+		ChangeMeleeAttackCityReduceDamage(iChange* thisPromotion.GetMeleeAttackCityReduceDamage());
+		ChangeMeleeAttackUnitReduceDamage(iChange* thisPromotion.GetMeleeAttackUnitReduceDamage());
 		ChangeSiegeInflictDamageChange(iChange * thisPromotion.GetSiegeInflictDamageChange());
 		ChangeSiegeInflictDamageChangeMaxHPPercent(iChange * thisPromotion.GetSiegeInflictDamageChangeMaxHPPercent());
 		ChangeFixDamagePerPromotionTotal(iChange * thisPromotion.GetFixDamagePerPromotionMod());
@@ -28145,7 +28148,8 @@ void CvUnit::read(FDataStream& kStream)
 
 	kStream >> m_iDefenseInflictDamageChange;
 	kStream >> m_iDefenseInflictDamageChangeMaxHPPercent;
-
+	kStream >> m_iMeleeAttackCityReduceDamage;
+	kStream >> m_iMeleeAttackUnitReduceDamage;
 	kStream >> m_iSiegeInflictDamageChange;
 	kStream >> m_iSiegeInflictDamageChangeMaxHPPercent;
 
@@ -28506,7 +28510,8 @@ void CvUnit::write(FDataStream& kStream) const
 
 	kStream << m_iDefenseInflictDamageChange;
 	kStream << m_iDefenseInflictDamageChangeMaxHPPercent;
-
+	kStream << m_iMeleeAttackCityReduceDamage;
+	kStream << m_iMeleeAttackUnitReduceDamage;
 	kStream << m_iSiegeInflictDamageChange;
 	kStream << m_iSiegeInflictDamageChangeMaxHPPercent;
 
@@ -33171,6 +33176,26 @@ bool CvUnit::IsRangeBackWhenDefense() const
 void CvUnit::ChangeNumRangeBackWhenDefense(int iChange)
 {
 	m_iNumRangeBackWhenDefense += iChange;
+}
+
+int CvUnit::GetMeleeAttackCityReduceDamage() const
+{
+	return m_iMeleeAttackCityReduceDamage;
+}
+
+void CvUnit::ChangeMeleeAttackCityReduceDamage(int iChange)
+{
+	m_iMeleeAttackCityReduceDamage += iChange;
+}
+
+int CvUnit::GetMeleeAttackUnitReduceDamage() const
+{
+	return m_iMeleeAttackUnitReduceDamage;
+}
+
+void CvUnit::ChangeMeleeAttackUnitReduceDamage(int iChange)
+{
+	m_iMeleeAttackUnitReduceDamage += iChange;
 }
 
 int CvUnit::GetHeavyChargeAddMoves() const

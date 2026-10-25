@@ -4987,6 +4987,35 @@ static void OutsideFriendlyLandsDamageIntervene(InflictDamageContext* ctx)
 	}
 }
 
+static void MeleeAttackerReduceDamageIntervene(InflictDamageContext* ctx)
+{
+	if (!ctx->bMelee || ctx->pAttackerUnit == nullptr || ctx->piDefenseInflictDamage == nullptr)
+		return;
+
+	const int iScale = ctx->iAttackerFixedDamageScale;
+	if (iScale <= 0) return;
+
+	if (ctx->pDefenderCity != nullptr)
+	{
+		int iReduce = ctx->pAttackerUnit->GetMeleeAttackCityReduceDamage();
+		if (iReduce > 0)
+		{
+			if (iReduce > 100) iReduce = 100;
+			*ctx->piDefenseInflictDamage -= *ctx->piDefenseInflictDamage * iReduce * iScale / 10000;
+		}
+	}
+
+	if (ctx->pDefenderUnit != nullptr)
+	{
+		int iReduce = ctx->pAttackerUnit->GetMeleeAttackUnitReduceDamage();
+		if (iReduce > 0)
+		{
+			if (iReduce > 100) iReduce = 100;
+			*ctx->piDefenseInflictDamage -= *ctx->piDefenseInflictDamage * iReduce * iScale / 10000;
+		}
+	}
+}
+
 static void MilanDamageReductionIntervene(InflictDamageContext* ctx)
 {
 	// Milan CS UA: a unit takes Percent% less damage when the opposing side's team lacks the configured
@@ -5027,7 +5056,7 @@ void CvUnitCombat::InterveneInflictDamage(InflictDamageContext* ctx)
 	BudapestWoundedFixedDamageIntervene(ctx);
 	SiegeInflictDamageIntervene(ctx);
 	OutsideFriendlyLandsDamageIntervene(ctx);
-
+	MeleeAttackerReduceDamageIntervene(ctx);
 #ifdef MOD_TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY
 	DamageInterveneFromTraitReligion(ctx);
 #endif
