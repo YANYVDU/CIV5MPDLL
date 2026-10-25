@@ -1692,7 +1692,6 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 				// Mark as permanent ally to prevent decay and coups
 				GetEffects()->bPermanentAlly = true;
 				pPlayer->SetPermanentAlly(eTargetCityState, true);
-				pPlayer->ChangePrestigeExemptAllyCount(1);
 
 				// Clear all quests and notify players
 				pMinorAI->ResetQuestList();

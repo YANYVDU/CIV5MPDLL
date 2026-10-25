@@ -5184,6 +5184,10 @@ bool CvUnit::canGift(bool bTestVisible, bool bTestTransport) const
 	// Minors
 	if(GET_PLAYER(pPlot->getOwner()).isMinorCiv())
 	{
+		// Cannot gift to a city-state that already has a permanent ally
+		if (GET_PLAYER(pPlot->getOwner()).GetMinorCivAI()->HasPermanentAlly())
+			return false;
+
 		// No settlers
 		if(isFound() || IsFoundAbroad())
 			return false;
@@ -5323,6 +5327,10 @@ bool CvUnit::CanDistanceGift(PlayerTypes eToPlayer) const
 	// Minors
 	if(GET_PLAYER(eToPlayer).isMinorCiv())
 	{
+		// Cannot gift to a city-state that already has a permanent ally
+		if (GET_PLAYER(eToPlayer).GetMinorCivAI()->HasPermanentAlly())
+			return false;
+
 		// No settlers
 		if(isFound() || IsFoundAbroad())
 			return false;
