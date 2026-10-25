@@ -11518,6 +11518,9 @@ bool CvUnit::DoSpreadReligion()
 			iNumFollowersSpreadAddtion = pCity->GetCityReligions()->GetNumFollowers(eReligion) - iNumFollowersBeforeSpread;
 			if(iNumFollowersSpreadAddtion > 0)
 			{
+				// SP contest quests: lifetime followers gained through missionary/prophet spread
+				kPlayer.ChangeNumFollowersConverted(iNumFollowersSpreadAddtion);
+
 				for (int iI = 0; iI < NUM_YIELD_TYPES; iI++)
 				{
 					YieldTypes eYield = (YieldTypes) iI;

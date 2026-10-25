@@ -87,6 +87,13 @@ enum MinorCivQuestTypes
 	MINOR_CIV_QUEST_DONATE_GOLD,
 	MINOR_CIV_QUEST_RESEARCH_AGREEMENT,
 
+	// SP contest quests - the ID values MUST match the rows in the Quests table
+	MINOR_CIV_QUEST_CONTEST_WORLD_WONDERS,
+	MINOR_CIV_QUEST_CONTEST_CONVERTS,
+	MINOR_CIV_QUEST_CONTEST_GREAT_PEOPLE,
+	MINOR_CIV_QUEST_CONTEST_CITIES_FOUNDED,
+	MINOR_CIV_QUEST_CONTEST_CITIES_CAPTURED,
+
 	NUM_MINOR_CIV_QUEST_TYPES,
 };
 FDataStream& operator<<(FDataStream&, const MinorCivQuestTypes&);
@@ -705,6 +712,7 @@ private:
 
 	int m_iTurnsSinceThreatenedByBarbarians;
 	int m_iGlobalQuestCountdown;
+	bool m_bHasGivenGlobalQuest; // SP: whether this city-state has handed out its first global quest
 
 	bool m_abWarQuestAgainstMajor[MAX_MAJOR_CIVS];
 	int m_aaiNumEnemyUnitsLeftToKillByMajor[MAX_MAJOR_CIVS][MAX_MAJOR_CIVS];

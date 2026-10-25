@@ -1410,6 +1410,10 @@ void CvPlayer::uninit()
 	m_bExtendedGame = false;
 	m_bFoundedFirstCity = false;
 	m_iNumCitiesFounded = 0;
+	m_iNumWorldWondersBuilt = 0;
+	m_iNumFollowersConverted = 0;
+	m_iNumCitiesCaptured = 0;
+	m_iNumGreatPeopleBorn = 0;
 	m_bStrike = false;
 	m_bCramped = false;
 	m_bLostCapital = false;
@@ -3857,6 +3861,14 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 		RefreshCSAllUAEffects();
 #endif
 
+	// SP contest quests: count cities taken by conquest. Retaking a city whose original
+	// owner is us does not count; barbarian cities (if any) do not count either.
+	// City-states are intentionally included.
+	if (bConquest && eOldOwner != NO_PLAYER && eOriginalOwner != GetID() && !GET_PLAYER(eOldOwner).isBarbarian())
+	{
+		ChangeNumCitiesCaptured(1);
+	}
+
 #if defined(MOD_API_EXTENSIONS)
 		return pNewCity;
 #endif
@@ -4529,6 +4541,13 @@ CvUnit* CvPlayer::initUnit(UnitTypes eUnit, int iX, int iY, UnitAITypes eUnitAI,
 	SpecialUnitTypes eSpecialUnitGP = (SpecialUnitTypes)GC.getInfoTypeForString("SPECIALUNIT_PEOPLE", true);
 	if (eSpecialUnitGP != -1 && pkUnitDef->GetSpecialUnitType() == eSpecialUnitGP)
 	{
+		// SP contest quests: every great person obtained counts, whatever the source
+		// (production, gold/faith purchase, free unit, city-state gift) and whatever the
+		// class, including unique replacements not listed in GreatPersons. This is the
+		// single entry point every in-game great person passes through; save loads use
+		// CvUnit::read and never reach initUnit.
+		ChangeNumGreatPeopleBorn(1);
+
 		UnitClassTypes eUC = (UnitClassTypes)pkUnitDef->GetUnitClassType();
 		GreatPersonTypes eGP = GetGreatPersonFromUnitClass(eUC);
 		if (eGP != NO_GREATPERSON)
@@ -23300,6 +23319,54 @@ void CvPlayer::ChangeNumCitiesFounded(int iValue)
 }
 
 //	--------------------------------------------------------------------------------
+int CvPlayer::GetNumWorldWondersBuilt() const
+{
+	return m_iNumWorldWondersBuilt;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNumWorldWondersBuilt(int iValue)
+{
+	m_iNumWorldWondersBuilt += iValue;
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNumFollowersConverted() const
+{
+	return m_iNumFollowersConverted;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNumFollowersConverted(int iValue)
+{
+	m_iNumFollowersConverted += iValue;
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNumCitiesCaptured() const
+{
+	return m_iNumCitiesCaptured;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNumCitiesCaptured(int iValue)
+{
+	m_iNumCitiesCaptured += iValue;
+}
+
+//	--------------------------------------------------------------------------------
+int CvPlayer::GetNumGreatPeopleBorn() const
+{
+	return m_iNumGreatPeopleBorn;
+}
+
+//	--------------------------------------------------------------------------------
+void CvPlayer::ChangeNumGreatPeopleBorn(int iValue)
+{
+	m_iNumGreatPeopleBorn += iValue;
+}
+
+//	--------------------------------------------------------------------------------
 // check to see if we defeated this other player
 void CvPlayer::CheckForMurder(PlayerTypes ePossibleVictimPlayer)
 {
@@ -30831,6 +30898,10 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderPolicies, 0);
 	MOD_SERIALIZE_READ(160, kStream, m_iNaturalWonderSubsequentFinderTech, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_iLastVeniceBuyFoodTurn, -1);
+	MOD_SERIALIZE_READ(166, kStream, m_iNumWorldWondersBuilt, 0);
+	MOD_SERIALIZE_READ(166, kStream, m_iNumFollowersConverted, 0);
+	MOD_SERIALIZE_READ(166, kStream, m_iNumCitiesCaptured, 0);
+	MOD_SERIALIZE_READ(166, kStream, m_iNumGreatPeopleBorn, 0);
 	kStream >> m_iProductionBeakerMod;
 	if (uiVersion >= 13)
 	{
@@ -31789,6 +31860,10 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderPolicies);
 	MOD_SERIALIZE_WRITE(kStream, m_iNaturalWonderSubsequentFinderTech);
 	MOD_SERIALIZE_WRITE(kStream, m_iLastVeniceBuyFoodTurn);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumWorldWondersBuilt);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumFollowersConverted);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumCitiesCaptured);
+	MOD_SERIALIZE_WRITE(kStream, m_iNumGreatPeopleBorn);
 	kStream << m_iProductionBeakerMod;
 	kStream << m_iGreatEngineerRateModifier;
 	kStream << m_iGreatPersonExpendGold;

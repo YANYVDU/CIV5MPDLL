@@ -1391,6 +1391,16 @@ public:
 	int GetNumCitiesFounded() const;
 	void ChangeNumCitiesFounded(int iValue);
 
+	// SP contest quest counters (lifetime totals, used as quest baselines)
+	int GetNumWorldWondersBuilt() const;
+	void ChangeNumWorldWondersBuilt(int iValue);
+	int GetNumFollowersConverted() const;
+	void ChangeNumFollowersConverted(int iValue);
+	int GetNumCitiesCaptured() const;
+	void ChangeNumCitiesCaptured(int iValue);
+	int GetNumGreatPeopleBorn() const;
+	void ChangeNumGreatPeopleBorn(int iValue);
+
 	// slewis - centralizing code where a player gets whacked by another player
 	void CheckForMurder(PlayerTypes ePossibleVictimPlayer); // check to see if we defeated this other player
 
@@ -2796,6 +2806,10 @@ protected:
 	int m_iNaturalWonderSubsequentFinderPolicies;
 	int m_iNaturalWonderSubsequentFinderTech;
 	int m_iLastVeniceBuyFoodTurn; // authoritative per-player Venice buy-food cooldown (MP-synced via broadcast)
+	int m_iNumWorldWondersBuilt; // lifetime world wonders completed (SP contest quest baseline)
+	int m_iNumFollowersConverted; // lifetime followers added by missionary/prophet spread
+	int m_iNumCitiesCaptured; // lifetime cities captured by conquest
+	int m_iNumGreatPeopleBorn; // lifetime great people born (every class, including prophets)
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;

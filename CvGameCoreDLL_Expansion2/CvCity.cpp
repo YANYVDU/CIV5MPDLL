@@ -19399,6 +19399,14 @@ bool CvCity::CreateBuilding(BuildingTypes eBuildingType)
 	}
 #endif
 
+	// SP contest quests: count world wonders actually completed here. City transfers during
+	// conquest use SetNumRealBuildingTimed, so conquered wonders are not counted as built.
+	CvBuildingClassInfo* pWonderClassInfo = GC.getBuildingClassInfo(eBuildingClass);
+	if(pWonderClassInfo != NULL && ::isWorldWonderClass(*pWonderClassInfo))
+	{
+		kPlayer.ChangeNumWorldWondersBuilt(1);
+	}
+
 	return true;
 }
 
