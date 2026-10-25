@@ -8270,7 +8270,7 @@ void CvPlayer::receiveGoody(CvPlot* pPlot, GoodyTypes eGoody, CvUnit* pUnit)
 									if(pLoopPlot->getNumFriendlyUnitsOfType(pUnit) < GC.getPLOT_UNIT_LIMIT())
 #endif
 									{
-										if(pNewUnit->canEnterTerritory(pLoopPlot->getTeam()) && !pNewUnit->isEnemy(pLoopPlot->getTeam(), pLoopPlot))
+										if(pNewUnit->canEnterTerritory(pLoopPlot->getTeam(), false /*bIgnoreRightOfPassage*/, false /*bIsCity*/, false /*bIsDeclareWarMove*/, pLoopPlot->getOwner()) && !pNewUnit->isEnemy(pLoopPlot->getTeam(), pLoopPlot))
 										{
 											if((pNewUnit->getDomainType() != DOMAIN_AIR) || pLoopPlot->isFriendlyCity(*pNewUnit, true))
 											{
