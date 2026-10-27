@@ -8009,15 +8009,33 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 	}
 	else if (iBaseFriendship > iFriendshipAnchor)
 	{
-		// Hostile Minors have Friendship decay quicker
+		// Decay rate as a percentage of current influence (Times100 basis).
+		// Hostile Minors have Friendship decay quicker, aggressors even quicker.
+		int iDecayRate = -GC.getMINOR_FRIENDSHIP_DROP_PER_TURN(); // 100 = 1%
 		if(GetPersonality() == MINOR_CIV_PERSONALITY_HOSTILE)
-			iChangeThisTurn += /*-150*/ GC.getMINOR_FRIENDSHIP_DROP_PER_TURN_HOSTILE();
-		// Aggressor!
+			iDecayRate = -GC.getMINOR_FRIENDSHIP_DROP_PER_TURN_HOSTILE();
 		else if(GET_TEAM(kPlayer.getTeam()).IsMinorCivAggressor())
-			iChangeThisTurn += /*-200*/ GC.getMINOR_FRIENDSHIP_DROP_PER_TURN_AGGRESSOR();
-		// Normal decay
+			iDecayRate = -GC.getMINOR_FRIENDSHIP_DROP_PER_TURN_AGGRESSOR();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (MOD_SP_UNIQUE_CITYSTATE)
+		{
+			// Super Power V11: decay scales with current influence (1% per turn, minimum 1 point),
+			// so a single per-turn influence source can no longer outpace decay at high influence.
+			int iBaseDecay = max(100, iBaseFriendship);
+			// Below the ally threshold the influence is doing no work, so decay is halved
+			// (0.5% per turn, minimum 1 point) to avoid a death spiral right under the threshold.
+			if (iBaseFriendship < GetAlliesThresholdForPlayer(ePlayer))
+			{
+				iBaseDecay = max(100, iBaseFriendship / 2);
+			}
+			iChangeThisTurn -= iBaseDecay * iDecayRate / 100;
+		}
 		else
-			iChangeThisTurn += /*-100*/ GC.getMINOR_FRIENDSHIP_DROP_PER_TURN();
+#endif
+		{
+			iChangeThisTurn -= iDecayRate;
+		}
 
 		// Decay modified (Trait, policies, shared religion, etc.)
 		int iDecayMod = 100;

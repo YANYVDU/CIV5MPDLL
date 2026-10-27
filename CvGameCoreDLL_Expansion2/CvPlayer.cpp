@@ -33282,10 +33282,8 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 	int CvPlayer::GetDiplomaticOverextensionDecayPenalty() const
 	{
 		int iOver = GetDiplomaticOverextensionCount();
-		int iPenalty = iOver * GC.getDIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER();
-		if (iPenalty < -100) iPenalty = -100;
-		if (iPenalty > 100) iPenalty = 100;
-		return iPenalty;
+		// No cap: each ally over the prestige limit raises decay speed by the configured percentage.
+		return iOver * GC.getDIPLOMATIC_OVEREXTENSION_DECAY_MODIFIER();
 	}
 
 	int CvPlayer::GetDiplomaticOverextensionRisePenalty() const
