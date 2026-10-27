@@ -337,6 +337,7 @@ public:
 	int GetNumActiveQuestsForPlayer(PlayerTypes ePlayer) const;
 	int GetNumActivePersonalQuestsForPlayer(PlayerTypes ePlayer) const;
 	bool IsActiveQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType);
+	bool IsQuestExpired(PlayerTypes ePlayer, MinorCivQuestTypes eType);
 	void EndAllActiveQuestsForPlayer(PlayerTypes ePlayer);
 
 	// SP extended quests: drop a single active quest of the given type from the player's list
@@ -361,6 +362,7 @@ public:
 
 	int GetQuestData1(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;
 	int GetQuestData2(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;
+	int GetQuestStartTurn(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;
 	int GetQuestTurnsRemaining(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iGameTurn) const;
 #if defined(MOD_EVENTS_QUESTS)
 	int GetQuestTurnsDuration(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;

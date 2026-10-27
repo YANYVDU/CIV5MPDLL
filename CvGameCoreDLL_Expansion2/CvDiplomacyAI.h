@@ -1089,6 +1089,18 @@ public:
 	// CSUA attraction: personality flavors ("wants") + current victory grand strategy ("needs").
 	// Returned on the gold-gift value scale (gift threshold is 100).
 	int GetCSUAAIDesirability(PlayerTypes eMinor);
+
+	// Pro-active city-state quest completion (see DoCityStateQuestAI)
+	void DoCityStateQuestAI();
+	int GetCityStateQuestFocusCount();
+	int GetCityStateQuestRank(PlayerTypes eMinor);
+	bool IsCityStateInQuestFocus(PlayerTypes eMinor, int iTopRank);
+	bool IsPreparingAttackOnPlayer(PlayerTypes ePlayer) const;
+	bool IsCityStateQuestTargetExempt(PlayerTypes eTarget) const;
+	void UpdateCityStateQuestBuildingTarget();
+	BuildingTypes GetCityStateQuestBuildingTarget();
+	bool IsNoConnectToMinor(PlayerTypes eMinor) const;
+	void SetNoConnectToMinor(PlayerTypes eMinor, int iExpireTurn);
 #endif
 
 	bool IsPlayerValid(PlayerTypes eOtherPlayer, bool bMyTeamIsValid = false);
@@ -1233,6 +1245,8 @@ private:
 		bool m_abMusteringForAttack[REALLY_MAX_PLAYERS];
 		bool m_abWantsResearchAgreementWithPlayer[MAX_MAJOR_CIVS];
 		bool m_abWantToRouteToMinor[REALLY_MAX_PLAYERS-MAX_MAJOR_CIVS];
+		// Quest AI: trade routes to this minor are not re-established before this turn
+		short m_aiNoConnectToMinorTurn[REALLY_MAX_PLAYERS-MAX_MAJOR_CIVS];
 		char m_aeWarFace[REALLY_MAX_PLAYERS];
 		char m_aeWarState[REALLY_MAX_PLAYERS];
 		char m_aeWarProjection[REALLY_MAX_PLAYERS];
@@ -1458,6 +1472,11 @@ private:
 
 	bool* m_pabWantsResearchAgreementWithPlayer;
 	bool* m_pabWantToRouteToMinor;
+	short* m_paiNoConnectToMinorTurn;
+
+	// Quest AI runtime state (not serialized)
+	int m_iLastCityStateQuestTurn;
+	BuildingTypes m_eCityStateQuestBuildingTarget;
 
 	char* m_paeWarFace;
 	char* m_paeWarState;
