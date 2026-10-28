@@ -696,6 +696,28 @@ int CvGameTrade::CountNumPlayerConnectionsToPlayer (PlayerTypes eFirstPlayer, Pl
 }
 
 //	--------------------------------------------------------------------------------
+int CvGameTrade::GetNumInternationalTradeRoutes (PlayerTypes ePlayer)
+{
+	int iCount = 0;
+
+	for (uint ui = 0; ui < m_aTradeConnections.size(); ui++)
+	{
+		if (IsTradeRouteIndexEmpty(ui))
+		{
+			continue;
+		}
+
+		const TradeConnection* pConnection = &(m_aTradeConnections[ui]);
+		if (pConnection->m_eOriginOwner == ePlayer && IsConnectionInternational(*pConnection))
+		{
+			iCount++;
+		}
+	}
+
+	return iCount;
+}
+
+//	--------------------------------------------------------------------------------
 bool CvGameTrade::IsCityConnectedToCity (CvCity* pFirstCity, CvCity* pSecondCity)
 {
 	int iFirstCityX = pFirstCity->getX();
@@ -2300,8 +2322,14 @@ int CvPlayerTrade::GetTradeConnectionTheirBuildingValueTimes100(const TradeConne
 
 	int iBonus = 0;
 
+#if defined(MOD_SP_CITYSTATE_BASIC)
+	// A major civilization benefits from the trade buildings of a city-state partner, while a
+	// city-state itself still gains nothing from others trading with it (the original rule)
+	if (!m_pPlayer->isMinorCiv() && !(GET_PLAYER(kTradeConnection.m_eDestOwner).isMinorCiv() && GET_PLAYER(kTradeConnection.m_eOriginOwner).isMinorCiv()))
+#else
 	// minor civs should not get bonuses for others trading with them
 	if (!GET_PLAYER(kTradeConnection.m_eDestOwner).isMinorCiv() && !GET_PLAYER(kTradeConnection.m_eOriginOwner).isMinorCiv())
+#endif
 	{
 		if (kTradeConnection.m_eOriginOwner == m_pPlayer->GetID())
 		{
@@ -2661,6 +2689,12 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					iModifier += iDomainModifier;
 					iModifier += iOriginRiverModifier;
 
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+					// IMO resolution: extra gold on ocean international trade routes (origin side)
+					if (MOD_VOTING_NEW_EFFECT_FOR_SP && kTradeConnection.m_eDomain == DOMAIN_SEA)
+						iModifier += GC.getGame().GetGameLeagues()->GetIMOOceanRouteGoldModifier();
+#endif
+
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 					if (MOD_SP_UNIQUE_CITYSTATE)
 					{
@@ -2724,10 +2758,10 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 					{
 						CvMinorCivAI* pColomboDestMinorAI = GET_PLAYER(eColomboDestPlayer).GetMinorCivAI();
 						CvMinorCivInfo* pColomboDestMinorInfo = pColomboDestMinorAI ? GC.getMinorCivInfo(pColomboDestMinorAI->GetMinorCivType()) : NULL;
-						const char* szColomboDestUAType = pColomboDestMinorInfo ? pColomboDestMinorInfo->GetUAType() : NULL;
-						if (szColomboDestUAType && szColomboDestUAType[0] != '\0')
+						// O(1) row-index lookup; an empty or unmatched UAType is stored as -1.
+						if (pColomboDestMinorInfo && pColomboDestMinorInfo->GetCityStateUAIndex() >= 0)
 						{
-							CvCityStateUAEntry* pColomboDestUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szColomboDestUAType);
+							CvCityStateUAEntry* pColomboDestUAEntry = GC.GetGameCityStateUAs()->GetEntry(pColomboDestMinorInfo->GetCityStateUAIndex());
 							if (pColomboDestUAEntry)
 							{
 								int iColomboEffectID = -1;
@@ -2813,6 +2847,12 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 
 						iModifier += iDomainModifier;
 						iModifier += iDestRiverModifier;
+
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+						// IMO resolution: extra gold on ocean international trade routes (destination side)
+						if (MOD_VOTING_NEW_EFFECT_FOR_SP && kTradeConnection.m_eDomain == DOMAIN_SEA)
+							iModifier += GC.getGame().GetGameLeagues()->GetIMOOceanRouteGoldModifier();
+#endif
 					}
 					break;
 #if defined(MOD_API_UNIFIED_YIELDS)
@@ -5462,6 +5502,18 @@ bool CvTradeAI::ChooseTradeUnitTargetPlot(CvUnit* pUnit, int& iOriginPlotIndex, 
 
 		if (aTradeConnections[ui].m_eDomain == pUnit->getDomainType())
 		{
+			// City-state disconnect quest: do not re-establish a route to a city-state we just cut off
+			if (MOD_SP_UNIQUE_CITYSTATE)
+			{
+				PlayerTypes eDestOwner = aTradeConnections[ui].m_eDestOwner;
+				if (eDestOwner >= 0 && eDestOwner < MAX_CIV_PLAYERS
+					&& GET_PLAYER(eDestOwner).isMinorCiv()
+					&& m_pPlayer->GetDiplomacyAI()->IsNoConnectToMinor(eDestOwner))
+				{
+					continue;
+				}
+			}
+
 			CvPlot* pPlot = GC.getMap().plot(aTradeConnections[ui].m_iOriginX, aTradeConnections[ui].m_iOriginY);
 			if (pUnit->canMakeTradeRouteAt(pPlot, aTradeConnections[ui].m_iDestX, aTradeConnections[ui].m_iDestY, aTradeConnections[ui].m_eConnectionType))
 			{

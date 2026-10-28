@@ -274,6 +274,23 @@ void CvCityStateUASpecialCityTypeXMLEntries::DeleteArray()
 	m_paEntries.clear();
 }
 
+// True when the array carries any non-zero entry. The fixed-size CSUA sub-table arrays are always
+// allocated (Initialize2DArray / PopulateArrayByValue), so this is the only way to tell whether an
+// effect actually uses one of them; CvCityStateUAEffectEntry::CacheResults stores the result in the
+// matching "Has*" flag so ApplyEffect can skip the whole-dimension scan for effects that do not.
+static bool HasAnyNonZero(const int* piArray, int iCount)
+{
+	if (piArray == NULL)
+		return false;
+
+	for (int i = 0; i < iCount; i++)
+	{
+		if (piArray[i] != 0)
+			return true;
+	}
+	return false;
+}
+
 //======================================================================================================
 // CvCityStateUAEffectEntry
 //======================================================================================================
@@ -284,12 +301,8 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_bFaithPurchaseAllGreatPeople(false)
 	, m_bGPNoDeathAfterGreatWork(false)
 	, m_iGPConcertTourismRetentionPercent(0)
-	, m_iGreatMusicianConcertTourismModifier(0)
 	, m_iGreatMusicianConcertGoldPercent(0)
 	, m_iCapitalAndSecondCapitalCultureModifier(0)
-	, m_iCapitalCultureModifierPerTurn(0)
-	, m_iCapitalFaithModifierPerTurn(0)
-	, m_iCapitalPerTurnYieldModifierMax(0)
 	, m_iImmigrationRatePerImmigrant(0)
 	, m_iImmigrationRateMax(0)
 	, m_iEmigrationRatePerImmigrant(0)
@@ -313,9 +326,6 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iCityAttackIgnoreBuildingDefensePercent(0)
 	, m_iMilitaryXPPerTurnModifier(0)
 	, m_iMilitaryXPSeaAir(0)
-	, m_iHillsCityDamageReduction(0)
-	, m_iHillsMovementModifier(0)
-	, m_iHillsCityRangeBonus(0)
 	, m_iCoupChanceModifier(0)
 	, m_bCoupFailSpySurvives(false)
 	, m_iStealTechSpeedPerSpy(0)
@@ -363,6 +373,16 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_iLocalHappinessCapModifier(0)
 	, m_iGoldenAgeBuildingMaintenanceMod(0)
 	, m_piTradeRouteGoldPerSurplusResource(nullptr)
+	, m_bHasBuildingClassYieldModifiers(false)
+	, m_bHasResourceYieldModifiers(false)
+	, m_bHasImprovementYieldModifiers(false)
+	, m_bHasImprovementHappiness(false)
+	, m_bHasBuildingClassHappiness(false)
+	, m_bHasTradeRouteGoldPerSurplusResource(false)
+	, m_bHasSpecialistPointRate(false)
+	, m_bHasGreatPersonOneShotModifier(false)
+	, m_bHasFaithGPClassCostModifier(false)
+	, m_bHasGreatPersonPoints(false)
 	, m_iHappinessPerFollowingCity(0)
 	, m_iFaithInfluencePurchaseCostDivisor(0)
 	, m_iFaithInfluencePurchasePerTurnLimit(0)
@@ -419,9 +439,24 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	if (!CvBaseInfo::CacheResults(kResults, kUtility))
 		return false;
 
+	// Reset the presence flags; they are set below as each sub-table is read back, so ApplyEffect can
+	// skip dimensions this effect does not use. Setting them here (not in the constructor) also keeps
+	// a reload of the same entry correct.
+	m_bHasBuildingClassYieldModifiers				= false;
+	m_bHasResourceYieldModifiers					= false;
+	m_bHasImprovementYieldModifiers					= false;
+	m_bHasImprovementHappiness						= false;
+	m_bHasBuildingClassHappiness					= false;
+	m_bHasTradeRouteGoldPerSurplusResource			= false;
+	m_bHasSpecialistPointRate						= false;
+	m_bHasGreatPersonOneShotModifier				= false;
+	m_bHasFaithGPClassCostModifier					= false;
+	m_bHasGreatPersonPoints							= false;
+
 	m_iFaithPurchaseGreatPeopleCostRiseModifier			= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifier");
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		= kResults.GetInt("FaithPurchaseGreatPeopleCostRiseModifierPerGW");
 	kUtility.PopulateArrayByValue(m_piGreatPersonPoints, "Specialists", "CityStateUAEffect_GreatPersonPoints", "SpecialistType", "EffectType", GetType(), "Points");
+	m_bHasGreatPersonPoints = HasAnyNonZero(m_piGreatPersonPoints, GC.getNumSpecialistInfos());
 	m_bFaithPurchaseAllGreatPeople					= kResults.GetBool("FaithPurchaseAllGreatPeople");
 
 	m_bGPNoDeathAfterGreatWork						= kResults.GetBool("GPNoDeathAfterGreatWork");
@@ -432,14 +467,9 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iWorldWonderHappiness							= kResults.GetInt("WorldWonderHappiness");
 	m_iCultureVictoryProgressModifier				= kResults.GetInt("CultureVictoryProgressModifier");
 
-	m_iGreatMusicianConcertTourismModifier			= kResults.GetInt("GreatMusicianConcertTourismModifier");
 	m_iGreatMusicianConcertGoldPercent				= kResults.GetInt("GreatMusicianConcertGoldPercent");
 
 	m_iCapitalAndSecondCapitalCultureModifier		= kResults.GetInt("CapitalAndSecondCapitalCultureModifier");
-
-	m_iCapitalCultureModifierPerTurn				= kResults.GetInt("CapitalCultureModifierPerTurn");
-	m_iCapitalFaithModifierPerTurn					= kResults.GetInt("CapitalFaithModifierPerTurn");
-	m_iCapitalPerTurnYieldModifierMax				= kResults.GetInt("CapitalPerTurnYieldModifierMax");
 
 	m_iImmigrationRatePerImmigrant					= kResults.GetInt("ImmigrationRatePerImmigrant");
 	m_iImmigrationRateMax							= kResults.GetInt("ImmigrationRateMax");
@@ -496,9 +526,6 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	m_iMilitaryXPPerTurnModifier					= kResults.GetInt("MilitaryXPPerTurnModifier");
 	m_iMilitaryXPSeaAir								= kResults.GetInt("MilitaryXPSeaAir");
 
-	m_iHillsCityDamageReduction						= kResults.GetInt("HillsCityDamageReduction");
-	m_iHillsMovementModifier						= kResults.GetInt("HillsMovementModifier");
-	m_iHillsCityRangeBonus							= kResults.GetInt("HillsCityRangeBonus");
 	m_iCoupChanceModifier							= kResults.GetInt("CoupChanceModifier");
 	m_bCoupFailSpySurvives							= kResults.GetBool("CoupFailSpySurvives");
 	m_iStealTechSpeedPerSpy							= kResults.GetInt("StealTechSpeedPerSpy");
@@ -571,6 +598,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			const int iYieldMod = pResults->GetInt(2);
 
 			m_ppiResourceYieldModifiers[iResourceID][iYieldID] = iYieldMod;
+			m_bHasResourceYieldModifiers = true;
 		}
 	}
 
@@ -593,13 +621,16 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			const int iYieldMod = pResults->GetInt(2);
 
 			m_ppiImprovementYieldModifiers[iImprovementID][iYieldID] = iYieldMod;
+			m_bHasImprovementYieldModifiers = true;
 		}
 	}
 
 	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
 	kUtility.PopulateArrayByValue(m_piImprovementHappiness, "Improvements", "CityStateUAEffect_ImprovementHappiness", "ImprovementType", "EffectType", GetType(), "Happiness");
+	m_bHasImprovementHappiness = HasAnyNonZero(m_piImprovementHappiness, GC.getNumImprovementInfos());
 	//CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
 	kUtility.PopulateArrayByValue(m_piBuildingClassHappiness, "BuildingClasses", "CityStateUAEffect_BuildingClassHappiness", "BuildingClassType", "EffectType", GetType(), "Happiness");
+	m_bHasBuildingClassHappiness = HasAnyNonZero(m_piBuildingClassHappiness, GC.getNumBuildingClassInfos());
 	//Gangtok
 	m_iHappinessPerFollowingCity = kResults.GetInt("HappinessPerFollowingCity");
 	m_iFaithInfluencePurchaseCostDivisor = kResults.GetInt("FaithInfluencePurchaseCostDivisor");
@@ -655,10 +686,12 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			const int iYieldMod = pResults->GetInt(2);
 
 			m_ppiBuildingClassYieldModifiers[BuildingClassID][iYieldID] = iYieldMod;
+			m_bHasBuildingClassYieldModifiers = true;
 		}
 	}
 	//Brussels: specialist great person point accumulation rate (%)
 	kUtility.PopulateArrayByValue(m_piSpecialistPointRate, "Specialists", "CityStateUAEffect_SpecialistPointRate", "SpecialistType", "EffectType", GetType(), "Rate");
+	m_bHasSpecialistPointRate = HasAnyNonZero(m_piSpecialistPointRate, GC.getNumSpecialistInfos());
 	//Prague: city with our own spy garrisoned grants yield percentage modifiers (per YieldType)
 	kUtility.PopulateArrayByValue(m_piSpyGarrisonYieldModifiers, "Yields", "CityStateUAEffect_SpyGarrisonYieldModifiers", "YieldType", "EffectType", GetType(), "YieldMod");
 	//Brussels: each great work of a class grants great person points to a specialist
@@ -723,6 +756,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Brussels: specified unit class's one-shot great person output modifier (%)
 	kUtility.PopulateArrayByValue(m_piGreatPersonOneShotModifier, "UnitClasses", "CityStateUAEffect_GreatPersonOneShotModifier", "UnitClassType", "EffectType", GetType(), "Modifier");
+	m_bHasGreatPersonOneShotModifier = HasAnyNonZero(m_piGreatPersonOneShotModifier, GC.getNumUnitClassInfos());
 	{
 		m_vBuildingGPP.clear();
 		std::string strKey2("CityStateUAEffect_BuildingGreatPersonPoints");
@@ -893,6 +927,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Hormuz: each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
 	kUtility.PopulateArrayByValue(m_piTradeRouteGoldPerSurplusResource, "Resources", "CityStateUAEffect_TradeRouteGoldPerSurplusResource", "ResourceType", "EffectType", GetType(), "Modifier");
+	m_bHasTradeRouteGoldPerSurplusResource = HasAnyNonZero(m_piTradeRouteGoldPerSurplusResource, GC.getNumResourceInfos());
 	//Vancouver: global happiness per coastal city (basis points, 100 = +1 happiness per coastal city)
 	m_iCoastalCityHappiness = kResults.GetInt("CoastalCityHappiness");
 	//Vancouver: per point of net happiness, a yield % modifier per YieldType (YieldMod in basis points, Cap in percent)
@@ -967,6 +1002,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 	}
 	//Ife: per-unitclass FAITH great-people cost discount (CostRiseModifier in percent, negative = discount)
 	kUtility.PopulateArrayByValue(m_piFaithGPClassCostModifier, "UnitClasses", "CityStateUAEffect_FaithGPClassCostModifier", "UnitClassType", "EffectType", GetType(), "CostRiseModifier");
+	m_bHasFaithGPClassCostModifier = HasAnyNonZero(m_piFaithGPClassCostModifier, GC.getNumUnitClassInfos());
 	//Ife: each great work / artifact of a GreatWorkClassType grants a yield % modifier per YieldType
 	{
 		m_vGreatWorkYieldModifiers.clear();
@@ -1225,7 +1261,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 			m_vBuildingClassGlobalYieldModifiers.push_back(entry);
 		}
 	}
-	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent
+	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod points
 	{
 		m_vBuildingClassTechCostModifiers.clear();
 		std::string strKey("CityStateUAEffect_BuildingClassTechCostModifiers");
@@ -1295,14 +1331,9 @@ bool CvCityStateUAEffectEntry::IsFaithPurchaseAllGreatPeople() const { return m_
 bool CvCityStateUAEffectEntry::IsGPNoDeathAfterGreatWork() const { return m_bGPNoDeathAfterGreatWork; }
 int CvCityStateUAEffectEntry::GetGPConcertTourismRetentionPercent() const { return m_iGPConcertTourismRetentionPercent; }
 
-int CvCityStateUAEffectEntry::GetGreatMusicianConcertTourismModifier() const { return m_iGreatMusicianConcertTourismModifier; }
 int CvCityStateUAEffectEntry::GetGreatMusicianConcertGoldPercent() const { return m_iGreatMusicianConcertGoldPercent; }
 
 int CvCityStateUAEffectEntry::GetCapitalAndSecondCapitalCultureModifier() const { return m_iCapitalAndSecondCapitalCultureModifier; }
-
-int CvCityStateUAEffectEntry::GetCapitalCultureModifierPerTurn() const { return m_iCapitalCultureModifierPerTurn; }
-int CvCityStateUAEffectEntry::GetCapitalFaithModifierPerTurn() const { return m_iCapitalFaithModifierPerTurn; }
-int CvCityStateUAEffectEntry::GetCapitalPerTurnYieldModifierMax() const { return m_iCapitalPerTurnYieldModifierMax; }
 
 int CvCityStateUAEffectEntry::GetImmigrationRatePerImmigrant() const { return m_iImmigrationRatePerImmigrant; }
 int CvCityStateUAEffectEntry::GetImmigrationRateMax() const { return m_iImmigrationRateMax; }
@@ -1337,9 +1368,6 @@ int CvCityStateUAEffectEntry::GetCityAttackIgnoreBuildingDefensePercent() const 
 int CvCityStateUAEffectEntry::GetMilitaryXPPerTurnModifier() const { return m_iMilitaryXPPerTurnModifier; }
 int CvCityStateUAEffectEntry::GetMilitaryXPSeaAir() const { return m_iMilitaryXPSeaAir; }
 
-int CvCityStateUAEffectEntry::GetHillsCityDamageReduction() const { return m_iHillsCityDamageReduction; }
-int CvCityStateUAEffectEntry::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
-int CvCityStateUAEffectEntry::GetHillsCityRangeBonus() const { return m_iHillsCityRangeBonus; }
 int CvCityStateUAEffectEntry::GetCoupChanceModifier() const { return m_iCoupChanceModifier; }
 bool CvCityStateUAEffectEntry::GetCoupFailSpySurvives() const { return m_bCoupFailSpySurvives; }
 int CvCityStateUAEffectEntry::GetStealTechSpeedPerSpy() const { return m_iStealTechSpeedPerSpy; }
@@ -1592,17 +1620,6 @@ CvCityStateUAEffectEntry* CvCityStateUAEffectXMLEntries::GetEntry(int index) con
 	return NULL;
 }
 
-CvCityStateUAEffectEntry* CvCityStateUAEffectXMLEntries::GetEntryByType(const char* szType) const
-{
-	if (szType == NULL) return NULL;
-	for (size_t i = 0; i < m_paEffectEntries.size(); i++)
-	{
-		if (m_paEffectEntries[i] && strcmp(m_paEffectEntries[i]->GetType(), szType) == 0)
-			return m_paEffectEntries[i];
-	}
-	return NULL;
-}
-
 void CvCityStateUAEffectXMLEntries::DeleteArray()
 {
 	for (size_t i = 0; i < m_paEffectEntries.size(); i++)
@@ -1618,11 +1635,15 @@ void CvCityStateUAEffectXMLEntries::DeleteArray()
 CvCityStateUAEntry::CvCityStateUAEntry(void)
 	: m_iAllyEffectID(-1)
 	, m_iFriendEffectID(-1)
+	, m_piExtraFlavorValue(NULL)
+	, m_piVictoryFlavorValue(NULL)
 {
 }
 
 CvCityStateUAEntry::~CvCityStateUAEntry(void)
 {
+	SAFE_DELETE_ARRAY(m_piExtraFlavorValue);
+	SAFE_DELETE_ARRAY(m_piVictoryFlavorValue);
 }
 
 bool CvCityStateUAEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -1633,11 +1654,32 @@ bool CvCityStateUAEntry::CacheResults(Database::Results& kResults, CvDatabaseUti
 	m_iAllyEffectID = GC.getInfoTypeForString(kResults.GetText("AllyEffectType"), true);
 	m_iFriendEffectID = GC.getInfoTypeForString(kResults.GetText("FriendEffectType"), true);
 
+	const char* szType = GetType();
+	kUtility.SetFlavors(m_piExtraFlavorValue, "CityStateUA_ExtraFlavors", "CityStateUAType", szType);
+	kUtility.PopulateArrayByValue(m_piVictoryFlavorValue, "AIGrandStrategies", "CityStateUA_VictoryFlavors",
+	                              "AIGrandStrategyType", "CityStateUAType", szType, "Flavor");
+
 	return true;
 }
 
 int CvCityStateUAEntry::GetAllyEffectID() const { return m_iAllyEffectID; }
 int CvCityStateUAEntry::GetFriendEffectID() const { return m_iFriendEffectID; }
+
+int CvCityStateUAEntry::GetExtraFlavorValue(int i) const
+{
+	if (i < 0 || i >= GC.getNumFlavorTypes())
+		return 0;
+
+	return m_piExtraFlavorValue ? m_piExtraFlavorValue[i] : 0;
+}
+
+int CvCityStateUAEntry::GetVictoryFlavorValue(int i) const
+{
+	if (i < 0 || i >= GC.getNumAIGrandStrategyInfos())
+		return 0;
+
+	return m_piVictoryFlavorValue ? m_piVictoryFlavorValue[i] : 0;
+}
 
 //======================================================================================================
 // CvCityStateUAXMLEntries
@@ -1668,15 +1710,44 @@ CvCityStateUAEntry* CvCityStateUAXMLEntries::GetEntry(int index) const
 	return NULL;
 }
 
-CvCityStateUAEntry* CvCityStateUAXMLEntries::GetEntryByType(const char* szType) const
+int CvCityStateUAXMLEntries::GetEntryIndexByType(const char* szType) const
 {
-	if (szType == NULL) return NULL;
+	if (szType == NULL) return -1;
 	for (size_t i = 0; i < m_paUAEntries.size(); i++)
 	{
 		if (m_paUAEntries[i] && strcmp(m_paUAEntries[i]->GetType(), szType) == 0)
-			return m_paUAEntries[i];
+			return (int)i;
 	}
-	return NULL;
+	return -1;
+}
+
+void CvCityStateUAXMLEntries::ResolveMinorCivUAIndexes()
+{
+	for (int i = 0; i < GC.getNumMinorCivInfos(); i++)
+	{
+		CvMinorCivInfo* pMinorCivInfo = GC.getMinorCivInfo((MinorCivTypes)i);
+		if (pMinorCivInfo == NULL)
+			continue;
+
+		const char* szUAType = pMinorCivInfo->GetUAType();
+		if (szUAType == NULL || szUAType[0] == '\0')
+		{
+			// No UA assigned: legitimate for city-states that carry none, so just leave the index at -1.
+			pMinorCivInfo->SetCityStateUAIndex(-1);
+			continue;
+		}
+
+		const int iIndex = GetEntryIndexByType(szUAType);
+		if (iIndex < 0)
+		{
+			// A non-empty UAType that matches no CityStateUAs row is a config error (typo, or the row was
+			// never inserted): every CSUA query site reads -1 as "no UA", so the ability would silently do
+			// nothing. CVASSERT_ENABLE is off in this build, so the log line is what surfaces it.
+			CvAssertMsg(iIndex >= 0, "City-state UAType matches no CityStateUAs row");
+			LOGFILEMGR.GetLog("xml.log", 0)->Msg("CSUA: minor civ %s declares UAType '%s' which matches no CityStateUAs row", pMinorCivInfo->GetType(), szUAType);
+		}
+		pMinorCivInfo->SetCityStateUAIndex(iIndex);
+	}
 }
 
 void CvCityStateUAXMLEntries::DeleteArray()
@@ -1699,12 +1770,8 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iFaithPurchaseAllGreatPeopleCount(0)
 	, m_iGPNoDeathAfterGreatWorkCount(0)
 	, m_iGPConcertTourismRetentionPercent(0)
-	, m_iGreatMusicianConcertTourismModifier(0)
 	, m_iGreatMusicianConcertGoldPercent(0)
 	, m_iCapitalAndSecondCapitalCultureModifier(0)
-	, m_iCapitalCultureModifierPerTurn(0)
-	, m_iCapitalFaithModifierPerTurn(0)
-	, m_iCapitalPerTurnYieldModifierMax(0)
 	, m_iImmigrationRatePerImmigrant(0)
 	, m_iImmigrationRateMax(0)
 	, m_iEmigrationRatePerImmigrant(0)
@@ -1728,9 +1795,6 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCityAttackIgnoreBuildingDefensePercent(0)
 	, m_iMilitaryXPPerTurnModifier(0)
 	, m_iMilitaryXPSeaAir(0)
-	, m_iHillsCityDamageReduction(0)
-	, m_iHillsMovementModifier(0)
-	, m_iHillsCityRangeBonus(0)
 	, m_iCoupChanceModifier(0)
 	, m_iCoupFailSpySurvives(0)
 	, m_iStealTechSpeedPerSpy(0)
@@ -1801,6 +1865,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_iCachedLeagueVotes(0)
 	, m_iCachedPuppetCount(0)
 	, m_iWorldWonderHappiness(0)
+	, m_iUCSYieldConversionCount(0)
 {
 }
 
@@ -1829,12 +1894,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iFaithPurchaseAllGreatPeopleCount = 0;
 	m_iGPNoDeathAfterGreatWorkCount = 0;
 	m_iGPConcertTourismRetentionPercent = 0;
-	m_iGreatMusicianConcertTourismModifier = 0;
 	m_iGreatMusicianConcertGoldPercent = 0;
 	m_iCapitalAndSecondCapitalCultureModifier = 0;
-	m_iCapitalCultureModifierPerTurn = 0;
-	m_iCapitalFaithModifierPerTurn = 0;
-	m_iCapitalPerTurnYieldModifierMax = 0;
 	m_iImmigrationRatePerImmigrant = 0;
 	m_iImmigrationRateMax = 0;
 	m_iEmigrationRatePerImmigrant = 0;
@@ -1860,9 +1921,6 @@ void CvPlayerCityStateUA::Reset()
 	m_iCityAttackIgnoreBuildingDefensePercent = 0;
 	m_iMilitaryXPPerTurnModifier = 0;
 	m_iMilitaryXPSeaAir = 0;
-	m_iHillsCityDamageReduction = 0;
-	m_iHillsMovementModifier = 0;
-	m_iHillsCityRangeBonus = 0;
 	m_iCoupChanceModifier = 0;
 	m_iCoupFailSpySurvives = 0;
 	m_iStealTechSpeedPerSpy = 0;
@@ -1889,6 +1947,8 @@ void CvPlayerCityStateUA::Reset()
 	m_iLocalHappinessCapModifier = 0;
 	m_iGoldenAgeBuildingMaintenanceMod = 0;
 	m_vGoldDonationGamble.clear();
+	// Colombo / Cape Town / Mogadishu / Monaco: cleared here and re-accumulated by ApplyEffect
+	m_iUCSYieldConversionCount = 0;
 	m_iFoodKeptModifierPerLuxury = 0;
 	m_iTradeRouteGoldModifierPerLuxuryType = 0;
 	m_iTradeRouteGoldModifierPerDistance = 0;
@@ -2049,23 +2109,21 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 
 	m_iFaithPurchaseGreatPeopleCostRiseModifier			+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifier() * iChange;
 	m_iFaithPurchaseGreatPeopleCostRiseModifierPerGW		+= pEffect->GetFaithPurchaseGreatPeopleCostRiseModifierPerGW() * iChange;
-	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+	if (pEffect->HasGreatPersonPoints())
 	{
-		m_aiGreatPersonPoints[iSpec] += pEffect->GetGreatPersonPoints(iSpec) * iChange;
+		for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+		{
+			m_aiGreatPersonPoints[iSpec] += pEffect->GetGreatPersonPoints(iSpec) * iChange;
+		}
 	}
 	m_iFaithPurchaseAllGreatPeopleCount += (pEffect->IsFaithPurchaseAllGreatPeople() ? iChange : 0);
 
 	m_iGPNoDeathAfterGreatWorkCount += (pEffect->IsGPNoDeathAfterGreatWork() ? iChange : 0);
 	m_iGPConcertTourismRetentionPercent				+= pEffect->GetGPConcertTourismRetentionPercent() * iChange;
 
-	m_iGreatMusicianConcertTourismModifier			+= pEffect->GetGreatMusicianConcertTourismModifier() * iChange;
 	m_iGreatMusicianConcertGoldPercent				+= pEffect->GetGreatMusicianConcertGoldPercent() * iChange;
 
 	m_iCapitalAndSecondCapitalCultureModifier		+= pEffect->GetCapitalAndSecondCapitalCultureModifier() * iChange;
-
-	m_iCapitalCultureModifierPerTurn				+= pEffect->GetCapitalCultureModifierPerTurn() * iChange;
-	m_iCapitalFaithModifierPerTurn					+= pEffect->GetCapitalFaithModifierPerTurn() * iChange;
-	m_iCapitalPerTurnYieldModifierMax				+= pEffect->GetCapitalPerTurnYieldModifierMax() * iChange;
 
 	m_iImmigrationRatePerImmigrant					+= pEffect->GetImmigrationRatePerImmigrant() * iChange;
 	m_iImmigrationRateMax							+= pEffect->GetImmigrationRateMax() * iChange;
@@ -2127,9 +2185,6 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iMilitaryXPPerTurnModifier					+= pEffect->GetMilitaryXPPerTurnModifier() * iChange;
 	m_iMilitaryXPSeaAir								+= pEffect->GetMilitaryXPSeaAir() * iChange;
 
-	m_iHillsCityDamageReduction						+= pEffect->GetHillsCityDamageReduction() * iChange;
-	m_iHillsMovementModifier						+= pEffect->GetHillsMovementModifier() * iChange;
-	m_iHillsCityRangeBonus							+= pEffect->GetHillsCityRangeBonus() * iChange;
 	// Sofia (spy/coup UA)
 	m_iCoupChanceModifier							+= pEffect->GetCoupChanceModifier() * iChange;
 	m_iCoupFailSpySurvives							+= (pEffect->GetCoupFailSpySurvives() ? iChange : 0);
@@ -2187,6 +2242,13 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_vGoldDonationGamble.push_back(vGamble[i]);
 		}
 	}
+	// Colombo / Cape Town / Mogadishu / Monaco: flag that this player holds at least one yield-to-yield
+	// conversion effect, so CvCity::GetYieldRateFromUCSConversion (called per city per yield) can skip
+	// the city-state scan entirely for players that hold none.
+	if (!pEffect->GetYieldToYieldViaTRToUCSEntries().empty() || !pEffect->GetYieldToYieldEntries().empty())
+	{
+		m_iUCSYieldConversionCount += iChange;
+	}
 	m_iFoodKeptModifierPerLuxury						+= pEffect->GetFoodKeptModifierPerLuxury() * iChange;
 	m_iTradeRouteGoldModifierPerLuxuryType			+= pEffect->GetTradeRouteGoldModifierPerLuxuryType() * iChange;
 	m_iTradeRouteGoldModifierPerDistance			+= pEffect->GetTradeRouteGoldModifierPerDistance() * iChange;
@@ -2201,7 +2263,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iCoastalCityGrowthThresholdModifier			+= pEffect->GetCoastalCityGrowthThresholdModifier() * iChange;
 	m_iDiplomaticPrestigePerCity					+= pEffect->GetDiplomaticPrestigePerCity() * iChange;
 	{
-		if (m_ppiBuildingClassYieldModifiers)
+		if (m_ppiBuildingClassYieldModifiers && pEffect->HasBuildingClassYieldModifiers())
 		{
 			for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
 			{
@@ -2219,7 +2281,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	}
 	//CityState UA (Melbourne): city owning the specified improved resource grants yield percentage modifiers
 	{
-		if (m_ppiResourceYieldModifiers)
+		if (m_ppiResourceYieldModifiers && pEffect->HasResourceYieldModifiers())
 		{
 			for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
 			{
@@ -2237,7 +2299,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	}
 	//CityState UA (Antananarivo): each worked plot holding the specified improvement grants yield percentage modifiers
 	{
-		if (m_ppiImprovementYieldModifiers)
+		if (m_ppiImprovementYieldModifiers && pEffect->HasImprovementYieldModifiers())
 		{
 			for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
 			{
@@ -2254,33 +2316,42 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		}
 	}
 	//CityState UA (Zanzibar): each worked plot holding the specified improvement grants flat local happiness
-	for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
+	if (pEffect->HasImprovementHappiness())
 	{
-		int iHappy = pEffect->GetImprovementHappiness(iImp);
-		if (iHappy != 0)
+		for (int iImp = 0; iImp < GC.getNumImprovementInfos(); iImp++)
 		{
-			m_aiImprovementHappiness[iImp] += iHappy * iChange;
-			m_iImprovementHappinessCount += iChange;
+			int iHappy = pEffect->GetImprovementHappiness(iImp);
+			if (iHappy != 0)
+			{
+				m_aiImprovementHappiness[iImp] += iHappy * iChange;
+				m_iImprovementHappinessCount += iChange;
+			}
 		}
 	}
 	//CityState UA (Ragusa): each owned building of the specified class grants flat local happiness
-	for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
+	if (pEffect->HasBuildingClassHappiness())
 	{
-		int iHappy = pEffect->GetBuildingClassHappiness(iBC);
-		if (iHappy != 0)
+		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
 		{
-			m_aiBuildingClassHappiness[iBC] += iHappy * iChange;
-			m_iBuildingClassHappinessCount += iChange;
+			int iHappy = pEffect->GetBuildingClassHappiness(iBC);
+			if (iHappy != 0)
+			{
+				m_aiBuildingClassHappiness[iBC] += iHappy * iChange;
+				m_iBuildingClassHappinessCount += iChange;
+			}
 		}
 	}
 	//CityState UA (Hormuz): each unit of surplus strategic resource grants trade-route gold % (per ResourceType)
-	for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
+	if (pEffect->HasTradeRouteGoldPerSurplusResource())
 	{
-		int iTRMod = pEffect->GetTradeRouteGoldPerSurplusResource(iRes);
-		if (iTRMod != 0)
+		for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
 		{
-			m_aiTradeRouteGoldPerSurplusResource[iRes] += iTRMod * iChange;
-			m_iTradeRouteGoldPerSurplusResourceCount += iChange;
+			int iTRMod = pEffect->GetTradeRouteGoldPerSurplusResource(iRes);
+			if (iTRMod != 0)
+			{
+				m_aiTradeRouteGoldPerSurplusResource[iRes] += iTRMod * iChange;
+				m_iTradeRouteGoldPerSurplusResourceCount += iChange;
+			}
 		}
 	}
 	//Gangtok
@@ -2314,10 +2385,13 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		if (iHCapC != 0) m_aiHappinessYieldModifierCaps[iY] += iHCapC * iChange;
 	}
 	//Ife: per-unitclass FAITH great-people cost discount
-	for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+	if (pEffect->HasFaithGPClassCostModifier())
 	{
-		int iClassMod = pEffect->GetFaithGPClassCostModifier(iUC);
-		if (iClassMod != 0) m_aiFaithGPClassCostModifier[iUC] += iClassMod * iChange;
+		for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+		{
+			int iClassMod = pEffect->GetFaithGPClassCostModifier(iUC);
+			if (iClassMod != 0) m_aiFaithGPClassCostModifier[iUC] += iClassMod * iChange;
+		}
 	}
 	//Ife: each great work / artifact grants a yield % modifier per YieldType (per GreatWorkClass)
 	{
@@ -2424,9 +2498,12 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		}
 	}
 	//Brussels: specialist great person point accumulation rate
-	for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+	if (pEffect->HasSpecialistPointRate())
 	{
-		m_aiSpecialistPointRate[iSpec] += pEffect->GetSpecialistPointRate(iSpec) * iChange;
+		for (int iSpec = 0; iSpec < GC.getNumSpecialistInfos(); iSpec++)
+		{
+			m_aiSpecialistPointRate[iSpec] += pEffect->GetSpecialistPointRate(iSpec) * iChange;
+		}
 	}
 	{
 		const std::vector<GreatWorkGreatPersonPointsEntry>& vEntries = pEffect->GetGreatWorkGreatPersonPointsEntries();
@@ -2438,9 +2515,12 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 		}
 	}
 	//Brussels: specified unit class's one-shot great person output modifier
-	for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+	if (pEffect->HasGreatPersonOneShotModifier())
 	{
-		m_aiGreatPersonOneShotModifier[iUC] += pEffect->GetGreatPersonOneShotModifier(iUC) * iChange;
+		for (int iUC = 0; iUC < GC.getNumUnitClassInfos(); iUC++)
+		{
+			m_aiGreatPersonOneShotModifier[iUC] += pEffect->GetGreatPersonOneShotModifier(iUC) * iChange;
+		}
 	}
 	{
 		const std::vector<BornGreatPersonSpecialistYieldEntry>& vEntries = pEffect->GetBornGreatPersonSpecialistYieldEntries();
@@ -2567,7 +2647,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 			m_vBuildingClassGlobalYieldModifiers.push_back(entry);
 		}
 	}
-	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent
+	//Singapore: each owned building class lowers the city-count research threshold by TechCostMod points
 	{
 		const std::vector<BuildingClassTechCostModifierEntry>& vEntries = pEffect->GetBuildingClassTechCostModifiers();
 		for (size_t i = 0; i < vEntries.size(); i++)
@@ -2606,12 +2686,8 @@ int CvPlayerCityStateUA::GetGreatPersonPoints(int i) const { CvAssertMsg(i < GC.
 bool CvPlayerCityStateUA::IsFaithPurchaseAllGreatPeople() const { return m_iFaithPurchaseAllGreatPeopleCount > 0; }
 bool CvPlayerCityStateUA::IsGPNoDeathAfterGreatWork() const { return m_iGPNoDeathAfterGreatWorkCount > 0; }
 int CvPlayerCityStateUA::GetGPConcertTourismRetentionPercent() const { return m_iGPConcertTourismRetentionPercent; }
-int CvPlayerCityStateUA::GetGreatMusicianConcertTourismModifier() const { return m_iGreatMusicianConcertTourismModifier; }
 int CvPlayerCityStateUA::GetGreatMusicianConcertGoldPercent() const { return m_iGreatMusicianConcertGoldPercent; }
 int CvPlayerCityStateUA::GetCapitalAndSecondCapitalCultureModifier() const { return m_iCapitalAndSecondCapitalCultureModifier; }
-int CvPlayerCityStateUA::GetCapitalCultureModifierPerTurn() const { return m_iCapitalCultureModifierPerTurn; }
-int CvPlayerCityStateUA::GetCapitalFaithModifierPerTurn() const { return m_iCapitalFaithModifierPerTurn; }
-int CvPlayerCityStateUA::GetCapitalPerTurnYieldModifierMax() const { return m_iCapitalPerTurnYieldModifierMax; }
 int CvPlayerCityStateUA::GetImmigrationRatePerImmigrant() const { return m_iImmigrationRatePerImmigrant; }
 int CvPlayerCityStateUA::GetImmigrationRateMax() const { return m_iImmigrationRateMax; }
 int CvPlayerCityStateUA::GetEmigrationRatePerImmigrant() const { return m_iEmigrationRatePerImmigrant; }
@@ -2641,9 +2717,6 @@ const std::vector<ResourcePerCityEntry>& CvPlayerCityStateUA::GetResourcePerCity
 int CvPlayerCityStateUA::GetCityAttackIgnoreBuildingDefensePercent() const { return m_iCityAttackIgnoreBuildingDefensePercent; }
 int CvPlayerCityStateUA::GetMilitaryXPPerTurnModifier() const { return m_iMilitaryXPPerTurnModifier; }
 int CvPlayerCityStateUA::GetMilitaryXPSeaAir() const { return m_iMilitaryXPSeaAir; }
-int CvPlayerCityStateUA::GetHillsCityDamageReduction() const { return m_iHillsCityDamageReduction; }
-int CvPlayerCityStateUA::GetHillsMovementModifier() const { return m_iHillsMovementModifier; }
-int CvPlayerCityStateUA::GetHillsCityRangeBonus() const { return m_iHillsCityRangeBonus; }
 int CvPlayerCityStateUA::GetCoupChanceModifier() const { return m_iCoupChanceModifier; }
 bool CvPlayerCityStateUA::GetCoupFailSpySurvives() const { return m_iCoupFailSpySurvives > 0; }
 int CvPlayerCityStateUA::GetStealTechSpeedPerSpy() const { return m_iStealTechSpeedPerSpy; }

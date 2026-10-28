@@ -87,6 +87,21 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorFaithGiftFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithBeliefPurchaseFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoCityStateFaithPantheonPurchaseFromMajor);
+	// Economic Aid point spending (Super Power V11)
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorRerollQuestsFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorBullyGoldWithAidPointsFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetNextGreatPersonChoiceFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetPendingGiftUnitFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoHastenCongressWithAidPointsFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostRerollQuests);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostNextGreatPerson);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostPendingGiftUnit);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostHastenCongress);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointHastenCongressTurns);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostAnnexCityState);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyTreasurySharePercent);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyGoldAidPointCost);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetMinorGiftUnitChoices);
 
 #if defined(MOD_NUCLEAR_WINTER_FOR_SP)
 	REGIST_STATIC_FUNCTION(CvLuaGame::lChangeNuclearWinterProcess);
@@ -114,6 +129,19 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 {
 	Method(SendAndExecuteLuaFunction);
 	Method(SendAndExecuteLuaFunctionPostpone);
+
+	// Economic Aid point spending (Super Power V11): plain query helpers, callable directly from Lua.
+	// The matching Do* entry points live in RegistStaticFunctions and are reached through
+	// SendAndExecuteLuaFunction so that they execute on every client in multiplayer.
+	Method(GetAidPointCostRerollQuests);
+	Method(GetAidPointCostNextGreatPerson);
+	Method(GetAidPointCostPendingGiftUnit);
+	Method(GetAidPointCostHastenCongress);
+	Method(GetAidPointHastenCongressTurns);
+	Method(GetAidPointCostAnnexCityState);
+	Method(GetBullyTreasurySharePercent);
+	Method(GetBullyGoldAidPointCost);
+	Method(GetMinorGiftUnitChoices);
 
 	Method(CanHandleAction);
 	Method(HandleAction);
@@ -462,6 +490,13 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetNumLeaguesEverFounded);
 	Method(GetLeague);
 	Method(GetActiveLeague);
+
+	// Resolution state queries used by the UI (World Bank / WHO / IMO)
+	Method(GetLeagueWorldBankIntervalTurns);
+	Method(GetLeagueWHOFoodConsumptionModifier);
+	Method(GetLeagueWHOSanitationFoodKeptPercent);
+	Method(GetLeagueIMOOceanRouteGoldModifier);
+	Method(IsLeagueIMOForbidWeakPlunder);
 
 #if defined(MOD_API_LUA_EXTENSIONS)
 	Method(IsAchievementUnlocked);
@@ -2129,6 +2164,151 @@ int CvLuaGame::lDoMinorFaithGiftFromMajor(lua_State* L)
 	return 0;
 }
 //------------------------------------------------------------------------------
+// Economic Aid point spending (Super Power V11)
+// Network-synced variants taking an explicit major (multiplayer-safe)
+//bool DoMinorRerollQuestsFromMajor(int iMajorCivID, int iMinorCivID);
+int CvLuaGame::lDoMinorRerollQuestsFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoMinorRerollQuestsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void DoMinorBullyGoldWithAidPointsFromMajor(int iMajorCivID, int iMinorCivID, int iGold);
+// The gold amount is looked up from synced state here instead of being passed in. A caller-derived
+// value would make the broadcast's argument list differ between clients whenever they are a moment
+// apart, which breaks the dedup key (the call then runs once per client and stacks the gold). The
+// third argument is still accepted - and ignored - so older scripts keep working.
+int CvLuaGame::lDoMinorBullyGoldWithAidPointsFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+
+	if(iMinor < 0 || iMinor >= MAX_CIV_PLAYERS)
+		return 0;
+
+	int iGold = 0;
+	CvPlayer* pMinor = &GET_PLAYER((PlayerTypes)iMinor);
+	if(pMinor != NULL && pMinor->isMinorCiv() && pMinor->GetMinorCivAI() != NULL)
+		iGold = pMinor->GetMinorCivAI()->GetBullyGoldAmount((PlayerTypes)iMajor);
+
+	GC.getGame().DoMinorBullyGoldWithAidPointsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, iGold);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//bool DoSetNextGreatPersonChoiceFromMajor(int iMajorCivID, int iUnit, int iCostMinorCivID);
+int CvLuaGame::lDoSetNextGreatPersonChoiceFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iUnit = lua_tointeger(L, 2);
+	const int iCostMinor = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoSetNextGreatPersonChoiceFromMajor((PlayerTypes)iMajor, (UnitTypes)iUnit, (PlayerTypes)iCostMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoSetPendingGiftUnitFromMajor(int iMajorCivID, int iMinorCivID, int iUnit);
+int CvLuaGame::lDoSetPendingGiftUnitFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iUnit = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoSetPendingGiftUnitFromMajor((PlayerTypes)iMajor, (PlayerTypes)iMinor, (UnitTypes)iUnit));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoHastenCongressWithAidPointsFromMajor(int iMajorCivID, int iCostMinorCivID);
+// The League countdown is global and lives in synced state, so nothing caller-derived is passed in.
+int CvLuaGame::lDoHastenCongressWithAidPointsFromMajor(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iCostMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoHastenCongressWithAidPointsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iCostMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostRerollQuests();
+int CvLuaGame::lGetAidPointCostRerollQuests(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostRerollQuests());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostNextGreatPerson();
+int CvLuaGame::lGetAidPointCostNextGreatPerson(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostNextGreatPerson());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostPendingGiftUnit();
+int CvLuaGame::lGetAidPointCostPendingGiftUnit(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostPendingGiftUnit());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostHastenCongress();
+int CvLuaGame::lGetAidPointCostHastenCongress(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostHastenCongress());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointHastenCongressTurns();
+int CvLuaGame::lGetAidPointHastenCongressTurns(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointHastenCongressTurns());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostAnnexCityState();
+int CvLuaGame::lGetAidPointCostAnnexCityState(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostAnnexCityState());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetBullyTreasurySharePercent();
+int CvLuaGame::lGetBullyTreasurySharePercent(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetBullyTreasurySharePercent());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetBullyGoldAidPointCost(int iMinorCivID, int iMajorCivID);
+int CvLuaGame::lGetBullyGoldAidPointCost(lua_State* L)
+{
+	const int iMinor = lua_tointeger(L, 1);
+	const int iMajor = lua_tointeger(L, 2);
+	int iCost = 0;
+	CvPlayer* pMinor = &GET_PLAYER((PlayerTypes)iMinor);
+	if(pMinor && pMinor->isMinorCiv())
+	{
+		CvMinorCivAI* pMinorAI = pMinor->GetMinorCivAI();
+		if(pMinorAI)
+			iCost = pMinorAI->GetBullyGoldAidPointCost((PlayerTypes)iMajor);
+	}
+	lua_pushinteger(L, iCost);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//table GetMinorGiftUnitChoices(int iMajorCivID);
+int CvLuaGame::lGetMinorGiftUnitChoices(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	std::vector<UnitTypes> veChoices;
+	GC.getGame().GetMinorGiftUnitChoices((PlayerTypes)iMajor, veChoices);
+
+	lua_createtable(L, (int)veChoices.size(), 0);
+	for(size_t i = 0; i < veChoices.size(); i++)
+	{
+		lua_pushinteger(L, (int)veChoices[i]);
+		lua_rawseti(L, -2, (int)(i + 1));
+	}
+	return 1;
+}
+//------------------------------------------------------------------------------
 //int GetCityStateFaithBeliefPurchaseCost(int iMinorCivID);
 // Wittenberg CS UA: faith cost for the active player to purchase a belief at this city-state (0 = not available)
 int CvLuaGame::lGetCityStateFaithBeliefPurchaseCost(lua_State* L)
@@ -3088,6 +3268,36 @@ int CvLuaGame::lGetActiveLeague(lua_State* L)
 	{
 		lua_pushnil(L);
 	}
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueWorldBankIntervalTurns(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWorldBankIntervalTurns());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueWHOFoodConsumptionModifier(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWHOFoodConsumptionModifier());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueWHOSanitationFoodKeptPercent(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetWHOSanitationFoodKeptPercent());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lGetLeagueIMOOceanRouteGoldModifier(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetGameLeagues()->GetIMOOceanRouteGoldModifier());
+	return 1;
+}
+//------------------------------------------------------------------------------
+int CvLuaGame::lIsLeagueIMOForbidWeakPlunder(lua_State* L)
+{
+	lua_pushboolean(L, GC.getGame().GetGameLeagues()->IsIMOForbidWeakPlunder());
 	return 1;
 }
 //------------------------------------------------------------------------------

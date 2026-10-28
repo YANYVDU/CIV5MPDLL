@@ -1040,6 +1040,8 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 		UpdateCorruption();
 #endif
 
+	UpdatePolicyFreeBuildings();
+
 	AI_init();
 
 	if (GC.getGame().getGameTurn() == 0)
@@ -1115,6 +1117,7 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	m_iBaseTourism = 0;
 	m_iBaseTourismBeforeModifiers = 0;
 	m_aiNumProjects.resize(GC.getNumProjectInfos());
+	m_aiPolicyFreeBuildingGranted.clear();
 #if defined(MOD_VOLCANO_BREAK)
 	m_iImmueVolcanoDamage = 0;
 #endif
@@ -2797,11 +2800,27 @@ CityTaskResult CvCity::doTask(TaskTypes eTask, int iData1, int iData2, bool bOpt
 		break;
 
 	case TASK_ADD_SPECIALIST:
-		GetCityCitizens()->DoAddSpecialistToBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		if((BuildingTypes) iData2 == NO_BUILDING)
+		{
+			// The slot belongs to the City, so a task may name a Specialist type instead of the
+			// building that supplies the slot (iData1 is the SpecialistTypes index).
+			GetCityCitizens()->DoAddSpecialist(/*eSpecialist*/ (SpecialistTypes) iData1, true);
+		}
+		else
+		{
+			GetCityCitizens()->DoAddSpecialistToBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		}
 		break;
 
 	case TASK_REMOVE_SPECIALIST:
-		GetCityCitizens()->DoRemoveSpecialistFromBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		if((BuildingTypes) iData2 == NO_BUILDING)
+		{
+			GetCityCitizens()->DoRemoveSpecialist(/*eSpecialist*/ (SpecialistTypes) iData1, true);
+		}
+		else
+		{
+			GetCityCitizens()->DoRemoveSpecialistFromBuilding(/*eBuilding*/ (BuildingTypes) iData2, true);
+		}
 		GetCityCitizens()->DoAddBestCitizenFromUnassigned();
 		break;
 
@@ -4969,10 +4988,15 @@ int CvCity::getProductionExperience(UnitTypes eUnit)
 			ReligionTypes eCityReligion = GetCityReligions()->GetReligiousMajority();
 			if(MOD_BELIEF_NEW_EFFECT_FOR_SP && eCityReligion != NO_RELIGION)
 			{
-				int iExBouns = GC.getGame().GetGameReligions()->GetReligion(eCityReligion,getOwner())->m_Beliefs.GetHolyCityUnitExperence();
-				if(iExBouns != 0 && GetCityReligions()->IsHolyCityForReligion(eCityReligion) && GET_PLAYER(getOwner()).HasReligion(eCityReligion))
+				// GetReligion() returns NULL when the majority is a pantheon founded by another player
+				const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eCityReligion,getOwner());
+				if(pReligion)
 				{
-					iExperience += iExBouns;
+					int iExBouns = pReligion->m_Beliefs.GetHolyCityUnitExperence();
+					if(iExBouns != 0 && GetCityReligions()->IsHolyCityForReligion(eCityReligion) && GET_PLAYER(getOwner()).HasReligion(eCityReligion))
+					{
+						iExperience += iExBouns;
+					}
 				}
 			}
 #endif
@@ -7713,9 +7737,11 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 	if(!(owningTeam.isObsoleteBuilding(eBuilding)) || bObsolete)
 	{
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
-		if (MOD_SP_UNIQUE_CITYSTATE && pBuildingInfo->GetDiplomaticPrestige() != 0)
+		if (MOD_SP_UNIQUE_CITYSTATE)
 		{
-			owningPlayer.ChangeExtraDiplomaticPrestige(iChange * pBuildingInfo->GetDiplomaticPrestige());
+			if (pBuildingInfo->GetDiplomaticPrestige() != 0)
+				owningPlayer.ChangeExtraDiplomaticPrestige(iChange * pBuildingInfo->GetDiplomaticPrestige());
+			// Independent of DiplomaticPrestige so a building can lower the ally threshold alone
 			if (pBuildingInfo->GetMinorCivAlliesThresholdModifier() != 0)
 				owningPlayer.ChangeMinorCivAlliesThresholdModifier(iChange * pBuildingInfo->GetMinorCivAlliesThresholdModifier());
 		}
@@ -7881,8 +7907,14 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 
 				if (eFreeBuildingThisCity != NO_BUILDING)
 				{
-					m_pCityBuildings->SetNumRealBuilding(eFreeBuildingThisCity, 0);
+					// Hand out the free copy before dropping the built one. The City usually already
+					// owns the building (the Great Library comes with a Library), and SetNumRealBuilding(0)
+					// on its own drops GetNumBuilding() to zero for an instant, which takes that
+					// building's Specialist slots with it and evicts the Citizens sitting in them (see
+					// CvCity::ChangeMaxSpecialistCountFromBuilding). Granting the free copy first keeps
+					// the count up for the whole swap.
 					m_pCityBuildings->SetNumFreeBuilding(eFreeBuildingThisCity, 1);
+					m_pCityBuildings->SetNumRealBuilding(eFreeBuildingThisCity, 0);
 				}
 			}
 
@@ -8559,9 +8591,9 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 			ChangeHurryModifierLocal((HurryTypes) iI, (pBuildingInfo->GetHurryModifierLocal(iI) * iChange));
 		}
 
-		if(GC.getBuildingInfo(eBuilding)->GetSpecialistType() != NO_SPECIALIST)
+		if(pBuildingInfo->GetSpecialistType() != NO_SPECIALIST)
 		{
-			GetCityCitizens()->ChangeBuildingGreatPeopleRateChanges((SpecialistTypes) GC.getBuildingInfo(eBuilding)->GetSpecialistType(), pBuildingInfo->GetGreatPeopleRateChange() * iChange);
+			GetCityCitizens()->ChangeBuildingGreatPeopleRateChanges((SpecialistTypes) pBuildingInfo->GetSpecialistType(), pBuildingInfo->GetGreatPeopleRateChange() * iChange);
 		}
 
 		for(int iI = 0; iI < GC.getNumUnitCombatClassInfos(); iI++)
@@ -9382,13 +9414,23 @@ int CvCity::foodConsumption(bool /*bNoAngry*/, int iExtra) const
 	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
 	if(eMajority != NO_RELIGION)
 	{
-		iConsumptionModifier += GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner())->m_Beliefs.GetTerrainCityFoodConsumption(eTerrain);
+		// GetReligion() returns NULL when the majority is a pantheon founded by another player
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, getOwner());
+		if(pReligion)
+		{
+			iConsumptionModifier += pReligion->m_Beliefs.GetTerrainCityFoodConsumption(eTerrain);
+		}
 	}	
 	BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
 	if(eSecondaryPantheon != NO_BELIEF)
 	{
 		iConsumptionModifier += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetTerrainCityFoodConsumption(eTerrain);
 	}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+	// WHO resolution: all cities eat less food per citizen
+	if (MOD_VOTING_NEW_EFFECT_FOR_SP)
+		iConsumptionModifier += GC.getGame().GetGameLeagues()->GetWHOFoodConsumptionModifier();
+#endif
 	iNum = iNum * iConsumptionModifier / 100;
 	
 	return iNum;
@@ -11910,7 +11952,14 @@ int CvCity::getMaxFoodKeptPercent() const
 	VALIDATE_OBJECT
 #ifdef MOD_GLOBAL_CITY_SCALES
 	if (MOD_GLOBAL_CITY_SCALES && !CanGrowNormally())
+	{
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// WHO resolution: a city without the required sanitation building still keeps part of its surplus
+		if (MOD_VOTING_NEW_EFFECT_FOR_SP)
+			return GC.getGame().GetGameLeagues()->GetWHOSanitationFoodKeptPercent();
+#endif
 		return 0;
+	}
 #endif
 	int iPercent = m_iMaxFoodKeptPercent + std::min(0, GetFoodKeptFromPollution());
 
@@ -12078,7 +12127,8 @@ int CvCity::GetGreatPersonPointsFromReligion(GreatPersonTypes eGreatPersonTypes)
 	if(eReligion != NO_RELIGION)
 	{
 		const CvReligion* pkReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion,getOwner());
-		if(pkReligion->m_Beliefs.HasGreatPersonPoints())
+		// GetReligion() returns NULL when the city's majority is a pantheon founded by another player
+		if(pkReligion && pkReligion->m_Beliefs.HasGreatPersonPoints())
 		{
 			resValue += pkReligion->m_Beliefs.GetGreatPersonPoints(eGreatPersonTypes,isCapital(),GetCityReligions()->IsHolyCityForReligion(eReligion));
 		}
@@ -12097,7 +12147,10 @@ int CvCity::GetReligionExtraMissionarySpreads(ReligionTypes eReligion)
 {
 	VALIDATE_OBJECT
 	if(eReligion == NO_RELIGION) return 0;
-	return GC.getGame().GetGameReligions()->GetReligion(eReligion,getOwner())->m_Beliefs.GetCityExtraMissionarySpreads();
+	// GetReligion() returns NULL when eReligion is a pantheon founded by another player
+	const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eReligion,getOwner());
+	if(!pReligion) return 0;
+	return pReligion->m_Beliefs.GetCityExtraMissionarySpreads();
 }
 //	--------------------------------------------------------------------------------
 int CvCity::GetBeliefExtraMissionarySpreads(BeliefTypes eBelief)
@@ -13445,6 +13498,8 @@ int CvCity::GetYieldPerTurnFromReligion(ReligionTypes eReligion, YieldTypes eYie
 int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* toolTipSink) const
 {
 	VALIDATE_OBJECT
+	// CSUA perf profiling: per-city per-yield aggregate entry point (wraps the CSUA blocks below).
+	AI_PERF("CSUA-perf.csv", "CSUA getBaseYieldRateModifier");
 	int iModifier = 0;
 	int iTempMod;
 	auto& owner = GET_PLAYER(getOwner());
@@ -15258,8 +15313,23 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 	CvAssertMsg(eYield >= 0, "eYield expected to be >= 0");
 	CvAssertMsg(eYield < NUM_YIELD_TYPES, "eYield expected to be < NUM_YIELD_TYPES");
 
+	// CSUA perf profiling: per-city per-yield hot path. Rows land in CSUA-perf.csv only when AI perf
+	// logging is on; near-zero cost otherwise. Short-circuited (no-conversion owner) calls show up as
+	// near-zero deltas, full city-state scans as the larger ones, so the two mix is visible directly.
+	AI_PERF("CSUA-perf.csv", "CSUA GetYieldRateFromUCSConversion");
+
 	int iResult = 0;
 	PlayerTypes ePlayer = getOwner();
+
+	// Hot path guard: this function runs per city per yield; owners that hold no yield-conversion
+	// effect at all (the common case) return immediately instead of scanning every living city-state.
+	// The per-city-state UA lookup below is O(1): the row index is cached on CvMinorCivInfo at load time.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		CvPlayerCityStateUA* pCSUA = GET_PLAYER(ePlayer).GetPlayerCityStateUA();
+		if (pCSUA == NULL || !pCSUA->HasUCSYieldConversion())
+			return 0;
+	}
 
 	// iterate all minor civs, looking for an allied/friendly city-state whose UA grants a yield conversion
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
@@ -15270,11 +15340,8 @@ int CvCity::GetYieldRateFromUCSConversion(YieldTypes eYield) const
 
 		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
 		CvMinorCivInfo* pkMinorCivInfo = pMinorAI ? GC.getMinorCivInfo(pMinorAI->GetMinorCivType()) : NULL;
-		const char* szUAType = pkMinorCivInfo ? pkMinorCivInfo->GetUAType() : NULL;
-		if (!szUAType || szUAType[0] == '\0')
-			continue;
-
-		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntryByType(szUAType);
+		// O(1) lookup: the row index was resolved once at load time (ResolveMinorCivUAIndexes).
+		CvCityStateUAEntry* pUAEntry = GC.GetGameCityStateUAs()->GetEntry(pkMinorCivInfo ? pkMinorCivInfo->GetCityStateUAIndex() : -1);
 		if (!pUAEntry)
 			continue;
 
@@ -19335,6 +19402,14 @@ bool CvCity::CreateBuilding(BuildingTypes eBuildingType)
 	}
 #endif
 
+	// SP contest quests: count world wonders actually completed here. City transfers during
+	// conquest use SetNumRealBuildingTimed, so conquered wonders are not counted as built.
+	CvBuildingClassInfo* pWonderClassInfo = GC.getBuildingClassInfo(eBuildingClass);
+	if(pWonderClassInfo != NULL && ::isWorldWonderClass(*pWonderClassInfo))
+	{
+		kPlayer.ChangeNumWorldWondersBuilt(1);
+	}
+
 	return true;
 }
 
@@ -21114,6 +21189,7 @@ void CvCity::read(FDataStream& kStream)
 	kStream >> m_paiProjectProduction;
 
 	m_pCityBuildings->Read(kStream);
+	MOD_SERIALIZE_READ(166, kStream, m_aiPolicyFreeBuildingGranted, std::vector<int>());
 
 	if (uiVersion < 6)
 	{
@@ -21603,6 +21679,7 @@ void CvCity::write(FDataStream& kStream) const
 	kStream << m_paiProjectProduction;
 
 	m_pCityBuildings->Write(kStream);
+	MOD_SERIALIZE_WRITE(kStream, m_aiPolicyFreeBuildingGranted);
 
 	CvInfosSerializationHelper::WriteHashedDataArray<UnitTypes, int>(kStream, m_paiUnitProduction);
 	CvInfosSerializationHelper::WriteHashedDataArray<UnitTypes, int>(kStream, m_paiUnitProductionTime);
@@ -23832,18 +23909,182 @@ bool CvCity::IsConnectedTo(CvCity* pCity) const
 	return GET_PLAYER(getOwner()).IsCityConnectedToCity((CvCity*) this, pCity);
 }
 
-bool CvCity::HasSpecialistSlot(SpecialistTypes iSpecialistType) const
+/// How many Specialists of this type can this City support?
+/// This reads the slot inventory (m_paiMaxSpecialistCount) maintained by
+/// ChangeMaxSpecialistCount(); it is NOT derived from the buildings on demand, so a slot
+/// no longer belongs to a particular building.
+int CvCity::GetMaxSpecialistCount(SpecialistTypes eIndex) const
 {
-	for (int iBuildingType = 0; iBuildingType < GC.getNumBuildingInfos(); iBuildingType++) {
-		if (HasBuilding((BuildingTypes)iBuildingType)) {
-			CvBuildingEntry* pkBuilding = GC.getBuildingInfo((BuildingTypes)iBuildingType);
-			if (pkBuilding && pkBuilding->GetSpecialistType() == iSpecialistType && pkBuilding->GetSpecialistCount() > 0) {
+	if (eIndex < 0 || eIndex >= GC.getNumSpecialistInfos())
+	{
+		return 0;
+	}
+
+	if ((size_t) eIndex >= m_paiMaxSpecialistCount.size())
+	{
+		return 0;
+	}
+
+	return m_paiMaxSpecialistCount[eIndex];
+}
+
+/// Change how many Specialists of this type this City can support.
+/// ChangeMaxSpecialistCountFromBuilding() calls this for every building the City gains or
+/// loses; policies, traits, Lua scripts and any other slot source may call it as well
+/// (MPDLL exposes this to Lua as City:ChangeMaxSpecialistCount).
+void CvCity::ChangeMaxSpecialistCount(SpecialistTypes eIndex, int iChange)
+{
+	if (iChange == 0 || eIndex < 0 || eIndex >= GC.getNumSpecialistInfos())
+	{
+		return;
+	}
+
+	// reset() sizes the inventory, but a City is handed its free buildings early in
+	// CvCity::init(); grow the vector on demand so no such call is ever dropped.
+	if (m_paiMaxSpecialistCount.size() != (size_t) GC.getNumSpecialistInfos())
+	{
+		m_paiMaxSpecialistCount.resize(GC.getNumSpecialistInfos());
+	}
+
+	// Never let a source drive the inventory negative; the floor is not an error state,
+	// it just means the source asked for more slots than it had granted.
+	int iNewValue = m_paiMaxSpecialistCount[eIndex] + iChange;
+	// A negative result means a source gave back more slots than it handed out. The floor
+	// keeps the inventory usable; the assert reports the bookkeeping error in a debug build
+	// rather than hiding it.
+	CvAssertMsg(iNewValue >= 0, "specialist slot inventory went below zero");
+	if (iNewValue < 0)
+	{
+		iNewValue = 0;
+	}
+
+	m_paiMaxSpecialistCount.setAt(eIndex, iNewValue);
+
+	// Losing slots can leave more Specialists assigned than the City can now hold; those
+	// citizens are returned to the unassigned pool.
+	if (iChange < 0)
+	{
+		GetCityCitizens()->DoEnforceSpecialistSlotLimit(eIndex);
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(CityInfo_DIRTY_BIT, true);
+	GC.GetEngineUserInterface()->setDirty(CityScreen_DIRTY_BIT, true);
+
+	auto_ptr<ICvCity1> pCity = GC.WrapCityPointer(this);
+	GC.GetEngineUserInterface()->SetSpecificCityInfoDirty(pCity.get(), CITY_UPDATE_TYPE_SPECIALISTS);
+}
+
+/// Keep the specialist slot inventory in step with one building type this City owns.
+/// A building supplies its slots while the City owns it, so this mirrors
+/// CvCityBuildings::GetNumBuilding(); the callers pass the change of that count rather than
+/// the change of the counter they touched, because a building counts once even when a free
+/// copy sits next to a built one (GetNumBuilding() returns max(real, free) while
+/// CITY_MAX_NUM_BUILDINGS <= 1). An obsolete building keeps its slots, exactly as
+/// CvCity::HasBuilding() keeps reporting it.
+void CvCity::ChangeMaxSpecialistCountFromBuilding(BuildingTypes eBuilding, int iNumBuildingChange)
+{
+	if (iNumBuildingChange == 0)
+	{
+		return;
+	}
+
+	CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+	if (pkBuildingInfo == NULL)
+	{
+		return;
+	}
+
+	const SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+	if (eSpecialist == NO_SPECIALIST || pkBuildingInfo->GetSpecialistCount() <= 0)
+	{
+		return;
+	}
+
+	ChangeMaxSpecialistCount(eSpecialist, pkBuildingInfo->GetSpecialistCount() * iNumBuildingChange);
+
+	// A building the City no longer owns holds nobody. Buildings also leave through paths that never
+	// clear the per-building count (razed in combat, removed by a script), so clear it here. This has
+	// to run after the slot change above, which still needs that count to pick the Citizens to evict.
+	if (m_pCityBuildings->GetNumBuilding(eBuilding) <= 0)
+	{
+		GetCityCitizens()->ClearSpecialistsInBuilding(eBuilding);
+	}
+}
+
+/// Rebuild the specialist slot inventory from the buildings this City owns.
+/// Buildings are the primary slot source, so this restores the inventory for a save that
+/// predates it (the field was serialized but always zero in those saves).
+void CvCity::RebuildMaxSpecialistCountsFromBuildings()
+{
+	const int iNumSpecialistInfos = GC.getNumSpecialistInfos();
+
+	// A save made against a different number of specialist types may have loaded a shorter
+	// vector; make sure every type has a slot entry before writing to it.
+	if (m_paiMaxSpecialistCount.size() != (size_t) iNumSpecialistInfos)
+	{
+		m_paiMaxSpecialistCount.resize(iNumSpecialistInfos);
+	}
+
+	for (int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistInfos; iSpecialistLoop++)
+	{
+		m_paiMaxSpecialistCount.setAt(iSpecialistLoop, 0);
+	}
+
+	const int iNumBuildingInfos = GC.getNumBuildingInfos();
+	for (int iBuildingLoop = 0; iBuildingLoop < iNumBuildingInfos; iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+		const int iNumBuilding = m_pCityBuildings->GetNumBuilding(eBuilding);
+		if (iNumBuilding > 0)
+		{
+			CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+			if (pkBuildingInfo != NULL)
+			{
+				const SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+				if (eSpecialist != NO_SPECIALIST && pkBuildingInfo->GetSpecialistCount() > 0)
+				{
+					m_paiMaxSpecialistCount.setAt(eSpecialist, m_paiMaxSpecialistCount[eSpecialist] + pkBuildingInfo->GetSpecialistCount() * iNumBuilding);
+				}
+			}
+		}
+	}
+}
+
+/// Does this City need its slot inventory rebuilt? True when the inventory is empty even
+/// though the City owns buildings that carry specialist slots, i.e. the save predates the
+/// inventory (or wrote it before any building was processed).
+bool CvCity::IsRebuildMaxSpecialistCountsNeeded() const
+{
+	const int iNumSpecialistInfos = GC.getNumSpecialistInfos();
+	for (int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistInfos; iSpecialistLoop++)
+	{
+		if (GetMaxSpecialistCount((SpecialistTypes) iSpecialistLoop) > 0)
+		{
+			return false;
+		}
+	}
+
+	const int iNumBuildingInfos = GC.getNumBuildingInfos();
+	for (int iBuildingLoop = 0; iBuildingLoop < iNumBuildingInfos; iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+		if (m_pCityBuildings->GetNumBuilding(eBuilding) > 0)
+		{
+			CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+			if (pkBuildingInfo != NULL && pkBuildingInfo->GetSpecialistType() != NO_SPECIALIST && pkBuildingInfo->GetSpecialistCount() > 0)
+			{
 				return true;
 			}
 		}
 	}
 
 	return false;
+}
+
+bool CvCity::HasSpecialistSlot(SpecialistTypes iSpecialistType) const
+{
+	return GetMaxSpecialistCount(iSpecialistType) > 0;
 }
 
 bool CvCity::HasSpecialist(SpecialistTypes iSpecialistType) const
@@ -24632,8 +24873,14 @@ void CvCity::SetScale(CityScaleTypes eNewScale)
 
 	if (!CanGrowNormally())
 	{
-		setFood(0);
-		setFoodKept(0);
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// WHO resolution: keep the accumulated surplus instead of wiping it when sanitation is lacking
+		if (!(MOD_VOTING_NEW_EFFECT_FOR_SP && GC.getGame().GetGameLeagues()->GetWHOSanitationFoodKeptPercent() > 0))
+#endif
+		{
+			setFood(0);
+			setFoodKept(0);
+		}
 	}
 
 #ifdef MOD_EVENTS_CITY_SCALES
@@ -24734,6 +24981,217 @@ bool CvCity::CanScaleImmigrantOut() const
 	return info->CanImmigrantOut();
 }
 #endif
+
+int CvCity::GetPolicyFreeBuildingGranted(BuildingClassTypes eBuildingClass) const
+{
+	if (eBuildingClass < 0 || eBuildingClass >= (int)m_aiPolicyFreeBuildingGranted.size())
+		return 0;
+
+	return m_aiPolicyFreeBuildingGranted[eBuildingClass];
+}
+
+void CvCity::SetPolicyFreeBuildingGranted(BuildingClassTypes eBuildingClass, int iValue)
+{
+	if (eBuildingClass < 0)
+		return;
+
+	if ((int)m_aiPolicyFreeBuildingGranted.size() <= eBuildingClass)
+		m_aiPolicyFreeBuildingGranted.resize(GC.getNumBuildingClassInfos(), 0);
+
+	m_aiPolicyFreeBuildingGranted[eBuildingClass] = iValue;
+}
+
+void CvCity::UpdatePolicyFreeBuildings()
+{
+	CvPolicyXMLEntries* pPolicyEntries = GC.GetGamePolicies();
+	if (pPolicyEntries == NULL)
+		return;
+
+	pPolicyEntries->EnsureFreeBuildingClassCache();
+
+	const std::vector<PolicyTypes>& vPolicies = pPolicyEntries->GetPoliciesWithFreeBuildingClasses();
+	if (vPolicies.empty())
+		return;
+
+	CvPlayer& kOwner = GET_PLAYER(getOwner());
+	const bool bIsCapital = isCapital();
+	const PlayerTypes eOriginalOwner = getOriginalOwner();
+	const bool bOriginalOwnerIsMinor = eOriginalOwner != NO_PLAYER && GET_PLAYER(eOriginalOwner).isMinorCiv();
+
+	std::tr1::unordered_map<BuildingClassTypes, int> desiredFree;
+	std::tr1::unordered_map<BuildingClassTypes, bool> keepExisting;
+
+	// Only policies that actually appear in one of the three tables can contribute a grant.
+	for (size_t iPolicyLoop = 0; iPolicyLoop < vPolicies.size(); iPolicyLoop++)
+	{
+		const PolicyTypes ePolicy = vPolicies[iPolicyLoop];
+		if (!kOwner.HasPolicy(ePolicy))
+			continue;
+
+		CvPolicyEntry* pPolicy = pPolicyEntries->GetPolicyEntry(ePolicy);
+		if (pPolicy == NULL)
+			continue;
+
+		const bool bBlocked = kOwner.GetPlayerPolicies()->IsPolicyBlocked(ePolicy);
+
+		// Several policies may name the same class. The City gets the largest grant, not their
+		// sum: a building class can only exist once per City.
+		for (auto& row : pPolicy->GetFreeBuildingClassInfo())
+		{
+			if (!bBlocked)
+			{
+				int& iDesired = desiredFree[row.eBuildingClass];
+				iDesired = std::max(iDesired, row.iCount);
+			}
+			else if (!row.bRemovedWhenBlocked)
+			{
+				keepExisting[row.eBuildingClass] = true;
+			}
+		}
+
+		if (bIsCapital)
+		{
+			for (auto& row : pPolicy->GetFreeBuildingClassCapitalInfo())
+			{
+				if (!bBlocked)
+				{
+					int& iDesired = desiredFree[row.eBuildingClass];
+					iDesired = std::max(iDesired, row.iCount);
+				}
+				else if (!row.bRemovedWhenBlocked)
+				{
+					keepExisting[row.eBuildingClass] = true;
+				}
+			}
+		}
+
+		if (bOriginalOwnerIsMinor)
+		{
+			for (auto& row : pPolicy->GetFreeBuildingClassCityStatesInfo())
+			{
+				if (!bBlocked)
+				{
+					int& iDesired = desiredFree[row.eBuildingClass];
+					iDesired = std::max(iDesired, row.iCount);
+				}
+				else if (!row.bRemovedWhenBlocked)
+				{
+					keepExisting[row.eBuildingClass] = true;
+				}
+			}
+		}
+	}
+
+	// Touch only classes this City has a reason to own: those named by a policy the owner
+	// currently holds, plus anything we granted before and now have to clear. A class named
+	// only by another player's (or an unreachable) policy must be left alone, because the
+	// free slot is shared with wonders, traits and other free-building sources.
+	std::vector<BuildingClassTypes> vManagedClasses;
+	for (size_t iPolicyLoop = 0; iPolicyLoop < vPolicies.size(); iPolicyLoop++)
+	{
+		const PolicyTypes ePolicy = vPolicies[iPolicyLoop];
+		if (!kOwner.HasPolicy(ePolicy))
+			continue;
+
+		const std::vector<BuildingClassTypes>& vPolicyClasses = pPolicyEntries->GetFreeBuildingClassesForPolicy(ePolicy);
+		for (size_t iClassLoop = 0; iClassLoop < vPolicyClasses.size(); iClassLoop++)
+		{
+			bool bKnown = false;
+			for (size_t k = 0; k < vManagedClasses.size(); k++)
+			{
+				if (vManagedClasses[k] == vPolicyClasses[iClassLoop])
+				{
+					bKnown = true;
+					break;
+				}
+			}
+			if (!bKnown)
+				vManagedClasses.push_back(vPolicyClasses[iClassLoop]);
+		}
+	}
+
+	const int iNumBuildingClasses = GC.getNumBuildingClassInfos();
+	for (int iClassLoop = 0; iClassLoop < iNumBuildingClasses; iClassLoop++)
+	{
+		const BuildingClassTypes eBuildingClass = (BuildingClassTypes)iClassLoop;
+		if (GetPolicyFreeBuildingGranted(eBuildingClass) == 0)
+			continue;
+
+		bool bKnown = false;
+		for (size_t k = 0; k < vManagedClasses.size(); k++)
+		{
+			if (vManagedClasses[k] == eBuildingClass)
+			{
+				bKnown = true;
+				break;
+			}
+		}
+		if (!bKnown)
+			vManagedClasses.push_back(eBuildingClass);
+	}
+
+	const bool bOnePerCity = GC.getCITY_MAX_NUM_BUILDINGS() <= 1;
+
+	for (size_t iClassLoop = 0; iClassLoop < vManagedClasses.size(); iClassLoop++)
+	{
+		const BuildingClassTypes eBuildingClass = vManagedClasses[iClassLoop];
+		const BuildingTypes eBuilding = kOwner.GetCivBuilding(eBuildingClass);
+		if (eBuilding == NO_BUILDING)
+			continue;
+
+		int iDesired = 0;
+		auto itDesired = desiredFree.find(eBuildingClass);
+		if (itDesired != desiredFree.end())
+			iDesired = itDesired->second;
+
+		const int iReal = GetCityBuildings()->GetNumRealBuilding(eBuilding);
+		const int iCurrent = GetCityBuildings()->GetNumFreeBuilding(eBuilding);
+		const int iGrantedBefore = GetPolicyFreeBuildingGranted(eBuildingClass);
+
+		// The free slot is a single counter shared with wonders, traits and other sources.
+		// Whatever we did not put there ourselves is left alone and re-added on top of our
+		// own quota, so dropping a policy cannot delete someone else's free building.
+		int iOther = iCurrent - iGrantedBefore;
+		if (iOther < 0)
+			iOther = 0;
+
+		int iTarget;
+		int iGrantedAfter;
+		if (bOnePerCity)
+		{
+			// A paid copy already satisfies the grant. Filling both slots would run the
+			// building's effects twice while GetNumBuilding() still reports one.
+			const bool bPolicyWanted = (iDesired > 0 && iReal <= 0);
+			iTarget = (iOther > 0 || bPolicyWanted) ? 1 : 0;
+			iGrantedAfter = (bPolicyWanted && iOther <= 0) ? 1 : 0;
+		}
+		else
+		{
+			iTarget = iOther + iDesired;
+			const int iMaxBuildings = GC.getCITY_MAX_NUM_BUILDINGS();
+			if (iMaxBuildings > 0 && iTarget > iMaxBuildings)
+				iTarget = iMaxBuildings;
+			iGrantedAfter = std::max(0, iTarget - iOther);
+		}
+
+		auto itKeep = keepExisting.find(eBuildingClass);
+		if (itKeep != keepExisting.end())
+		{
+			// A blocked policy that opted out of removal keeps its current grant.
+			iTarget = std::max(iTarget, iCurrent);
+			iGrantedAfter = std::max(iGrantedAfter, std::min(iGrantedBefore, iCurrent));
+		}
+
+		// Only write when the count actually changes, so a rebuild does not run the one-shot
+		// effects of a building that was already there.
+		if (iTarget != iCurrent)
+		{
+			GetCityBuildings()->SetNumFreeBuilding(eBuilding, iTarget);
+		}
+
+		SetPolicyFreeBuildingGranted(eBuildingClass, iGrantedAfter);
+	}
+}
 
 #ifdef MOD_PROMOTION_CITY_DESTROYER
 int CvCity::GetSiegeKillCitizensModifier() const

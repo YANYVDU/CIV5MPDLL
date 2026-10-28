@@ -2902,6 +2902,7 @@ CvHandicapInfo::CvHandicapInfo() :
 	m_iNumGoodies(0),
 	m_iStrategicResourceMod(0),
 	m_iStrategicResourceModPerEra(0),
+	m_iAIAutoBuildingUpgrade(0),
 	m_piGoodies(NULL),
 	m_pbFreeTechs(NULL),
 	m_pbAIFreeTechs(NULL)
@@ -3237,6 +3238,11 @@ int CvHandicapInfo::getStrategicResourceModPerEra() const
 	return m_iStrategicResourceModPerEra;
 }
 //------------------------------------------------------------------------------
+int CvHandicapInfo::getAIAutoBuildingUpgrade() const
+{
+	return m_iAIAutoBuildingUpgrade;
+}
+//------------------------------------------------------------------------------
 int CvHandicapInfo::isFreeTechs(int i) const
 {
 	CvAssertMsg(i < GC.getNumTechInfos(), "Index out of bounds");
@@ -3318,6 +3324,7 @@ bool CvHandicapInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility
 	m_iAIFreeXPPercent = kResults.GetInt("AIFreeXPPercent");
 	m_iStrategicResourceMod = kResults.GetInt("StrategicResourceMod");
 	m_iStrategicResourceModPerEra = kResults.GetInt("StrategicResourceModPerEra");
+	m_iAIAutoBuildingUpgrade = kResults.GetInt("AIAutoBuildingUpgrade");
 
 	//Arrays
 	const char* szHandicapType = GetType();

@@ -5,4 +5,12 @@
 	<CustomModDbUpdates>
 		<Row Name="API_ESPIONAGE" Value="1"/>
 	</CustomModDbUpdates>
+
+	<!-- Rigged city-state election: winning reward and losing penalty are rank-scaled.
+	     Winner gain = ESPIONAGE_INFLUENCE_GAINED_FOR_RIGGED_ELECTION + spyRank^2 * ESPIONAGE_RIGGED_ELECTION_WIN_RANK_SQUARE_BONUS
+	     Loser loss = ESPIONAGE_INFLUENCE_LOST_FOR_RIGGED_ELECTION + ownInfluence * ESPIONAGE_RIGGED_ELECTION_LOSS_PERCENT_PER_RANK% * winnerSpyRank -->
+	<Defines>
+		<Row Name="ESPIONAGE_RIGGED_ELECTION_WIN_RANK_SQUARE_BONUS" Value="5"/>
+		<Row Name="ESPIONAGE_RIGGED_ELECTION_LOSS_PERCENT_PER_RANK" Value="2"/>
+	</Defines>
 </GameData>

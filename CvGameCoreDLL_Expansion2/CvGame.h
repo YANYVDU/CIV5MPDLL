@@ -156,6 +156,11 @@ public:
 	int GetEconomicAidRoundStartTurn() const;
 	int GetEconomicAidWorldEra() const;
 	int GetEconomicAidRoundTurnsLeft() const;
+
+	// SP extended quests: the master spy reward for the capture-original-capital quest
+	// is unique for the whole game, so the first player to finish it claims it
+	bool IsMasterSpyQuestAwarded() const;
+	void SetMasterSpyQuestAwarded(bool bValue);
 #endif
 
 	TeamTypes getActiveTeam();
@@ -171,6 +176,9 @@ public:
 #endif
 	bool isNetworkMultiPlayer() const;
 	bool isGameMultiPlayer() const;
+	// True on the single updateMoves() frame that activates the human players right after a load (or a new game).
+	// CvPlayer::setTurnActive() uses it to clear a stale "turn complete" the engine restored from the save.
+	bool isFirstActivationOfPlayersAfterLoad() const;
 	bool isTeamGame() const;
 
 	void ReviveActivePlayer();
@@ -601,6 +609,35 @@ public:
 	void DoMinorBullyUnit(PlayerTypes eBully, PlayerTypes eMinor);
 	void DoMinorBuyout(PlayerTypes eMajor, PlayerTypes eMinor);
 
+	// Economic Aid point spending (Super Power V11)
+	// Network-synced variants taking an explicit eMajor (multiplayer-safe). Costs are configured via
+	// gCustomMods options and charged against the (major, city-state) aid point pool.
+	bool DoMinorRerollQuestsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor);
+	void DoMinorBullyGoldWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iGold);
+	bool DoSetNextGreatPersonChoiceFromMajor(PlayerTypes eMajor, UnitTypes eUnit, PlayerTypes eCostMinor);
+	bool DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, UnitTypes eUnit);
+	// Pull the next World Congress / United Nations session forward by a fixed number of turns.
+	// The League countdown is global (shared by every player), so this is a network-synced action.
+	bool DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eCostMinor);
+	// Aid point costs for the spending actions above (0 = disabled)
+	int GetAidPointCostRerollQuests();
+	int GetAidPointCostNextGreatPerson();
+	int GetAidPointCostPendingGiftUnit();
+	int GetAidPointCostHastenCongress();
+	// Extra aid points (on top of the gold) the Austria UA pays to buy a city-state out (0 = disabled).
+	// Charged from the (major, city-state) aid point pool by CvMinorCivAI::DoBuyout.
+	int GetAidPointCostAnnexCityState();
+	// Turns the League countdown is pulled forward per hasten purchase (0 = disabled)
+	int GetAidPointHastenCongressTurns();
+	// Share of a city-state treasury seized when a major bullies gold (percent, 0 = disabled)
+	int GetBullyTreasurySharePercent();
+	// Every unit type a city-state may gift to ePlayer (same filter as GetCompetitiveSpawnUnitType,
+	// but returns all valid candidates for the aid-point unit picker UI)
+	void GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>& veChoices);
+	// How many city-states currently reserve a pending gift unit of eUnitClass for eMajor. A limited
+	// (national) unit class can only be delivered once, so these reservations share its slots.
+	int GetPendingGiftUnitCountForClass(PlayerTypes eMajor, UnitClassTypes eUnitClass) const;
+
 	void DoResearchAgreementNotification(TeamTypes eTeam1, TeamTypes eTeam2);
 
 	int GetResearchAgreementCost(PlayerTypes ePlayer1, PlayerTypes ePlayer2);
@@ -732,6 +769,7 @@ protected:
 	int m_iEconomicAidRoundStartTurn;
 	int m_iEconomicAidWorldEra;
 	bool m_bEconomicAidActive;
+	bool m_bMasterSpyQuestAwarded;
 #endif
 	mutable EraTypes m_eCurrentEraCache;
 	mutable int m_iCurrentEraCacheTurn;
@@ -778,6 +816,7 @@ protected:
 	bool m_bDebugMode;
 	bool m_bDebugModeCache;
 	bool m_bFinalInitialized;
+	bool m_bPolicyFreeBuildingsRebuilt;
 	bool m_bPbemTurnSent;
 	bool m_bHotPbemBetweenTurns;
 	bool m_bPlayerOptionsSent;
@@ -894,6 +933,7 @@ protected:
 	FTimer  m_endTurnTimer;
 	int     m_endTurnTimerSemaphore;
 	int     m_lastTurnAICivsProcessed;
+	bool    m_firstActivationOfPlayersAfterLoad;
 	FTimer  m_curTurnTimer;
 	FTimer  m_timeSinceGameTurnStart;		//time since game turn started for human players
 	float	m_fCurrentTurnTimerPauseDelta;	//
@@ -920,6 +960,11 @@ protected:
 	void DoCacheMapScoreMod();
 
 	void doTurn();
+
+	// Rebuilds the Policy_FreeBuildingClass* grants for every City once per load or new
+	// game. Policies are restored from the save without going through processPolicies,
+	// so the free slots have to be reconciled explicitly.
+	void RebuildPolicyFreeBuildings();
 
 	void updateWar();
 	void updateMoves();

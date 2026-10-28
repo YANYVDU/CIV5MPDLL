@@ -326,6 +326,9 @@ bool CvDllDatabaseUtility::PrefetchGameData()
 	PrefetchCollection(GC.getHurryInfo(), "HurryInfos");
 	PrefetchCollection(GC.getMPOptionInfo(), "MultiplayerOptions");
 	PrefetchCollection(GC.getPlayerOptionInfo(), "PlayerOptions");
+	if (GC.GetGamePolicies() != NULL)
+		GC.GetGamePolicies()->ResetFreeBuildingClassCache();
+
 	PrefetchCollection(GC.getPolicyInfo(), "Policies");
 	PrefetchCollection(GC.getPolicyBranchInfo(), "PolicyBranchTypes");
 	PrefetchCollection(GC.getProcessInfo(), "Processes");
@@ -471,6 +474,11 @@ bool CvDllDatabaseUtility::PrefetchGameData()
 	PrefetchCollection(GC.GetGameCityStateUASpecialCityTypes()->GetEntries(), "CityStateUAEffect_SpecialCityTypes");
 	PrefetchCollection(GC.GetGameCityStateUAEffects()->GetEffectEntries(), "CityStateUAEffects");
 	PrefetchCollection(GC.GetGameCityStateUAs()->GetUAEntries(), "CityStateUAs");
+
+	// Resolve each city-state's UAType to its CityStateUAs row index once, now that both the
+	// MinorCivilizations and CityStateUAs tables are loaded. Every CSUA query site then reads the
+	// CvMinorCivInfo cache instead of re-running a linear strcmp lookup.
+	GC.GetGameCityStateUAs()->ResolveMinorCivUAIndexes();
 #endif
 
 	ValidatePrefetchProcess();

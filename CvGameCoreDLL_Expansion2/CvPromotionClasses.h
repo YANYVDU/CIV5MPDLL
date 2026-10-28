@@ -114,6 +114,7 @@ public:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool IsNoSupply() const;
 #endif
+	bool IsIrregularForce() const;
 
 #if defined(MOD_UNITS_MAX_HP)
 	int  GetMaxHitPointsChange() const;
@@ -531,6 +532,8 @@ public:
 	int GetSiegeInflictDamageChangeMaxHPPercent() const;
 
 	bool IsRangeBackWhenDefense() const;
+	int GetMeleeAttackCityReduceDamage() const;
+	int GetMeleeAttackUnitReduceDamage() const;
 
 	int GetHeavyChargeAddMoves() const;
 	int GetHeavyChargeExtraDamage() const;
@@ -624,6 +627,7 @@ protected:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool m_bNoSupply;
 #endif
+	bool m_bIrregularForce;
 #if defined(MOD_UNITS_MAX_HP)
 	int m_iMaxHitPointsChange;
 	int m_iMaxHitPointsModifier;
@@ -1010,6 +1014,8 @@ protected:
 	int m_iSiegeInflictDamageChangeMaxHPPercent = 0;
 
 	bool m_bRangeBackWhenDefense = 0;
+	int m_iMeleeAttackCityReduceDamage = 0;
+	int m_iMeleeAttackUnitReduceDamage = 0;
 
 	int m_iHeavyChargeAddMoves = 0;
 	int m_iHeavyChargeExtraDamage = 0;

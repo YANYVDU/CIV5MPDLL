@@ -191,6 +191,11 @@ public:
 	// enhancing and reforming paths, this may add an extra enhancer/reformation belief without
 	// consuming the religion's normal enhance/reform slot.
 	bool AddBeliefToReligion(PlayerTypes ePlayer, ReligionTypes eReligion, BeliefTypes eBelief);
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// One-time diplomatic prestige for the player who picks a belief carrying a DiplomaticPrestige value.
+	// Called from every belief-picking path; NO_PLAYER means a silent copy (pantheon -> religion) and is ignored.
+	void ApplyBeliefDiplomaticPrestige(PlayerTypes ePlayer, BeliefTypes eBelief);
+#endif
 	void SetHolyCity(ReligionTypes eReligion, CvCity* pkHolyCity);
 	void SetFounder(ReligionTypes eReligion, PlayerTypes eFounder);
 	void UpdateAllCitiesThisReligion(ReligionTypes eReligion);
@@ -376,6 +381,9 @@ public:
 	ReligionTypes GetReligionInMostCities() const;
 	int GetCityStateMinimumInfluence(ReligionTypes eReligion) const;
 	int GetCityStateInfluenceModifier() const;
+#if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+	int GetCityStateFriendshipModifier() const;
+#endif
 	int GetSpyPressure() const;
 	int GetNumForeignCitiesFollowing() const;
 	int GetNumForeignFollowers(bool bAtPeace) const;

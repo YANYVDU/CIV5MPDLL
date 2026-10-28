@@ -91,6 +91,7 @@ CvPromotionEntry::CvPromotionEntry():
 #if defined(MOD_UNITS_NO_SUPPLY)
 	m_bNoSupply(false),
 #endif
+	m_bIrregularForce(false),
 #if defined(MOD_UNITS_MAX_HP)
 	m_iMaxHitPointsChange(0),
 	m_iMaxHitPointsModifier(0),
@@ -742,6 +743,7 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 		m_bNoSupply = (kResults.GetInt("NoSupply") != 0);
 	}
 #endif
+	m_bIrregularForce = (kResults.GetInt("IrregularForce") != 0);
 #if defined(MOD_UNITS_MAX_HP)
 	if (MOD_UNITS_MAX_HP) {
 		m_iMaxHitPointsChange = kResults.GetInt("MaxHitPointsChange");
@@ -929,6 +931,8 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_iSiegeInflictDamageChangeMaxHPPercent = kResults.GetInt("SiegeInflictDamageChangeMaxHPPercent");
 
 	m_bRangeBackWhenDefense = kResults.GetBool("RangeBackWhenDefense");
+	m_iMeleeAttackCityReduceDamage = kResults.GetInt("MeleeAttackCityReduceDamage");
+	m_iMeleeAttackUnitReduceDamage = kResults.GetInt("MeleeAttackUnitReduceDamage");
 
 	m_iHeavyChargeAddMoves = kResults.GetInt("HeavyChargeAddMoves");
 	m_iHeavyChargeExtraDamage = kResults.GetInt("HeavyChargeExtraDamage");
@@ -2554,6 +2558,12 @@ bool CvPromotionEntry::IsNoSupply() const
 }
 #endif
 
+/// Accessor: Irregular force, which does not block foreign expansion units
+bool CvPromotionEntry::IsIrregularForce() const
+{
+	return m_bIrregularForce;
+}
+
 #if defined(MOD_UNITS_MAX_HP)
 /// Accessor: Absolute change of max hit points
 int CvPromotionEntry::GetMaxHitPointsChange() const
@@ -4088,6 +4098,16 @@ int CvPromotionEntry::GetSiegeInflictDamageChangeMaxHPPercent() const
 bool CvPromotionEntry::IsRangeBackWhenDefense() const
 {
 	return m_bRangeBackWhenDefense;
+}
+
+int CvPromotionEntry::GetMeleeAttackCityReduceDamage() const
+{
+	return m_iMeleeAttackCityReduceDamage;
+}
+
+int CvPromotionEntry::GetMeleeAttackUnitReduceDamage() const
+{
+	return m_iMeleeAttackUnitReduceDamage;
 }
 
 int CvPromotionEntry::GetHeavyChargeAddMoves() const

@@ -330,6 +330,9 @@ public:
 	int calculateResearchModifier(TechTypes eTech);
 	int calculateGoldRate() const;
 	int calculateGoldRateTimes100() const;
+	int GetEconomicAidExpensePerTurn() const;
+	int GetTradableGoldRate() const;
+	bool IsAidingCityState(PlayerTypes eMinor) const;
 
 	int unitsRequiredForGoldenAge() const;
 	int unitsGoldenAgeCapable() const;
@@ -616,6 +619,9 @@ public:
 	int getSpyPointsThresholdModifier() const;
 	void changeSpyPointsThresholdModifier(int iChange);
 	void ChangeSpyPointsPerTurn(int iChange);
+#if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
+	int GetSpyPointsPerTurnFromBeliefCity() const;
+#endif
 	// END Espionage
 
 #if defined(MOD_RELIGION_CONVERSION_MODIFIERS)
@@ -887,6 +893,11 @@ public:
 
 	void DoSpawnGreatPerson(PlayerTypes eMinor, bool bIsFree = MOD_GLOBAL_TRULY_FREE_GP);
 	void DoGreatPeopleSpawnTurn();
+
+	// Economic Aid point spending (Super Power V11): the Great Person type the next city-state
+	// gift should spawn (NO_UNIT = random). One-shot: consumed by DoSpawnGreatPerson.
+	UnitTypes GetNextGreatPersonChoice() const;
+	void SetNextGreatPersonChoice(UnitTypes eUnit);
 	CvCity* GetGreatPersonSpawnCity(UnitTypes eUnit);
 
 	// End Great People Stuff
@@ -1380,6 +1391,16 @@ public:
 	int GetNumCitiesFounded() const;
 	void ChangeNumCitiesFounded(int iValue);
 
+	// SP contest quest counters (lifetime totals, used as quest baselines)
+	int GetNumWorldWondersBuilt() const;
+	void ChangeNumWorldWondersBuilt(int iValue);
+	int GetNumFollowersConverted() const;
+	void ChangeNumFollowersConverted(int iValue);
+	int GetNumCitiesCaptured() const;
+	void ChangeNumCitiesCaptured(int iValue);
+	int GetNumGreatPeopleBorn() const;
+	void ChangeNumGreatPeopleBorn(int iValue);
+
 	// slewis - centralizing code where a player gets whacked by another player
 	void CheckForMurder(PlayerTypes ePossibleVictimPlayer); // check to see if we defeated this other player
 
@@ -1835,6 +1856,10 @@ public:
 	void ChangeMinorCivAlliesThresholdModifier(int iChange);
 	int GetMinorCivAlliesThreshold() const;
 	void RefreshCSAllUAEffects();
+	// Buyout (unit fields GainAlly/FriendCityStateUAOnBuy, or the Austria UA trait GainAnnexedCityStateUA):
+	// record that we permanently keep this city-state's ally/friend-tier UA effect. Called from
+	// CvUnit::buyCityState and CvMinorCivAI::DoBuyout.
+	void GainCityStateUAOnBuyout(PlayerTypes eMinor, bool bAlly, bool bFriend);
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	int GetCSAllyCountByTrait(MinorCivTraitTypes eTrait) const;
@@ -2052,8 +2077,9 @@ public:
 	// Research threshold (the city-count tech cost modifier) broken into its component parts, for UI display.
 	// Returns the final modifier; any non-NULL out-param receives one component. Shared with
 	// CvPlayerTechs::GetResearchCost so the tooltip can never drift from the real math.
+	// piBuildingClassCut is a number of threshold points subtracted (Singapore CS UA), not a percent.
 	int GetResearchThresholdMod(int* piModPerCity = NULL, int* piEffectiveCities = NULL,
-		int* piPuppetDiscount = NULL, int* piBuildingClassPercent = NULL, int* piGoldenAgePercent = NULL);
+		int* piPuppetDiscount = NULL, int* piBuildingClassCut = NULL, int* piGoldenAgePercent = NULL);
 
 	int GetNumNaturalWondersDiscoveredInArea() const;
 	void SetNumNaturalWondersDiscoveredInArea(int iValue);
@@ -2491,6 +2517,11 @@ public:
 	void RemoveUnitAuraPromotion(int iUnitID, PromotionTypes ePromotion);
 	void RemoveAuraUnit(int iUnitID);
 #endif
+
+	// City-state gift unit free promotions aggregated from the player's adopted policies
+	// (promotionID -> unitCombatID), so gifting only needs a single lookup
+	const std::multimap<int, int>& GetCityStateGiftUnitFreePromotions() const;
+
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	int GetDomainTroopsTotalTimes100(DomainTypes eDomain = DOMAIN_SEA) const;
 	void ChangeDomainTroopsTotalTimes100(int iChange, DomainTypes eDomain = DOMAIN_SEA);
@@ -2775,6 +2806,10 @@ protected:
 	int m_iNaturalWonderSubsequentFinderPolicies;
 	int m_iNaturalWonderSubsequentFinderTech;
 	int m_iLastVeniceBuyFoodTurn; // authoritative per-player Venice buy-food cooldown (MP-synced via broadcast)
+	int m_iNumWorldWondersBuilt; // lifetime world wonders completed (SP contest quest baseline)
+	int m_iNumFollowersConverted; // lifetime followers added by missionary/prophet spread
+	int m_iNumCitiesCaptured; // lifetime cities captured by conquest
+	int m_iNumGreatPeopleBorn; // lifetime great people born (every class, including prophets)
 	int m_iProductionBeakerMod;
 	int m_iGreatEngineerRateModifier;
 	int m_iGreatPersonExpendGold;
@@ -2920,6 +2955,16 @@ protected:
 	int m_iExtraDiplomaticPrestige;
 	int m_iCityStateAllyCount;
 	int m_iMinorCivAlliesThresholdModifier;
+	// Rome trait (GainConqueredCityStateUA): indexed by city-state player id, true once we have
+	// conquered that city-state's ORIGINAL capital. Permanent - survives later city loss, the
+	// city-state's death and any later alliance. Rebuilt into UA effects each turn.
+	bool m_abConqueredCityStateUA[MAX_CIV_PLAYERS];
+	// Buyout record: indexed by city-state player id, true once that city-state has been bought out -
+	// either by a unit carrying GainAlly/FriendCityStateUAOnBuy (Venice) or by the Austria UA trait
+	// GainAnnexedCityStateUA (CvMinorCivAI::DoBuyout). Permanent - the city-state is gone for good,
+	// so these effects can never be provided by diplomacy afterwards.
+	bool m_abBoughtCityStateAllyUA[MAX_CIV_PLAYERS];
+	bool m_abBoughtCityStateFriendUA[MAX_CIV_PLAYERS];
 #endif
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
@@ -2987,6 +3032,7 @@ protected:
 	FAutoVariable<int, CvPlayer> m_iStrategicResourceMod;
 	FAutoVariable<int, CvPlayer> m_iSpecialistCultureChange;
 	FAutoVariable<int, CvPlayer> m_iGreatPeopleSpawnCounter;
+	UnitTypes m_eNextGreatPersonChoice; // Economic Aid point spending: preselected next gifted Great Person (NO_UNIT = random)
 
 	FAutoVariable<int, CvPlayer> m_iFreeTechCount;
 	int m_iMedianTechPercentage;
@@ -3365,6 +3411,10 @@ protected:
 #if defined(MOD_PROMOTION_AURA_PROMOTION)
 	std::multimap<PromotionTypes, int> m_mAuraPromotionUnits;
 #endif
+
+	// City-state gift unit free promotions aggregated from the player's adopted policies
+	// (promotionID -> unitCombatID)
+	std::multimap<int, int> m_mCityStateGiftUnitFreePromotions;
 #if defined(MOD_TROOPS_AND_CROPS_FOR_SP)
 	std::vector<int> m_aiDomainTroopsTotal;
 	std::vector<int> m_aiDomainTroopsUsed;

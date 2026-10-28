@@ -212,6 +212,7 @@ public:
 	bool canMoveInto(const CvPlot& pPlot, byte bMoveFlags = 0) const;
 	bool canMoveOrAttackInto(const CvPlot& pPlot, byte bMoveFlags = 0) const;
 	bool canMoveThrough(const CvPlot& pPlot, byte bMoveFlags = 0) const;
+	bool IsBlockedByForeignRegularMilitary(const CvPlot& pPlot) const;
 
 	int  GetWithdrawChance(const CvUnit& pAttacker, const bool bCheckChances) const;
 
@@ -592,7 +593,8 @@ public:
 #endif 
 
 
-	int GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const;
+	int GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier = 0) const;
+	int GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier = 0) const;
 
 	int GetAirCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bIncludeRand, int iAssumeExtraDamage = 0) const;
 	int GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bIncludeRand, int iAssumeExtraDamage = 0) const;
@@ -607,7 +609,11 @@ public:
 
 	CvUnit* GetBestInterceptor(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
 	int GetInterceptorCount(const CvPlot& pPlot, CvUnit* pkDefender = NULL, bool bLandInterceptorsOnly=false, bool bVisibleInterceptorsOnly=false) const;
-	int GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true) const;
+	int GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true, bool bForAirSweep = false) const;
+	int GetInterceptionCombatStrength(const CvUnit* pAttacker) const;
+	int GetAirSweepCombatStrength(const CvUnit* pDefender) const;
+	int GetAirSweepDamageToInterceptor(const CvUnit* pInterceptor, bool bIncludeRand = true) const;
+	int GetAirSweepDamageFromInterceptor(const CvUnit* pInterceptor, bool bIncludeRand = true) const;
 #if defined(MOD_GLOBAL_PARATROOPS_AA_DAMAGE)
 	int GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand = true) const;
 #endif
@@ -1022,6 +1028,10 @@ public:
 	bool IsImmueMeleeAttack() const;
 	void ChangeImmueMeleeAttackCount(int iChange);
 
+	bool IsExpansionUnit() const;
+	bool IsIrregularForce() const;
+	void ChangeIrregularForceCount(int iChange);
+
 #if defined(MOD_ROG_CORE)
 	int getHPHealedIfDefeatEnemyGlobal() const;
 	void changeHPHealedIfDefeatEnemyGlobal(int iValue);
@@ -1070,6 +1080,10 @@ public:
 
 	bool IsRangeBackWhenDefense() const;
 	void ChangeNumRangeBackWhenDefense(int iChange);
+	int GetMeleeAttackCityReduceDamage() const;
+	void ChangeMeleeAttackCityReduceDamage(int iChange);
+	int GetMeleeAttackUnitReduceDamage() const;
+	void ChangeMeleeAttackUnitReduceDamage(int iChange);
 
 	int GetHeavyChargeAddMoves() const;
 	int GetHeavyChargeExtraDamage() const;
@@ -2473,6 +2487,7 @@ protected:
 	int m_iCanParadropAnyWhere;
 	FAutoVariable<int, CvUnit> m_iIsCanParadropUnLimit;
 	int m_iImmueMeleeAttack;
+	int m_iIrregularForce;
 #if defined(MOD_UNITS_NO_SUPPLY)
 	int m_iNoSupply;
 #endif
@@ -2729,6 +2744,8 @@ protected:
 	int m_iFixReducePerPromotionTotal = 0;
 
 	int m_iNumRangeBackWhenDefense = 0;
+	int m_iMeleeAttackCityReduceDamage = 0;
+	int m_iMeleeAttackUnitReduceDamage = 0;
 
 	int m_iHeavyChargeAddMoves = 0;
 	int m_iHeavyChargeExtraDamage = 0;

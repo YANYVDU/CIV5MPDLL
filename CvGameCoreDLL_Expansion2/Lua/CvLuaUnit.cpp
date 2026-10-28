@@ -374,6 +374,10 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetAirCombatDamage);
 	Method(GetRangeCombatDamage);
 	Method(GetAirStrikeDefenseDamage);
+	Method(GetInterceptionCombatStrength);
+	Method(GetAirSweepCombatStrength);
+	Method(GetAirSweepDamageToInterceptor);
+	Method(GetAirSweepDamageFromInterceptor);
 	Method(GetBestInterceptor);
 	Method(GetInterceptorCount);
 	Method(GetBestSeaPillageInterceptor);
@@ -546,6 +550,7 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetStrategicResourceCombatPenalty);
 	Method(GetUnhappinessCombatPenalty);
 	Method(AirSweepCombatMod);
+	Method(InterceptionCombatMod);
 	Method(CapitalDefenseModifier);
 	Method(CapitalDefenseFalloff);
 	Method(GetUnitRangeSuppressModifier);
@@ -667,6 +672,8 @@ void CvLuaUnit::PushMethods(lua_State* L, int t)
 	Method(GetCSUACombatModifier);
 	Method(GetCSUAFixedDamageScale);
 	Method(GetCSUADamageTakenScale);
+	Method(GetMeleeAttackCityReduceDamage);
+	Method(GetMeleeAttackUnitReduceDamage);
 	Method(GetFriendlyLandsModifier);
 	Method(GetFriendlyLandsAttackModifier);
 	Method(GetOutsideFriendlyLandsModifier);
@@ -3108,6 +3115,52 @@ int CvLuaUnit::lGetAirStrikeDefenseDamage(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//int GetInterceptionCombatStrength( CyUnit* pAttacker);
+int CvLuaUnit::lGetInterceptionCombatStrength(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkAttacker = GetInstance(L, 2);
+
+	const int iResult = pkUnit->GetInterceptionCombatStrength(pkAttacker);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAirSweepCombatStrength( CyUnit* pDefender);
+int CvLuaUnit::lGetAirSweepCombatStrength(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkDefender = GetInstance(L, 2);
+
+	const int iResult = pkUnit->GetAirSweepCombatStrength(pkDefender);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAirSweepDamageToInterceptor( CyUnit* pInterceptor, bool bIncludeRand);
+int CvLuaUnit::lGetAirSweepDamageToInterceptor(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkInterceptor = GetInstance(L, 2);
+	const bool bIncludeRand = lua_toboolean(L, 3);
+
+	const int iResult = pkUnit->GetAirSweepDamageToInterceptor(pkInterceptor, bIncludeRand);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAirSweepDamageFromInterceptor( CyUnit* pInterceptor, bool bIncludeRand);
+int CvLuaUnit::lGetAirSweepDamageFromInterceptor(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+	CvUnit* pkInterceptor = GetInstance(L, 2);
+	const bool bIncludeRand = lua_toboolean(L, 3);
+
+	const int iResult = pkUnit->GetAirSweepDamageFromInterceptor(pkInterceptor, bIncludeRand);
+	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
 //CvUnit* GetBestInterceptor( CvPlot* pPlot, CvUnit *pDefender, bool bLandInterceptorsOnly, bool bVisibleInterceptorsOnly);
 int CvLuaUnit::lGetBestInterceptor(lua_State* L)
 {
@@ -4774,6 +4827,12 @@ int CvLuaUnit::lAirSweepCombatMod(lua_State* L)
 	return BasicLuaMethod(L, &CvUnit::GetAirSweepCombatModifier);
 }
 //------------------------------------------------------------------------------
+//int InterceptionCombatMod();
+int CvLuaUnit::lInterceptionCombatMod(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvUnit::GetInterceptionCombatModifier);
+}
+//------------------------------------------------------------------------------
 //int CapitalDefenseModifier();
 int CvLuaUnit::lCapitalDefenseModifier(lua_State* L)
 {
@@ -5707,6 +5766,24 @@ int CvLuaUnit::lGetCSUADamageTakenScale(lua_State* L)
 
 	const int iResult = pkUnit->GetCSUADamageTakenScale(pkOtherUnit, pkOtherCity);
 	lua_pushinteger(L, iResult);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetMeleeAttackCityReduceDamage();
+int CvLuaUnit::lGetMeleeAttackCityReduceDamage(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	lua_pushinteger(L, pkUnit->GetMeleeAttackCityReduceDamage());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetMeleeAttackUnitReduceDamage();
+int CvLuaUnit::lGetMeleeAttackUnitReduceDamage(lua_State* L)
+{
+	CvUnit* pkUnit = GetInstance(L);
+
+	lua_pushinteger(L, pkUnit->GetMeleeAttackUnitReduceDamage());
 	return 1;
 }
 //------------------------------------------------------------------------------

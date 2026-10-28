@@ -461,6 +461,18 @@
 		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_GLOBAL_WAR_CASUTIES_CHANGES">
 			<Text>全球戰爭傷亡和攻占城市後的人口損失變化{1_NumModifier}%</Text>
 		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION">
+			<Text>受國際法保護的城邦：{1_List}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION_ENTRY">
+			<Text>{1_CivName}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY">
+			<Text>永久同盟的城邦：{1_List}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY_ENTRY">
+			<Text>{1_CivName}</Text>
+		</Row>
 		<Row Tag="TXT_KEY_RESOLUTION_WAR_CONVENTION">
 			<Text>戰爭公約</Text>
 		</Row>
@@ -981,6 +993,39 @@
 		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
 			<Text>附庸交易稅 +{2_value}[ICON_GOLD]/回合</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_BY_ENEMY">
+			<Text>你的{@1_UnitName}在執行空中游獵時被敵方{@2_EnUName}擊落了！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_TO_ENEMY">
+			<Text>你的{@1_UnitName}在空中游獵中對敵方{@2_EnUName}造成了[COLOR_POSITIVE_TEXT]{3_Damage}[ENDCOLOR]點傷害！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_FIGHTER">
+			<Text>你的{@2_UnitName}擊落了敵方正在進行空中游獵的{@1_EnUName}！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_AA">
+			<Text>你的{@1_UnitName}在此次空中游獵行動中消滅了敵方的{@2_EnUName}！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_AA_KILLED_BY_ENEMY">
+			<Text>你的{@2_UnitName}單位被敵方進行空中游獵的{@1_EnUName}所消滅！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_BY_ENEMY">
+			<Text>你的{@2_UnitName}單位受到敵方進行空中游獵的{@1_EnUName}造成的[COLOR_NEGATIVE_TEXT]{3_Damage}[ENDCOLOR]點傷害！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE">
+			<Text>新科技使全國的{1_OldBuildings}升級為[COLOR_POSITIVE_TEXT]{@2_NewBuilding}[ENDCOLOR]。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE_SUMMARY">
+			<Text>建築升級：{1_OldBuildings} → {@2_NewBuilding}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_SP_UPGRADE_LIST_SEPARATOR">
+			<Text>、</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE">
+			<Text>你研發了[ICON_RESEARCH][COLOR_RESEARCH_STORED]鐵路技術[ENDCOLOR]，全世界的道路自動升級為[COLOR_POSITIVE_TEXT]鐵路[ENDCOLOR]！</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE_SUMMARY">
+			<Text>鐵路技術</Text>
 		</Row>
 </Language_zh_Hant_HK>
 </GameData>

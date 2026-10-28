@@ -249,8 +249,9 @@ struct BuildingClassGlobalYieldModifierEntry {
 };
 
 // Singapore: each owned building class lowers the city-count research threshold
-// (CvPlayerTechs::GetResearchCost) by TechCostMod percent, nation-wide. TechCostMod is a PLAIN PERCENT
-// (2 = -2% per owned building class); the consumer clamps the sum at 100.
+// (CvPlayerTechs::GetResearchCost) by TechCostMod threshold points, nation-wide. TechCostMod is a plain
+// number of threshold points, NOT a percent of the threshold (2 = -2 per owned building class). The
+// consumer subtracts the sum from the modifier and floors it at 0.
 struct BuildingClassTechCostModifierEntry {
 	int m_iBuildingClass;
 	int m_iTechCostMod;
@@ -332,14 +333,9 @@ public:
 	bool IsGPNoDeathAfterGreatWork() const;
 	int GetGPConcertTourismRetentionPercent() const;
 	// Brussels (BuLuSaiEr)
-	int GetGreatMusicianConcertTourismModifier() const;
 	int GetGreatMusicianConcertGoldPercent() const;
 	// Bratislava (BuLaDiSiLaFa)
 	int GetCapitalAndSecondCapitalCultureModifier() const;
-	// Kiev (JiFu)
-	int GetCapitalCultureModifierPerTurn() const;
-	int GetCapitalFaithModifierPerTurn() const;
-	int GetCapitalPerTurnYieldModifierMax() const;
 	// Bucharest (BuJiaLeSiTe)
 	int GetImmigrationRatePerImmigrant() const;
 	int GetImmigrationRateMax() const;
@@ -375,10 +371,6 @@ public:
 	int GetCityAttackIgnoreBuildingDefensePercent() const;
 	int GetMilitaryXPPerTurnModifier() const;
 	int GetMilitaryXPSeaAir() const;
-	// Sofia (SuoFeiYa)
-	int GetHillsCityDamageReduction() const;
-	int GetHillsMovementModifier() const;
-	int GetHillsCityRangeBonus() const;
 	// Sofia (SuoFeiYa) spy/coup UA
 	int GetCoupChanceModifier() const;
 	bool GetCoupFailSpySurvives() const;
@@ -461,6 +453,11 @@ public:
 	bool YieldToYieldViaTRToUCSRequiresRouteToThisCS(int eInYield, int eOutYield) const;
 	// Monaco: unconditional conversion, Mod% of the city's eInYield output is granted as extra eOutYield output
 	int GetYieldToYield(int eInYield, int eOutYield) const;
+	// Colombo / Cape Town / Mogadishu / Monaco: the raw conversion rows carried by this effect.
+	// Exposed so ApplyEffect can maintain a player-level "has any conversion" flag, which keeps the
+	// per-city per-yield CvCity::GetYieldRateFromUCSConversion out of the city-state scan.
+	const std::vector<YieldToYieldViaTRToUCSEntry>& GetYieldToYieldViaTRToUCSEntries() const { return m_vYieldToYieldViaTRToUCS; }
+	const std::vector<YieldToYieldEntry>& GetYieldToYieldEntries() const { return m_vYieldToYield; }
 	// Monaco: the outcomes of the first-gold-donation wager (empty = effect not present)
 	const std::vector<GoldDonationGambleEntry>& GetGoldDonationGambleEntries() const { return m_vGoldDonationGamble; }
 	// Valletta: enemy city besieged by >= this many of our combat units cannot heal
@@ -485,6 +482,20 @@ public:
 	int GetBuildingClassHappiness(int i) const;
 	// Hormuz: each unit of surplus strategic resource grants trade-route gold %
 	int GetTradeRouteGoldPerSurplusResource(int i) const;
+	// Load-time "is this sub-table present" flags for the fixed-size sub-tables above. The backing
+	// arrays are always allocated (Initialize2DArray / PopulateArrayByValue), so a NULL check cannot tell
+	// whether an effect actually carries data; ApplyEffect uses these flags to skip the whole-dimension
+	// scan for effects that do not (the common case: most effects carry none of these).
+	bool HasBuildingClassYieldModifiers() const { return m_bHasBuildingClassYieldModifiers; }
+	bool HasResourceYieldModifiers() const { return m_bHasResourceYieldModifiers; }
+	bool HasImprovementYieldModifiers() const { return m_bHasImprovementYieldModifiers; }
+	bool HasImprovementHappiness() const { return m_bHasImprovementHappiness; }
+	bool HasBuildingClassHappiness() const { return m_bHasBuildingClassHappiness; }
+	bool HasTradeRouteGoldPerSurplusResource() const { return m_bHasTradeRouteGoldPerSurplusResource; }
+	bool HasSpecialistPointRate() const { return m_bHasSpecialistPointRate; }
+	bool HasGreatPersonOneShotModifier() const { return m_bHasGreatPersonOneShotModifier; }
+	bool HasFaithGPClassCostModifier() const { return m_bHasFaithGPClassCostModifier; }
+	bool HasGreatPersonPoints() const { return m_bHasGreatPersonPoints; }
 	// Gangtok: per city worldwide following the player's religion, global happiness (100 = +1 happiness per city)
 	int GetHappinessPerFollowingCity() const;
 	// Gangtok: buy influence at any city-state with faith at (gold price / divisor) faith (divisor > 0 enables the feature)
@@ -568,14 +579,9 @@ private:
 	bool m_bGPNoDeathAfterGreatWork;
 	int m_iGPConcertTourismRetentionPercent;
 	// Brussels
-	int m_iGreatMusicianConcertTourismModifier;
 	int m_iGreatMusicianConcertGoldPercent;
 	// Bratislava
 	int m_iCapitalAndSecondCapitalCultureModifier;
-	// Kiev
-	int m_iCapitalCultureModifierPerTurn;
-	int m_iCapitalFaithModifierPerTurn;
-	int m_iCapitalPerTurnYieldModifierMax;
 	// Bucharest
 	int m_iImmigrationRatePerImmigrant;
 	int m_iImmigrationRateMax;
@@ -609,10 +615,6 @@ private:
 	int m_iCityAttackIgnoreBuildingDefensePercent;
 	int m_iMilitaryXPPerTurnModifier;
 	int m_iMilitaryXPSeaAir;
-	// Sofia
-	int m_iHillsCityDamageReduction;
-	int m_iHillsMovementModifier;
-	int m_iHillsCityRangeBonus;
 	// Sofia (spy/coup UA)
 	int m_iCoupChanceModifier;
 	bool m_bCoupFailSpySurvives;
@@ -699,6 +701,19 @@ private:
 	int* m_piBuildingClassHappiness;
 	// Hormuz
 	int* m_piTradeRouteGoldPerSurplusResource;
+	// Load-time presence flags for the fixed-size sub-tables above (see the matching Has* getters).
+	// The backing arrays are always allocated, so ApplyEffect needs these to tell whether an effect
+	// actually carries data before scanning the whole dimension.
+	bool m_bHasBuildingClassYieldModifiers;
+	bool m_bHasResourceYieldModifiers;
+	bool m_bHasImprovementYieldModifiers;
+	bool m_bHasImprovementHappiness;
+	bool m_bHasBuildingClassHappiness;
+	bool m_bHasTradeRouteGoldPerSurplusResource;
+	bool m_bHasSpecialistPointRate;
+	bool m_bHasGreatPersonOneShotModifier;
+	bool m_bHasFaithGPClassCostModifier;
+	bool m_bHasGreatPersonPoints;
 	// Gangtok
 	int m_iHappinessPerFollowingCity;
 	int m_iFaithInfluencePurchaseCostDivisor;
@@ -771,7 +786,6 @@ public:
 	std::vector<CvCityStateUAEffectEntry*>& GetEffectEntries();
 	int GetNumEffects() const;
 	CvCityStateUAEffectEntry* GetEntry(int index) const;
-	CvCityStateUAEffectEntry* GetEntryByType(const char* szType) const;
 	void DeleteArray();
 
 private:
@@ -792,9 +806,16 @@ public:
 	int GetAllyEffectID() const;
 	int GetFriendEffectID() const;
 
+	// AI attraction tables (CityStateUA_ExtraFlavors / CityStateUA_VictoryFlavors). Both return 0
+	// when the entry has no row for the given index.
+	int GetExtraFlavorValue(int i) const;
+	int GetVictoryFlavorValue(int i) const;
+
 private:
 	int m_iAllyEffectID;
 	int m_iFriendEffectID;
+	int* m_piExtraFlavorValue;
+	int* m_piVictoryFlavorValue;
 };
 
 //======================================================================================================
@@ -809,7 +830,12 @@ public:
 	std::vector<CvCityStateUAEntry*>& GetUAEntries();
 	int GetNumUAs() const;
 	CvCityStateUAEntry* GetEntry(int index) const;
-	CvCityStateUAEntry* GetEntryByType(const char* szType) const;
+	// Linear lookup returning the row index (or -1). Only used at load time, by ResolveMinorCivUAIndexes.
+	int GetEntryIndexByType(const char* szType) const;
+	// Resolve every city-state's UAType to its row index once, after the CityStateUAs table loads, so
+	// every CSUA query site reads CvMinorCivInfo::GetCityStateUAIndex() (O(1)) instead of re-running a
+	// linear strcmp lookup on each call.
+	void ResolveMinorCivUAIndexes();
 	void DeleteArray();
 
 private:
@@ -849,14 +875,9 @@ public:
 	bool IsGPNoDeathAfterGreatWork() const;
 	int GetGPConcertTourismRetentionPercent() const;
 	// Brussels
-	int GetGreatMusicianConcertTourismModifier() const;
 	int GetGreatMusicianConcertGoldPercent() const;
 	// Bratislava
 	int GetCapitalAndSecondCapitalCultureModifier() const;
-	// Kiev
-	int GetCapitalCultureModifierPerTurn() const;
-	int GetCapitalFaithModifierPerTurn() const;
-	int GetCapitalPerTurnYieldModifierMax() const;
 	// Bucharest
 	int GetImmigrationRatePerImmigrant() const;
 	int GetImmigrationRateMax() const;
@@ -891,10 +912,6 @@ public:
 	int GetCityAttackIgnoreBuildingDefensePercent() const;
 	int GetMilitaryXPPerTurnModifier() const;
 	int GetMilitaryXPSeaAir() const;
-	// Sofia
-	int GetHillsCityDamageReduction() const;
-	int GetHillsMovementModifier() const;
-	int GetHillsCityRangeBonus() const;
 	// Vatican
 	int GetReligionSpreadSpeedModifier() const;
 	int GetPapalRecognitionVotes() const;
@@ -930,6 +947,11 @@ public:
 	int GetGoldenAgeBuildingMaintenanceMod() const;
 	bool HasGoldDonationGamble() const { return !m_vGoldDonationGamble.empty(); }
 	const std::vector<GoldDonationGambleEntry>& GetGoldDonationGambleEntries() const { return m_vGoldDonationGamble; }
+	// Yield-to-yield conversion (Colombo / Cape Town / Mogadishu / Monaco): true when any active effect
+	// carries a conversion row. Read at the top of CvCity::GetYieldRateFromUCSConversion, a per-city
+	// per-yield hot path whose city-state scan costs a linear string lookup each; players holding no
+	// conversion effect at all (the common case) must not pay for it.
+	bool HasUCSYieldConversion() const { return m_iUCSYieldConversionCount > 0; }
 	// Panama
 	int GetTradeRouteGoldModifierPerDistance() const;
 	int GetUnhappinessReductionPerCrossContinentRoute() const;
@@ -1073,7 +1095,8 @@ public:
 	// percent). The count is read live from CvPlayer::getBuildingClassCount, so no per-turn cache is needed.
 	const std::vector<BuildingClassGlobalYieldModifierEntry>& GetBuildingClassGlobalYieldModifiers() const { return m_vBuildingClassGlobalYieldModifiers; }
 	bool HasBuildingClassGlobalYieldModifiers() const;
-	// Singapore: each owned building class lowers the city-count research threshold by TechCostMod percent.
+	// Singapore: each owned building class lowers the city-count research threshold by TechCostMod points
+	// (a plain subtraction, not a percent of the threshold).
 	const std::vector<BuildingClassTechCostModifierEntry>& GetBuildingClassTechCostModifiers() const { return m_vBuildingClassTechCostModifiers; }
 	bool HasBuildingClassTechCostModifiers() const;
 
@@ -1167,12 +1190,8 @@ protected:
 	int m_iFaithPurchaseAllGreatPeopleCount;
 	int m_iGPNoDeathAfterGreatWorkCount;
 	int m_iGPConcertTourismRetentionPercent;
-	int m_iGreatMusicianConcertTourismModifier;
 	int m_iGreatMusicianConcertGoldPercent;
 	int m_iCapitalAndSecondCapitalCultureModifier;
-	int m_iCapitalCultureModifierPerTurn;
-	int m_iCapitalFaithModifierPerTurn;
-	int m_iCapitalPerTurnYieldModifierMax;
 	int m_iImmigrationRatePerImmigrant;
 	int m_iImmigrationRateMax;
 	int m_iEmigrationRatePerImmigrant;
@@ -1198,9 +1217,6 @@ protected:
 	int m_iCityAttackIgnoreBuildingDefensePercent;
 	int m_iMilitaryXPPerTurnModifier;
 	int m_iMilitaryXPSeaAir;
-	int m_iHillsCityDamageReduction;
-	int m_iHillsMovementModifier;
-	int m_iHillsCityRangeBonus;
 	// Sofia (spy/coup UA, main-table columns)
 	int m_iCoupChanceModifier;
 	int m_iCoupFailSpySurvives;
@@ -1235,6 +1251,9 @@ protected:
 	// Monaco
 	int m_iGoldenAgeBuildingMaintenanceMod;
 	std::vector<GoldDonationGambleEntry> m_vGoldDonationGamble;
+	// Colombo / Cape Town / Mogadishu / Monaco: count of active effects carrying a yield-to-yield
+	// conversion. Maintained by ApplyEffect, read by HasUCSYieldConversion.
+	int m_iUCSYieldConversionCount;
 	int m_iTradeRouteGoldModifierPerDistance;
 	int m_iUnhappinessReductionPerCrossContinentRoute;
 	// Manila

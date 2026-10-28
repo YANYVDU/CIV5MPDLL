@@ -12,6 +12,7 @@
 #include "CvGameCoreUtils.h"
 #include "CvInfosSerializationHelper.h"
 #include "CvMinorCivAI.h"
+#include "CvDiplomacyAI.h"
 #include "CvGrandStrategyAI.h"
 #include "CvEconomicAI.h"
 #include "CvTechAI.h"
@@ -215,6 +216,14 @@ CvResolutionEffects::CvResolutionEffects(void)
 	iGlobalAttackModifier = 0;
 	iGlobalWarCasualtiesChanges = 0;
 	bEmbargoIdeology = false;
+	bInternationalLawProtection = false;
+	iWorldBankInterestBasisPoints = 0;
+	iWorldBankRouteInterestBasisPoints = 0;
+	iWorldBankIntervalTurns = 0;
+	iWHOFoodConsumptionModifier = 0;
+	iWHOSanitationFoodKeptPercent = 0;
+	iIMOOceanRouteGoldModifier = 0;
+	bIMOForbidWeakPlunder = false;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -267,6 +276,14 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		iGlobalAttackModifier 				= pInfo->GetGlobalAttackModifier();
 		iGlobalWarCasualtiesChanges 		= pInfo->GetGlobalWarCasualtiesChanges();
 		bEmbargoIdeology					= pInfo->IsEmbargoIdeology();
+		bInternationalLawProtection			= pInfo->IsInternationalLawProtection();
+		iWorldBankInterestBasisPoints		= pInfo->GetWorldBankInterestBasisPoints();
+		iWorldBankRouteInterestBasisPoints	= pInfo->GetWorldBankRouteInterestBasisPoints();
+		iWorldBankIntervalTurns				= pInfo->GetWorldBankIntervalTurns();
+		iWHOFoodConsumptionModifier			= pInfo->GetWHOFoodConsumptionModifier();
+		iWHOSanitationFoodKeptPercent		= pInfo->GetWHOSanitationFoodKeptPercent();
+		iIMOOceanRouteGoldModifier			= pInfo->GetIMOOceanRouteGoldModifier();
+		bIMOForbidWeakPlunder				= pInfo->IsIMOForbidWeakPlunder();
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	bPermanentAlly = false;
@@ -360,6 +377,20 @@ bool CvResolutionEffects::HasOngoingEffects() const
 		return true;	
 	if (bEmbargoIdeology)
 		return true;
+	if (bInternationalLawProtection)
+		return true;
+	if (iWorldBankInterestBasisPoints != 0)
+		return true;
+	if (iWorldBankRouteInterestBasisPoints != 0)
+		return true;
+	if (iWHOFoodConsumptionModifier != 0)
+		return true;
+	if (iWHOSanitationFoodKeptPercent != 0)
+		return true;
+	if (iIMOOceanRouteGoldModifier != 0)
+		return true;
+	if (bIMOForbidWeakPlunder)
+		return true;
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (bPermanentAlly)
@@ -405,6 +436,14 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	iGlobalAttackModifier					+= pOtherEffects->iGlobalAttackModifier;
 	iGlobalWarCasualtiesChanges				+= pOtherEffects->iGlobalWarCasualtiesChanges;
 	bEmbargoIdeology						|= pOtherEffects->bEmbargoIdeology; // target ideology	
+	bInternationalLawProtection				|= pOtherEffects->bInternationalLawProtection; // target city-state
+	iWorldBankInterestBasisPoints			+= pOtherEffects->iWorldBankInterestBasisPoints;
+	iWorldBankRouteInterestBasisPoints		+= pOtherEffects->iWorldBankRouteInterestBasisPoints;
+	iWorldBankIntervalTurns					+= pOtherEffects->iWorldBankIntervalTurns;
+	iWHOFoodConsumptionModifier				+= pOtherEffects->iWHOFoodConsumptionModifier;
+	iWHOSanitationFoodKeptPercent			+= pOtherEffects->iWHOSanitationFoodKeptPercent;
+	iIMOOceanRouteGoldModifier				+= pOtherEffects->iIMOOceanRouteGoldModifier;
+	bIMOForbidWeakPlunder					|= pOtherEffects->bIMOForbidWeakPlunder;
 #if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
 	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
@@ -417,6 +456,10 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 	bVassalGetUC							|= pOtherEffects->bVassalGetUC;
 #endif
 #endif		
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bPermanentAlly							|= pOtherEffects->bPermanentAlly; // target city-state
+#endif
 }
 
 // Serialization Read
@@ -524,6 +567,14 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	loadFrom >> writeTo.iGlobalAttackModifier;
 	loadFrom >> writeTo.iGlobalWarCasualtiesChanges;
 	loadFrom >> writeTo.bEmbargoIdeology;
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.bInternationalLawProtection, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankRouteInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWorldBankIntervalTurns, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWHOFoodConsumptionModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iWHOSanitationFoodKeptPercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iIMOOceanRouteGoldModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.bIMOForbidWeakPlunder, false);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (uiVersion >= 10)
@@ -584,6 +635,14 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	saveTo << readFrom.iGlobalAttackModifier;
 	saveTo << readFrom.iGlobalWarCasualtiesChanges;
 	saveTo << readFrom.bEmbargoIdeology;
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bInternationalLawProtection);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankRouteInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWorldBankIntervalTurns);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWHOFoodConsumptionModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iWHOSanitationFoodKeptPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iIMOOceanRouteGoldModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.bIMOForbidWeakPlunder);
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	saveTo << readFrom.bPermanentAlly;
@@ -1609,7 +1668,9 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 	
 	// Civilization-unique proposal: lock target CS as permanent ally
 	// Only the proposer gets the effect, not every league member
-	if (eTargetCityState != NO_PLAYER && ePlayer == GetProposerDecision()->GetProposer())
+	// Guard: only the permanent-ally proposal runs this, not other CITY_CSD resolutions (e.g. international law protection)
+	if (eTargetCityState != NO_PLAYER && ePlayer == GetProposerDecision()->GetProposer()
+		&& !GetEffects()->bInternationalLawProtection)
 	{
 		CvMinorCivAI* pMinorAI = GET_PLAYER(eTargetCityState).GetMinorCivAI();
 		if (pMinorAI)
@@ -3254,6 +3315,16 @@ bool CvLeague::IsResolutionEffectsValid(ResolutionTypes eResolution, int iPropos
 			return false;
 		}
 	}
+	if (pInfo->IsInternationalLawProtection())
+	{
+		// Target must be a living city-state
+		PlayerTypes eTargetCS = (PlayerTypes) iProposerChoice;
+		if (eTargetCS < 0 || eTargetCS >= MAX_CIV_PLAYERS
+			|| !GET_PLAYER(eTargetCS).isAlive() || !GET_PLAYER(eTargetCS).isMinorCiv())
+		{
+			return false;
+		}
+	}
 #endif
 
 	return true;
@@ -3527,6 +3598,11 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 				{
 					bSkip = true;
 				}
+				// International law protection: only city-states the proposer has met
+				if (eDecider != NO_PLAYER && !GET_TEAM(GET_PLAYER(eDecider).getTeam()).isHasMet(GET_PLAYER(e).getTeam()))
+				{
+					bSkip = true;
+				}
 				CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
 				if (pLeagues)
 				{
@@ -3536,7 +3612,8 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 						ActiveResolutionList vRes = pLeague->GetActiveResolutions();
 						for (size_t j = 0; j < vRes.size(); j++)
 						{
-							if (vRes[j].GetEffects()->bPermanentAlly &&
+							// Skip CSes already locked as permanent ally or already under international law protection
+							if ((vRes[j].GetEffects()->bPermanentAlly || vRes[j].GetEffects()->bInternationalLawProtection) &&
 								vRes[j].GetProposerDecision()->GetDecision() == i)
 							{
 								bSkip = true;
@@ -3910,7 +3987,15 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 			{
 				if (GET_PLAYER(ePlayer).GetEspionage()->IsMyDiplomatVisitingThem(eMajor))
 				{
-					iDiplomatVotes += GET_PLAYER(ePlayer).GetExtraVotesPerDiplomat();
+					// SP: a Master Spy posted as a diplomat is worth 3 votes instead of the usual 1.
+					// Gated on the base value so a diplomat still yields nothing before Globalization.
+					int iVotesFromDiplomat = GET_PLAYER(ePlayer).GetExtraVotesPerDiplomat();
+					if (iVotesFromDiplomat > 0
+						&& GET_PLAYER(ePlayer).GetEspionage()->HasMasterSpyDiplomatVisitingThem(eMajor))
+					{
+						iVotesFromDiplomat = 3;
+					}
+					iDiplomatVotes += iVotesFromDiplomat;
 				}
 			}
 		}
@@ -4515,6 +4600,21 @@ bool CvLeague::IsPlayerEmbargoed(PlayerTypes ePlayer)
 	return false;
 }
 #endif
+
+bool CvLeague::IsCityStateUnderInternationalProtection(PlayerTypes eMinor)
+{
+	if (eMinor < 0 || eMinor >= MAX_CIV_PLAYERS) return false;
+	if (!GET_PLAYER(eMinor).isMinorCiv()) return false;
+
+	for (ActiveResolutionList::iterator it = m_vActiveResolutions.begin(); it != m_vActiveResolutions.end(); it++) {
+		if (it->GetEffects()->bInternationalLawProtection
+			&& eMinor == (PlayerTypes) it->GetProposerDecision()->GetDecision()) {
+			return true;
+		}
+	}
+
+	return false;
+}
 
 bool CvLeague::IsLuxuryHappinessBanned(ResourceTypes eResource)
 {
@@ -5474,6 +5574,12 @@ std::vector<CvString> CvLeague::GetCurrentEffectsSummary(PlayerTypes /*eObserver
 	PolicyBranchTypes eWorldIdeology = NO_POLICY_BRANCH_TYPE;
 	FStaticVector<PlayerTypes, MAX_MAJOR_CIVS, true, c_eCiv5GameplayDLL> veEmbargoedPlayers;
 	FStaticVector<ResourceTypes, 32, true, c_eCiv5GameplayDLL> veBannedResources;
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+	FStaticVector<PlayerTypes, MAX_MAJOR_CIVS, true, c_eCiv5GameplayDLL> veProtectedCityStates;
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	FStaticVector<PlayerTypes, MAX_MAJOR_CIVS, true, c_eCiv5GameplayDLL> vePermanentAllyCityStates;
+#endif
 	CvResolutionEffects effects;
 	for (ActiveResolutionList::iterator it = m_vActiveResolutions.begin(); it != m_vActiveResolutions.end(); ++it)
 	{
@@ -5513,6 +5619,20 @@ std::vector<CvString> CvLeague::GetCurrentEffectsSummary(PlayerTypes /*eObserver
 			CvAssert(eWorldIdeology == NO_POLICY_BRANCH_TYPE);
 			eWorldIdeology = eIdeology;
 		}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		if (it->GetEffects()->bInternationalLawProtection)
+		{
+			PlayerTypes eProtected = (PlayerTypes) it->GetProposerDecision()->GetDecision();
+			veProtectedCityStates.push_back(eProtected);
+		}
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+		if (it->GetEffects()->bPermanentAlly)
+		{
+			PlayerTypes eAlly = (PlayerTypes) it->GetProposerDecision()->GetDecision();
+			vePermanentAllyCityStates.push_back(eAlly);
+		}
+#endif
 	}
 	if (eWorldReligion != NO_RELIGION)
 	{
@@ -5726,6 +5846,48 @@ std::vector<CvString> CvLeague::GetCurrentEffectsSummary(PlayerTypes /*eObserver
 	if (effects.bEmbargoIdeology)
 	{
 		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_EMBARGO_IDEOLOGY");
+		vsEffects.push_back(sTemp.toUTF8());
+	}
+	if (effects.bInternationalLawProtection)
+	{
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION");
+		CvString sEntries = "";
+		for (uint i = 0; i < veProtectedCityStates.size(); i++)
+		{
+			if (veProtectedCityStates[i] != NO_PLAYER)
+			{
+				if (i != 0)
+				{
+					sEntries += ", ";
+				}
+				Localization::String sTempEntry = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION_ENTRY");
+				sTempEntry << GET_PLAYER(veProtectedCityStates[i]).getCivilizationShortDescriptionKey();
+				sEntries += sTempEntry.toUTF8();
+			}
+		}
+		sTemp << sEntries;
+		vsEffects.push_back(sTemp.toUTF8());
+	}
+#endif
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (effects.bPermanentAlly)
+	{
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY");
+		CvString sEntries = "";
+		for (uint i = 0; i < vePermanentAllyCityStates.size(); i++)
+		{
+			if (vePermanentAllyCityStates[i] != NO_PLAYER)
+			{
+				if (i != 0)
+				{
+					sEntries += ", ";
+				}
+				Localization::String sTempEntry = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY_ENTRY");
+				sTempEntry << GET_PLAYER(vePermanentAllyCityStates[i]).getCivilizationShortDescriptionKey();
+				sEntries += sTempEntry.toUTF8();
+			}
+		}
+		sTemp << sEntries;
 		vsEffects.push_back(sTemp.toUTF8());
 	}
 #endif
@@ -6410,6 +6572,18 @@ void CvLeague::DoEnactResolution(CvEnactProposal* pProposal)
 		GC.getGame().GetGameLeagues()->SetColdWarActive(true);
 	}
 	
+	// World Bank / WHO / IMO: league-level effects applied to every player
+	GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(resolution.GetEffects()->iWorldBankInterestBasisPoints);
+	GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(resolution.GetEffects()->iWorldBankRouteInterestBasisPoints);
+	GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(resolution.GetEffects()->iWorldBankIntervalTurns);
+	GC.getGame().GetGameLeagues()->ChangeWHOFoodConsumptionModifier(resolution.GetEffects()->iWHOFoodConsumptionModifier);
+	GC.getGame().GetGameLeagues()->ChangeWHOSanitationFoodKeptPercent(resolution.GetEffects()->iWHOSanitationFoodKeptPercent);
+	GC.getGame().GetGameLeagues()->ChangeIMOOceanRouteGoldModifier(resolution.GetEffects()->iIMOOceanRouteGoldModifier);
+	if (resolution.GetEffects()->bIMOForbidWeakPlunder)
+	{
+		GC.getGame().GetGameLeagues()->SetIMOForbidWeakPlunder(true);
+	}
+
 	// Active Resolutions with only one-time effects immediately expire
 	if (resolution.HasOngoingEffects())
 	{
@@ -6460,6 +6634,17 @@ void CvLeague::DoRepealResolution(CvRepealProposal* pProposal)
 			if (it->GetEffects()->bEmbargoIdeology)
 			{
 				GC.getGame().GetGameLeagues()->SetColdWarActive(false);
+			}
+			// World Bank / WHO / IMO: league-level effects applied to every player
+			GC.getGame().GetGameLeagues()->ChangeWorldBankInterestBasisPoints(-it->GetEffects()->iWorldBankInterestBasisPoints);
+			GC.getGame().GetGameLeagues()->ChangeWorldBankRouteInterestBasisPoints(-it->GetEffects()->iWorldBankRouteInterestBasisPoints);
+			GC.getGame().GetGameLeagues()->ChangeWorldBankIntervalTurns(-it->GetEffects()->iWorldBankIntervalTurns);
+			GC.getGame().GetGameLeagues()->ChangeWHOFoodConsumptionModifier(-it->GetEffects()->iWHOFoodConsumptionModifier);
+			GC.getGame().GetGameLeagues()->ChangeWHOSanitationFoodKeptPercent(-it->GetEffects()->iWHOSanitationFoodKeptPercent);
+			GC.getGame().GetGameLeagues()->ChangeIMOOceanRouteGoldModifier(-it->GetEffects()->iIMOOceanRouteGoldModifier);
+			if (it->GetEffects()->bIMOForbidWeakPlunder)
+			{
+				GC.getGame().GetGameLeagues()->SetIMOForbidWeakPlunder(false);
 			}
 #endif
 			m_vActiveResolutions.erase(it);
@@ -7455,6 +7640,13 @@ CvGameLeagues::CvGameLeagues(void)
 	m_iGlobalAttackModifier = 0;
 	m_iGlobalWarCasualtiesChanges = 0;
 	m_bEmbargoIdeology = false;
+	m_iWorldBankInterestBasisPoints = 0;
+	m_iWorldBankRouteInterestBasisPoints = 0;
+	m_iWorldBankIntervalTurns = 0;
+	m_iWHOFoodConsumptionModifier = 0;
+	m_iWHOSanitationFoodKeptPercent = 0;
+	m_iIMOOceanRouteGoldModifier = 0;
+	m_bIMOForbidWeakPlunder = false;
 }
 
 CvGameLeagues::~CvGameLeagues(void)
@@ -8089,6 +8281,62 @@ void CvGameLeagues::ChangeGlobalWarCasualtiesChanges(int iChange)
 {
 	m_iGlobalWarCasualtiesChanges += iChange;
 }
+int CvGameLeagues::GetWorldBankInterestBasisPoints() const
+{
+	return m_iWorldBankInterestBasisPoints;
+}
+void CvGameLeagues::ChangeWorldBankInterestBasisPoints(int iChange)
+{
+	m_iWorldBankInterestBasisPoints += iChange;
+}
+int CvGameLeagues::GetWorldBankRouteInterestBasisPoints() const
+{
+	return m_iWorldBankRouteInterestBasisPoints;
+}
+void CvGameLeagues::ChangeWorldBankRouteInterestBasisPoints(int iChange)
+{
+	m_iWorldBankRouteInterestBasisPoints += iChange;
+}
+int CvGameLeagues::GetWorldBankIntervalTurns() const
+{
+	return m_iWorldBankIntervalTurns;
+}
+void CvGameLeagues::ChangeWorldBankIntervalTurns(int iChange)
+{
+	m_iWorldBankIntervalTurns += iChange;
+}
+int CvGameLeagues::GetWHOFoodConsumptionModifier() const
+{
+	return m_iWHOFoodConsumptionModifier;
+}
+void CvGameLeagues::ChangeWHOFoodConsumptionModifier(int iChange)
+{
+	m_iWHOFoodConsumptionModifier += iChange;
+}
+int CvGameLeagues::GetWHOSanitationFoodKeptPercent() const
+{
+	return m_iWHOSanitationFoodKeptPercent;
+}
+void CvGameLeagues::ChangeWHOSanitationFoodKeptPercent(int iChange)
+{
+	m_iWHOSanitationFoodKeptPercent += iChange;
+}
+int CvGameLeagues::GetIMOOceanRouteGoldModifier() const
+{
+	return m_iIMOOceanRouteGoldModifier;
+}
+void CvGameLeagues::ChangeIMOOceanRouteGoldModifier(int iChange)
+{
+	m_iIMOOceanRouteGoldModifier += iChange;
+}
+bool CvGameLeagues::IsIMOForbidWeakPlunder() const
+{
+	return m_bIMOForbidWeakPlunder;
+}
+void CvGameLeagues::SetIMOForbidWeakPlunder(bool bValue)
+{
+	m_bIMOForbidWeakPlunder = bValue;
+}
 bool CvGameLeagues::IsIdeologyEmbargoed(PlayerTypes eTrader, PlayerTypes eRecipient)
 {
 	if(!m_bEmbargoIdeology) return false;
@@ -8249,9 +8497,16 @@ FDataStream& operator>>(FDataStream& loadFrom, CvGameLeagues& writeTo)
 	}
 
 #if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
-	loadFrom >> writeTo.m_iGlobalAttackModifier;
-	loadFrom >> writeTo.m_iGlobalWarCasualtiesChanges;
-	loadFrom >> writeTo.m_bEmbargoIdeology;
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iGlobalAttackModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iGlobalWarCasualtiesChanges, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bEmbargoIdeology, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankRouteInterestBasisPoints, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWorldBankIntervalTurns, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWHOFoodConsumptionModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iWHOSanitationFoodKeptPercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_iIMOOceanRouteGoldModifier, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.m_bIMOForbidWeakPlunder, false);
 #endif
 
 	return loadFrom;
@@ -8275,9 +8530,16 @@ FDataStream& operator<<(FDataStream& saveTo, const CvGameLeagues& readFrom)
 	saveTo << readFrom.m_eLastEraTrigger;
 
 #if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
-	saveTo << readFrom.m_iGlobalAttackModifier;
-	saveTo << readFrom.m_iGlobalWarCasualtiesChanges;
-	saveTo << readFrom.m_bEmbargoIdeology;
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iGlobalAttackModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iGlobalWarCasualtiesChanges);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bEmbargoIdeology);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankRouteInterestBasisPoints);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWorldBankIntervalTurns);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWHOFoodConsumptionModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iWHOSanitationFoodKeptPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_iIMOOceanRouteGoldModifier);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_bIMOForbidWeakPlunder);
 #endif
 	
 	return saveTo;
@@ -9721,6 +9983,11 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 	{
 		eTargetIdeology = (PolicyBranchTypes) pProposal->GetProposerDecision()->GetDecision();
 	}
+	PlayerTypes eTargetCityState = NO_PLAYER;
+	if (eProposerDecision == RESOLUTION_DECISION_CITY_CSD)
+	{
+		eTargetCityState = (PlayerTypes) pProposal->GetProposerDecision()->GetDecision();
+	}
 
 	// == Grand Strategy ==
 	AIGrandStrategyTypes eGrandStrategy = GetPlayer()->GetGrandStrategyAI()->GetActiveGrandStrategy();
@@ -10550,6 +10817,93 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 			}
 	}
 
+	// International law protection: support if we like the target CS, oppose if we want to conquer it or are at war with it
+	if (eTargetCityState != NO_PLAYER)
+	{
+		int iIntlLawRes = GC.getInfoTypeForString("RESOLUTION_INTERNATIONAL_LAW_PROTECTION", true);
+		if ((int)pProposal->GetType() == iIntlLawRes)
+		{
+			if (GET_TEAM(GetPlayer()->getTeam()).isAtWar(GET_PLAYER(eTargetCityState).getTeam()))
+			{
+				// At war with the target city-state: strongly oppose protecting it
+				iScore += -30;
+			}
+			else
+			{
+				MinorCivApproachTypes eApproach = GetPlayer()->GetDiplomacyAI()->GetMinorCivApproach(eTargetCityState);
+				if (eApproach == MINOR_CIV_APPROACH_PROTECTIVE || eApproach == MINOR_CIV_APPROACH_FRIENDLY)
+				{
+					// Friendly/protective towards this CS: support protecting it
+					iScore += 25;
+				}
+				else if (eApproach == MINOR_CIV_APPROACH_CONQUEST)
+				{
+					// We want to conquer it: oppose protection
+					iScore += -25;
+				}
+				else
+				{
+					iScore += 5;
+				}
+			}
+		}
+	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// City-state quest AI: vote for the trade sanction a focused quest asks for
+	if (MOD_SP_UNIQUE_CITYSTATE && eTargetPlayer != NO_PLAYER)
+	{
+		CvResolutionEntry* pkResolution = GC.getResolutionInfo(pProposal->GetType());
+		if (pkResolution != NULL && pkResolution->IsEmbargoPlayer())
+		{
+			PlayerTypes eMe = GetPlayer()->GetID();
+			int iTurn = GC.getGame().getGameTurn();
+
+			for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+			{
+				PlayerTypes eMinor = (PlayerTypes)iMinor;
+
+				if (!GET_PLAYER(eMinor).isAlive())
+					continue;
+
+				if (!GET_TEAM(GetPlayer()->getTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
+					continue;
+
+				CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+				if (pMinorAI == NULL)
+					continue;
+
+				if (!pMinorAI->IsActiveQuestForPlayer(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION))
+					continue;
+
+				if (pMinorAI->IsQuestExpired(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION))
+					continue;
+
+				if (!GetPlayer()->GetDiplomacyAI()->IsCityStateInQuestFocus(eMinor, GetPlayer()->GetDiplomacyAI()->GetCityStateQuestFocusCount()))
+					continue;
+
+				if ((PlayerTypes)pMinorAI->GetQuestData1(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION) != eTargetPlayer)
+					continue;
+
+				// Sanctioning a player is a hostile act: only vote for it against someone we
+				// are already preparing to attack, and never against an exempt player.
+				if (GetPlayer()->GetDiplomacyAI()->IsCityStateQuestTargetExempt(eTargetPlayer))
+					continue;
+
+				if (!GetPlayer()->GetDiplomacyAI()->IsPreparingAttackOnPlayer(eTargetPlayer))
+					continue;
+
+				int iStart = pMinorAI->GetQuestStartTurn(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION);
+				if (iStart < 0 || iTurn - iStart < 5)
+					continue;
+
+				iScore += 500;
+				break;
+			}
+		}
+	}
+#endif
+
 	// == Post-Processing ==
 	if (iChoice == LeagueHelpers::CHOICE_NO)
 	{
@@ -10824,6 +11178,63 @@ int CvLeagueAI::ScoreProposal(CvLeague* pLeague, ResolutionTypes eResolution, in
 		}
 	}
 	CvAssert(bFoundYes);
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// City-state quest AI: actively push for a trade sanction against a focused quest target.
+	// There is no direct action for this quest - proposing (and voting for) it is the action.
+	if (MOD_SP_UNIQUE_CITYSTATE && iChoice >= 0 && iChoice < MAX_CIV_PLAYERS)
+	{
+		CvResolutionEntry* pkResolution = GC.getResolutionInfo(eResolution);
+		if (pkResolution != NULL && pkResolution->IsEmbargoPlayer())
+		{
+			PlayerTypes eMe = GetPlayer()->GetID();
+
+			for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+			{
+				PlayerTypes eMinor = (PlayerTypes)iMinor;
+
+				if (!GET_PLAYER(eMinor).isAlive())
+					continue;
+
+				if (!GET_TEAM(GetPlayer()->getTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
+					continue;
+
+				CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+				if (pMinorAI == NULL)
+					continue;
+
+				if (!pMinorAI->IsActiveQuestForPlayer(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION))
+					continue;
+
+				if (!GetPlayer()->GetDiplomacyAI()->IsCityStateInQuestFocus(eMinor, GetPlayer()->GetDiplomacyAI()->GetCityStateQuestFocusCount()))
+					continue;
+
+				if ((PlayerTypes)pMinorAI->GetQuestData1(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION) != (PlayerTypes)iChoice)
+					continue;
+
+				int iQuestTurn = GC.getGame().getGameTurn();
+
+				if (pMinorAI->IsQuestExpired(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION))
+					continue;
+
+				// Sanctioning a player is a hostile act: only propose it against someone we
+				// are already preparing to attack, and never against an exempt player.
+				if (GetPlayer()->GetDiplomacyAI()->IsCityStateQuestTargetExempt((PlayerTypes)iChoice))
+					continue;
+
+				if (!GetPlayer()->GetDiplomacyAI()->IsPreparingAttackOnPlayer((PlayerTypes)iChoice))
+					continue;
+
+				int iStart = pMinorAI->GetQuestStartTurn(eMe, MINOR_CIV_QUEST_LEAGUE_SANCTION);
+				if (iStart < 0 || iQuestTurn - iStart < 5)
+					continue;
+
+				iYesScore += 500;
+				break;
+			}
+		}
+	}
+#endif
 
 	return iYesScore;
 }
@@ -11450,6 +11861,14 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_iGlobalAttackModifier				= 0;
 	m_iGlobalWarCasualtiesChanges		= 0;
 	m_bEmbargoIdeology					= false;
+	m_iWorldBankInterestBasisPoints		= 0;
+	m_iWorldBankRouteInterestBasisPoints= 0;
+	m_iWorldBankIntervalTurns			= 0;
+	m_iWHOFoodConsumptionModifier		= 0;
+	m_iWHOSanitationFoodKeptPercent		= 0;
+	m_iIMOOceanRouteGoldModifier		= 0;
+	m_bIMOForbidWeakPlunder				= false;
+	m_bInternationalLawProtection		= false;
 #endif
 	m_eCivilizationType = NO_CIVILIZATION;
 #if defined(MOD_GLOBAL_SUZERAIN)
@@ -11524,6 +11943,14 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 	m_iGlobalAttackModifier				= kResults.GetInt("GlobalAttackModifier");
 	m_iGlobalWarCasualtiesChanges		= kResults.GetInt("GlobalWarCasualtiesChanges");
 	m_bEmbargoIdeology					= kResults.GetBool("EmbargoIdeology");
+	m_bInternationalLawProtection		= kResults.GetBool("InternationalLawProtection");
+	m_iWorldBankInterestBasisPoints		= kResults.GetInt("WorldBankInterestBasisPoints");
+	m_iWorldBankRouteInterestBasisPoints= kResults.GetInt("WorldBankRouteInterestBasisPoints");
+	m_iWorldBankIntervalTurns			= kResults.GetInt("WorldBankIntervalTurns");
+	m_iWHOFoodConsumptionModifier		= kResults.GetInt("WHOFoodConsumptionModifier");
+	m_iWHOSanitationFoodKeptPercent		= kResults.GetInt("WHOSanitationFoodKeptPercent");
+	m_iIMOOceanRouteGoldModifier		= kResults.GetInt("IMOOceanRouteGoldModifier");
+	m_bIMOForbidWeakPlunder				= kResults.GetBool("IMOForbidWeakPlunder");
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
@@ -11729,6 +12156,38 @@ int CvResolutionEntry::GetGlobalWarCasualtiesChanges() const
 bool CvResolutionEntry::IsEmbargoIdeology() const
 {
 	return m_bEmbargoIdeology;
+}
+bool CvResolutionEntry::IsInternationalLawProtection() const
+{
+	return m_bInternationalLawProtection;
+}
+int CvResolutionEntry::GetWorldBankInterestBasisPoints() const
+{
+	return m_iWorldBankInterestBasisPoints;
+}
+int CvResolutionEntry::GetWorldBankRouteInterestBasisPoints() const
+{
+	return m_iWorldBankRouteInterestBasisPoints;
+}
+int CvResolutionEntry::GetWorldBankIntervalTurns() const
+{
+	return m_iWorldBankIntervalTurns;
+}
+int CvResolutionEntry::GetWHOFoodConsumptionModifier() const
+{
+	return m_iWHOFoodConsumptionModifier;
+}
+int CvResolutionEntry::GetWHOSanitationFoodKeptPercent() const
+{
+	return m_iWHOSanitationFoodKeptPercent;
+}
+int CvResolutionEntry::GetIMOOceanRouteGoldModifier() const
+{
+	return m_iIMOOceanRouteGoldModifier;
+}
+bool CvResolutionEntry::IsIMOForbidWeakPlunder() const
+{
+	return m_bIMOForbidWeakPlunder;
 }
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)

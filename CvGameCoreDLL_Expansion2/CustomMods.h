@@ -33,7 +33,7 @@
  ****************************************************************************/
 #define MOD_DLL_GUID {0xcf7d28a8, 0x1684, 0x4420, { 0xaf, 0x45, 0x11, 0x7, 0xc, 0xb, 0x8c, 0x4a }} // {CF7D28A8-1684-4420-AF45-11070C0B8C4A}
 #define MOD_DLL_NAME "CIV5 MPDLL"
-#define MOD_DLL_VERSION_NUMBER ((uint) 164)
+#define MOD_DLL_VERSION_NUMBER ((uint) 167)
 #define MOD_DLL_VERSION_STATUS ""			// a (alpha), b (beta) or blank (released)
 #define MOD_DLL_CUSTOM_BUILD_NAME ""
 
@@ -136,6 +136,8 @@
 #if defined(MOD_GLOBAL_BREAK_CIVILIAN_1UPT)
 #define MOD_GLOBAL_BREAK_CIVILIAN_RESTRICTIONS     (MOD_GLOBAL_BREAK_CIVILIAN_1UPT && gCustomMods.isGLOBAL_BREAK_CIVILIAN_RESTRICTIONS())
 #endif
+// Expansion civilian units (settlers, etc) cannot pass through foreign regular military units
+#define MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK  (MOD_GLOBAL_BREAK_CIVILIAN_1UPT && gCustomMods.isGLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK())
 // Great Generals and Admirals gained from combat experience spawn in the war-zone and not in a distant city
 #define MOD_GLOBAL_LOCAL_GENERALS                   gCustomMods.isGLOBAL_LOCAL_GENERALS()
 // Separates out the repair fleet and change port abilities of the Great Admiral (v61)
@@ -772,6 +774,10 @@
 #define MOD_BUGFIX_CITY_STACKING                    gCustomMods.isBUGFIX_CITY_STACKING()
 // Fixes the bug in goody hut messages that have parameters (v38)
 #define MOD_BUGFIX_GOODY_HUT_MESSAGES               (true)
+// Fixes the MP desync where the goody hut reward pick branched on getActivePlayer() (each client's
+// own local player); a client without the popup rolled a random reward instead of waiting for the
+// owner's choice. The branch now uses isHuman() and only gates the popup locally.
+#define MOD_BUGFIX_GOODY_HUT_CHOICE_MP              (true)
 // Fixes the bug where Barb Camps ignore the ValidTerrains and ValidFeatures tables
 #define MOD_BUGFIX_BARB_CAMP_TERRAINS               gCustomMods.isBUGFIX_BARB_CAMP_TERRAINS()
 // Fixes the bug where Barb Camps won't spawn units if they are added via pPlot:SetImprovementType() (v21)
@@ -1501,6 +1507,7 @@ public:
 	MOD_OPT_DECL(GLOBAL_STACKING_RULES);
 	MOD_OPT_DECL(GLOBAL_BREAK_CIVILIAN_1UPT);
 	MOD_OPT_DECL(GLOBAL_BREAK_CIVILIAN_RESTRICTIONS);
+	MOD_OPT_DECL(GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK);
 	MOD_OPT_DECL(GLOBAL_LOCAL_GENERALS);
 	MOD_OPT_DECL(GLOBAL_SEPARATE_GREAT_ADMIRAL);
 	MOD_OPT_DECL(GLOBAL_PROMOTION_CLASSES);

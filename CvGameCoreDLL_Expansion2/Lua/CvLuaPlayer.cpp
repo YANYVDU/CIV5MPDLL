@@ -272,6 +272,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetImprovementGoldMaintenance);
 	Method(CalculateGoldRate);
 	Method(CalculateGoldRateTimes100);
+	Method(GetEconomicAidExpensePerTurn);
+	Method(GetTradableGoldRate);
 	Method(CalculateGrossGoldTimes100);
 	Method(CalculateInflatedCosts);
 	Method(CalculateResearchModifier);
@@ -528,6 +530,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 
 	Method(SetHasPolicy);
 	Method(GetNextPolicyCost);
+	Method(GetPolicyCostModifierBreakdown);
 	Method(CanAdoptPolicy);
 	Method(DoAdoptPolicy);
 	Method(CanUnlockPolicyBranch);
@@ -801,6 +804,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(SetEconomicAidAutoRenew);
 	Method(GetEconomicAidPoints);
 	Method(ChangeEconomicAidPoints);
+	Method(GetPendingGiftUnit);
+	Method(GetNextGreatPersonChoice);
 	Method(GetTurnLastPledgedProtectionByMajor);
 	Method(GetTurnLastPledgeBrokenByMajor);
 	Method(GetMinorCivBullyGoldAmount);
@@ -2381,6 +2386,18 @@ int CvLuaPlayer::lCalculateGoldRateTimes100(lua_State* L)
 	return BasicLuaMethod(L, &CvPlayerAI::calculateGoldRateTimes100);
 }
 //------------------------------------------------------------------------------
+//int GetEconomicAidExpensePerTurn();
+int CvLuaPlayer::lGetEconomicAidExpensePerTurn(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetEconomicAidExpensePerTurn);
+}
+//------------------------------------------------------------------------------
+//int GetTradableGoldRate();
+int CvLuaPlayer::lGetTradableGoldRate(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::GetTradableGoldRate);
+}
+//------------------------------------------------------------------------------
 //int CalculateGrossGoldTimes100();
 int CvLuaPlayer::lCalculateGrossGoldTimes100(lua_State* L)
 {
@@ -2535,21 +2552,22 @@ int CvLuaPlayer::lGetResearchProgressExceptOverflow(lua_State* L)
 //------------------------------------------------------------------------------
 //int GetResearchThresholdMod();
 // Returns the city-count research threshold (the "research threshold") broken into its parts:
-// iModPerCity, iEffectiveCities, iPuppetDiscount, iBuildingClassPercent, iGoldenAgePercent, iTotal.
+// iModPerCity, iEffectiveCities, iPuppetDiscount, iBuildingClassCut (threshold points, not a percent),
+// iGoldenAgePercent, iTotal.
 int CvLuaPlayer::lGetResearchThresholdMod(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	int iModPerCity = 0;
 	int iEffectiveCities = 0;
 	int iPuppetDiscount = 0;
-	int iBuildingClassPercent = 0;
+	int iBuildingClassCut = 0;
 	int iGoldenAgePercent = 0;
 	const int iTotal = pkPlayer->GetResearchThresholdMod(&iModPerCity, &iEffectiveCities,
-		&iPuppetDiscount, &iBuildingClassPercent, &iGoldenAgePercent);
+		&iPuppetDiscount, &iBuildingClassCut, &iGoldenAgePercent);
 	lua_pushinteger(L, iModPerCity);
 	lua_pushinteger(L, iEffectiveCities);
 	lua_pushinteger(L, iPuppetDiscount);
-	lua_pushinteger(L, iBuildingClassPercent);
+	lua_pushinteger(L, iBuildingClassCut);
 	lua_pushinteger(L, iGoldenAgePercent);
 	lua_pushinteger(L, iTotal);
 	return 6;
@@ -5892,6 +5910,82 @@ int CvLuaPlayer::lGetNextPolicyCost(lua_State* L)
 	return BasicLuaMethod(L, &CvPlayerAI::getNextPolicyCost);
 }
 //------------------------------------------------------------------------------
+//int GetPolicyCostModifierBreakdown(); returns the policy cost modifier split into its sources.
+// Returns: totalPct, policiesPct, buildingsPct, minorCivsPct, traitsPct, culturedCSPct,
+//          corruptionPct, uncappedTotalPct, discountCapPct.
+// totalPct is what the real math (CvPlayer::recomputePolicyCostModifier) ends up applying; the
+// individual sources are re-summed from the same getters so the tooltip can never disagree with
+// the amount actually charged. Sources that are inactive in this build report 0.
+// Keep this in sync with CvPlayer::recomputePolicyCostModifier().
+int CvLuaPlayer::lGetPolicyCostModifierBreakdown(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+
+	int iPoliciesPct = 0;
+	int iBuildingsPct = 0;
+	int iMinorCivsPct = 0;
+	int iTraitsPct = 0;
+	int iCulturedCSPct = 0;
+	int iCorruptionPct = 0;
+	int iUncappedTotalPct = 0;
+	int iTotalPctApplied = 0;
+	const int iDiscountCapPct = GC.getPOLICY_COST_DISCOUNT_MAX();
+
+	if (pkPlayer)
+	{
+		CvPlayerPolicies* pPolicies = pkPlayer->GetPlayerPolicies();
+		if (pPolicies)
+		{
+			iPoliciesPct = pPolicies->GetNumericModifier(POLICYMOD_POLICY_COST_MODIFIER);
+		}
+
+		iBuildingsPct = pkPlayer->GetPolicyCostBuildingModifier();
+		iMinorCivsPct = pkPlayer->GetPolicyCostMinorCivModifier();
+		iTraitsPct = pkPlayer->GetPlayerTraits()->GetPolicyCostModifier();
+
+#if defined(MOD_SP_CITYSTATE_BASIC)
+		// SP: allied Cultured city-states lower the policy cost (CvPlayer::GetCSPolicyCostModifier)
+		iCulturedCSPct = pkPlayer->GetCSPolicyCostModifier();
+#endif
+
+#ifdef MOD_GLOBAL_CORRUPTION
+		// Corruption: per-city corruption levels plus the player-wide corruption modifier
+		if (MOD_GLOBAL_CORRUPTION && pkPlayer->EnableCorruption())
+		{
+			int iSum = 0;
+			CvCity* pLoopCity = nullptr;
+			int iLoop = 0;
+			for(pLoopCity = pkPlayer->firstCity(&iLoop); pLoopCity != nullptr; pLoopCity = pkPlayer->nextCity(&iLoop))
+			{
+				auto level = pLoopCity->GetCorruptionLevel();
+				iSum += pkPlayer->GetCorruptionLevelPolicyCostModifier(level);
+			}
+			iSum += pkPlayer->GetCorruptionPolicyCostModifier();
+			if(MOD_GLOBAL_CORRUPTION_POLICY_COST_MIN_ZERO) iSum = iSum < 0 ? 0 : iSum;
+			iCorruptionPct = iSum;
+		}
+#endif
+
+		iUncappedTotalPct = iPoliciesPct + iBuildingsPct + iMinorCivsPct + iTraitsPct
+			+ iCulturedCSPct + iCorruptionPct;
+
+		iTotalPctApplied = iUncappedTotalPct;
+		if(iTotalPctApplied < iDiscountCapPct)
+			iTotalPctApplied = iDiscountCapPct;
+	}
+
+	lua_pushinteger(L, iTotalPctApplied);
+	lua_pushinteger(L, iPoliciesPct);
+	lua_pushinteger(L, iBuildingsPct);
+	lua_pushinteger(L, iMinorCivsPct);
+	lua_pushinteger(L, iTraitsPct);
+	lua_pushinteger(L, iCulturedCSPct);
+	lua_pushinteger(L, iCorruptionPct);
+	lua_pushinteger(L, iUncappedTotalPct);
+	lua_pushinteger(L, iDiscountCapPct);
+	return 9;
+}
+//------------------------------------------------------------------------------
 //bool canAdoptPolicy(PolicyTypes  iIndex);
 int CvLuaPlayer::lCanAdoptPolicy(lua_State* L)
 {
@@ -8079,6 +8173,28 @@ int CvLuaPlayer::lChangeEconomicAidPoints(lua_State* L)
 
 	pkPlayer->GetMinorCivAI()->ChangeEconomicAidPoints((PlayerTypes)eMajor, iDelta);
 	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetPendingGiftUnit(PlayerTypes eMajor);
+// Economic Aid point spending (Super Power V11): the unit this city-state will gift to eMajor (NO_UNIT = none)
+int CvLuaPlayer::lGetPendingGiftUnit(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int eMajor = lua_tointeger(L, 2);
+
+	const int eUnit = pkPlayer->GetMinorCivAI()->GetPendingGiftUnit((PlayerTypes)eMajor);
+	lua_pushinteger(L, eUnit);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetNextGreatPersonChoice();
+// Economic Aid point spending (Super Power V11): preselected patronage gift Great Person (NO_UNIT = random)
+int CvLuaPlayer::lGetNextGreatPersonChoice(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+
+	lua_pushinteger(L, pkPlayer->GetNextGreatPersonChoice());
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetTurnLastPledgedProtectionByMajor(PlayerTypes eMajor);
@@ -12591,6 +12707,7 @@ int CvLuaPlayer::lGetDealTheyreValue(lua_State* L)
 //   iAmountOverWeWillRequest - upper accept threshold: AI accepts while iTotalValueToMe <= this
 //   iAmountUnderWeWillOffer  - lower accept threshold: AI accepts while iTotalValueToMe >= this
 //   bCantMatchOffer          - true if the AI currently wants more than we can give
+//   bAcceptable              - whether the AI would actually accept this exact deal right now
 int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
 {
 	CvPlayerAI* pkThisPlayer = GetInstance(L);
@@ -12602,16 +12719,24 @@ int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
 	int iAmountOverWeWillRequest = 0;
 	int iAmountUnderWeWillOffer = 0;
 	bool bCantMatchOffer = false;
+	bool bAcceptable = false;
 
 	if (pkDeal)
 	{
 		PlayerTypes eOtherPlayer = pkDeal->GetOtherPlayer(pkThisPlayer->GetID());
-		pkThisPlayer->GetDealAI()->IsDealWithHumanAcceptable(pkDeal, eOtherPlayer,
+		bAcceptable = pkThisPlayer->GetDealAI()->IsDealWithHumanAcceptable(pkDeal, eOtherPlayer,
 			/*Passed by reference*/ iTotalValueToMe, iValueImOffering, iValueTheyreOffering,
 			iAmountOverWeWillRequest, iAmountUnderWeWillOffer, bCantMatchOffer);
+
+		// Mirror DoHumanOfferDealToThisAI: a deal that hands the AI more than it gives away is
+		// accepted outright, even though it sits outside the normal accept band below.
+		if (!bAcceptable && !pkDeal->IsPeaceTreatyTrade(eOtherPlayer) && iValueTheyreOffering > iValueImOffering)
+		{
+			bAcceptable = true;
+		}
 	}
 
-	lua_createtable(L, 0, 6);
+	lua_createtable(L, 0, 7);
 	lua_pushinteger(L, iTotalValueToMe);
 	lua_setfield(L, -2, "iTotalValueToMe");
 	lua_pushinteger(L, iValueImOffering);
@@ -12624,6 +12749,8 @@ int CvLuaPlayer::lGetDiplomatTradeAdvice(lua_State* L)
 	lua_setfield(L, -2, "iAmountUnderWeWillOffer");
 	lua_pushboolean(L, bCantMatchOffer);
 	lua_setfield(L, -2, "bCantMatchOffer");
+	lua_pushboolean(L, bAcceptable);
+	lua_setfield(L, -2, "bAcceptable");
 
 	return 1;
 }
@@ -12861,8 +12988,15 @@ int CvLuaPlayer::lGetEspionageSpies(lua_State* L)
 		case SPY_RANK_SPECIAL_AGENT:
 			lua_pushstring(L, "TXT_KEY_SPY_RANK_2");
 			break;
+		// SP: the master spy rank is handed out by the "capture an original capital" quest reward
+		case SPY_RANK_MASTER_SPY:
+			lua_pushstring(L, "TXT_KEY_SPY_RANK_3");
+			break;
 		default:
 			CvAssertMsg(false, "pSpy->m_eRank not in case statement");
+			// Always push something - lua_setfield below pops the stack, so leaving the value
+			// unpushed would unbalance the stack and corrupt every later field of this spy
+			lua_pushstring(L, "");
 			break;
 		}
 		lua_setfield(L, t, "Rank");
@@ -12903,6 +13037,8 @@ int CvLuaPlayer::lGetEspionageSpies(lua_State* L)
 #endif
 		default:
 			CvAssertMsg(false, "pSpy->m_eSpyState not in case statement");
+			// Same stack balance requirement as the rank switch above
+			lua_pushstring(L, "");
 			break;
 		}
 		lua_setfield(L, t, "State");
@@ -12923,6 +13059,16 @@ int CvLuaPlayer::lGetEspionageSpies(lua_State* L)
 		lua_pushboolean(L, pSpy->m_bPassive);
 		lua_setfield(L, t, "Passive");
 #endif
+		// SP: expose the Master Spy promotion conditions so the UI can show per-spy progress
+		lua_pushboolean(L, pSpy->m_bHasStolenTech);
+		lua_setfield(L, t, "HasStolenTech");
+
+		lua_pushboolean(L, pSpy->m_bHasKilledSpy);
+		lua_setfield(L, t, "HasKilledSpy");
+
+		lua_pushboolean(L, pSpy->m_bHasCoupSuccess);
+		lua_setfield(L, t, "HasCoupSuccess");
+
 		lua_rawseti(L, -2, index++);
 	}
 	return 1;

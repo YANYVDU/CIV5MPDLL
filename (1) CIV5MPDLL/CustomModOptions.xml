@@ -47,6 +47,8 @@
     <Row Class="6" Name="GLOBAL_BREAK_CIVILIAN_1UPT" Value="0"/>
     <!-- Now not allow civilian enter others city to avoid bug -->
     <Row Class="6" Name="GLOBAL_BREAK_CIVILIAN_RESTRICTIONS" Value="0"/>
+    <!-- Expansion civilian units (settlers, etc) cannot pass through foreign regular military units (v164) -->
+    <Row Class="6" Name="GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK" Value="0" DbUpdates="1"/>
 
     <!-- Great Generals and Admirals gained from combat experience spawn in the war-zone and not in a distant city (v19) -->
     <!-- See also: "Global - Local Generals" -->
@@ -565,7 +567,7 @@
 	<!--   GameEvents.QuestSendNotification.Add(function(iMajor, iMinor, iQuest, iStartTurn, iEndTurn, iData1, iData2, bStarted, bFinished, sNames) end) -->
 	<!--   GameEvents.QuestContestValue.Add(function(iMajor, iMinor, iQuest) return 0 end) -->
 	<!--   pMajor:AddQuestNotification(iCS, sMessage, sSummary, iPlotX=-1, iPlotY=-1, bNewQuest=false) -->
-	<Row Class="3" Name="EVENTS_QUESTS" Value="0" DbUpdates="1"/>
+	<Row Class="3" Name="EVENTS_QUESTS" Value="1" DbUpdates="1"/>
 
     <!-- Events sent by Barbarians (v68) -->
     <!--   GameEvents.BarbariansCanFoundCamp.Add(function(iPlotX, iPlotY) return true end) -->
@@ -1203,6 +1205,19 @@
     <Row Class="5" Name="SP_FAITH_BELIEF_PURCHASE_COST" Value="2500"/>
     <!-- La Venta: base faith cost of the CSUA idle pantheon belief purchase, doubled per purchase, scaled by FaithPercent -->
     <Row Class="5" Name="SP_PANTHEON_BELIEF_PURCHASE_BASE_COST" Value="500"/>
+
+    <!-- Economic Aid point spending (Super Power V11) -->
+    <Row Class="5" Name="SP_AID_POINT_COST_REROLL_QUESTS" Value="20"/>
+    <Row Class="5" Name="SP_AID_POINT_COST_NEXT_GREAT_PERSON" Value="50"/>
+    <Row Class="5" Name="SP_AID_POINT_COST_PENDING_GIFT_UNIT" Value="10"/>
+    <!-- Cost (aid points) and effect (turns) of pulling the next World Congress / United Nations session forward -->
+    <Row Class="5" Name="SP_AID_POINT_COST_HASTEN_CONGRESS" Value="20"/>
+    <Row Class="5" Name="SP_AID_POINT_HASTEN_CONGRESS_TURNS" Value="3"/>
+    <!-- Share of the city-state treasury seized when a major bullies gold (percent, 0 = disabled) -->
+    <Row Class="5" Name="SP_BULLY_TREASURY_SHARE_PERCENT" Value="25"/>
+    <!-- Extra aid points (on top of the gold) the Austria UA pays to buy a city-state out; charged from
+         the (major, city-state) aid point pool. Must match the SP-side DLL_Options.xml override. -->
+    <Row Class="5" Name="SP_AID_POINT_COST_ANNEX_CITY_STATE" Value="50"/>
 
     <Row Class="6" Name="TRAITS_SPREAD_RELIGION_AFTER_KILLING" Value="0"/>
     <Row Class="6" Name="TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY" Value="0"/>

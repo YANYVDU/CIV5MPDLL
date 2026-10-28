@@ -73,6 +73,8 @@ public:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int GetDiplomaticPrestige() const;
 	int GetMinorCivAlliesThresholdModifier() const;
+	bool IsGainConqueredCityStateUA() const;
+	bool IsGainAnnexedCityStateUA() const;
 #endif
 	int GetLandBarbarianConversionPercent() const;
 	int GetLandBarbarianConversionExtraUnits() const;
@@ -392,6 +394,8 @@ protected:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int m_iDiplomaticPrestige;
 	int m_iMinorCivAlliesThresholdModifier;
+	bool m_bGainConqueredCityStateUA;
+	bool m_bGainAnnexedCityStateUA;
 #endif
 	int m_iLandBarbarianConversionPercent;
 	int m_iLandBarbarianConversionExtraUnits;
@@ -1042,6 +1046,14 @@ public:
 	{
 		return m_iDiplomaticPrestige;
 	}
+	bool IsGainConqueredCityStateUA() const
+	{
+		return m_bGainConqueredCityStateUA;
+	}
+	bool IsGainAnnexedCityStateUA() const
+	{
+		return m_bGainAnnexedCityStateUA;
+	}
 #endif
 	int GetConquestCasualtiesModifier() const
 	{
@@ -1586,6 +1598,8 @@ private:
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	int m_iDiplomaticPrestige;
 	int m_iMinorCivAlliesThresholdModifier;
+	bool m_bGainConqueredCityStateUA = false;
+	bool m_bGainAnnexedCityStateUA = false;
 #endif
 	int m_iCityStateCombatModifier;
 	int m_iLandBarbarianConversionPercent;

@@ -34,6 +34,9 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_iCombatModifierFriendlyCities(0),
 	m_iFriendlyHealChange(0),
 	m_iCityStateFriendshipModifier(0),
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige(0),
+#endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iWonderProductionModifier(0),
 	m_iPlayerHappiness(0),
@@ -61,6 +64,7 @@ CvBeliefEntry::CvBeliefEntry() :
 	m_iGoldenAgeModifier(0),
 	m_iExtraSpies(0),
 	m_iSpyPoints(0),
+	m_iSpyPointsPerCity(0),
 	m_bGreatPersonPointsCapital(false),
 	m_bGreatPersonPointsPerCity(false),
 	m_bGreatPersonPointsHolyCity(false),
@@ -331,6 +335,14 @@ int CvBeliefEntry::GetCityStateFriendshipModifier() const
 {
 	return m_iCityStateFriendshipModifier;
 }
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+/// Accessor:: One-time diplomatic prestige granted to the player who picks this belief
+int CvBeliefEntry::GetDiplomaticPrestige() const
+{
+	return m_iDiplomaticPrestige;
+}
+#endif
 
 /// Accessor:: Chance of converting a barbarian camp guard
 int CvBeliefEntry::GetLandBarbarianConversionPercent() const
@@ -833,6 +845,10 @@ int CvBeliefEntry::GetSpyPoints() const
 {
 	return m_iSpyPoints;
 }
+int CvBeliefEntry::GetSpyPointsPerCity() const
+{
+	return m_iSpyPointsPerCity;
+}
 //Great Person Points
 bool CvBeliefEntry::IsGreatPersonPointsCapital() const
 {
@@ -1094,6 +1110,9 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iCombatModifierFriendlyCities   = kResults.GetInt("CombatModifierFriendlyCities");
 	m_iFriendlyHealChange	          = kResults.GetInt("FriendlyHealChange");
 	m_iCityStateFriendshipModifier    = kResults.GetInt("CityStateFriendshipModifier");
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	m_iDiplomaticPrestige             = kResults.GetInt("DiplomaticPrestige");
+#endif
 	m_iLandBarbarianConversionPercent = kResults.GetInt("LandBarbarianConversionPercent");
 	m_iWonderProductionModifier       = kResults.GetInt("WonderProductionModifier");
 	m_iPlayerHappiness			      = kResults.GetInt("PlayerHappiness");
@@ -1121,6 +1140,7 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iGoldenAgeModifier	  		  = kResults.GetInt("GoldenAgeModifier");
 	m_iExtraSpies	  	  			  = kResults.GetInt("ExtraSpies");
 	m_iSpyPoints	  	  			  = kResults.GetInt("SpyPoints");
+	m_iSpyPointsPerCity	  	  		  = kResults.GetInt("SpyPointsPerCity");
 	m_iLandmarksTourismPercent	  	  = kResults.GetInt("LandmarksTourismPercent");
 	m_iHolyCityUnitExperence	  	  = kResults.GetInt("HolyCityUnitExperence");
 	m_iCityExtraMissionarySpreads	  = kResults.GetInt("CityExtraMissionarySpreads");
@@ -2665,6 +2685,19 @@ int CvReligionBeliefs::GetYieldPerBirth(YieldTypes eYieldType) const
 	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
 	{
 		rtnValue += pBeliefs->GetEntry(*i)->GetYieldPerBirth(eYieldType);
+	}
+
+	return rtnValue;
+}
+/// Get spy points per city from beliefs
+int CvReligionBeliefs::GetSpyPointsPerCity() const
+{
+	CvBeliefXMLEntries* pBeliefs = GC.GetGameBeliefs();
+	int rtnValue = 0;
+
+	for (BeliefList::const_iterator i = m_ReligionBeliefs.begin(); i != m_ReligionBeliefs.end(); i++)
+	{
+		rtnValue += pBeliefs->GetEntry(*i)->GetSpyPointsPerCity();
 	}
 
 	return rtnValue;

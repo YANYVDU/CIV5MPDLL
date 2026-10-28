@@ -71,6 +71,29 @@ enum MinorCivQuestTypes
     MINOR_CIV_QUEST_SPREAD_RELIGION,
 	MINOR_CIV_QUEST_TRADE_ROUTE,
 
+	// SP extended quests - the ID values MUST match the rows in the Quests table
+	MINOR_CIV_QUEST_RESEARCH_TECH,
+	MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER,
+	MINOR_CIV_QUEST_SPREAD_BUILDING,
+	MINOR_CIV_QUEST_FIND_CITY_STATE,
+	MINOR_CIV_QUEST_DISCONNECT_TRADE_ROUTE,
+	MINOR_CIV_QUEST_BECOME_ALLY,
+	MINOR_CIV_QUEST_RIG_ELECTION,
+	MINOR_CIV_QUEST_DECLARE_WAR,
+	MINOR_CIV_QUEST_CAPTURE_ORIGINAL_CAPITAL,
+	MINOR_CIV_QUEST_LEAGUE_PROTECT_CITY_STATE,
+	MINOR_CIV_QUEST_LEAGUE_SANCTION,
+	MINOR_CIV_QUEST_LEAGUE_REPEAL_EMBARGO,
+	MINOR_CIV_QUEST_DONATE_GOLD,
+	MINOR_CIV_QUEST_RESEARCH_AGREEMENT,
+
+	// SP contest quests - the ID values MUST match the rows in the Quests table
+	MINOR_CIV_QUEST_CONTEST_WORLD_WONDERS,
+	MINOR_CIV_QUEST_CONTEST_CONVERTS,
+	MINOR_CIV_QUEST_CONTEST_GREAT_PEOPLE,
+	MINOR_CIV_QUEST_CONTEST_CITIES_FOUNDED,
+	MINOR_CIV_QUEST_CONTEST_CITIES_CAPTURED,
+
 	NUM_MINOR_CIV_QUEST_TYPES,
 };
 FDataStream& operator<<(FDataStream&, const MinorCivQuestTypes&);
@@ -138,7 +161,7 @@ public:
 	void SetHandled(bool bValue);
 
 	// Starting and finishing
-	void DoStartQuest(int iStartTurn);
+	void DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget = NO_PLAYER);
 	void DoStartQuestUsingExistingData(CvMinorCivQuest* pExistingQuest);
 	bool DoFinishQuest();
 	bool DoCancelQuest();
@@ -283,8 +306,12 @@ public:
 	int GetMaxActiveGlobalQuests() const;
 
 	void DoTestStartGlobalQuest();
-	void DoTestStartPersonalQuest(PlayerTypes ePlayer);
-	void AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn);
+	// Super Power V11: pveExclude (optional) forbids handing back quest types the caller just
+	// dropped, used by the aid-point quest reroll so a reroll cannot return the old quests.
+	// iForcedDraw (optional, < 0 = off) supplies an already-drawn random value instead of pulling
+	// one from the shared stream, so the reroll can advance the stream by a fixed amount up front.
+	void DoTestStartPersonalQuest(PlayerTypes ePlayer, const std::vector<MinorCivQuestTypes>* pveExclude = NULL, int iForcedDraw = -1);
+	void AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iStartTurn, PlayerTypes eForcedTarget = NO_PLAYER);
 	void AddQuestCopyForPlayer(PlayerTypes ePlayer, CvMinorCivQuest* pQuest);
 	void DoTestQuestsOnFirstContact(PlayerTypes eMajor);
 
@@ -310,7 +337,11 @@ public:
 	int GetNumActiveQuestsForPlayer(PlayerTypes ePlayer) const;
 	int GetNumActivePersonalQuestsForPlayer(PlayerTypes ePlayer) const;
 	bool IsActiveQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType);
+	bool IsQuestExpired(PlayerTypes ePlayer, MinorCivQuestTypes eType);
 	void EndAllActiveQuestsForPlayer(PlayerTypes ePlayer);
+
+	// SP extended quests: drop a single active quest of the given type from the player's list
+	void CancelQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType);
 
 	int GetNumDisplayedQuestsForPlayer(PlayerTypes ePlayer);
 	bool IsDisplayedQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eType);
@@ -331,6 +362,7 @@ public:
 
 	int GetQuestData1(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;
 	int GetQuestData2(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;
+	int GetQuestStartTurn(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;
 	int GetQuestTurnsRemaining(PlayerTypes ePlayer, MinorCivQuestTypes eType, int iGameTurn) const;
 #if defined(MOD_EVENTS_QUESTS)
 	int GetQuestTurnsDuration(PlayerTypes ePlayer, MinorCivQuestTypes eType) const;
@@ -345,6 +377,14 @@ public:
 	ResourceTypes GetNearbyResourceForQuest(PlayerTypes ePlayer);
 	BuildingTypes GetBestWonderForQuest(PlayerTypes ePlayer);
 	UnitTypes GetBestGreatPersonForQuest(PlayerTypes ePlayer);
+	TechTypes GetBestTechForQuest(PlayerTypes ePlayer);
+	BuildingTypes GetBestNationalWonderForQuest(PlayerTypes ePlayer);
+	BuildingTypes GetBestBuildingForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestCityStateToFind(PlayerTypes ePlayer);
+	PlayerTypes GetBestTradeRouteTargetForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestWarTargetForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestOriginalCapitalTargetForQuest(PlayerTypes ePlayer);
+	PlayerTypes GetBestResearchAgreementTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestCityStateTarget(PlayerTypes eForPlayer);
 	PlayerTypes GetMostRecentBullyForQuest() const;
 	bool IsWantsMinorDead(PlayerTypes eMinor);
@@ -448,6 +488,18 @@ public:
 	// Economic Aid points (Super Power V11): per-major accumulated aid points on this city-state
 	int GetEconomicAidPoints(PlayerTypes eMajor) const;
 	void ChangeEconomicAidPoints(PlayerTypes eMajor, int iDelta);
+	// Economic Aid point spending (Super Power V11)
+	// Reroll this major's personal quests (global quest copies are kept); returns false if no quest could be granted
+	bool DoRerollPersonalQuestsForPlayer(PlayerTypes eMajor);
+	// Preselected military gift unit for this major (NO_UNIT = none); DoSpawnUnit uses it instead of the random pick
+	UnitTypes GetPendingGiftUnit(PlayerTypes eMajor) const;
+	void SetPendingGiftUnit(PlayerTypes eMajor, UnitTypes eUnit);
+	// Bully gold paying the influence loss with aid points instead. No penalty of any kind is applied -
+	// the city-state does not even record the bully. Returns false if the bully could not be pulled off.
+	bool DoMajorBullyGoldWithAidPoints(PlayerTypes eMajor, int iGold);
+	// Aid points charged to bully gold without penalty: twice the influence loss the bully would normally suffer
+	int GetBullyGoldAidPointCost(PlayerTypes eMajor);
+	void DoBullyTreasuryShare(PlayerTypes eMajor); // seize a share of the city-state treasury on bully gold
 	// Wittenberg CS UA: faith-purchase a belief into this city-state's religion (one per major)
 	bool DoCityStateFaithBeliefPurchase(PlayerTypes eMajor, BeliefTypes eBelief);
 	bool IsFaithBeliefPurchasedByMajor(PlayerTypes eMajor) const;
@@ -522,6 +574,7 @@ public:
 	void DoSpawnUnit(PlayerTypes eMajor);
 #endif
 	void DoUnitSpawnTurn();
+	void DoBuildingPurchase();
 	int GetSpawnBaseTurns(PlayerTypes ePlayer);
 	int GetCurrentSpawnEstimate(PlayerTypes ePlayer);
 
@@ -564,6 +617,9 @@ public:
 	void DoMajorBullyUnit(PlayerTypes eBully, UnitTypes eUnitType);
 	
 	void DoBulliedByMajorReaction(PlayerTypes eBully, int iInfluenceChangeTimes100);
+	// Let other city-states settle any "bully a city-state" quest this fulfils for the bully. Has no
+	// other effect, so an unrecorded bully (aid points) still hands the bully every quest reward.
+	void NotifyOtherMinorsOfBully(PlayerTypes eBully);
 
 	bool IsEverBulliedByAnyMajor() const;
 	bool IsEverBulliedByMajor(PlayerTypes ePlayer) const;
@@ -571,6 +627,10 @@ public:
 	bool IsRecentlyBulliedByMajor(PlayerTypes ePlayer) const; //antonjs: consider: replace with GetTurnLastBulliedByMajor
 	int GetTurnLastBulliedByMajor(PlayerTypes ePlayer) const;
 	void SetTurnLastBulliedByMajor(PlayerTypes ePlayer, int iTurn);
+
+	// SP extended quests: turn on which this major last staged a coup against us (-1 = never)
+	int GetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer) const;
+	void SetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer, int iTurn);
 
 	// ****************
 	// *** Election ***
@@ -608,6 +668,11 @@ public:
 	bool IsPeaceBlocked(TeamTypes eTeam) const;
 
 	void DoTeamDeclaredWarOnMe(TeamTypes eEnemyTeam);
+
+	// SP extended quests: the "declare war on our aggressor" quest is not part of the regular
+	// quest pool. It is handed out the moment we are attacked, to every met major not already
+	// fighting the aggressor, and never competes for a personal or global quest slot.
+	void DoStartDeclareWarQuests(TeamTypes eAttackerTeam);
 	bool IsPermanentWar(TeamTypes eTeam) const;
 	void SetPermanentWar(TeamTypes eTeam, bool bValue);
 
@@ -649,6 +714,7 @@ private:
 
 	int m_iTurnsSinceThreatenedByBarbarians;
 	int m_iGlobalQuestCountdown;
+	bool m_bHasGivenGlobalQuest; // SP: whether this city-state has handed out its first global quest
 
 	bool m_abWarQuestAgainstMajor[MAX_MAJOR_CIVS];
 	int m_aaiNumEnemyUnitsLeftToKillByMajor[MAX_MAJOR_CIVS][MAX_MAJOR_CIVS];
@@ -669,6 +735,7 @@ private:
 	int m_aiNumUnitsGifted[MAX_MAJOR_CIVS];
 	int m_aiNumGoldGifted[MAX_MAJOR_CIVS];
 	int m_aiTurnLastBullied[MAX_MAJOR_CIVS];
+	int m_aiTurnLastRiggedElection[MAX_MAJOR_CIVS]; // SP extended quests: last turn a major staged a coup here
 	int m_aiTurnLastPledged[MAX_MAJOR_CIVS];
 	int m_aiTurnLastBrokePledge[MAX_MAJOR_CIVS];
 	bool m_abUnitSpawningDisabled[MAX_MAJOR_CIVS];
@@ -691,6 +758,7 @@ private:
 	int m_aiFaithPantheonPurchaseCount[MAX_MAJOR_CIVS];
 	int m_aiEconomicAidTerminationReason[MAX_MAJOR_CIVS]; // stores EconomicAidTerminationReason values
 	int m_aiEconomicAidPoints[MAX_MAJOR_CIVS]; // per-major accumulated aid points on this city-state
+	UnitTypes m_aePendingGiftUnit[MAX_MAJOR_CIVS]; // preselected military gift unit per major (NO_UNIT = none)
 	bool m_bEconomicAidOpenThisRound;
 	bool m_abPermanentWar[REALLY_MAX_TEAMS];
 	bool m_abWaryOfTeam[REALLY_MAX_TEAMS];
@@ -738,7 +806,13 @@ public:
 
 	int GetMinorCivTrait() const;
 	const char* GetUAType() const;
+	// Cached index of this city-state's UAType within CvCityStateUAXMLEntries, resolved once after
+	// the CityStateUAs table loads (CvCityStateUAXMLEntries::ResolveMinorCivUAIndexes). -1 when no
+	// row matches. Lets every CSUA query read the entry by index instead of a linear strcmp lookup.
+	int GetCityStateUAIndex() const;
+	void SetCityStateUAIndex(int iIndex);
 	bool isFreeBuildingClass(int i) const;
+	bool isPurchaseBuildingClass(int i) const;
 
 	// Deprecated Members
 	const char* getAdjectiveKeyWide() const;
@@ -756,6 +830,7 @@ protected:
 	int m_iNumLeaders;				 // the number of leaders the Civ has, this is needed so that random leaders can be generated easily
 	int m_iMinorCivTrait;
 	CvString m_strUAType;
+	int m_iCityStateUAIndex;		 // index into CvCityStateUAXMLEntries::GetUAEntries(), -1 if none
 
 	bool m_bAIPlayable;
 	bool m_bPlayable;
@@ -777,6 +852,7 @@ protected:
 	// Arrays
 	int* m_piFlavorValue;
 	bool* m_pbFreeBuildingClass;
+	bool* m_pbPurchaseBuildingClass;
 	std::vector<CvString> m_vCityNames;
 };
 

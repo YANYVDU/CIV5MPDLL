@@ -41,6 +41,8 @@ CvTraitEntry::CvTraitEntry() :
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige(0),
 	m_iMinorCivAlliesThresholdModifier(0),
+	m_bGainConqueredCityStateUA(false),
+	m_bGainAnnexedCityStateUA(false),
 #endif
 	m_iLandBarbarianConversionPercent(0),
 	m_iLandBarbarianConversionExtraUnits(0),
@@ -165,6 +167,7 @@ CvTraitEntry::CvTraitEntry() :
 #endif
 
 	m_eFreeUnitPrereqTech(NO_TECH),
+	m_eCombatBonusImprovement(NO_IMPROVEMENT),
 	m_eFreeBuilding(NO_BUILDING),
 	m_eFreeBuildingOnConquest(NO_BUILDING),
 	m_bTrainedAll(false),
@@ -418,6 +421,20 @@ int CvTraitEntry::GetCityStateCombatModifier() const
 	int CvTraitEntry::GetMinorCivAlliesThresholdModifier() const
 	{
 		return m_iMinorCivAlliesThresholdModifier;
+	}
+
+	//	--------------------------------------------------------------------------
+	/// Accessor:: keep conquered city-states' ally-tier UA effects
+	bool CvTraitEntry::IsGainConqueredCityStateUA() const
+	{
+		return m_bGainConqueredCityStateUA;
+	}
+
+	//	--------------------------------------------------------------------------
+	/// Accessor:: keep the ally-tier UA effects of city-states annexed by buyout
+	bool CvTraitEntry::IsGainAnnexedCityStateUA() const
+	{
+		return m_bGainAnnexedCityStateUA;
 	}
 #endif
 
@@ -1822,6 +1839,8 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iDiplomaticPrestige					= kResults.GetInt("DiplomaticPrestige");
 	m_iMinorCivAlliesThresholdModifier					= kResults.GetInt("MinorCivAlliesThresholdModifier");
+	m_bGainConqueredCityStateUA							= kResults.GetBool("GainConqueredCityStateUA");
+	m_bGainAnnexedCityStateUA							= kResults.GetBool("GainAnnexedCityStateUA");
 #endif
 	m_iCityStateCombatModifier				= kResults.GetInt("CityStateCombatModifier");
 	m_iLandBarbarianConversionPercent       = kResults.GetInt("LandBarbarianConversionPercent");
@@ -2853,6 +2872,8 @@ CvPlayerTraits::CvPlayerTraits()
 {
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	m_iMinorCivAlliesThresholdModifier = 0;
+	m_bGainConqueredCityStateUA = false;
+	m_bGainAnnexedCityStateUA = false;
 #endif
 }
 
@@ -2910,6 +2931,10 @@ void CvPlayerTraits::InitPlayerTraits()
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 			m_iDiplomaticPrestige += trait->GetDiplomaticPrestige();
 			m_iMinorCivAlliesThresholdModifier += trait->GetMinorCivAlliesThresholdModifier();
+			if (trait->IsGainConqueredCityStateUA())
+				m_bGainConqueredCityStateUA = true;
+			if (trait->IsGainAnnexedCityStateUA())
+				m_bGainAnnexedCityStateUA = true;
 #endif
 			m_iLandBarbarianConversionPercent += trait->GetLandBarbarianConversionPercent();
 			m_iLandBarbarianConversionExtraUnits += trait->GetLandBarbarianConversionExtraUnits();
@@ -3448,7 +3473,9 @@ void CvPlayerTraits::InitPlayerTraits()
 				m_aFreeTraitUnits.push_back(traitUnit);
 			}
 
-			m_eCombatBonusImprovement = trait->GetCombatBonusImprovement();
+			// A trait without a CombatBonusImprovement must not clobber the value of an earlier trait
+			if (trait->GetCombatBonusImprovement() != NO_IMPROVEMENT)
+				m_eCombatBonusImprovement = trait->GetCombatBonusImprovement();
 
 			int iNumUnitCombatClassInfos = GC.getNumUnitCombatClassInfos();
 			for(int jJ= 0; jJ < iNumUnitCombatClassInfos; jJ++)
@@ -3539,6 +3566,8 @@ void CvPlayerTraits::Reset()
 	if (m_iMinorCivAlliesThresholdModifier != 0 && m_pPlayer)
 		m_pPlayer->ChangeMinorCivAlliesThresholdModifier(-m_iMinorCivAlliesThresholdModifier);
 	m_iMinorCivAlliesThresholdModifier = 0;
+	m_bGainConqueredCityStateUA = false;
+	m_bGainAnnexedCityStateUA = false;
 #endif
 	m_iLandBarbarianConversionPercent = 0;
 	m_iLandBarbarianConversionExtraUnits = 0;

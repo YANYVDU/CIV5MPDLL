@@ -176,6 +176,9 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iMinorLocalBullyScoreModifier(0),
 	m_iMinorAllyBullyScoreModifier(0),
 	m_iMinorBullyInfluenceLossModifier(0),
+	m_iSameReligionMinorFriendshipMinimum(0),
+	m_iFoundedReligionMinorPerTurnInfluence(0),
+	m_iCityStateGiftUnitExperience(0),
 	m_iThemingBonusMultiplier(0),
 	m_iInternalTradeRouteYieldModifier(0),
 	m_iSharedReligionTourismModifier(0),
@@ -540,6 +543,9 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iMinorLocalBullyScoreModifier = kResults.GetInt("MinorLocalBullyScoreModifier");
 	m_iMinorAllyBullyScoreModifier = kResults.GetInt("MinorAllyBullyScoreModifier");
 	m_iMinorBullyInfluenceLossModifier = kResults.GetInt("MinorBullyInfluenceLossModifier");
+	m_iSameReligionMinorFriendshipMinimum = kResults.GetInt("SameReligionMinorFriendshipMinimum");
+	m_iFoundedReligionMinorPerTurnInfluence = kResults.GetInt("FoundedReligionMinorPerTurnInfluence");
+	m_iCityStateGiftUnitExperience = kResults.GetInt("CityStateGiftUnitExperience");
 	m_iThemingBonusMultiplier = kResults.GetInt("ThemingBonusMultiplier");
 	m_iInternalTradeRouteYieldModifier = kResults.GetInt("InternalTradeRouteYieldModifier");
 	m_iSharedReligionTourismModifier = kResults.GetInt("SharedReligionTourismModifier");
@@ -686,6 +692,83 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 		}
 
 		pResults->Reset();
+	}
+
+	//Policy Free BuildingClass (all cities)
+	{
+		m_vFreeBuildingClass.clear();
+		const char* szKey = "Policy_FreeBuildingClass";
+		Database::Results* pResults = kUtility.GetResults(szKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(szKey, "select BuildingClasses.ID as BuildingClassID, Count, IsRemovedWhenPolicyBlocked from Policy_FreeBuildingClass inner join BuildingClasses on BuildingClasses.Type = BuildingClassType where PolicyType = ?");
+		}
+
+		if (pResults != NULL)
+		{
+			pResults->Bind(1, szPolicyType);
+			while (pResults->Step())
+			{
+				PolicyFreeBuildingClassInfo info;
+				info.eBuildingClass = (BuildingClassTypes)pResults->GetInt(0);
+				info.iCount = pResults->GetInt(1);
+				info.bRemovedWhenBlocked = pResults->GetBool(2);
+				m_vFreeBuildingClass.push_back(info);
+			}
+			pResults->Reset();
+		}
+	}
+
+	//Policy Free BuildingClass (capital only)
+	{
+		m_vFreeBuildingClassCapital.clear();
+		const char* szKey = "Policy_FreeBuildingClassCapital";
+		Database::Results* pResults = kUtility.GetResults(szKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(szKey, "select BuildingClasses.ID as BuildingClassID, Count from Policy_FreeBuildingClassCapital inner join BuildingClasses on BuildingClasses.Type = BuildingClassType where PolicyType = ?");
+		}
+
+		if (pResults != NULL)
+		{
+			pResults->Bind(1, szPolicyType);
+			while (pResults->Step())
+			{
+				PolicyFreeBuildingClassInfo info;
+				info.eBuildingClass = (BuildingClassTypes)pResults->GetInt(0);
+				info.iCount = pResults->GetInt(1);
+				// The table has no IsRemovedWhenPolicyBlocked column; blocked branches remove it.
+				info.bRemovedWhenBlocked = true;
+				m_vFreeBuildingClassCapital.push_back(info);
+			}
+			pResults->Reset();
+		}
+	}
+
+	//Policy Free BuildingClass (cities originally owned by a city-state)
+	{
+		m_vFreeBuildingClassCityStates.clear();
+		const char* szKey = "Policy_FreeBuildingClassCityStates";
+		Database::Results* pResults = kUtility.GetResults(szKey);
+		if (pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(szKey, "select BuildingClasses.ID as BuildingClassID, Count from Policy_FreeBuildingClassCityStates inner join BuildingClasses on BuildingClasses.Type = BuildingClassType where PolicyType = ?");
+		}
+
+		if (pResults != NULL)
+		{
+			pResults->Bind(1, szPolicyType);
+			while (pResults->Step())
+			{
+				PolicyFreeBuildingClassInfo info;
+				info.eBuildingClass = (BuildingClassTypes)pResults->GetInt(0);
+				info.iCount = pResults->GetInt(1);
+				// Same as the capital table: no column, blocked branches remove it.
+				info.bRemovedWhenBlocked = true;
+				m_vFreeBuildingClassCityStates.push_back(info);
+			}
+			pResults->Reset();
+		}
 	}
 
 	//BuildingYieldModifiers
@@ -1161,6 +1244,61 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 		//Trim capacity
 		std::multimap<int, int>(m_FreePromotionUnitCombats).swap(m_FreePromotionUnitCombats);
+
+		pResults->Reset();
+	}
+
+	//MinorCivTraitFriendshipMinimum
+	{
+		m_viMinorCivTraitFriendshipMinimum.clear();
+		m_viMinorCivTraitFriendshipMinimum.resize(NUM_MINOR_CIV_TRAIT_TYPES, 0);
+
+		std::string sqlKey = "m_viMinorCivTraitFriendshipMinimum";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if(pResults == NULL)
+		{
+			const char* szSQL = "select MinorCivTraitType, Minimum from Policy_MinorCivTraitFriendshipMinimum where PolicyType = ?";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while(pResults->Step())
+		{
+			const int iTrait = GC.getInfoTypeForString(pResults->GetText("MinorCivTraitType"));
+			const int iValue = pResults->GetInt("Minimum");
+
+			if (iTrait >= 0 && iTrait < NUM_MINOR_CIV_TRAIT_TYPES)
+				m_viMinorCivTraitFriendshipMinimum[iTrait] += iValue;
+		}
+
+		pResults->Reset();
+	}
+
+	//CityStateGiftUnitFreePromotions
+	{
+		m_CityStateGiftUnitFreePromotions.clear();
+
+		std::string sqlKey = "m_CityStateGiftUnitFreePromotions";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if(pResults == NULL)
+		{
+			const char* szSQL = "select UnitPromotions.ID, UnitCombatInfos.ID from Policy_CityStateGiftUnitFreePromotion, UnitPromotions, UnitCombatInfos where PolicyType = ? and PromotionType = UnitPromotions.Type and UnitCombatType = UnitCombatInfos.Type";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while(pResults->Step())
+		{
+			const int iPromotionID = pResults->GetInt(0);
+			const int iUnitCombatID = pResults->GetInt(1);
+
+			m_CityStateGiftUnitFreePromotions.insert(std::pair<int, int>(iPromotionID, iUnitCombatID));
+		}
+
+		//Trim capacity
+		std::multimap<int, int>(m_CityStateGiftUnitFreePromotions).swap(m_CityStateGiftUnitFreePromotions);
 
 		pResults->Reset();
 	}
@@ -2321,6 +2459,32 @@ int CvPolicyEntry::GetMinorBullyInfluenceLossModifier() const
 	return m_iMinorBullyInfluenceLossModifier;
 }
 
+/// Friendship anchor bonus against a city-state sharing the player's religion
+int CvPolicyEntry::GetSameReligionMinorFriendshipMinimum() const
+{
+	return m_iSameReligionMinorFriendshipMinimum;
+}
+
+/// Per-turn influence with a city-state following the player's founded religion
+int CvPolicyEntry::GetFoundedReligionMinorPerTurnInfluence() const
+{
+	return m_iFoundedReligionMinorPerTurnInfluence;
+}
+
+/// Extra experience for military units gifted by a city-state
+int CvPolicyEntry::GetCityStateGiftUnitExperience() const
+{
+	return m_iCityStateGiftUnitExperience;
+}
+
+/// Friendship anchor bonus against city-states of the given trait
+int CvPolicyEntry::GetMinorCivTraitFriendshipMinimum(int i) const
+{
+	CvAssertMsg(i < NUM_MINOR_CIV_TRAIT_TYPES, "Index out of bounds");
+	CvAssertMsg(i > -1, "Index out of bounds");
+	return m_viMinorCivTraitFriendshipMinimum[i];
+}
+
 /// Boost to museum theming
 int CvPolicyEntry::GetThemingBonusMultiplier() const
 {
@@ -2841,6 +3005,11 @@ bool CvPolicyEntry::IsFreePromotionUnitCombat(const int promotionID, const int u
 	return false;
 }
 
+const std::multimap<int, int>& CvPolicyEntry::GetCityStateGiftUnitFreePromotions() const
+{
+	return m_CityStateGiftUnitFreePromotions;
+}
+
 #if defined(MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 bool CvPolicyEntry::HasFaithPurchaseUnitClasses() const
 {
@@ -3240,6 +3409,21 @@ std::vector<PolicyResourceInfo>& CvPolicyEntry::GetCityResources()
 	return m_vCityResources;
 }
 
+std::vector<PolicyFreeBuildingClassInfo>& CvPolicyEntry::GetFreeBuildingClassInfo()
+{
+	return m_vFreeBuildingClass;
+}
+
+std::vector<PolicyFreeBuildingClassInfo>& CvPolicyEntry::GetFreeBuildingClassCapitalInfo()
+{
+	return m_vFreeBuildingClassCapital;
+}
+
+std::vector<PolicyFreeBuildingClassInfo>& CvPolicyEntry::GetFreeBuildingClassCityStatesInfo()
+{
+	return m_vFreeBuildingClassCityStates;
+}
+
 int CvPolicyEntry::GetGlobalHappinessFromFaithPercent() const
 {
 	return m_iGlobalHappinessFromFaithPercent;
@@ -3466,6 +3650,7 @@ bool CvPolicyBranchEntry::IsDelayWhenNoScience() const
 //=====================================
 /// Constructor
 CvPolicyXMLEntries::CvPolicyXMLEntries(void)
+	: m_bFreeBuildingClassCacheBuilt(false)
 {
 
 }
@@ -3498,11 +3683,123 @@ void CvPolicyXMLEntries::DeletePoliciesArray()
 	}
 
 	m_paPolicyEntries.clear();
+
+	ResetFreeBuildingClassCache();
+}
+
+/// Drop the Policy_FreeBuildingClass* lookup. Called when the policy array is rebuilt so a
+/// later query cannot keep pointing at entries that no longer exist.
+void CvPolicyXMLEntries::ResetFreeBuildingClassCache()
+{
+	m_bFreeBuildingClassCacheBuilt = false;
+	m_vPoliciesWithFreeBuildingClasses.clear();
+	m_vFreeBuildingClasses.clear();
+	m_vFreeBuildingClassesByPolicy.clear();
+}
+
+/// Append the classes named by one table to a per-policy list, skipping duplicates.
+void CvPolicyXMLEntries::AddFreeBuildingClasses(const std::vector<PolicyFreeBuildingClassInfo>& vRows, std::vector<BuildingClassTypes>& vClasses, bool& bHasRow)
+{
+	for (size_t i = 0; i < vRows.size(); i++)
+	{
+		const BuildingClassTypes eBuildingClass = vRows[i].eBuildingClass;
+
+		bool bKnown = false;
+		for (size_t j = 0; j < vClasses.size(); j++)
+		{
+			if (vClasses[j] == eBuildingClass)
+			{
+				bKnown = true;
+				break;
+			}
+		}
+
+		if (!bKnown)
+			vClasses.push_back(eBuildingClass);
+
+		bHasRow = true;
+	}
+}
+
+/// Build the Policy_FreeBuildingClass* lookup used by CvCity::UpdatePolicyFreeBuildings.
+/// Entries are cached by PrefetchGameData before play starts, so a lazy first build here is
+/// safe and the result stays valid until the policy array is deleted.
+void CvPolicyXMLEntries::EnsureFreeBuildingClassCache()
+{
+	if (m_bFreeBuildingClassCacheBuilt)
+		return;
+
+	// Nothing loaded yet: do not mark the cache as built, or an early call would pin an
+	// empty result for the rest of the game.
+	if (m_paPolicyEntries.empty())
+		return;
+
+	ResetFreeBuildingClassCache();
+	m_bFreeBuildingClassCacheBuilt = true;
+	m_vFreeBuildingClassesByPolicy.resize(m_paPolicyEntries.size());
+
+	for (size_t i = 0; i < m_paPolicyEntries.size(); i++)
+	{
+		CvPolicyEntry* pPolicy = m_paPolicyEntries[i];
+		if (pPolicy == NULL)
+			continue;
+
+		std::vector<BuildingClassTypes>& vPolicyClasses = m_vFreeBuildingClassesByPolicy[i];
+		bool bHasRow = false;
+
+		AddFreeBuildingClasses(pPolicy->GetFreeBuildingClassInfo(), vPolicyClasses, bHasRow);
+		AddFreeBuildingClasses(pPolicy->GetFreeBuildingClassCapitalInfo(), vPolicyClasses, bHasRow);
+		AddFreeBuildingClasses(pPolicy->GetFreeBuildingClassCityStatesInfo(), vPolicyClasses, bHasRow);
+
+		if (!bHasRow)
+			continue;
+
+		m_vPoliciesWithFreeBuildingClasses.push_back((PolicyTypes)i);
+
+		for (size_t j = 0; j < vPolicyClasses.size(); j++)
+		{
+			bool bKnown = false;
+			for (size_t k = 0; k < m_vFreeBuildingClasses.size(); k++)
+			{
+				if (m_vFreeBuildingClasses[k] == vPolicyClasses[j])
+				{
+					bKnown = true;
+					break;
+				}
+			}
+
+			if (!bKnown)
+				m_vFreeBuildingClasses.push_back(vPolicyClasses[j]);
+		}
+	}
+}
+
+const std::vector<PolicyTypes>& CvPolicyXMLEntries::GetPoliciesWithFreeBuildingClasses() const
+{
+	return m_vPoliciesWithFreeBuildingClasses;
+}
+
+const std::vector<BuildingClassTypes>& CvPolicyXMLEntries::GetFreeBuildingClasses() const
+{
+	return m_vFreeBuildingClasses;
+}
+
+const std::vector<BuildingClassTypes>& CvPolicyXMLEntries::GetFreeBuildingClassesForPolicy(PolicyTypes ePolicy) const
+{
+	static const std::vector<BuildingClassTypes> s_vEmpty;
+
+	if (ePolicy < 0 || ePolicy >= (int)m_vFreeBuildingClassesByPolicy.size())
+		return s_vEmpty;
+
+	return m_vFreeBuildingClassesByPolicy[ePolicy];
 }
 
 /// Get a specific entry
 CvPolicyEntry* CvPolicyXMLEntries::GetPolicyEntry(int index)
 {
+	if (index < 0 || index >= (int)m_paPolicyEntries.size())
+		return NULL;
+
 	return m_paPolicyEntries[index];
 }
 

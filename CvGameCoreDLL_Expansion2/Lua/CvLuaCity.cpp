@@ -601,6 +601,19 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(ChangeUnitProduction);
 
 	Method(IsCanAddSpecialistToBuilding);
+	Method(GetMaxSpecialistCount);
+	// MP: ChangeMaxSpecialistCount writes the slot inventory, which is part of CvCity's sync data -
+	// a direct Lua call only moves the calling client and desyncs the others. The inventory follows
+	// the buildings by itself (see CvCity::ChangeMaxSpecialistCountFromBuilding), so a mod should
+	// not push raw slot deltas from Lua; a slot source that is not a building has to reach every
+	// client through the usual SendAndExecuteLuaFunction path instead.
+	Method(ChangeMaxSpecialistCount);
+	Method(IsCanAddSpecialist);
+	Method(GetNumSpecialistsInBuildings);
+	// MP: DoRemoveSpecialist takes a Citizen out of the city-wide pool, which is part of
+	// CvCityCitizens' sync data - a direct Lua call only moves the calling client and desyncs the
+	// others. Route it through SendAndExecuteLuaFunction instead.
+	Method(DoRemoveSpecialist);
 	Method(GetSpecialistUpgradeThreshold);
 	Method(GetNumSpecialistsAllowedByBuilding);
 	Method(GetSpecialistCount);
@@ -4284,6 +4297,53 @@ int CvLuaCity::lIsCanAddSpecialistToBuilding(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//int GetMaxSpecialistCount(SpecialistTypes eIndex);
+int CvLuaCity::lGetMaxSpecialistCount(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eIndex = toValue<SpecialistTypes>(L, 2);
+	lua_pushinteger(L, pkCity->GetMaxSpecialistCount(eIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void ChangeMaxSpecialistCount(SpecialistTypes eIndex, int iChange);
+int CvLuaCity::lChangeMaxSpecialistCount(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eIndex = toValue<SpecialistTypes>(L, 2);
+	const int iChange = lua_tointeger(L, 3);
+	pkCity->ChangeMaxSpecialistCount(eIndex, iChange);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//bool IsCanAddSpecialist(SpecialistTypes eSpecialist);
+int CvLuaCity::lIsCanAddSpecialist(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = toValue<SpecialistTypes>(L, 2);
+	lua_pushboolean(L, pkCity->GetCityCitizens()->IsCanAddSpecialist(eSpecialist));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetNumSpecialistsInBuildings(SpecialistTypes eSpecialist);
+int CvLuaCity::lGetNumSpecialistsInBuildings(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = toValue<SpecialistTypes>(L, 2);
+	lua_pushinteger(L, pkCity->GetCityCitizens()->GetNumSpecialistsInBuildings(eSpecialist));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoRemoveSpecialist(SpecialistTypes eSpecialist, bool bForced);
+int CvLuaCity::lDoRemoveSpecialist(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const SpecialistTypes eSpecialist = toValue<SpecialistTypes>(L, 2);
+	const bool bForced = lua_toboolean(L, 3) != 0;
+	lua_pushboolean(L, pkCity->GetCityCitizens()->DoRemoveSpecialist(eSpecialist, bForced));
+	return 1;
+}
+//------------------------------------------------------------------------------
 //int GetSpecialistUpgradeThreshold();
 int CvLuaCity::lGetSpecialistUpgradeThreshold(lua_State* L)
 {
@@ -5460,6 +5520,11 @@ int CvLuaCity::lGetFoodConsumptionPerPopTimes100(lua_State* L)
 	{
 		iConsumptionModifier += GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon)->GetTerrainCityFoodConsumption(eTerrain);
 	}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+	// Keep this UI helper in sync with CvCity::foodConsumption() (WHO resolution)
+	if (MOD_VOTING_NEW_EFFECT_FOR_SP)
+		iConsumptionModifier += GC.getGame().GetGameLeagues()->GetWHOFoodConsumptionModifier();
+#endif
 	iResult = iResult * iConsumptionModifier;
 	iResult /= 100;
 	lua_pushinteger(L, iResult);

@@ -18,6 +18,10 @@ INSERT INTO Defines(Name, Value) VALUES('CITY_CRIME_OPINION_DISSIDENTS_YIELD', 1
 INSERT INTO Defines(Name, Value) VALUES('CITY_CRIME_GOLDEN_AGE_YIELD',-10);
 INSERT INTO Defines(Name, Value) VALUES('CITY_LOYALTY_GOLDEN_AGE_YIELD', -10);
 
+-- Spy points system: threshold progression (base 100, +50 per spy)
+INSERT INTO Defines(Name, Value) VALUES('SPY_POINTS_THRESHOLD_BASE', 100);
+INSERT INTO Defines(Name, Value) VALUES('SPY_POINTS_THRESHOLD_INCREASE', 50);
+
 alter table Features add PseudoNaturalWonder integer default 0;
 alter table Features add Volcano boolean default 0;
 
@@ -72,4 +76,20 @@ create table Build_AdjacentTerrainRequired (
     BuildType text references Builds(Type),
     TerrainType text references Terrains(Type)
 );
+
+-- Tech-triggered automatic building upgrade rules.
+-- One UpgradeGroup upgrades at most once per city; SPriority decides which old
+-- building is reported when several are present (lower = higher priority).
+-- Human players always upgrade; AI players follow HandicapInfos.AIAutoBuildingUpgrade.
+create table Building_AutoUpgrade (
+    TechType text NOT NULL references Technologies(Type),
+    UpgradeGroup text NOT NULL,
+    OldBuildingClass text NOT NULL references BuildingClasses(Type),
+    NewBuildingClass text NOT NULL references BuildingClasses(Type),
+    SPriority integer NOT NULL default 0
+);
+
+-- 1 = AI players on this handicap also run the automatic building upgrade.
+-- Human players are unaffected by this column.
+alter table HandicapInfos add AIAutoBuildingUpgrade boolean default 0;
 

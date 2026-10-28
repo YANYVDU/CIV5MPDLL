@@ -91,6 +91,7 @@ void CvLuaLeague::PushMethods(lua_State* L, int t)
 	
 #if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_EXTENSIONS)
 	Method(IsPlayerEmbargoed);
+	Method(IsCityStateUnderInternationalProtection);
 #endif
 
 	Method(GetResolutionName);
@@ -731,6 +732,19 @@ int CvLuaLeague::lIsPlayerEmbargoed(lua_State* L)
 	PlayerTypes ePlayer = (PlayerTypes) lua_tointeger(L, 2);
 
 	const bool bValue = pLeague->IsPlayerEmbargoed(ePlayer);
+	lua_pushboolean(L, bValue);
+	return 1;
+}
+#endif
+#if defined(MOD_API_LUA_EXTENSIONS) && defined(MOD_API_EXTENSIONS)
+//------------------------------------------------------------------------------
+//bool IsCityStateUnderInternationalProtection(PlayerTypes iMinor);
+int CvLuaLeague::lIsCityStateUnderInternationalProtection(lua_State* L)
+{
+	CvLeague* pLeague = GetInstance(L);
+	PlayerTypes eMinor = (PlayerTypes) lua_tointeger(L, 2);
+
+	const bool bValue = pLeague->IsCityStateUnderInternationalProtection(eMinor);
 	lua_pushboolean(L, bValue);
 	return 1;
 }

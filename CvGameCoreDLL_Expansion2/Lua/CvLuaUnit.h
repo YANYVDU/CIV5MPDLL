@@ -296,6 +296,10 @@ protected:
 	static int lGetAirCombatDamage(lua_State* L);
 	static int lGetRangeCombatDamage(lua_State* L);
 	static int lGetAirStrikeDefenseDamage(lua_State* L);
+	static int lGetInterceptionCombatStrength(lua_State* L);
+	static int lGetAirSweepCombatStrength(lua_State* L);
+	static int lGetAirSweepDamageToInterceptor(lua_State* L);
+	static int lGetAirSweepDamageFromInterceptor(lua_State* L);
 	static int lGetBestInterceptor(lua_State* L);
 	static int lGetInterceptorCount(lua_State* L);
 	static int lGetBestSeaPillageInterceptor(lua_State* L);
@@ -421,6 +425,7 @@ protected:
 	static int lGetStrategicResourceCombatPenalty(lua_State* L);
 	static int lGetUnhappinessCombatPenalty(lua_State* L);
 	static int lAirSweepCombatMod(lua_State* L);
+	static int lInterceptionCombatMod(lua_State* L);
 	static int lCapitalDefenseModifier(lua_State* L);
 	static int lCapitalDefenseFalloff(lua_State* L);
 	
@@ -596,6 +601,8 @@ protected:
 	static int lGetCSUACombatModifier(lua_State* L);
 	static int lGetCSUAFixedDamageScale(lua_State* L);
 	static int lGetCSUADamageTakenScale(lua_State* L);
+	static int lGetMeleeAttackCityReduceDamage(lua_State* L);
+	static int lGetMeleeAttackUnitReduceDamage(lua_State* L);
 	static int lGetFriendlyLandsModifier(lua_State* L);
 	static int lGetFriendlyLandsAttackModifier(lua_State* L);
 	static int lGetOutsideFriendlyLandsModifier(lua_State* L);

@@ -70,6 +70,11 @@ public:
 	bool IsProhibitsSpread() const;
 	bool IsRemoveHeresy() const;
 	bool IsCanBuyCityState() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Venice-style buyout: permanently keep the bought city-state's ally/friend-tier UA effect
+	bool IsGainAllyCityStateUAOnBuy() const;
+	bool IsGainFriendCityStateUAOnBuy() const;
+#endif
 #if defined(MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL)
 	bool IsCanRepairFleet() const;
 	bool IsCanChangePort() const;
@@ -82,6 +87,7 @@ public:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool IsNoSupply() const;
 #endif
+	bool IsExpansionUnit() const;
 #if defined(MOD_UNITS_MAX_HP)
 	int GetMaxHitPoints() const;
 #endif
@@ -275,6 +281,10 @@ private:
 	bool m_bProhibitsSpread;
 	bool m_bRemoveHeresy;
 	bool m_bCanBuyCityState;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	bool m_bGainAllyCityStateUAOnBuy;
+	bool m_bGainFriendCityStateUAOnBuy;
+#endif
 #if defined(MOD_GLOBAL_SEPARATE_GREAT_ADMIRAL)
 	bool m_bCanRepairFleet;
 	bool m_bCanChangePort;
@@ -286,6 +296,7 @@ private:
 #if defined(MOD_UNITS_NO_SUPPLY)
 	bool m_bNoSupply;
 #endif
+	bool m_bExpansionUnit;
 #if defined(MOD_UNITS_MAX_HP)
 	int m_iMaxHitPoints;
 #endif

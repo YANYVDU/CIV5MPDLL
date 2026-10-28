@@ -893,6 +893,7 @@ public:
 	int getNumGoodies() const;
 	int getStrategicResourceMod() const;
 	int getStrategicResourceModPerEra() const;
+	int getAIAutoBuildingUpgrade() const;
 
 	// Arrays
 	int getGoodies(int i) const;
@@ -966,6 +967,7 @@ protected:
 	int m_iNumGoodies;
 	int m_iStrategicResourceMod;
 	int m_iStrategicResourceModPerEra;
+	int m_iAIAutoBuildingUpgrade;
 
 	CvString m_strHandicapName;
 
@@ -2550,6 +2552,15 @@ inline FDataStream& operator>>(FDataStream& is, PolicyResourceInfo& kResourceInf
 	is >> kResourceInfo.bLargerScaleValid;
 	return is;
 }
+
+// One row of Policy_FreeBuildingClass / ...Capital / ...CityStates. The owning policy is the
+// CvPolicyEntry that cached the row, so it is not stored here.
+struct PolicyFreeBuildingClassInfo
+{
+	BuildingClassTypes eBuildingClass = NO_BUILDINGCLASS;
+	int iCount = 1;
+	bool bRemovedWhenBlocked = true;
+};
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //  class : CvDomainInfo

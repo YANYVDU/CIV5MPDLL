@@ -286,6 +286,21 @@ protected:
 	static int lDoMinorGiftGold(lua_State* L);
 	static int lDoMinorFaithGift(lua_State* L);
 	static int lDoMinorFaithGiftFromMajor(lua_State* L);
+	// Economic Aid point spending (Super Power V11)
+	static int lDoMinorRerollQuestsFromMajor(lua_State* L);
+	static int lDoMinorBullyGoldWithAidPointsFromMajor(lua_State* L);
+	static int lDoSetNextGreatPersonChoiceFromMajor(lua_State* L);
+	static int lDoSetPendingGiftUnitFromMajor(lua_State* L);
+	static int lDoHastenCongressWithAidPointsFromMajor(lua_State* L);
+	static int lGetAidPointCostRerollQuests(lua_State* L);
+	static int lGetAidPointCostNextGreatPerson(lua_State* L);
+	static int lGetAidPointCostPendingGiftUnit(lua_State* L);
+	static int lGetAidPointCostHastenCongress(lua_State* L);
+	static int lGetAidPointHastenCongressTurns(lua_State* L);
+	static int lGetAidPointCostAnnexCityState(lua_State* L);
+	static int lGetBullyTreasurySharePercent(lua_State* L);
+	static int lGetBullyGoldAidPointCost(lua_State* L);
+	static int lGetMinorGiftUnitChoices(lua_State* L);
 	static int lGetCityStateFaithBeliefPurchaseCost(lua_State* L);
 	static int lIsCityStateFaithBeliefPurchased(lua_State* L);
 	static int lDoCityStateFaithBeliefPurchase(lua_State* L);
@@ -396,7 +411,14 @@ protected:
 	static int lGetNumLeaguesEverFounded(lua_State* L);
 	static int lGetLeague(lua_State* L);
 	static int lGetActiveLeague(lua_State* L);
-	
+
+	// Resolution state queries used by the UI (World Bank / WHO / IMO)
+	static int lGetLeagueWorldBankIntervalTurns(lua_State* L);
+	static int lGetLeagueWHOFoodConsumptionModifier(lua_State* L);
+	static int lGetLeagueWHOSanitationFoodKeptPercent(lua_State* L);
+	static int lGetLeagueIMOOceanRouteGoldModifier(lua_State* L);
+	static int lIsLeagueIMOForbidWeakPlunder(lua_State* L);
+
 	static int lIsProcessingMessages(lua_State* L);
 
 #if defined(MOD_API_LUA_EXTENSIONS)

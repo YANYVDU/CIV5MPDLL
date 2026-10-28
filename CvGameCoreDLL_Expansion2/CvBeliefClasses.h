@@ -46,6 +46,10 @@ public:
 	int GetCombatModifierFriendlyCities() const;
 	int GetFriendlyHealChange() const;
 	int GetCityStateFriendshipModifier() const;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// One-time diplomatic prestige granted to the player who picks this belief
+	int GetDiplomaticPrestige() const;
+#endif
 	int GetLandBarbarianConversionPercent() const;
 	int GetWonderProductionModifier() const;
 	int GetPlayerHappiness() const;
@@ -143,6 +147,7 @@ public:
 	int GetGoldenAgeModifier() const;
 	int GetExtraSpies() const;
 	int GetSpyPoints() const;
+	int GetSpyPointsPerCity() const;
 	bool IsGreatPersonPointsCapital() const;
 	bool IsGreatPersonPointsPerCity() const;
 	bool IsGreatPersonPointsHolyCity() const;
@@ -203,6 +208,9 @@ protected:
 	int m_iCombatModifierFriendlyCities;
 	int m_iFriendlyHealChange;
 	int m_iCityStateFriendshipModifier;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	int m_iDiplomaticPrestige;
+#endif
 	int m_iLandBarbarianConversionPercent;
 	int m_iWonderProductionModifier;
 	int m_iPlayerHappiness;
@@ -232,6 +240,7 @@ protected:
 	int m_iGoldenAgeModifier;
 	int m_iExtraSpies;
 	int m_iSpyPoints;
+	int m_iSpyPointsPerCity;
 	bool m_bGreatPersonPointsCapital;
 	bool m_bGreatPersonPointsPerCity;
 	bool m_bGreatPersonPointsHolyCity;
@@ -641,6 +650,7 @@ public:
 	int GetGreatPersonPoints(GreatPersonTypes eGreatPersonTypes, bool bCapital, bool bHolyCity) const;
 	int GetTerrainCityFoodConsumption(TerrainTypes eTerrain) const;
 	int GetYieldPerBirth(YieldTypes eYieldType) const;
+	int GetSpyPointsPerCity() const;
 	int GetLakePlotYieldChange(YieldTypes eYieldType) const;
 	int GetRiverPlotYieldChange(YieldTypes eYieldType) const;
 	int GetLocalHappinessYieldRate(YieldTypes eYieldType) const;

@@ -27,3 +27,18 @@ ALTER TABLE Resolutions ADD COLUMN 'VassalVassalCitiesPercent'            INTEGE
 ALTER TABLE Resolutions ADD COLUMN 'VassalPermanentAllyPopulationPercent' INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalVassalPopulationPercent'        INTEGER DEFAULT 0;
 ALTER TABLE Resolutions ADD COLUMN 'VassalVassalMilitaryMightPercent'     INTEGER DEFAULT 0;
+-- International law protection: marks a CITY_CSD resolution that places a city-state under international law protection
+ALTER TABLE Resolutions ADD COLUMN 'InternationalLawProtection' BOOLEAN DEFAULT 0;
+-- World Bank: treasury interest every 10 turns, plus a per-international-trade-route bonus (basis points)
+ALTER TABLE Resolutions ADD COLUMN 'WorldBankInterestBasisPoints' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'WorldBankRouteInterestBasisPoints' INTEGER DEFAULT 0;
+-- World Health Organization: percent modifier to per-citizen food consumption, and the surplus
+-- percentage a city keeps when it lacks the sanitation building required for its scale
+ALTER TABLE Resolutions ADD COLUMN 'WHOFoodConsumptionModifier' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'WHOSanitationFoodKeptPercent' INTEGER DEFAULT 0;
+-- International Maritime Organization: extra gold percent on ocean international trade routes,
+-- and forbids weak civs (minor/barbarian/below-average score) from plundering them
+ALTER TABLE Resolutions ADD COLUMN 'IMOOceanRouteGoldModifier' INTEGER DEFAULT 0;
+ALTER TABLE Resolutions ADD COLUMN 'IMOForbidWeakPlunder' BOOLEAN DEFAULT 0;
+-- World Bank: the interval in turns between interest payments (0 falls back to 10 in code)
+ALTER TABLE Resolutions ADD COLUMN 'WorldBankIntervalTurns' INTEGER DEFAULT 0;

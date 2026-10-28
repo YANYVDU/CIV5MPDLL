@@ -38,6 +38,32 @@ alter table Buildings add column MinorCivAlliesThresholdModifier int default 0;
 alter table Policies  add column MinorCivAlliesThresholdModifier int default 0;
 alter table Traits    add column MinorCivAlliesThresholdModifier int default 0;
 
+-- GainConqueredCityStateUA: the player PERMANENTLY keeps the ally-tier UA effect of any city-state
+-- whose ORIGINAL capital they have ever conquered. The conquest is recorded once (CvPlayer::
+-- m_abConqueredCityStateUA, set in acquireCity) and is independent of later city ownership, of the
+-- city-state still being alive and of the current diplomatic relationship. Judged on the original
+-- capital's coordinates (not bCapital), so a city-state that owns a second city is not misdetected.
+-- Only genuine conquest counts; gifts and the Austria/Venice buyout do not trigger it.
+alter table Traits add column GainConqueredCityStateUA boolean default 0;
+
+-- GainAnnexedCityStateUA: the player PERMANENTLY keeps the ally-tier UA effect of any city-state it
+-- ANNEXES through the gold buyout (the Austria / Diplomatic Marriage UA, CvMinorCivAI::DoBuyout).
+-- Recorded once in DoBuyout before DoAcquire runs (the city-state ceases to exist at that point) into
+-- CvPlayer::m_abBoughtCityStateAllyUA - deliberately the SAME permanent record the Venice-style unit
+-- buyout (GainAllyCityStateUAOnBuy) writes, because both paths mean exactly the same thing: the
+-- city-state was bought out, so its ally-tier effect stays ours forever. Independent of the
+-- conquest-based GainConqueredCityStateUA.
+alter table Traits add column GainAnnexedCityStateUA boolean default 0;
+
+-- GainAllyCityStateUAOnBuy / GainFriendCityStateUAOnBuy: a unit with CanBuyCityState that performs
+-- the Venice-style buyout PERMANENTLY keeps the bought city-state's ally/friend-tier UA effect.
+-- The buyout is recorded once (CvPlayer::m_abBoughtCityStateAllyUA / m_abBoughtCityStateFriendUA,
+-- set in CvUnit::buyCityState) so the effect survives the city-state's disappearance - a bought-out
+-- city-state is gone for good, so its effect can never come back through diplomacy. Independent of
+-- the trait-based conquest path (GainConqueredCityStateUA).
+alter table Units add column GainAllyCityStateUAOnBuy boolean default 0;
+alter table Units add column GainFriendCityStateUAOnBuy boolean default 0;
+
 -- ==================== Unique CityState UA System (Rule 1-18) ====================
 
 -- Effects definition table (internal data, not shown to players): one row per ally or friend effect
@@ -54,14 +80,9 @@ CREATE TABLE CityStateUAEffects (
     GPNoDeathAfterGreatWork                         boolean DEFAULT 0,
     GPConcertTourismRetentionPercent                integer DEFAULT 0,
     -- Brussels: special great musician concert modifiers
-    GreatMusicianConcertTourismModifier             integer DEFAULT 0,
     GreatMusicianConcertGoldPercent                 integer DEFAULT 0,
     -- Bratislava: capital and second capital
     CapitalAndSecondCapitalCultureModifier          integer DEFAULT 0,
-    -- Kyiv: capital accumulates per turn
-    CapitalCultureModifierPerTurn                   integer DEFAULT 0,
-    CapitalFaithModifierPerTurn                     integer DEFAULT 0,
-    CapitalPerTurnYieldModifierMax                  integer DEFAULT 0,
     -- Bucharest: international migration
     ImmigrationRatePerImmigrant                     integer DEFAULT 0,
     ImmigrationRateMax                              integer DEFAULT 0,
@@ -106,10 +127,6 @@ CREATE TABLE CityStateUAEffects (
     MilitaryXPPerTurnModifier                       integer DEFAULT 0,
     -- Sidon: when non-zero, the militaristic city-state per-turn XP also applies to sea and air domains
     MilitaryXPSeaAir                                integer DEFAULT 0,
-    -- Sofia: hills cities
-    HillsCityDamageReduction                        integer DEFAULT 0,
-    HillsMovementModifier                           integer DEFAULT 0,
-    HillsCityRangeBonus                             integer DEFAULT 0,
     -- Vatican City: religion spread speed
     ReligionSpreadSpeedModifier                     integer DEFAULT 0,
     -- Vatican City: Papal Recognition - league delegate votes granted to each civilization with a majority of cities following the ally's religion (mainstream votes, 1 = +1 vote)
@@ -234,6 +251,22 @@ CREATE TABLE CityStateUAs (
     Help TEXT DEFAULT NULL REFERENCES Language_en_US(Tag),
     AllyEffectType TEXT NOT NULL REFERENCES CityStateUAEffects(Type),
     FriendEffectType TEXT NOT NULL REFERENCES CityStateUAEffects(Type)
+);
+
+-- AI personality attraction: how much a leader whose personality has the given flavor wants this
+-- city-state's UA. Mirrors Belief_ExtraFlavors; the AI score is (Flavor * leader flavor) / 100.
+create table CityStateUA_ExtraFlavors (
+    CityStateUAType text references CityStateUAs(Type),
+    FlavorType text references Flavors(Type),
+    Flavor integer default 0 not null
+);
+
+-- AI victory preference: extra desirability of this city-state's UA for an AI that is currently
+-- pursuing the given grand strategy. Flavor is on the gold-gift value scale (gift threshold is 100).
+create table CityStateUA_VictoryFlavors (
+    CityStateUAType text references CityStateUAs(Type),
+    AIGrandStrategyType text references AIGrandStrategies(Type),
+    Flavor integer default 0 not null
 );
 
 -- MinorCivilizations reference UAType directly (no mapping table needed)
@@ -423,6 +456,14 @@ create table CityStateUAEffect_UnitBornYield (
 -- grants the building class to the city-state's first city, also at game start
 create table MinorCivilization_FreeBuildingClasses (
     MinorCivType text references MinorCivilizations(Type),
+    BuildingClassType text references BuildingClasses(Type)
+);
+
+-- MinorCivilizations purchasable building classes (a single global list shared by every
+-- city-state, no per-city-state preference): each turn a city-state spends its own gold to
+-- buy one of these in the first of its cities that still lacks it, as long as the building
+-- is already unlocked by the city-state's techs and is not already under construction
+create table MinorCivilization_PurchaseBuildingClasses (
     BuildingClassType text references BuildingClasses(Type)
 );
 

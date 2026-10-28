@@ -408,6 +408,7 @@ CvUnit::CvUnit() :
 	, m_iAttacksMade("CvUnit::m_iAttacksMade", m_syncArchive)
 	, m_iGreatGeneralCount("CvUnit::m_iGreatGeneralCount", m_syncArchive)
 	, m_iGreatAdmiralCount(0)
+	, m_iIrregularForce(0)
 #if defined(MOD_PROMOTIONS_AURA_CHANGE)
 	, m_iAuraRangeChange(0)
 	, m_iAuraEffectChange(0)
@@ -1381,6 +1382,7 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iAOEDamageOnPillage = 0;
 #endif
 	m_iImmueMeleeAttack = 0;
+	m_iIrregularForce = 0;
 
 #if defined(MOD_ROG_CORE)
 	m_iNumOriginalCapitalAttackMod = 0;
@@ -1675,6 +1677,9 @@ if (MOD_API_UNIT_CANNOT_BE_RANGED_ATTACKED)
 	m_iSiegeInflictDamageChangeMaxHPPercent = 0;
 
 	m_iNumRangeBackWhenDefense = 0;
+
+	m_iMeleeAttackCityReduceDamage = 0;
+	m_iMeleeAttackUnitReduceDamage = 0;
 
 	m_iHeavyChargeAddMoves = 0;
 	m_iHeavyChargeExtraDamage = 0;
@@ -4083,6 +4088,12 @@ bool CvUnit::canMoveInto(const CvPlot& plot, byte bMoveFlags) const
 				return FALSE;
 			}
 		}
+	}
+
+	// Expansion civilians are blocked by foreign regular military units (also when passing through)
+	if (MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK && IsBlockedByForeignRegularMilitary(plot))
+	{
+		return false;
 	}
 
 	if(isNoCapture())
@@ -9779,6 +9790,35 @@ bool CvUnit::canPlunderTradeRoute(const CvPlot* pPlot, bool bOnlyTestVisibility)
 			}
 		}
 
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// IMO resolution: city-states, barbarians and below-average civs may not plunder ocean
+		// trade routes even when at war with the route owner.
+		if (MOD_VOTING_NEW_EFFECT_FOR_SP && pPlot->isWater()
+			&& GC.getGame().GetGameLeagues()->IsIMOForbidWeakPlunder())
+		{
+			CvPlayer& kPlunderer = GET_PLAYER(m_eOwner);
+			bool bForbidden = kPlunderer.isMinorCiv() || kPlunderer.isBarbarian();
+			if (!bForbidden)
+			{
+				int iTotalScore = 0;
+				int iNumMajors = 0;
+				for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+				{
+					CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+					if (kLoopPlayer.isAlive())
+					{
+						iTotalScore += kLoopPlayer.GetScore();
+						iNumMajors++;
+					}
+				}
+				if (iNumMajors > 0)
+					bForbidden = kPlunderer.GetScore() < (iTotalScore / iNumMajors);
+			}
+			if (bForbidden)
+				return false;
+		}
+#endif
+
 		return true;
 	}
 	else
@@ -11481,6 +11521,9 @@ bool CvUnit::DoSpreadReligion()
 			iNumFollowersSpreadAddtion = pCity->GetCityReligions()->GetNumFollowers(eReligion) - iNumFollowersBeforeSpread;
 			if(iNumFollowersSpreadAddtion > 0)
 			{
+				// SP contest quests: lifetime followers gained through missionary/prophet spread
+				kPlayer.ChangeNumFollowersConverted(iNumFollowersSpreadAddtion);
+
 				for (int iI = 0; iI < NUM_YIELD_TYPES; iI++)
 				{
 					YieldTypes eYield = (YieldTypes) iI;
@@ -12427,6 +12470,15 @@ bool CvUnit::buyCityState()
 
 	// Improve relations with the Minor
 	PlayerTypes eMinor = pPlot->getOwner();
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Venice-style buyout: remember the bought city-state's ally/friend-tier UA. The record itself is
+	// written below, only once the acquisition is known to succeed; it lives in CvPlayer so the
+	// effect survives the city-state disappearing when its cities are transferred.
+	const bool bGainAllyUA = MOD_SP_UNIQUE_CITYSTATE && m_pUnitInfo->IsGainAllyCityStateUAOnBuy();
+	const bool bGainFriendUA = MOD_SP_UNIQUE_CITYSTATE && m_pUnitInfo->IsGainFriendCityStateUAOnBuy();
+	bool bRecordedBuyoutUA = false;
+#endif
 	CvAssertMsg(eMinor != NO_PLAYER, "Trying to buy a city state and not in city state territory. This is bad. Please send slewis this with your last 5 autosaves and what changelist # you're playing.");
 
 	if (eMinor != NO_PLAYER)
@@ -12436,6 +12488,14 @@ bool CvUnit::buyCityState()
 		{
 			pMinorCapital = NULL; // we shouldn't use this pointer because DoAcquire invalidates it
 			int iNumUnits, iCapitalX, iCapitalY;
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			// Record before DoAcquire: the city-state stops existing the moment its cities are transferred.
+			if ((bGainAllyUA || bGainFriendUA) && eMinor >= MAX_MAJOR_CIVS && eMinor < MAX_CIV_PLAYERS)
+			{
+				GET_PLAYER(getOwner()).GainCityStateUAOnBuyout(eMinor, bGainAllyUA, bGainFriendUA);
+				bRecordedBuyoutUA = true;
+			}
+#endif
 #if defined(MOD_GLOBAL_VENICE_KEEPS_RESOURCES)
 			// CvUnit::buyCityState() is only ever called via CvTypes::getMISSION_BUY_CITY_STATE(), so this MUST be a "Merchant of Venice" type unit
 			GET_PLAYER(eMinor).GetMinorCivAI()->DoAcquire(getOwner(), iNumUnits, iCapitalX, iCapitalY, MOD_GLOBAL_VENICE_KEEPS_RESOURCES);
@@ -12451,6 +12511,14 @@ bool CvUnit::buyCityState()
 
 		}
 	}
+
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	// Apply the permanently gained UA effect this turn instead of waiting for the next doTurn.
+	// buyCityState runs deterministically on every client via the mission queue, so a plain local
+	// call is multiplayer-safe - same pattern as the conquest refresh in CvPlayer::acquireCity.
+	if (bRecordedBuyoutUA)
+		GET_PLAYER(getOwner()).RefreshCSAllUAEffects();
+#endif
 
 	if (getOwner() == GC.getGame().getActivePlayer())
 	{
@@ -16549,7 +16617,32 @@ void CvUnit::SetBaseRangedCombatStrength(int iStrength)
 
 
 //	--------------------------------------------------------------------------------
-int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack) const
+int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier) const
+{
+	VALIDATE_OBJECT
+	int iBaseStrength = 0;
+
+	//fake ranged unit (impi)
+	if (isRangedSupportFire())
+	{
+		iBaseStrength = GetBaseCombatStrength() / 2;
+		iBaseStrength *= (100 + GetRangedSupportFireMod()) / 100;
+	}
+	else
+	{
+		iBaseStrength = GetBaseRangedCombatStrength();
+	}
+
+	return GetMaxRangedCombatStrengthWithBase(iBaseStrength, pOtherUnit, pCity, bAttacking, bForRangedAttack, iExtraModifier);
+}
+
+//	--------------------------------------------------------------------------------
+/// Same modifier stack as GetMaxRangedCombatStrength, but the caller supplies the base strength.
+/// Used by interception so units without a ranged attack can still receive the full modifier stack.
+/// iExtraModifier is a caller-supplied flat percentage (e.g. the air sweep / interception strength
+/// bonuses) that is folded into the same stack, so it adds with every other modifier instead of
+/// multiplying the finished result.
+int CvUnit::GetMaxRangedCombatStrengthWithBase(int iBaseStrength, const CvUnit* pOtherUnit, const CvCity* pCity, bool bAttacking, bool bForRangedAttack, int iExtraModifier) const
 {
 	VALIDATE_OBJECT
 	int iModifier;
@@ -16562,18 +16655,7 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 	CvGameReligions* pReligions = GC.getGame().GetGameReligions();
 	ReligionTypes eFoundedReligion = pReligions->GetFounderBenefitsReligion(kPlayer.GetID());
 
-	int iStr = 0;
-
-	//fake ranged unit (impi)
-	if (isRangedSupportFire())
-	{
-		iStr = GetBaseCombatStrength() / 2;
-		iStr *= (100 + GetRangedSupportFireMod()) / 100;
-	}
-	else
-	{
-		iStr = GetBaseRangedCombatStrength();
-	}
+	int iStr = iBaseStrength;
 
 	if(iStr == 0)
 	{
@@ -17356,6 +17438,11 @@ int CvUnit::GetMaxRangedCombatStrength(const CvUnit* pOtherUnit, const CvCity* p
 	if(iModifier < -90)
 		iModifier = -90;
 
+	// Caller-supplied flat modifier (air sweep / interception strength bonus), folded in after the
+	// clamp so it stacks additively with the rest of the modifier stack rather than multiplying the
+	// finished strength.
+	iModifier += iExtraModifier;
+
 	iModifier += kPlayer.GetStrengthModifierFromAlly();
 
 	iModifier += GC.GetIndependentPromotion()->GetAllyCityStateCombatModifier(*this);
@@ -17921,58 +18008,141 @@ int CvUnit::GetInterceptorCount(const CvPlot& interceptPlot, CvUnit* pkDefender 
 }
 
 //	--------------------------------------------------------------------------------
-/// Amount of damage done by this unit when intercepting pAttacker
-int CvUnit::GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand) const
+/// Combat strength used when this unit intercepts pAttacker (air strike interception or air sweep).
+/// Units with no ranged attack intercept with 50% of their base melee combat strength,
+/// pushed through the same modifier stack as ranged combat strength.
+int CvUnit::GetInterceptionCombatStrength(const CvUnit* pAttacker) const
 {
-	int iAttackerStrength = pAttacker->GetMaxRangedCombatStrength(this, /*pCity*/ NULL, true, /*bForRangedAttack*/ false);
+	VALIDATE_OBJECT
+	int iStrength = 0;
 
-	int iInterceptorStrength = 0;
 #if defined(MOD_BUGFIX_INTERCEPTOR_STRENGTH)
-	if (MOD_BUGFIX_INTERCEPTOR_STRENGTH) {
-		switch (getDomainType()) {
-			case DOMAIN_SEA:
-				iInterceptorStrength = GetMaxDefenseStrength(plot(), pAttacker);
-				break;
-
-			case DOMAIN_AIR:
-				iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
-				break;
-
-			case DOMAIN_LAND:
-				iInterceptorStrength = GetMaxAttackStrength(NULL, NULL, pAttacker);
-				break;
-
-			case DOMAIN_IMMOBILE:
-				iInterceptorStrength = GetMaxAttackStrength(NULL, NULL, pAttacker);
-				break;
-
-			case DOMAIN_HOVER:
-				iInterceptorStrength = GetMaxAttackStrength(NULL, NULL, pAttacker);
-				break;
-
-			default:
-				CvAssert(false);
-				break;
-		}
-	} else {
-#endif
-		// Use Ranged combat value for Interceptor, UNLESS it's a boat
-		if(GetMaxRangedCombatStrength(this, /*pCity*/ NULL, false, false) > 0 && !getDomainType() == DOMAIN_SEA)
+	if (MOD_BUGFIX_INTERCEPTOR_STRENGTH)
+	{
+		// Interception resolves like an air strike: both sides fight with the ranged combat
+		// strength they would use to strike the other, so the interceptor uses its ranged
+		// ATTACK stack. All domains share this rule; a boat intercepts with its guns, not
+		// with its hull defense.
+		if (GetBaseRangedCombatStrength() > 0)
 		{
-			iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
+			iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true, GetInterceptionCombatModifier());
 		}
 		else
 		{
-			iInterceptorStrength = GetMaxDefenseStrength(plot(), pAttacker);
+			// No ranged combat value at all: intercept with 50% of base melee strength
+			iStrength = GetMaxRangedCombatStrengthWithBase(GetBaseCombatStrength() / 2, pAttacker, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true, GetInterceptionCombatModifier());
 		}
-#if defined(MOD_BUGFIX_INTERCEPTOR_STRENGTH)
 	}
-	CUSTOMLOG("Interceptor base str for player/unit %i/%i is %i", getOwner(), GetID(), iInterceptorStrength);
+	else
 #endif
+	{
+		// Legacy path, kept byte-for-byte identical to vanilla so that the default
+		// configuration (MOD_BUGFIX_INTERCEPTOR_STRENGTH off) behaves exactly as before.
+		// Use ranged combat value for the interceptor, UNLESS it's a boat
+		if(GetMaxRangedCombatStrength(this, /*pCity*/ NULL, false, false) > 0 && !getDomainType() == DOMAIN_SEA)
+		{
+			iStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false, GetInterceptionCombatModifier());
+		}
+	}
 
-	// Mod to interceptor strength
-	iInterceptorStrength *= (100 + GetInterceptionCombatModifier());
-	iInterceptorStrength /= 100;
+	// InterceptionCombatModifier is already folded into the ranged combat stack above (it adds
+	// with every other modifier instead of multiplying the finished strength).
+
+	return std::max(1, iStrength);
+}
+
+//	--------------------------------------------------------------------------------
+/// Combat strength used when this unit performs an air sweep against pDefender.
+int CvUnit::GetAirSweepCombatStrength(const CvUnit* pDefender) const
+{
+	VALIDATE_OBJECT
+	// AirSweepCombatModifier is folded into the ranged combat stack as a flat modifier so it adds
+	// with every other modifier (strategic resource penalty, bonus vs. domain, etc.) instead of
+	// multiplying the finished strength.
+	int iStrength = GetMaxRangedCombatStrength(pDefender, /*pCity*/ NULL, /*bAttacking*/ true, /*bForRangedAttack*/ true, GetAirSweepCombatModifier());
+
+	return std::max(1, iStrength);
+}
+
+//	--------------------------------------------------------------------------------
+/// Preview helper for the air sweep mouse-over panel: damage this sweeping unit would
+/// deal to pInterceptor. Mirrors the damage half of GenerateAirSweepCombatInfo.
+int CvUnit::GetAirSweepDamageToInterceptor(const CvUnit* pInterceptor, bool bIncludeRand) const
+{
+	VALIDATE_OBJECT
+	if (pInterceptor == NULL)
+	{
+		return 0;
+	}
+
+	int iAttackerStrength = GetAirSweepCombatStrength(pInterceptor);
+	int iDefenderStrength = pInterceptor->GetInterceptionCombatStrength(this);
+
+	int iDamage = getCombatDamage(iAttackerStrength, iDefenderStrength, getDamage(), bIncludeRand, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
+
+	// Interception damage modifier of the interceptor scales the damage it takes
+	int iDefenderDamageMod = 100 + pInterceptor->GetInterceptionDamageMod();
+	if(iDefenderDamageMod <= 0)
+	{
+		iDamage = 0;
+	}
+	else
+	{
+		iDamage = iDamage * iDefenderDamageMod / 100;
+	}
+
+	return iDamage;
+}
+
+//	--------------------------------------------------------------------------------
+/// Preview helper for the air sweep mouse-over panel: damage this sweeping unit would
+/// take from pInterceptor. Mirrors the interception half of GenerateAirSweepCombatInfo.
+int CvUnit::GetAirSweepDamageFromInterceptor(const CvUnit* pInterceptor, bool bIncludeRand) const
+{
+	VALIDATE_OBJECT
+	if (pInterceptor == NULL)
+	{
+		return 0;
+	}
+
+	int iAttackerStrength = GetAirSweepCombatStrength(pInterceptor);
+	int iDefenderStrength = pInterceptor->GetInterceptionCombatStrength(this);
+
+	// Symmetric ranged exchange, same as the resolution path
+	int iDamage = pInterceptor->getCombatDamage(iDefenderStrength, iAttackerStrength, pInterceptor->getDamage(), bIncludeRand, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ false);
+
+	// A sweeping aircraft takes reduced damage (50 = -50%)
+	iDamage = iDamage * GC.getAIR_SWEEP_INTERCEPTION_DAMAGE_MOD() / 100;
+
+	// Air sweep damage modifier of the sweeping aircraft scales the damage it takes
+	int iSweepDamageMod = 100 + GetAirSweepDamageMod();
+	if(iSweepDamageMod <= 0)
+	{
+		iDamage = 0;
+	}
+	else
+	{
+		iDamage = iDamage * iSweepDamageMod / 100;
+	}
+
+	return iDamage;
+}
+
+//	--------------------------------------------------------------------------------
+/// Amount of damage done by this unit when intercepting pAttacker.
+/// bForAirSweep selects the air sweep exchange, where the intercepted unit is a sweeping
+/// aircraft and contributes its air sweep strength; otherwise this is an air strike.
+int CvUnit::GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand, bool bForAirSweep) const
+{
+	// An air sweep is a straight ranged exchange, so the sweeping unit contributes the same
+	// strength GenerateAirSweepCombatInfo uses for it. A plain air strike keeps the vanilla
+	// defensive-strength reading of the intercepted attacker.
+	int iAttackerStrength = bForAirSweep
+		? pAttacker->GetAirSweepCombatStrength(this)
+		: pAttacker->GetMaxRangedCombatStrength(this, /*pCity*/ NULL, true, /*bForRangedAttack*/ false);
+
+	// Interceptor strength (shared with air sweep resolution)
+	int iInterceptorStrength = GetInterceptionCombatStrength(pAttacker);
 
 	// The roll will vary damage between 2 and 3 (out of 10) for two units of identical strength
 
@@ -18050,6 +18220,12 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 
 	int iInterceptorStrength = 0;
 
+	// InterceptionCombatModifier is folded into the ranged combat stack whenever the interceptor
+	// strength comes from that stack, so it adds with every other modifier. The defense- and
+	// melee-attack based branches below have no such stack, so they keep the multiplier.
+	int iInterceptorMod = GetInterceptionCombatModifier();
+	bool bModFolded = false;
+
 #if defined(MOD_BUGFIX_INTERCEPTOR_STRENGTH)
 	if (MOD_BUGFIX_INTERCEPTOR_STRENGTH) {
 		switch (getDomainType()) {
@@ -18058,7 +18234,8 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 				break;
 
 			case DOMAIN_AIR:
-				iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
+				iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false, iInterceptorMod);
+				bModFolded = true;
 				break;
 
 			case DOMAIN_LAND:
@@ -18078,7 +18255,8 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 		// Use Ranged combat value for Interceptor, UNLESS it's a boat
 		if(GetMaxRangedCombatStrength(this, /*pCity*/ NULL, false, false) > 0 && !getDomainType() == DOMAIN_SEA)
 		{
-			iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false);
+			iInterceptorStrength = GetMaxRangedCombatStrength(pAttacker, /*pCity*/ NULL, false, /*bForRangedAttack*/ false, iInterceptorMod);
+			bModFolded = true;
 		}
 		else
 		{
@@ -18091,8 +18269,11 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 #endif
 
 	// Mod to interceptor strength
-	iInterceptorStrength *= (100 + GetInterceptionCombatModifier());
-	iInterceptorStrength /= 100;
+	if(!bModFolded)
+	{
+		iInterceptorStrength *= (100 + iInterceptorMod);
+		iInterceptorStrength /= 100;
+	}
 	// CUSTOMLOG("ParadropIntercept: Paratrooper str=%i, Interceptor str=%i", iAttackerStrength, iInterceptorStrength)
 
 	// The roll will vary damage between 2 and 3 (out of 10) for two units of identical strength
@@ -25188,6 +25369,80 @@ void CvUnit::ChangeImmueMeleeAttackCount(int iChange)
 }
 
 //	--------------------------------------------------------------------------------
+bool CvUnit::IsExpansionUnit() const
+{
+	return getUnitInfo().IsExpansionUnit();
+}
+
+//	--------------------------------------------------------------------------------
+bool CvUnit::IsIrregularForce() const
+{
+	return m_iIrregularForce > 0;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::ChangeIrregularForceCount(int iChange)
+{
+	m_iIrregularForce += iChange;
+}
+
+//	--------------------------------------------------------------------------------
+/// True if this expansion civilian cannot pass through the plot because it contains a foreign regular military unit
+bool CvUnit::IsBlockedByForeignRegularMilitary(const CvPlot& plot) const
+{
+	if (!MOD_GLOBAL_BREAK_CIVILIAN_EXPANSION_BLOCK)
+	{
+		return false;
+	}
+
+	if (!IsCivilianUnit() || !IsExpansionUnit())
+	{
+		return false;
+	}
+
+	for (int iUnitLoop = 0; iUnitLoop < plot.getNumUnits(); iUnitLoop++)
+	{
+		const CvUnit* pLoopUnit = plot.getUnitByIndex(iUnitLoop);
+		if (pLoopUnit == NULL || pLoopUnit == this)
+		{
+			continue;
+		}
+
+		// Units of our own team never block us
+		if (pLoopUnit->getTeam() == getTeam())
+		{
+			continue;
+		}
+
+		if (!pLoopUnit->IsCombatUnit())
+		{
+			continue;
+		}
+
+		// Irregular forces never block expansion units
+		if (pLoopUnit->IsIrregularForce())
+		{
+			continue;
+		}
+
+		// Allied or friendly city-states never block us
+		CvPlayer& kLoopPlayer = GET_PLAYER(pLoopUnit->getOwner());
+		if (kLoopPlayer.isMinorCiv())
+		{
+			CvMinorCivAI* pMinorCivAI = kLoopPlayer.GetMinorCivAI();
+			if (pMinorCivAI != NULL && (pMinorCivAI->IsAllies(getOwner()) || pMinorCivAI->IsFriends(getOwner())))
+			{
+				continue;
+			}
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
 bool CvUnit::IsIgnoreZOC() const
 {
 	return m_iIgnoreZOC > 0;
@@ -25778,6 +26033,27 @@ PlayerTypes CvUnit::getCombatOwner(TeamTypes eForTeam, const CvPlot& whosePlot) 
 		{
 			return BARBARIAN_PLAYER;
 		}
+#if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
+		// International law protection: a unit that is at war with a protected city-state and
+		// stands inside that city-state's territory is treated as always hostile (combat owner
+		// spoofed to the barbarian player), so any civilization may attack it without declaring
+		// war on its owner. Neutral civs not at war with the city-state are unaffected.
+		PlayerTypes ePlotOwner = whosePlot.getOwner();
+		if(ePlotOwner != NO_PLAYER && ePlotOwner != getOwner()
+			&& GET_PLAYER(ePlotOwner).isMinorCiv()
+			&& GET_TEAM(getTeam()).isAtWar(GET_PLAYER(ePlotOwner).getTeam()))
+		{
+			CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
+			if(pLeagues != NULL)
+			{
+				CvLeague* pLeague = pLeagues->GetActiveLeague();
+				if(pLeague != NULL && pLeague->IsCityStateUnderInternationalProtection(ePlotOwner))
+				{
+					return BARBARIAN_PLAYER;
+				}
+			}
+		}
+#endif
 	}
 
 	return getOwner();
@@ -27302,6 +27578,7 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeCanParadropAnyWhereCount(thisPromotion.IsCanParadropAnyWhere() ? iChange : 0);
 		ChangeIsCanParadropUnLimitCount(thisPromotion.IsCanParadropUnLimit() ? iChange : 0);
 		ChangeImmueMeleeAttackCount(thisPromotion.IsImmueMeleeAttack() ? iChange : 0);
+		ChangeIrregularForceCount(thisPromotion.IsIrregularForce() ? iChange : 0);
 #if defined(MOD_UNITS_NO_SUPPLY)
 		changeNoSupply(thisPromotion.IsNoSupply() ? iChange : 0);
 #endif
@@ -27556,6 +27833,8 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangePerKillInflictDamageChange(iChange * thisPromotion.GetPerKillInflictDamageChange());
 		ChangePerKillDefenseDamageChange(iChange * thisPromotion.GetPerKillDefenseDamageChange());
 		ChangeNumRangeBackWhenDefense(thisPromotion.IsRangeBackWhenDefense() ? iChange : 0);
+		ChangeMeleeAttackCityReduceDamage(iChange * thisPromotion.GetMeleeAttackCityReduceDamage());
+		ChangeMeleeAttackUnitReduceDamage(iChange * thisPromotion.GetMeleeAttackUnitReduceDamage());
 		ChangeHeavyChargeAddMoves(iChange * thisPromotion.GetHeavyChargeAddMoves());
 		ChangeHeavyChargeExtraDamage(iChange * thisPromotion.GetHeavyChargeExtraDamage());
 		ChangeHeavyChargeCollateralFixed(iChange * thisPromotion.GetHeavyChargeCollateralFixed());
@@ -27949,6 +28228,7 @@ void CvUnit::read(FDataStream& kStream)
 #endif
 
 	kStream >> m_iImmueMeleeAttack;
+	MOD_SERIALIZE_READ(164, kStream, m_iIrregularForce, 0);
 
 #if defined(MOD_UNITS_NO_SUPPLY)
 	MOD_SERIALIZE_READ(77, kStream, m_iNoSupply, 0);
@@ -28145,6 +28425,8 @@ void CvUnit::read(FDataStream& kStream)
 
 	kStream >> m_iDefenseInflictDamageChange;
 	kStream >> m_iDefenseInflictDamageChangeMaxHPPercent;
+	MOD_SERIALIZE_READ(166, kStream, m_iMeleeAttackCityReduceDamage, 0);
+	MOD_SERIALIZE_READ(166, kStream, m_iMeleeAttackUnitReduceDamage, 0);
 
 	kStream >> m_iSiegeInflictDamageChange;
 	kStream >> m_iSiegeInflictDamageChangeMaxHPPercent;
@@ -28371,6 +28653,7 @@ void CvUnit::write(FDataStream& kStream) const
 
 
 	kStream << m_iImmueMeleeAttack;
+	MOD_SERIALIZE_WRITE(kStream, m_iIrregularForce);
 
 
 #if defined(MOD_UNITS_NO_SUPPLY)
@@ -28506,6 +28789,8 @@ void CvUnit::write(FDataStream& kStream) const
 
 	kStream << m_iDefenseInflictDamageChange;
 	kStream << m_iDefenseInflictDamageChangeMaxHPPercent;
+	MOD_SERIALIZE_WRITE(kStream, m_iMeleeAttackCityReduceDamage);
+	MOD_SERIALIZE_WRITE(kStream, m_iMeleeAttackUnitReduceDamage);
 
 	kStream << m_iSiegeInflictDamageChange;
 	kStream << m_iSiegeInflictDamageChangeMaxHPPercent;
@@ -28772,7 +29057,9 @@ bool CvUnit::canRangeStrikeAt(int iX, int iY, bool bNeedWar, bool bNoncombatAllo
 
 				if(!pLoopUnit) continue;
 
-				TeamTypes loopTeam = pLoopUnit->getTeam();
+				// Use combat owner so units spoofed as hostile (e.g. under international law
+				// protection inside a protected city-state) can be ranged-attacked without declaring war
+				TeamTypes loopTeam = GET_PLAYER(pLoopUnit->getCombatOwner(getTeam(), *pTargetPlot)).getTeam();
 
 				// Make sure it's a valid Team
 #if defined(MOD_EVENTS_WAR_AND_PEACE)
@@ -33171,6 +33458,26 @@ bool CvUnit::IsRangeBackWhenDefense() const
 void CvUnit::ChangeNumRangeBackWhenDefense(int iChange)
 {
 	m_iNumRangeBackWhenDefense += iChange;
+}
+
+int CvUnit::GetMeleeAttackCityReduceDamage() const
+{
+	return m_iMeleeAttackCityReduceDamage;
+}
+
+void CvUnit::ChangeMeleeAttackCityReduceDamage(int iChange)
+{
+	m_iMeleeAttackCityReduceDamage += iChange;
+}
+
+int CvUnit::GetMeleeAttackUnitReduceDamage() const
+{
+	return m_iMeleeAttackUnitReduceDamage;
+}
+
+void CvUnit::ChangeMeleeAttackUnitReduceDamage(int iChange)
+{
+	m_iMeleeAttackUnitReduceDamage += iChange;
 }
 
 int CvUnit::GetHeavyChargeAddMoves() const

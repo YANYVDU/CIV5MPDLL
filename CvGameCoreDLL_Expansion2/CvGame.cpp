@@ -105,6 +105,7 @@ CvGame::CvGame() :
 	, m_bFOW(true)
 	, m_bArchaeologyTriggered(false)
 	, m_lastTurnAICivsProcessed(-1)
+	, m_firstActivationOfPlayersAfterLoad(false)
 #ifdef MOD_API_MP_PLOT_SIGNAL
 	, m_uiLastMPSignalInvokeTime(0)
 #endif // MOD_API_MP_PLOT_SIGNAL
@@ -113,6 +114,7 @@ CvGame::CvGame() :
 	, m_iEconomicAidRoundStartTurn(-1)
 	, m_iEconomicAidWorldEra(1)
 	, m_bEconomicAidActive(false)
+	, m_bMasterSpyQuestAwarded(false)
 #endif
 	, m_eCurrentEraCache(NO_ERA)
 	, m_iCurrentEraCacheTurn(-1)
@@ -1157,6 +1159,7 @@ void CvGame::uninit()
 	m_bDebugModeCache = false;
 	m_bFOW = true;
 	m_bFinalInitialized = false;
+	m_bPolicyFreeBuildingsRebuilt = false;
 	m_eWaitDiploPlayer = NO_PLAYER;
 	m_bPbemTurnSent = false;
 	m_bHotPbemBetweenTurns = false;
@@ -1635,6 +1638,17 @@ void CvGame::update()
 				if(gDLL->CanAdvanceTurn())
 					doTurn();
 			}
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+			else if(!m_bEconomicAidActive && getGameState() == GAMESTATE_ON)
+			{
+				// Economic Aid (Super Power V11): activate as soon as a player is taking their turn.
+				// CvGame::doTurn() only runs once every player has ended their turn, so without this
+				// the city-state diplomacy UI hides the aid button for the whole first turn of a new
+				// game (and for the first turn after loading a save).
+				m_bEconomicAidActive = true;
+				StartNewEconomicAidRound();
+			}
+#endif
 
 			if(!isPaused())	// Check for paused again, the doTurn call might have called something that paused the game and we don't want an update to sneak through
 			{
@@ -4598,6 +4612,18 @@ bool CvGame::IsEconomicAidActive() const
 }
 
 //	--------------------------------------------------------------------------------
+bool CvGame::IsMasterSpyQuestAwarded() const
+{
+	return m_bMasterSpyQuestAwarded;
+}
+
+//	--------------------------------------------------------------------------------
+void CvGame::SetMasterSpyQuestAwarded(bool bValue)
+{
+	m_bMasterSpyQuestAwarded = bValue;
+}
+
+//	--------------------------------------------------------------------------------
 int CvGame::GetEconomicAidRound() const
 {
 	return m_iEconomicAidRound;
@@ -4688,6 +4714,13 @@ bool CvGame::isNetworkMultiPlayer() const
 bool CvGame::isGameMultiPlayer() const
 {
 	return (isNetworkMultiPlayer() || isPbem() || isHotSeat());
+}
+
+
+//	--------------------------------------------------------------------------------
+bool CvGame::isFirstActivationOfPlayersAfterLoad() const
+{
+	return m_firstActivationOfPlayersAfterLoad;
 }
 
 
@@ -6001,6 +6034,36 @@ void CvGame::setFinalInitialized(bool bNewValue)
 	if(isFinalInitialized() != bNewValue)
 	{
 		m_bFinalInitialized = bNewValue;
+	}
+
+	// A loaded save already carries m_bFinalInitialized == true, so the value check
+	// above cannot be used as the "load finished" signal. Rebuild unconditionally;
+	// the flag inside makes the call idempotent.
+	if (bNewValue)
+	{
+		RebuildPolicyFreeBuildings();
+	}
+}
+
+void CvGame::RebuildPolicyFreeBuildings()
+{
+	if (m_bPolicyFreeBuildingsRebuilt)
+		return;
+
+	m_bPolicyFreeBuildingsRebuilt = true;
+
+	for (int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+		if (!kPlayer.isAlive())
+			continue;
+
+		CvCity* pLoopCity;
+		int iLoop;
+		for (pLoopCity = kPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iLoop))
+		{
+			pLoopCity->UpdatePolicyFreeBuildings();
+		}
 	}
 }
 
@@ -8001,6 +8064,9 @@ void CvGame::removeGreatPersonBornName(const CvString& szName)
 void CvGame::doTurn()
 {
 	AI_PERF_FORMAT("AI-perf.csv", ("CvGame::doTurn, Turn %03d", GC.getGame().getElapsedGameTurns()) );
+
+	// Safety net for load paths that never call setFinalInitialized(true).
+	RebuildPolicyFreeBuildings();
 #ifndef FINAL_RELEASE
 	char temp[256];
 	sprintf_s(temp, "Turn %i\n", getGameTurn());
@@ -8516,6 +8582,131 @@ UnitTypes CvGame::GetCompetitiveSpawnUnitType(PlayerTypes ePlayer, bool bInclude
 	return eChosenUnit;
 }
 
+//	--------------------------------------------------------------------------------
+// Super Power V11: how many city-states currently reserve a pending gift unit of eUnitClass for
+// eMajor. A limited (national) unit class can only be delivered once, so every pending pick of
+// that class shares its slots - see GetMinorGiftUnitChoices and DoSetPendingGiftUnitFromMajor.
+int CvGame::GetPendingGiftUnitCountForClass(PlayerTypes eMajor, UnitClassTypes eUnitClass) const
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return 0;
+
+	int iCount = 0;
+	for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		const PlayerTypes eMinor = (PlayerTypes) iMinorLoop;
+		CvPlayer* pMinor = &GET_PLAYER(eMinor);
+		if(pMinor == NULL || !pMinor->isAlive() || !pMinor->isMinorCiv())
+			continue;
+
+		CvMinorCivAI* pMinorAI = pMinor->GetMinorCivAI();
+		if(pMinorAI == NULL)
+			continue;
+
+		const UnitTypes ePending = pMinorAI->GetPendingGiftUnit(eMajor);
+		if(ePending == NO_UNIT)
+			continue;
+
+		CvUnitEntry* pkPendingInfo = GC.getUnitInfo(ePending);
+		if(pkPendingInfo == NULL)
+			continue;
+
+		if((UnitClassTypes) pkPendingInfo->GetUnitClassType() == eUnitClass)
+			iCount++;
+	}
+
+	return iCount;
+}
+
+//	--------------------------------------------------------------------------------
+// Super Power V11: every unit type the city-state may gift to ePlayer (same filter as
+// GetCompetitiveSpawnUnitType, but returns all valid candidates for the aid-point picker UI).
+void CvGame::GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>& veChoices)
+{
+	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
+	CvAssertMsg(ePlayer < MAX_CIV_PLAYERS, "ePlayer is expected to be within maximum bounds (invalid Index)");
+
+	veChoices.clear();
+	if(ePlayer < 0 || ePlayer >= MAX_CIV_PLAYERS)
+		return;
+
+	const bool bIncludeRanged = true;
+	const bool bIncludeShips = (MOD_GLOBAL_CS_GIFT_SHIPS != 0);
+
+	for(int iUnitLoop = 0; iUnitLoop < GC.getNumUnitInfos(); iUnitLoop++)
+	{
+		const UnitTypes eLoopUnit = (UnitTypes) iUnitLoop;
+		CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eLoopUnit);
+		if(pkUnitInfo == NULL)
+			continue;
+
+		bool bValid = (pkUnitInfo->GetCombat() > 0);
+
+		// Unit has combat strength, make sure it isn't only defensive (and with no ranged combat ability)
+		if(bValid && pkUnitInfo->GetRange() == 0)
+		{
+			for(int iPromotionLoop = 0; iPromotionLoop < GC.getNumPromotionInfos(); iPromotionLoop++)
+			{
+				const PromotionTypes ePromotion = (PromotionTypes) iPromotionLoop;
+				CvPromotionEntry* pkPromotionInfo = GC.getPromotionInfo(ePromotion);
+				if(pkPromotionInfo)
+				{
+					if(pkUnitInfo->GetFreePromotions(iPromotionLoop))
+					{
+						if(pkPromotionInfo->IsOnlyDefensive())
+						{
+							bValid = false;
+							break;
+						}
+					}
+				}
+			}
+		}
+		if(!bValid)
+			continue;
+
+		UnitClassTypes eLoopUnitClass = (UnitClassTypes) pkUnitInfo->GetUnitClassType();
+		CvUnitClassInfo* pkUnitClassInfo = GC.getUnitClassInfo(eLoopUnitClass);
+		if(pkUnitClassInfo == NULL)
+			continue;
+
+		// Only default units (no unique units are gifted by city-states)
+		if(eLoopUnit != pkUnitClassInfo->getDefaultUnitIndex())
+			continue;
+
+		// Exclude if this unit is invalid for Minor Gifts
+		if(pkUnitInfo->IsNoMinorGifts())
+			continue;
+
+		// Avoid Recon units
+		if(pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE)
+			continue;
+
+		// No Ranged units?
+		if(!bIncludeRanged && pkUnitInfo->GetRangedCombat() > 0)
+			continue;
+
+		// Must be land Unit (ships only when allowed and the map hints at naval play)
+		if(!(pkUnitInfo->GetDomainType() == DOMAIN_LAND || (pkUnitInfo->GetDomainType() == DOMAIN_SEA && bIncludeShips && (GC.getMap().GetAIMapHint() & 5) != 0)))
+			continue;
+
+		// Must be able to train this thing
+		if(!GET_PLAYER(ePlayer).canTrain(eLoopUnit, false, false, false, /*bIgnoreUniqueUnitStatus*/ true))
+			continue;
+
+		// Super Power V11: a pending gift unit already reserves a slot in its (limited) unit
+		// class at some city-state, so do not offer it again - a second pick of the same class
+		// would silently fail on delivery and waste the aid points it costs.
+		if(GET_PLAYER(ePlayer).isUnitClassMaxedOut(eLoopUnitClass, GetPendingGiftUnitCountForClass(ePlayer, eLoopUnitClass)))
+			continue;
+
+		veChoices.push_back(eLoopUnit);
+	}
+}
+
 #if defined(MOD_GLOBAL_CS_GIFTS)
 //	--------------------------------------------------------------------------------
 /// Pick a random a Unit type that is ranked by unit power and restricted to recon units available to ePlayer's technology
@@ -8797,6 +8988,11 @@ void CvGame::updateMoves()
 
 	int currentTurn = getGameTurn();
 	bool activatePlayers = playersToProcess.empty() && m_lastTurnAICivsProcessed != currentTurn;
+	// m_lastTurnAICivsProcessed is -1 only right after a load (CvGame::Read resets it) or at the start of a new
+	// game, so this flags the single frame in which the human players are activated for the loaded/new turn.
+	// CvPlayer::setTurnActive() checks it to drop the "turn complete" state the engine wrongly restored from
+	// the save; without that, updateMoves() ends the turn again immediately and the AI plays twice.
+	m_firstActivationOfPlayersAfterLoad = activatePlayers && m_lastTurnAICivsProcessed == -1;
 	// If no AI with an active turn, check humans.
 	if(playersToProcess.empty())
 	{
@@ -10149,6 +10345,7 @@ void CvGame::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidRoundStartTurn, -1);
 	MOD_SERIALIZE_READ(164, kStream, m_iEconomicAidWorldEra, 1);
 	MOD_SERIALIZE_READ(164, kStream, m_bEconomicAidActive, false);
+	MOD_SERIALIZE_READ(164, kStream, m_bMasterSpyQuestAwarded, false);
 #endif
 	kStream >> m_iWinningTurn;
 	kStream >> m_iStartYear;
@@ -10198,6 +10395,7 @@ void CvGame::Read(FDataStream& kStream)
 	kStream >> m_bCircumnavigated;
 	// m_bDebugMode not saved
 	kStream >> m_bFinalInitialized;
+	m_bPolicyFreeBuildingsRebuilt = false;
 	// m_bPbemTurnSent not saved
 	kStream >> m_bHotPbemBetweenTurns;
 	// m_bPlayerOptionsSent not saved
@@ -10415,6 +10613,7 @@ void CvGame::Write(FDataStream& kStream) const
 	kStream << m_iEconomicAidRoundStartTurn;
 	kStream << m_iEconomicAidWorldEra;
 	kStream << m_bEconomicAidActive;
+	kStream << m_bMasterSpyQuestAwarded;
 #endif
 	kStream << m_iWinningTurn;
 	kStream << m_iStartYear;
@@ -11283,6 +11482,238 @@ void CvGame::DoMinorFaithGiftFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, i
 	{
 		GET_PLAYER(eMinor).GetMinorCivAI()->DoFaithGiftFromMajor(eMajor, iEquivalentGold);
 	}
+}
+
+//	--------------------------------------------------------------------------------
+// Economic Aid point spending (Super Power V11)
+// Network-synced variants taking an explicit eMajor (multiplayer-safe). Costs are configured via
+// gCustomMods options and charged against the (major, city-state) aid point pool.
+
+// Reroll this major's personal quests at eMinor, charging aid points on success.
+bool CvGame::DoMinorRerollQuestsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS || eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	int iCost = GetAidPointCostRerollQuests();
+	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	if(!pMinorAI->DoRerollPersonalQuestsForPlayer(eMajor))
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	return true;
+}
+
+//	--------------------------------------------------------------------------------
+// Bully gold paying the influence loss with aid points instead; no penalty of any kind is applied.
+void CvGame::DoMinorBullyGoldWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, int iGold)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS || eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return;
+
+	int iCost = pMinorAI->GetBullyGoldAidPointCost(eMajor);
+	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return;
+
+	// Charge the points only if the bully actually goes through, so a failed attempt costs nothing
+	if(pMinorAI->DoMajorBullyGoldWithAidPoints(eMajor, iGold))
+		pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+}
+
+//	--------------------------------------------------------------------------------
+// Preselect the next Great Person gifted by the patronage finisher; eCostMinor pays the aid points.
+bool CvGame::DoSetNextGreatPersonChoiceFromMajor(PlayerTypes eMajor, UnitTypes eUnit, PlayerTypes eCostMinor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eCostMinor >= MAX_MAJOR_CIVS, "eCostMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eCostMinor < MAX_CIV_PLAYERS, "eCostMinor is not in expected range (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	if(eCostMinor < MAX_MAJOR_CIVS || eCostMinor >= MAX_CIV_PLAYERS)
+		return false;
+	if(eUnit < 0 || eUnit >= GC.getNumUnitInfos())
+		return false;
+
+	// Only Great People may be preselected
+	SpecialUnitTypes eGP = (SpecialUnitTypes) GC.getInfoTypeForString("SPECIALUNIT_PEOPLE");
+	if(eGP == NO_SPECIALUNIT || GC.getUnitInfo(eUnit)->GetSpecialUnitType() != eGP)
+		return false;
+
+	// Super Power V11: m_eNextGreatPersonChoice is a single slot on the player, so only one pick
+	// may be pending at a time. A second pick would silently overwrite the pending one while still
+	// charging its aid points. Refuse here so the cost cannot go to waste.
+	if(GET_PLAYER(eMajor).GetNextGreatPersonChoice() != NO_UNIT)
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eCostMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	int iCost = GetAidPointCostNextGreatPerson();
+	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	GET_PLAYER(eMajor).SetNextGreatPersonChoice(eUnit);
+	return true;
+}
+
+//	--------------------------------------------------------------------------------
+// Preselect the military unit a city-state gifts to this major (NO_UNIT clears the selection).
+bool CvGame::DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMinor, UnitTypes eUnit)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eMinor >= MAX_MAJOR_CIVS, "eMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eMinor < MAX_CIV_PLAYERS, "eMinor is not in expected range (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS || eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	if(eUnit != NO_UNIT && (eUnit < 0 || eUnit >= GC.getNumUnitInfos()))
+		return false;
+
+	// Super Power V11: a limited (national) unit class can only be delivered once, and pending
+	// picks at other city-states already reserve its slots. Refuse - charging nothing - rather
+	// than let this pick silently fail on delivery later and waste the aid points. NO_UNIT is a
+	// plain clear and always allowed.
+	if(eUnit != NO_UNIT)
+	{
+		CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eUnit);
+		if(pkUnitInfo == NULL)
+			return false;
+
+		const UnitClassTypes eUnitClass = (UnitClassTypes) pkUnitInfo->GetUnitClassType();
+		if(GET_PLAYER(eMajor).isUnitClassMaxedOut(eUnitClass, GetPendingGiftUnitCountForClass(eMajor, eUnitClass)))
+			return false;
+	}
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	int iCost = GetAidPointCostPendingGiftUnit();
+	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	pMinorAI->SetPendingGiftUnit(eMajor, eUnit);
+	return true;
+}
+
+//	--------------------------------------------------------------------------------
+// Pull the next League session forward. The countdown is global (shared by every player),
+// so this runs from a network-synced Lua entry point and must behave identically on each client.
+// Refused when there is no active League, while a session is running (the countdown is frozen then),
+// and when the remaining turns cannot absorb the full pull - SetTurnsUntilSession() rejects negative
+// values, so a partial pull would charge the points without moving the session.
+bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eCostMinor)
+{
+	CvAssertMsg(eMajor >= 0, "eMajor is expected to be non-negative (invalid Index)");
+	CvAssertMsg(eMajor < MAX_MAJOR_CIVS, "eMajor is expected to be within maximum bounds (invalid Index)");
+	CvAssertMsg(eCostMinor >= MAX_MAJOR_CIVS, "eCostMinor is not in expected range (invalid Index)");
+	CvAssertMsg(eCostMinor < MAX_CIV_PLAYERS, "eCostMinor is not in expected range (invalid Index)");
+
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	if(eCostMinor < MAX_MAJOR_CIVS || eCostMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	const int iCost = GetAidPointCostHastenCongress();
+	const int iTurns = GetAidPointHastenCongressTurns();
+	if(iCost <= 0 || iTurns <= 0)
+		return false;
+
+	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
+	if(pLeague == NULL || pLeague->IsInSession())
+		return false;
+
+	if(pLeague->GetTurnsUntilSession() <= iTurns)
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eCostMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	pLeague->ChangeTurnsUntilSession(-iTurns);
+
+	// Pulling the session forward can skip the "session soon" turn the League's own DoTurn warns on:
+	// that check fires only when the countdown lands exactly on the warning value, and DoTurn
+	// decrements before comparing. Re-announce here whenever the accelerated countdown already sits
+	// inside (or has dropped below) the warning window, so nobody is caught by surprise.
+	if(pLeague->GetTurnsUntilSession() <= GC.getLEAGUE_SESSION_SOON_WARNING_TURNS())
+	{
+		pLeague->NotifySessionSoon(pLeague->GetTurnsUntilSession());
+	}
+
+	// The countdown readout only refreshes on GameData_DIRTY_BIT and nothing else in this path
+	// dirties it, so without this the player who paid (and every other client) keeps seeing the
+	// stale number on the top bar.
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
+
+//	--------------------------------------------------------------------------------
+// Aid point costs for the spending actions above (0 = disabled)
+int CvGame::GetAidPointCostRerollQuests()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_REROLL_QUESTS", 20);
+}
+
+int CvGame::GetAidPointCostNextGreatPerson()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_NEXT_GREAT_PERSON", 50);
+}
+
+int CvGame::GetAidPointCostPendingGiftUnit()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_PENDING_GIFT_UNIT", 10);
+}
+
+int CvGame::GetAidPointCostHastenCongress()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_HASTEN_CONGRESS", 20);
+}
+
+int CvGame::GetAidPointHastenCongressTurns()
+{
+	return gCustomMods.getOption("SP_AID_POINT_HASTEN_CONGRESS_TURNS", 3);
+}
+
+int CvGame::GetAidPointCostAnnexCityState()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_ANNEX_CITY_STATE", 50);
+}
+
+int CvGame::GetBullyTreasurySharePercent()
+{
+	return gCustomMods.getOption("SP_BULLY_TREASURY_SHARE_PERCENT", 25);
 }
 
 //	--------------------------------------------------------------------------------

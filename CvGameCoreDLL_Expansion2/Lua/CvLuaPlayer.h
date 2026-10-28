@@ -160,6 +160,8 @@ protected:
 	static int lGetImprovementGoldMaintenance(lua_State* L);
 	static int lCalculateGoldRate(lua_State* L);
 	static int lCalculateGoldRateTimes100(lua_State* L);
+	static int lGetEconomicAidExpensePerTurn(lua_State* L);
+	static int lGetTradableGoldRate(lua_State* L);
 	static int lCalculateGrossGoldTimes100(lua_State* L);
 	static int lCalculateInflatedCosts(lua_State* L);
 	static int lCalculateResearchModifier(lua_State* L);
@@ -175,6 +177,7 @@ protected:
 	static int lGetResearchProgress(lua_State* L);
 	static int lGetResearchProgressExceptOverflow(lua_State* L);
 	static int lGetResearchThresholdMod(lua_State* L);
+	static int lGetPolicyCostModifierBreakdown(lua_State* L);
 
 	static int lUnitsRequiredForGoldenAge(lua_State* L);
 	static int lUnitsGoldenAgeCapable(lua_State* L);
@@ -687,6 +690,9 @@ protected:
 	static int lGetLastVeniceBuyFoodTurn(lua_State* L);
 	static int lGetEconomicAidPoints(lua_State* L);
 	static int lChangeEconomicAidPoints(lua_State* L);
+	// Economic Aid point spending (Super Power V11) queries
+	static int lGetPendingGiftUnit(lua_State* L);
+	static int lGetNextGreatPersonChoice(lua_State* L);
 	static int lGetTurnLastPledgedProtectionByMajor(lua_State* L);
 	static int lGetTurnLastPledgeBrokenByMajor(lua_State* L);
 	static int lGetMinorCivBullyGoldAmount(lua_State* L);

@@ -270,6 +270,14 @@ void CvPlayerEspionage::DoTurn()
 /// AddSpy - Grants the player a spy to use
 void CvPlayerEspionage::CreateSpy()
 {
+	CreateSpyWithRank((CvSpyRank)m_pPlayer->GetStartingSpyRank());
+}
+
+/// AddSpyWithRank - Grants the player a spy of the given rank
+/// SP extended quests: the master spy reward needs an explicit rank because the
+/// regular promotion path to SPY_RANK_MASTER_SPY is gated behind very hard conditions
+void CvPlayerEspionage::CreateSpyWithRank(CvSpyRank eRank)
+{
 	// don't create spies if espionage is disabled
 	if(GC.getGame().isOption(GAMEOPTION_NO_ESPIONAGE))
 	{
@@ -282,7 +290,7 @@ void CvPlayerEspionage::CreateSpy()
 	}
 
 	CvEspionageSpy kNewSpy;
-	kNewSpy.m_eRank = (CvSpyRank)m_pPlayer->GetStartingSpyRank();
+	kNewSpy.m_eRank = eRank;
 	kNewSpy.m_eSpyState = SPY_STATE_UNASSIGNED;
 #if defined(MOD_BUGFIX_SPY_NAMES)
 	GetNextSpyName(&kNewSpy);
@@ -308,6 +316,12 @@ void CvPlayerEspionage::CreateSpy()
 		CvString strBuffer = GetLocalizedText("TXT_KEY_NOTIFICATION_SPY_CREATED", szSpyName);
 		CvString strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_SPY_CREATED", szSpyName);
 		pNotifications->Add(NOTIFICATION_SPY_CREATED_ACTIVE_PLAYER, strBuffer, strSummary, -1, -1, 0);
+	}
+
+	// Handing out a Master Spy is a once-per-game event - announce it to everyone
+	if (eRank == SPY_RANK_MASTER_SPY)
+	{
+		AnnounceMasterSpyBirth();
 	}
 
 	if(GC.getLogging())
@@ -1429,7 +1443,15 @@ int CvPlayerEspionage::GetSpyIndexInCity(CvCity* pCity)
 		return -1;
 	}
 
-	return pCity->GetCityEspionage()->m_aiSpyAssignment[m_pPlayer->GetID()];
+	// m_aiSpyAssignment is sized MAX_MAJOR_CIVS; non-major players (city-states) own no
+	// spies, and indexing the per-city array with their player id reads past its end.
+	const PlayerTypes ePlayer = m_pPlayer->GetID();
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+	{
+		return -1;
+	}
+
+	return pCity->GetCityEspionage()->m_aiSpyAssignment[ePlayer];
 }
 
 
@@ -1762,6 +1784,12 @@ void CvPlayerEspionage::LevelUpSpy(uint uiSpyIndex)
 			CvString strBuffer = GetLocalizedText("TXT_KEY_NOTIFICATION_SPY_PROMOTED", szSpyName, szOldPromotion, szNewPromotion);
 			CvString strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_SPY_PROMOTED", szSpyName);
 			pNotifications->Add(NOTIFICATION_SPY_PROMOTION, strBuffer, strSummary, -1, -1, 0);
+		}
+
+		// Reaching the Master Spy rank is a once-per-game event - announce it worldwide
+		if (m_aSpyList[uiSpyIndex].m_eRank == SPY_RANK_MASTER_SPY)
+		{
+			AnnounceMasterSpyBirth();
 		}
 	}
 }
@@ -3217,6 +3245,30 @@ bool CvPlayerEspionage::HasMasterSpyDiplomatVisitingThem(PlayerTypes ePlayer, bo
 	}
 
 	return m_aSpyList[iSpyIndex].m_eRank == SPY_RANK_MASTER_SPY;
+}
+
+/// AnnounceMasterSpyBirth - Tell every player that this player has gained a Master Spy.
+/// Both the promotion path and the quest reward funnel through here.
+void CvPlayerEspionage::AnnounceMasterSpyBirth()
+{
+	// The Master Spy is a once-per-game prize, so the whole world is told about it
+	Localization::String strBuffer = Localization::Lookup("TXT_KEY_NOTIFICATION_MASTER_SPY_BORN");
+	strBuffer << m_pPlayer->getCivilizationShortDescriptionKey();
+	Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_MASTER_SPY_BORN");
+	strSummary << m_pPlayer->getCivilizationShortDescriptionKey();
+
+	for (int iLoop = 0; iLoop < MAX_MAJOR_CIVS; iLoop++)
+	{
+		CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes) iLoop);
+		if (!kLoopPlayer.isAlive())
+			continue;
+
+		CvNotifications* pNotifications = kLoopPlayer.GetNotifications();
+		if (pNotifications != NULL)
+		{
+			pNotifications->Add(NOTIFICATION_GENERIC, strBuffer.toUTF8(), strSummary.toUTF8(), -1, -1, m_pPlayer->GetID());
+		}
+	}
 }
 
 /// AddMessage - This function is called by another player's PlayerEspionage class. It records the spy activity to be played back at the beginning
@@ -5289,6 +5341,90 @@ void CvEspionageAI::DoTurn()
 	}
 
 	CvPlayerEspionage* pEspionage = m_pPlayer->GetEspionage();
+
+	// SP quest AI: send idle spies to rig elections in focused city-states, and keep the ones
+	// already there in place until the quest is done.
+	if (MOD_SP_UNIQUE_CITYSTATE)
+	{
+		for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+		{
+			PlayerTypes eMinor = (PlayerTypes)iMinor;
+
+			if (!GET_PLAYER(eMinor).isAlive())
+				continue;
+
+			if (!GET_TEAM(m_pPlayer->getTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
+				continue;
+
+			CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+			if (pMinorAI == NULL)
+				continue;
+
+			PlayerTypes eMe = m_pPlayer->GetID();
+
+			bool bQuestActive = pMinorAI->IsActiveQuestForPlayer(eMe, MINOR_CIV_QUEST_RIG_ELECTION)
+				&& !pMinorAI->IsQuestExpired(eMe, MINOR_CIV_QUEST_RIG_ELECTION);
+
+			CvCity* pCapital = GET_PLAYER(eMinor).getCapitalCity();
+			if (pCapital == NULL)
+				continue;
+
+			int iSpyInCity = pEspionage->GetSpyIndexInCity(pCapital);
+			bool bHasSpyInCity = iSpyInCity != -1 && iSpyInCity < (int)pEspionage->m_aSpyList.size();
+
+			// Quest finished or no longer focused: release the spy we locked here. The normal
+			// reassignment pass below then decides whether it stays in the city-state or comes home.
+			if (!bQuestActive || !m_pPlayer->GetDiplomacyAI()->IsCityStateInQuestFocus(eMinor, 5))
+			{
+				// Release the spy regardless of whether it is still travelling, observing or
+				// already rigging the election; the normal pass decides if it stays or leaves.
+				if (bHasSpyInCity)
+				{
+					CvSpyState eState = pEspionage->m_aSpyList[iSpyInCity].m_eSpyState;
+
+					if (eState != SPY_STATE_DEAD
+#if defined(MOD_API_ESPIONAGE)
+						&& eState != SPY_STATE_TERMINATED
+#endif
+						)
+					{
+						pEspionage->m_aSpyList[iSpyInCity].m_bEvaluateReassignment = true;
+					}
+				}
+
+				continue;
+			}
+
+			// Already have a spy in the city-state: lock that spy in place
+			if (bHasSpyInCity)
+			{
+				pEspionage->m_aSpyList[iSpyInCity].m_bEvaluateReassignment = false;
+				continue;
+			}
+
+			// Otherwise use an idle spy, if any
+			for (uint uiSpy = 0; uiSpy < pEspionage->m_aSpyList.size(); uiSpy++)
+			{
+				if (pEspionage->m_aSpyList[uiSpy].m_eSpyState == SPY_STATE_DEAD
+#if defined(MOD_API_ESPIONAGE)
+					|| pEspionage->m_aSpyList[uiSpy].m_eSpyState == SPY_STATE_TERMINATED
+#endif
+					)
+				{
+					continue;
+				}
+
+				if (pEspionage->GetCityWithSpy(uiSpy) != NULL)
+					continue;
+
+				if (pEspionage->MoveSpyTo(pCapital, uiSpy, false))
+				{
+					pEspionage->m_aSpyList[uiSpy].m_bEvaluateReassignment = false;
+					break;
+				}
+			}
+		}
+	}
 
 	// loop through spies an extract all that aren't in a correct location
 	int iCorrectlyAssignedDiplomatSpies = 0;

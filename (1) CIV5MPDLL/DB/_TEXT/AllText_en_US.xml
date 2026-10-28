@@ -459,6 +459,18 @@
 		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_GLOBAL_WAR_CASUTIES_CHANGES">
 			<Text>Global war Casualties and Population losses after capture Cities change {1_NumModifier}%</Text>
 		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION">
+			<Text>City-States under international law protection: {1_List}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_INTERNATIONAL_LAW_PROTECTION_ENTRY">
+			<Text>{1_CivName}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY">
+			<Text>City-States in permanent alliance: {1_List}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY_ENTRY">
+			<Text>{1_CivName}</Text>
+		</Row>
 		<Row Tag="TXT_KEY_RESOLUTION_WAR_CONVENTION">
 			<Text>War Convention</Text>
 		</Row>
@@ -980,6 +992,39 @@
 		</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_SUMMARY_VASSAL_DEAL_GPT_TAX">
 			<Text>Vassal deal tax +{2_value}[ICON_GOLD]/turn</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_BY_ENEMY">
+			<Text>Your {@1_UnitName} is shot down by an enemy {@2_EnUName} while performing an air-sweep!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_TO_ENEMY">
+			<Text>Your {@1_UnitName} did [COLOR_POSITIVE_TEXT]{3_Damage}[ENDCOLOR] Damage to the enemy {@2_EnUName} while performing an air-sweep!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_FIGHTER">
+			<Text>Your {@2_UnitName} destroyed an enemy {@1_EnUName} when it was performing an air-sweep against us!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_KILLED_ENEMY_AA">
+			<Text>Your {@1_UnitName} destroyed an enemy's {@2_EnUName} in this air-sweep!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_AA_KILLED_BY_ENEMY">
+			<Text>Your {@2_UnitName} is killed by an enemy {@1_EnUName} performing an air-sweep against us!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_AIRSWEEP_BY_ENEMY">
+			<Text>Your {@2_UnitName} suffered [COLOR_NEGATIVE_TEXT]{3_Damage}[ENDCOLOR] Damage by an enemy {@1_EnUName} performing an air-sweep against us!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE">
+			<Text>A new technology has upgraded your {1_OldBuildings} to [COLOR_POSITIVE_TEXT]{@2_NewBuilding}[ENDCOLOR] across your empire.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_BUILDING_UPGRADE_SUMMARY">
+			<Text>Building upgraded: {1_OldBuildings} -&gt; {@2_NewBuilding}</Text>
+		</Row>
+		<Row Tag="TXT_KEY_SP_UPGRADE_LIST_SEPARATOR">
+			<Text>, </Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE">
+			<Text>You have discovered Railroads! All roads in the world have been upgraded to railroads.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_NOTIFICATION_SP_AUTO_ROAD_UPGRADE_SUMMARY">
+			<Text>Railroads acquired</Text>
 		</Row>
 </Language_en_US>
 

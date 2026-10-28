@@ -1315,6 +1315,17 @@ public:
 	bool IsConnectedTo(CvCity* pCity) const;
 	bool HasSpecialistSlot(SpecialistTypes iSpecialistType) const;
 	bool HasSpecialist(SpecialistTypes iSpecialistType) const;
+	// Specialist slot inventory: how many specialists of each type this City can support.
+	// Maintained incrementally by whatever provides the slots (buildings go through
+	// ChangeMaxSpecialistCountFromBuilding; other slot sources may call
+	// ChangeMaxSpecialistCount as well) instead of being recomputed by scanning the
+	// buildings on demand. A slot is therefore owned by the City, not by an individual
+	// building.
+	int GetMaxSpecialistCount(SpecialistTypes eIndex) const;
+	void ChangeMaxSpecialistCount(SpecialistTypes eIndex, int iChange);
+	void ChangeMaxSpecialistCountFromBuilding(BuildingTypes eBuilding, int iNumBuildingChange);
+	void RebuildMaxSpecialistCountsFromBuildings();
+	bool IsRebuildMaxSpecialistCountsNeeded() const;
 	bool HasTerrain(TerrainTypes iTerrainType) const;
 	bool HasWorkedTerrain(TerrainTypes iTerrainType) const;
 	bool HasAnyDomesticTradeRoute() const;
@@ -1393,6 +1404,16 @@ public:
 	bool CanScaleImmigrantIn() const;
 	bool CanScaleImmigrantOut() const;
 #endif
+
+	// Rebuilds the free buildings granted by the Policy_FreeBuildingClass* tables from the
+	// owner's current policies. Idempotent, so every entry point can call it unconditionally.
+	void UpdatePolicyFreeBuildings();
+
+	// How many free buildings this City last received from the policy tables for one class.
+	// The free slot is shared with wonders, traits and other sources, so the count is kept
+	// separately and a rebuild only reclaims our own share.
+	int GetPolicyFreeBuildingGranted(BuildingClassTypes eBuildingClass) const;
+	void SetPolicyFreeBuildingGranted(BuildingClassTypes eBuildingClass, int iValue);
 
 #ifdef MOD_PROMOTION_CITY_DESTROYER
 	int GetSiegeKillCitizensModifier() const;
@@ -1686,6 +1707,7 @@ protected:
 	std::vector<int> m_aiYieldFromUnitProduction;
 	std::vector<int> m_aiYieldFromBirth;
 	std::vector<int> m_aiYieldFromBorderGrowth;
+	std::vector<int> m_aiPolicyFreeBuildingGranted;
 
 	std::vector<int> m_aiYieldFromPillage;
 

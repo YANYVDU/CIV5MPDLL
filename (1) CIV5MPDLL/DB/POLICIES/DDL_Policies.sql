@@ -47,6 +47,8 @@ alter table Policies add InstantFoodThresholdPercent integer not null default 0;
 alter table Policies add InstantFoodKeptPercent integer not null default 0;
 alter table Policies add FreeBuildingClass text default null references BuildingClasses(Type);
 alter table Policies add ExtraSpies integer default 0;
+--Spy points per turn granted to the city owner while this policy is active
+alter table Policies add SpyPoints integer default 0;
 --******************** New Effect ********************--
 alter table Policies add DefenseBoostAllCities integer default 0;
 alter table Policies add AlwaysWeLoveKindDayInGoldenAge boolean default 0;
@@ -161,4 +163,29 @@ create table Policy_ImprovementHappinessWhenWorked (
     PolicyType text references Policies(Type),
     ImprovementType text references Improvements(Type),
     Happiness integer default 0
+);
+
+--******************** City-State Influence ********************--
+-- SameReligionMinorFriendshipMinimum: friendship anchor bonus against a city-state whose majority
+-- religion matches the religion the player follows in most of their cities (the player does NOT
+-- need to be the founder of that religion)
+alter table Policies add SameReligionMinorFriendshipMinimum integer default 0;
+-- FoundedReligionMinorPerTurnInfluence: per-turn influence with a city-state following the religion
+-- founded by the player
+alter table Policies add FoundedReligionMinorPerTurnInfluence integer default 0;
+-- CityStateGiftUnitExperience: extra experience granted to military units gifted by a city-state
+alter table Policies add CityStateGiftUnitExperience integer default 0;
+
+-- Minimum is the friendship anchor bonus against city-states of the given trait
+create table Policy_MinorCivTraitFriendshipMinimum (
+    PolicyType text references Policies(Type),
+    MinorCivTraitType text,
+    Minimum integer default 0
+);
+
+-- Free promotions granted to city-state gifted units of the given unit combat type
+create table Policy_CityStateGiftUnitFreePromotion (
+    PolicyType text references Policies(Type),
+    UnitCombatType text references UnitCombatInfos(Type),
+    PromotionType text references UnitPromotions(Type)
 );
