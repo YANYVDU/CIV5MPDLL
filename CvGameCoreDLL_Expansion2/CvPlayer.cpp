@@ -21899,14 +21899,20 @@ int CvPlayer::calculateMilitaryMight() const
 	}
 	//Simplistic increase based on player's gold
 	//500 gold will increase might by 22%, 2000 by 45%, 8000 gold by 90%
+	//A negative treasury (deficit) would make sqrt return NaN, which then turns the whole product
+	//into an undefined integer - treat debt as zero gold for this bonus instead.
+	int iGoldForMight = GetTreasury()->GetGold();
+	if(iGoldForMight < 0)
+		iGoldForMight = 0;
+
 	float fGoldMultiplier = 1.0f;
 	if(MOD_SP_SMART_AI)
 	{
-		fGoldMultiplier += sqrt((float)GetTreasury()->GetGold() / 5) / 100.0f;
+		fGoldMultiplier += sqrt((float)iGoldForMight / 5) / 100.0f;
 	}
 	else
 	{
-		fGoldMultiplier += sqrt((float)GetTreasury()->GetGold()) / 100.0f;
+		fGoldMultiplier += sqrt((float)iGoldForMight) / 100.0f;
 	}
 	if(fGoldMultiplier > 2.0f) fGoldMultiplier = 2.0f;
 
