@@ -645,6 +645,7 @@ public:
 	void SetNumUnitsGifted(PlayerTypes ePlayer, int iValue);
 	void ChangeNumUnitsGifted(PlayerTypes ePlayer, int iChange);
 
+	bool HasPermanentAlly();
 	void DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUnit, bool bDistanceGift);
 	int GetFriendshipFromUnitGift(PlayerTypes eFromPlayer, bool bGreatPerson, bool bDistanceGift);
 

@@ -431,7 +431,7 @@ CvPlayer::CvPlayer() :
 	, m_iGoldFromVassalDeals(0)
 	, m_iGoldPerTurnFromVassalDeals(0)
 #endif
-	, m_iPrestigeExemptAllyCount(0)
+	, m_vecPermanentAllies("CvPlayer::m_vecPermanentAllies", m_syncArchive)
 	, m_iExtraUnitPlayerInstances(0)
 	, m_iConquestCasualtiesModifier(0)
 	, m_iWaterTileDamageGlobal(0)
@@ -1288,7 +1288,6 @@ void CvPlayer::uninit()
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	memset(m_aiCSAllyCountByTrait, 0, sizeof(m_aiCSAllyCountByTrait));
 #endif
-	m_iPrestigeExemptAllyCount = 0;
 	m_vecPermanentAllies.clear();
 	m_iExtraUnitPlayerInstances = 0;
 	m_iConquestCasualtiesModifier = 0;
@@ -22786,7 +22785,6 @@ void CvPlayer::verifyAlive()
 		{
 			// Clear permanent allies when owner dies (resolution-based allies persist)
 			m_vecPermanentAllies.clear();
-			m_iPrestigeExemptAllyCount = 0;
 
 			setAlive(false, false);
 		}
@@ -31086,11 +31084,9 @@ void CvPlayer::Read(FDataStream& kStream)
 	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsThresholdModifier, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsCreated, 0);
 	MOD_SERIALIZE_READ(164, kStream, m_iSpyPointsPerTurn, 0);
-	MOD_SERIALIZE_READ(162, kStream, m_iPrestigeExemptAllyCount, 0);
 	{
-		int iCount = 0;
-		MOD_SERIALIZE_READ(162, kStream, iCount, 0);
 		m_vecPermanentAllies.clear();
+		kStream >> m_vecPermanentAllies;
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_eOverlord = NO_PLAYER;
 	m_vecVassals.clear();
@@ -31105,12 +31101,6 @@ void CvPlayer::Read(FDataStream& kStream)
 		m_aGoldFromVassals[i] = 0;
 	}
 #endif
-		for (int j = 0; j < iCount; j++)
-		{
-			int iVal = 0;
-			MOD_SERIALIZE_READ(162, kStream, iVal, -1);
-			m_vecPermanentAllies.push_back(iVal);
-		}
 #if defined(MOD_GLOBAL_SUZERAIN)
 		MOD_SERIALIZE_READ(163, kStream, m_eOverlord, NO_PLAYER);
 		{
@@ -32013,12 +32003,8 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsThresholdModifier);
 	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsCreated);
 	MOD_SERIALIZE_WRITE(kStream, m_iSpyPointsPerTurn);
-	MOD_SERIALIZE_WRITE(kStream, m_iPrestigeExemptAllyCount);
 	{
-		int iCount = (int)m_vecPermanentAllies.size();
-		MOD_SERIALIZE_WRITE(kStream, iCount);
-		for (int i = 0; i < iCount; i++)
-			kStream << m_vecPermanentAllies[i];
+		kStream << m_vecPermanentAllies;
 
 #if defined(MOD_GLOBAL_SUZERAIN)
 	kStream << m_eOverlord;
@@ -33902,20 +33888,8 @@ int CvPlayer::GetCSTreasuryInterestRate() const
 //	--------------------------------------------------------------------------------
 int CvPlayer::GetPrestigeExemptAllyCount() const
 {
-	return m_iPrestigeExemptAllyCount;
-}
-
-//	--------------------------------------------------------------------------------
-void CvPlayer::SetPrestigeExemptAllyCount(int iValue)
-{
-	m_iPrestigeExemptAllyCount = iValue;
-}
-
-//	--------------------------------------------------------------------------------
-void CvPlayer::ChangePrestigeExemptAllyCount(int iChange)
-{
-	if (iChange != 0)
-		SetPrestigeExemptAllyCount(GetPrestigeExemptAllyCount() + iChange);
+	// Derived from the synced list so the count can never drift from the allies themselves.
+	return (int)m_vecPermanentAllies.size();
 }
 
 //	--------------------------------------------------------------------------------
@@ -33932,7 +33906,9 @@ void CvPlayer::SetPermanentAlly(PlayerTypes eMinor, bool bValue)
 	if (bValue)
 	{
 		if (!IsPermanentAlly(eMinor))
+		{
 			m_vecPermanentAllies.push_back((int)eMinor);
+		}
 	}
 	else
 	{
@@ -33940,7 +33916,7 @@ void CvPlayer::SetPermanentAlly(PlayerTypes eMinor, bool bValue)
 		{
 			if (m_vecPermanentAllies[i] == (int)eMinor)
 			{
-				m_vecPermanentAllies.erase(m_vecPermanentAllies.begin() + i);
+				m_vecPermanentAllies.erase(i);
 				break;
 			}
 		}
