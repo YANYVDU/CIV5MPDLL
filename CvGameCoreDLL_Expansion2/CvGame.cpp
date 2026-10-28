@@ -1159,6 +1159,7 @@ void CvGame::uninit()
 	m_bDebugModeCache = false;
 	m_bFOW = true;
 	m_bFinalInitialized = false;
+	m_bPolicyFreeBuildingsRebuilt = false;
 	m_eWaitDiploPlayer = NO_PLAYER;
 	m_bPbemTurnSent = false;
 	m_bHotPbemBetweenTurns = false;
@@ -6034,6 +6035,36 @@ void CvGame::setFinalInitialized(bool bNewValue)
 	{
 		m_bFinalInitialized = bNewValue;
 	}
+
+	// A loaded save already carries m_bFinalInitialized == true, so the value check
+	// above cannot be used as the "load finished" signal. Rebuild unconditionally;
+	// the flag inside makes the call idempotent.
+	if (bNewValue)
+	{
+		RebuildPolicyFreeBuildings();
+	}
+}
+
+void CvGame::RebuildPolicyFreeBuildings()
+{
+	if (m_bPolicyFreeBuildingsRebuilt)
+		return;
+
+	m_bPolicyFreeBuildingsRebuilt = true;
+
+	for (int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+		if (!kPlayer.isAlive())
+			continue;
+
+		CvCity* pLoopCity;
+		int iLoop;
+		for (pLoopCity = kPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iLoop))
+		{
+			pLoopCity->UpdatePolicyFreeBuildings();
+		}
+	}
 }
 
 
@@ -8033,6 +8064,9 @@ void CvGame::removeGreatPersonBornName(const CvString& szName)
 void CvGame::doTurn()
 {
 	AI_PERF_FORMAT("AI-perf.csv", ("CvGame::doTurn, Turn %03d", GC.getGame().getElapsedGameTurns()) );
+
+	// Safety net for load paths that never call setFinalInitialized(true).
+	RebuildPolicyFreeBuildings();
 #ifndef FINAL_RELEASE
 	char temp[256];
 	sprintf_s(temp, "Turn %i\n", getGameTurn());
@@ -10361,6 +10395,7 @@ void CvGame::Read(FDataStream& kStream)
 	kStream >> m_bCircumnavigated;
 	// m_bDebugMode not saved
 	kStream >> m_bFinalInitialized;
+	m_bPolicyFreeBuildingsRebuilt = false;
 	// m_bPbemTurnSent not saved
 	kStream >> m_bHotPbemBetweenTurns;
 	// m_bPlayerOptionsSent not saved

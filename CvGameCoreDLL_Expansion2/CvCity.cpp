@@ -1040,6 +1040,8 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 		UpdateCorruption();
 #endif
 
+	UpdatePolicyFreeBuildings();
+
 	AI_init();
 
 	if (GC.getGame().getGameTurn() == 0)
@@ -1115,6 +1117,7 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	m_iBaseTourism = 0;
 	m_iBaseTourismBeforeModifiers = 0;
 	m_aiNumProjects.resize(GC.getNumProjectInfos());
+	m_aiPolicyFreeBuildingGranted.clear();
 #if defined(MOD_VOLCANO_BREAK)
 	m_iImmueVolcanoDamage = 0;
 #endif
@@ -21186,6 +21189,7 @@ void CvCity::read(FDataStream& kStream)
 	kStream >> m_paiProjectProduction;
 
 	m_pCityBuildings->Read(kStream);
+	MOD_SERIALIZE_READ(166, kStream, m_aiPolicyFreeBuildingGranted, std::vector<int>());
 
 	if (uiVersion < 6)
 	{
@@ -21675,6 +21679,7 @@ void CvCity::write(FDataStream& kStream) const
 	kStream << m_paiProjectProduction;
 
 	m_pCityBuildings->Write(kStream);
+	MOD_SERIALIZE_WRITE(kStream, m_aiPolicyFreeBuildingGranted);
 
 	CvInfosSerializationHelper::WriteHashedDataArray<UnitTypes, int>(kStream, m_paiUnitProduction);
 	CvInfosSerializationHelper::WriteHashedDataArray<UnitTypes, int>(kStream, m_paiUnitProductionTime);
@@ -24976,6 +24981,217 @@ bool CvCity::CanScaleImmigrantOut() const
 	return info->CanImmigrantOut();
 }
 #endif
+
+int CvCity::GetPolicyFreeBuildingGranted(BuildingClassTypes eBuildingClass) const
+{
+	if (eBuildingClass < 0 || eBuildingClass >= (int)m_aiPolicyFreeBuildingGranted.size())
+		return 0;
+
+	return m_aiPolicyFreeBuildingGranted[eBuildingClass];
+}
+
+void CvCity::SetPolicyFreeBuildingGranted(BuildingClassTypes eBuildingClass, int iValue)
+{
+	if (eBuildingClass < 0)
+		return;
+
+	if ((int)m_aiPolicyFreeBuildingGranted.size() <= eBuildingClass)
+		m_aiPolicyFreeBuildingGranted.resize(GC.getNumBuildingClassInfos(), 0);
+
+	m_aiPolicyFreeBuildingGranted[eBuildingClass] = iValue;
+}
+
+void CvCity::UpdatePolicyFreeBuildings()
+{
+	CvPolicyXMLEntries* pPolicyEntries = GC.GetGamePolicies();
+	if (pPolicyEntries == NULL)
+		return;
+
+	pPolicyEntries->EnsureFreeBuildingClassCache();
+
+	const std::vector<PolicyTypes>& vPolicies = pPolicyEntries->GetPoliciesWithFreeBuildingClasses();
+	if (vPolicies.empty())
+		return;
+
+	CvPlayer& kOwner = GET_PLAYER(getOwner());
+	const bool bIsCapital = isCapital();
+	const PlayerTypes eOriginalOwner = getOriginalOwner();
+	const bool bOriginalOwnerIsMinor = eOriginalOwner != NO_PLAYER && GET_PLAYER(eOriginalOwner).isMinorCiv();
+
+	std::tr1::unordered_map<BuildingClassTypes, int> desiredFree;
+	std::tr1::unordered_map<BuildingClassTypes, bool> keepExisting;
+
+	// Only policies that actually appear in one of the three tables can contribute a grant.
+	for (size_t iPolicyLoop = 0; iPolicyLoop < vPolicies.size(); iPolicyLoop++)
+	{
+		const PolicyTypes ePolicy = vPolicies[iPolicyLoop];
+		if (!kOwner.HasPolicy(ePolicy))
+			continue;
+
+		CvPolicyEntry* pPolicy = pPolicyEntries->GetPolicyEntry(ePolicy);
+		if (pPolicy == NULL)
+			continue;
+
+		const bool bBlocked = kOwner.GetPlayerPolicies()->IsPolicyBlocked(ePolicy);
+
+		// Several policies may name the same class. The City gets the largest grant, not their
+		// sum: a building class can only exist once per City.
+		for (auto& row : pPolicy->GetFreeBuildingClassInfo())
+		{
+			if (!bBlocked)
+			{
+				int& iDesired = desiredFree[row.eBuildingClass];
+				iDesired = std::max(iDesired, row.iCount);
+			}
+			else if (!row.bRemovedWhenBlocked)
+			{
+				keepExisting[row.eBuildingClass] = true;
+			}
+		}
+
+		if (bIsCapital)
+		{
+			for (auto& row : pPolicy->GetFreeBuildingClassCapitalInfo())
+			{
+				if (!bBlocked)
+				{
+					int& iDesired = desiredFree[row.eBuildingClass];
+					iDesired = std::max(iDesired, row.iCount);
+				}
+				else if (!row.bRemovedWhenBlocked)
+				{
+					keepExisting[row.eBuildingClass] = true;
+				}
+			}
+		}
+
+		if (bOriginalOwnerIsMinor)
+		{
+			for (auto& row : pPolicy->GetFreeBuildingClassCityStatesInfo())
+			{
+				if (!bBlocked)
+				{
+					int& iDesired = desiredFree[row.eBuildingClass];
+					iDesired = std::max(iDesired, row.iCount);
+				}
+				else if (!row.bRemovedWhenBlocked)
+				{
+					keepExisting[row.eBuildingClass] = true;
+				}
+			}
+		}
+	}
+
+	// Touch only classes this City has a reason to own: those named by a policy the owner
+	// currently holds, plus anything we granted before and now have to clear. A class named
+	// only by another player's (or an unreachable) policy must be left alone, because the
+	// free slot is shared with wonders, traits and other free-building sources.
+	std::vector<BuildingClassTypes> vManagedClasses;
+	for (size_t iPolicyLoop = 0; iPolicyLoop < vPolicies.size(); iPolicyLoop++)
+	{
+		const PolicyTypes ePolicy = vPolicies[iPolicyLoop];
+		if (!kOwner.HasPolicy(ePolicy))
+			continue;
+
+		const std::vector<BuildingClassTypes>& vPolicyClasses = pPolicyEntries->GetFreeBuildingClassesForPolicy(ePolicy);
+		for (size_t iClassLoop = 0; iClassLoop < vPolicyClasses.size(); iClassLoop++)
+		{
+			bool bKnown = false;
+			for (size_t k = 0; k < vManagedClasses.size(); k++)
+			{
+				if (vManagedClasses[k] == vPolicyClasses[iClassLoop])
+				{
+					bKnown = true;
+					break;
+				}
+			}
+			if (!bKnown)
+				vManagedClasses.push_back(vPolicyClasses[iClassLoop]);
+		}
+	}
+
+	const int iNumBuildingClasses = GC.getNumBuildingClassInfos();
+	for (int iClassLoop = 0; iClassLoop < iNumBuildingClasses; iClassLoop++)
+	{
+		const BuildingClassTypes eBuildingClass = (BuildingClassTypes)iClassLoop;
+		if (GetPolicyFreeBuildingGranted(eBuildingClass) == 0)
+			continue;
+
+		bool bKnown = false;
+		for (size_t k = 0; k < vManagedClasses.size(); k++)
+		{
+			if (vManagedClasses[k] == eBuildingClass)
+			{
+				bKnown = true;
+				break;
+			}
+		}
+		if (!bKnown)
+			vManagedClasses.push_back(eBuildingClass);
+	}
+
+	const bool bOnePerCity = GC.getCITY_MAX_NUM_BUILDINGS() <= 1;
+
+	for (size_t iClassLoop = 0; iClassLoop < vManagedClasses.size(); iClassLoop++)
+	{
+		const BuildingClassTypes eBuildingClass = vManagedClasses[iClassLoop];
+		const BuildingTypes eBuilding = kOwner.GetCivBuilding(eBuildingClass);
+		if (eBuilding == NO_BUILDING)
+			continue;
+
+		int iDesired = 0;
+		auto itDesired = desiredFree.find(eBuildingClass);
+		if (itDesired != desiredFree.end())
+			iDesired = itDesired->second;
+
+		const int iReal = GetCityBuildings()->GetNumRealBuilding(eBuilding);
+		const int iCurrent = GetCityBuildings()->GetNumFreeBuilding(eBuilding);
+		const int iGrantedBefore = GetPolicyFreeBuildingGranted(eBuildingClass);
+
+		// The free slot is a single counter shared with wonders, traits and other sources.
+		// Whatever we did not put there ourselves is left alone and re-added on top of our
+		// own quota, so dropping a policy cannot delete someone else's free building.
+		int iOther = iCurrent - iGrantedBefore;
+		if (iOther < 0)
+			iOther = 0;
+
+		int iTarget;
+		int iGrantedAfter;
+		if (bOnePerCity)
+		{
+			// A paid copy already satisfies the grant. Filling both slots would run the
+			// building's effects twice while GetNumBuilding() still reports one.
+			const bool bPolicyWanted = (iDesired > 0 && iReal <= 0);
+			iTarget = (iOther > 0 || bPolicyWanted) ? 1 : 0;
+			iGrantedAfter = (bPolicyWanted && iOther <= 0) ? 1 : 0;
+		}
+		else
+		{
+			iTarget = iOther + iDesired;
+			const int iMaxBuildings = GC.getCITY_MAX_NUM_BUILDINGS();
+			if (iMaxBuildings > 0 && iTarget > iMaxBuildings)
+				iTarget = iMaxBuildings;
+			iGrantedAfter = std::max(0, iTarget - iOther);
+		}
+
+		auto itKeep = keepExisting.find(eBuildingClass);
+		if (itKeep != keepExisting.end())
+		{
+			// A blocked policy that opted out of removal keeps its current grant.
+			iTarget = std::max(iTarget, iCurrent);
+			iGrantedAfter = std::max(iGrantedAfter, std::min(iGrantedBefore, iCurrent));
+		}
+
+		// Only write when the count actually changes, so a rebuild does not run the one-shot
+		// effects of a building that was already there.
+		if (iTarget != iCurrent)
+		{
+			GetCityBuildings()->SetNumFreeBuilding(eBuilding, iTarget);
+		}
+
+		SetPolicyFreeBuildingGranted(eBuildingClass, iGrantedAfter);
+	}
+}
 
 #ifdef MOD_PROMOTION_CITY_DESTROYER
 int CvCity::GetSiegeKillCitizensModifier() const

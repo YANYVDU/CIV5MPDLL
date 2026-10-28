@@ -3771,6 +3771,9 @@ CvCity* CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bGift, bool
 	if (MOD_GLOBAL_CITY_SCALES && pNewCity) pNewCity->UpdateScaleBuildings();
 #endif
 
+	if (pNewCity)
+		pNewCity->UpdatePolicyFreeBuildings();
+
 #ifdef MOD_TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY
 	if (MOD_TRAITS_COMBAT_BONUS_FROM_CAPTURED_HOLY_CITY && pNewCity && pNewCity->GetCityReligions()->IsHolyCityAnyReligion()) {
 		GET_PLAYER(eOldOwner).UpdateCachedCapturedHolyCity();
@@ -21114,6 +21117,14 @@ void CvPlayer::setCapitalCity(CvCity* pNewCapitalCity)
 		{
 			m_iCapitalCityID = FFreeList::INVALID_INDEX;
 		}
+
+		// Capital-only policy buildings follow the capital: rebuild every city so the old capital
+		// loses them and the new one gains them.
+		int iLoop = 0;
+		for(CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+		{
+			pLoopCity->UpdatePolicyFreeBuildings();
+		}
 	}
 }
 
@@ -30155,6 +30166,8 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 			pLoopCity->UpdateScaleBuildings();
 		}
 #endif
+
+		pLoopCity->UpdatePolicyFreeBuildings();
 
 #ifdef MOD_GLOBAL_CORRUPTION
 		if (MOD_GLOBAL_CORRUPTION && pPolicy->IsInvolveCorruption())
