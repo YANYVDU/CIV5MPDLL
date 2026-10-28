@@ -9716,28 +9716,6 @@ bool CvMinorCivAI::DoRerollPersonalQuestsForPlayer(PlayerTypes eMajor)
 	if(!GetPlayer()->isAlive() || !IsHasMetPlayer(eMajor))
 		return false;
 
-	// Rerolling ignores the normal quest countdown
-	SetQuestCountdownForPlayer(eMajor, 0);
-
-	// Only reroll if at least one personal quest could be granted, so the caller does not charge
-	// aid points (and we do not drop the old quests) when nothing is available.
-	bool bAnyValid = false;
-#if defined(MOD_EVENTS_QUESTS)
-	for(int iQuestLoop = 0; iQuestLoop < GC.getNumQuestInfos(); iQuestLoop++)
-#else
-	for(int iQuestLoop = 0; iQuestLoop < NUM_MINOR_CIV_QUEST_TYPES; iQuestLoop++)
-#endif
-	{
-		MinorCivQuestTypes eQuest = (MinorCivQuestTypes) iQuestLoop;
-		if(IsValidQuestForPlayer(eMajor, eQuest) && IsPersonalQuest(eQuest))
-		{
-			bAnyValid = true;
-			break;
-		}
-	}
-	if(!bAnyValid)
-		return false;
-
 	// Drop existing personal quests, keep global quest copies. The dropped types become the
 	// exclusion set, so the reroll cannot hand back the quests the player just paid to replace.
 	std::vector<MinorCivQuestTypes> veExclude;
@@ -9749,6 +9727,49 @@ bool CvMinorCivAI::DoRerollPersonalQuestsForPlayer(PlayerTypes eMajor)
 		else
 			kKeep.push_back(m_QuestsGiven[eMajor][iQuestLoop]);
 	}
+
+	// Only reroll if at least one personal quest outside the exclusion set could be granted, so
+	// the caller does not charge aid points (and we do not drop the old quests) when nothing is
+	// available. This mirrors the exclusion DoTestStartPersonalQuest applies afterwards.
+	bool bAnyValid = false;
+#if defined(MOD_EVENTS_QUESTS)
+	for(int iQuestLoop = 0; iQuestLoop < GC.getNumQuestInfos(); iQuestLoop++)
+#else
+	for(int iQuestLoop = 0; iQuestLoop < NUM_MINOR_CIV_QUEST_TYPES; iQuestLoop++)
+#endif
+	{
+		MinorCivQuestTypes eQuest = (MinorCivQuestTypes) iQuestLoop;
+		if(!IsPersonalQuest(eQuest))
+			continue;
+		if(!IsValidQuestForPlayer(eMajor, eQuest))
+			continue;
+
+		bool bExcluded = false;
+		for(uint iExcludeLoop = 0; iExcludeLoop < veExclude.size(); iExcludeLoop++)
+		{
+			if(veExclude[iExcludeLoop] == eQuest)
+			{
+				bExcluded = true;
+				break;
+			}
+		}
+
+		// DoTestStartPersonalQuest also needs a non-zero personality bias to build its candidate
+		// list, so a zero-bias quest would pass this precheck and then drop the old quests for
+		// nothing.
+		if(!bExcluded && GetPersonalityQuestBias(eQuest) > 0)
+		{
+			bAnyValid = true;
+			break;
+		}
+	}
+	if(!bAnyValid)
+		return false;
+
+	// Rerolling ignores the normal quest countdown. Nothing has been modified before this point,
+	// so a failed attempt leaves both the quests and the countdown untouched.
+	SetQuestCountdownForPlayer(eMajor, 0);
+
 	m_QuestsGiven[eMajor].clear();
 	for(uint iKeepLoop = 0; iKeepLoop < kKeep.size(); iKeepLoop++)
 		m_QuestsGiven[eMajor].push_back(kKeep[iKeepLoop]);
@@ -9838,7 +9859,22 @@ bool CvMinorCivAI::DoMajorBullyGoldWithAidPoints(PlayerTypes eBully, int iGold)
 
 		// No reaction at all: the minor records nothing, loses no influence, revokes no quest and never
 		// locks us out. Other city-states' "bully a city-state" quest progress still counts.
-		NotifyOtherMinorsOfBully(eBully);
+
+		// The "bully a city-state" quest completion check reads GetTurnLastBulliedByMajor, but this
+		// path must not leave a "recently bullied" record behind. Publish the turn just long enough
+		// to settle the publisher's quest and every other city-state's copy of it, then restore.
+		// This replaces NotifyOtherMinorsOfBully, which has to run after the temporary write to see it.
+		int iOldBullyTurn = GetTurnLastBulliedByMajor(eBully);
+		SetTurnLastBulliedByMajor(eBully, GC.getGame().getGameTurn());
+
+		for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+		{
+			CvMinorCivAI* pPublisherAI = GET_PLAYER((PlayerTypes) iMinorLoop).GetMinorCivAI();
+			if(pPublisherAI != NULL)
+				pPublisherAI->DoTestActiveQuestsForPlayer(eBully, /*bTestComplete*/ true, /*bTestObsolete*/ false, MINOR_CIV_QUEST_BULLY_CITY_STATE);
+		}
+
+		SetTurnLastBulliedByMajor(eBully, iOldBullyTurn);
 
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
 		if (MOD_EVENTS_MINORS_INTERACTION) {

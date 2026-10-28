@@ -1101,6 +1101,22 @@ public:
 	BuildingTypes GetCityStateQuestBuildingTarget();
 	bool IsNoConnectToMinor(PlayerTypes eMinor) const;
 	void SetNoConnectToMinor(PlayerTypes eMinor, int iExpireTurn);
+
+	// Economic Aid point spending AI (see DoCityStateAidPointAI)
+	void DoCityStateAidPointAI();
+	bool IsCityStateQuestImpossible(CvMinorCivAI* pMinorAI, PlayerTypes ePlayer, MinorCivQuestTypes eQuest);
+	bool WillCityStateQuestBeDoneByAI(CvMinorCivAI* pMinorAI, PlayerTypes ePlayer, MinorCivQuestTypes eQuest);
+	bool HasRecentlyRerolledCityStateQuests(CvMinorCivAI* pMinorAI, PlayerTypes ePlayer, int iTurn);
+	PlayerTypes GetAidPointPaymentMinor(PlayerTypes eMajor, int iCost, const bool* pabPoolUsed, bool bHonorReservation = true);
+	int GetAidPointAnnexReserve(PlayerTypes eMinor);
+	int GetAidPointReservedForMinor(PlayerTypes eMinor);
+	UnitTypes GetAidPointGreatPersonChoice();
+	UnitTypes GetAidPointGiftUnitChoice(PlayerTypes eMajor);
+	void DoAidPointGreatPersonSpend(PlayerTypes eMajor, bool* pabPoolUsed);
+	void DoAidPointRerollSpend(PlayerTypes eMajor, bool* pabPoolUsed);
+	void DoAidPointGiftUnitSpend(PlayerTypes eMajor, bool* pabPoolUsed);
+	void DoAidPointBullySpend(PlayerTypes eMajor, bool* pabPoolUsed);
+	void DoAidPointCongressSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 #endif
 
 	bool IsPlayerValid(PlayerTypes eOtherPlayer, bool bMyTeamIsValid = false);
@@ -1477,6 +1493,10 @@ private:
 	// Quest AI runtime state (not serialized)
 	int m_iLastCityStateQuestTurn;
 	BuildingTypes m_eCityStateQuestBuildingTarget;
+
+	// Economic Aid point AI runtime state (not serialized)
+	int m_iLastCityStateAidPointTurn;
+	int m_aiAidPointBullyTurn[MAX_CIV_PLAYERS];
 
 	char* m_paeWarFace;
 	char* m_paeWarState;
