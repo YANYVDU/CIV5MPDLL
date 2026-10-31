@@ -923,6 +923,11 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 		if (eFromTeam == eToTeam)
 			return false;
 
+		// Only one pact item per deal: the initiator offers it and both sides are bound by it.
+		// (Skip this when finalizing a deal that already contains the item.)
+		if (!bFinalizing && ContainsItemType(TRADE_ITEM_NON_AGGRESSION_PACT))
+			return false;
+
 		// Both teams must be at peace. A pact is something you sign instead of fighting.
 		if (pFromTeam->isAtWar(eToTeam))
 			return false;
@@ -3807,6 +3812,28 @@ void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bo
 		{
 			strBuffer = GetLocalizedText("TXT_KEY_NOTIFICATION_DEAL_EXPIRED_DEFENSIVE_PACT_TO_US", fromPlayer.getNameKey());
 			strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_DEAL_EXPIRED_DEFENSIVE_PACT_TO_US", fromPlayer.getNameKey());
+			pNotifications->Add(NOTIFICATION_DEAL_EXPIRED_DEFENSIVE_PACT, strBuffer, strSummary, -1, -1, -1);
+		}
+	}
+	// Non-Aggression Pact
+	else if(pItem->m_eItemType == TRADE_ITEM_NON_AGGRESSION_PACT)
+	{
+		// The pact has no per-turn effect; expiring it only needs to be announced. Reuse the
+		// defensive pact notification type so both sides share the same icon and click action.
+		// Announce it even when the deal was cancelled, matching the defensive pact branch.
+		pNotifications = fromPlayer.GetNotifications();
+		if(pNotifications)
+		{
+			strBuffer = GetLocalizedText("TXT_KEY_NOTIFICATION_DEAL_EXPIRED_NON_AGGRESSION_PACT_FROM_US", toPlayer.getNameKey());
+			strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_DEAL_EXPIRED_NON_AGGRESSION_PACT_FROM_US", toPlayer.getNameKey());
+			pNotifications->Add(NOTIFICATION_DEAL_EXPIRED_DEFENSIVE_PACT, strBuffer, strSummary, -1, -1, -1);
+		}
+
+		pNotifications = toPlayer.GetNotifications();
+		if(pNotifications)
+		{
+			strBuffer = GetLocalizedText("TXT_KEY_NOTIFICATION_DEAL_EXPIRED_NON_AGGRESSION_PACT_TO_US", fromPlayer.getNameKey());
+			strSummary = GetLocalizedText("TXT_KEY_NOTIFICATION_SUMMARY_DEAL_EXPIRED_NON_AGGRESSION_PACT_TO_US", fromPlayer.getNameKey());
 			pNotifications->Add(NOTIFICATION_DEAL_EXPIRED_DEFENSIVE_PACT, strBuffer, strSummary, -1, -1, -1);
 		}
 	}
