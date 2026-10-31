@@ -11922,6 +11922,42 @@ void CvDiplomacyAI::DoSendStatementToPlayer(PlayerTypes ePlayer, DiploStatementT
 		}
 	}
 
+	// Offer Non-Aggression Pact
+	else if(eStatement == DIPLO_STATEMENT_NON_AGGRESSION_PACT_OFFER)
+	{
+		// Active human
+		if(bShouldShowLeaderScene)
+		{
+#if defined(MOD_DIPLOMACY_STFU)
+			SendAIDealRequest(GetPlayer()->GetID(), ePlayer, pDeal, DIPLO_UI_STATE_TRADE_AI_MAKES_OFFER, DIPLO_MESSAGE_NON_AGGRESSION_PACT_OFFER, LEADERHEAD_ANIM_REQUEST);
+#else
+			szText = GetDiploStringForMessage(DIPLO_MESSAGE_NON_AGGRESSION_PACT_OFFER);
+#if defined(MOD_API_PLAYER_LOGS)
+			CvDiplomacyRequests::SendDealRequest(GetPlayer()->GetID(), ePlayer, pDeal, DIPLO_UI_STATE_TRADE_AI_MAKES_OFFER, DIPLO_MESSAGE_NON_AGGRESSION_PACT_OFFER, szText, LEADERHEAD_ANIM_REQUEST);
+#else
+			CvDiplomacyRequests::SendDealRequest(GetPlayer()->GetID(), ePlayer, pDeal, DIPLO_UI_STATE_TRADE_AI_MAKES_OFFER, szText, LEADERHEAD_ANIM_REQUEST);
+#endif
+#endif
+		}
+		// Offer to an AI player
+		else if(!bHuman)
+		{
+			CvDeal kDeal = *pDeal;
+
+			// Don't need to call DoOffer because we check to see if the deal works for both sides BEFORE sending
+#if defined(MOD_AI_MP_DIPLOMACY)
+			if (MOD_AI_MP_DIPLOMACY) {
+				GC.getGame().GetGameDeals()->FinalizeDeal(*pDeal, true);
+			} else {
+#endif
+			GC.getGame().GetGameDeals()->AddProposedDeal(kDeal);
+			GC.getGame().GetGameDeals()->FinalizeDeal(GetPlayer()->GetID(), ePlayer, true);
+#if defined(MOD_AI_MP_DIPLOMACY)
+			}
+#endif
+		}
+	}
+
 	// Offer to renew deal
 	else if(eStatement == DIPLO_STATEMENT_RENEW_DEAL)
 	{
@@ -13242,6 +13278,7 @@ void CvDiplomacyAI::DoContactPlayer(PlayerTypes ePlayer)
 		DoOpenBordersExchange(ePlayer, eStatement, pDeal);
 		DoOpenBordersOffer(ePlayer, eStatement, pDeal);
 		DoResearchAgreementOffer(ePlayer, eStatement, pDeal);
+		DoNonAggressionPactOffer(ePlayer, eStatement, pDeal);
 		DoRenewExpiredDeal(ePlayer, eStatement, pDeal);
 		DoShareIntrigueStatement(ePlayer, eStatement);
 		//DoResearchAgreementPlan(ePlayer, eStatement);
@@ -15300,6 +15337,35 @@ void CvDiplomacyAI::DoResearchAgreementOffer(PlayerTypes ePlayer, DiploStatement
 	}
 }
 
+/// Possible Contact Statement - Non-Aggression Pact Offer
+void CvDiplomacyAI::DoNonAggressionPactOffer(PlayerTypes ePlayer, DiploStatementTypes& eStatement, CvDeal* pDeal)
+{
+	CvAssertMsg(ePlayer >= 0, "DIPLOMACY_AI: Invalid Player Index.  Please send Jon this with your last 5 autosaves and what changelist # you're playing.");
+	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "DIPLOMACY_AI: Invalid Player Index.  Please send Jon this with your last 5 autosaves and what changelist # you're playing.");
+
+	if(eStatement == NO_DIPLO_STATEMENT_TYPE)
+	{
+		if(IsAtWar(ePlayer))
+			return;
+
+		if(GetPlayer()->GetDealAI()->IsMakeOfferForNonAggressionPact(ePlayer, /*pDeal can be modified in this function*/ pDeal))
+		{
+			DiploStatementTypes eTempStatement = DIPLO_STATEMENT_NON_AGGRESSION_PACT_OFFER;
+			int iTurnsBetweenStatements = 20;
+
+			if(GetNumTurnsSinceStatementSent(ePlayer, eTempStatement) >= iTurnsBetweenStatements)
+				eStatement = eTempStatement;
+			else
+				pDeal->ClearItems();
+		}
+		else
+		{
+			// Clear out the deal if we don't want to offer it so that it's not tainted for the next trade possibility we look at
+			pDeal->ClearItems();
+		}
+	}
+}
+
 // Possible Contact Statement - Renew Recently Expired Deal
 void CvDiplomacyAI::DoRenewExpiredDeal(PlayerTypes ePlayer, DiploStatementTypes& eStatement, CvDeal* pDeal)
 {
@@ -16951,6 +17017,8 @@ const char* GetResponseKeyForMessage(DiploMessageTypes eDiploMessage)
 		return "RESPONSE_PLAN_RESEARCH_AGREEMENT";
 	case DIPLO_MESSAGE_RESEARCH_AGREEMENT_OFFER:
 		return "RESPONSE_RESEARCH_AGREEMENT_OFFER";
+	case DIPLO_MESSAGE_NON_AGGRESSION_PACT_OFFER:
+		return "RESPONSE_NON_AGGRESSION_PACT_OFFER";
 	case DIPLO_MESSAGE_RENEW_DEAL:
 		return "RESPONSE_RENEW_DEAL";
 	case DIPLO_MESSAGE_WANT_MORE_RENEW_DEAL:
@@ -17660,6 +17728,11 @@ const char* CvDiplomacyAI::GetDiploStringForMessage(DiploMessageTypes eDiploMess
 		// AI wants RA with player
 	case DIPLO_MESSAGE_RESEARCH_AGREEMENT_OFFER:
 		strText = GetDiploTextFromTag("RESPONSE_RESEARCH_AGREEMENT_OFFER");
+		break;
+
+		// AI wants a Non-Aggression Pact with player
+	case DIPLO_MESSAGE_NON_AGGRESSION_PACT_OFFER:
+		strText = GetDiploTextFromTag("RESPONSE_NON_AGGRESSION_PACT_OFFER");
 		break;
 
 	case DIPLO_MESSAGE_RENEW_DEAL:
@@ -30371,6 +30444,9 @@ void CvDiplomacyAI::LogStatementToPlayer(PlayerTypes ePlayer, DiploStatementType
 			break;
 		case DIPLO_STATEMENT_RESEARCH_AGREEMENT_OFFER:
 			strTemp.Format("Research Agreement Offer");
+			break;
+		case DIPLO_STATEMENT_NON_AGGRESSION_PACT_OFFER:
+			strTemp.Format("Non-Aggression Pact Offer");
 			break;
 		case DIPLO_STATEMENT_RENEW_DEAL:
 			strTemp.Format("Renew Deal");
