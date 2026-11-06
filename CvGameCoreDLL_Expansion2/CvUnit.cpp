@@ -589,6 +589,8 @@ CvUnit::CvUnit() :
 	, m_missionAIUnit()
 	, m_eActivityType("CvUnit::m_eActivityType", m_syncArchive, true)
 	, m_eAutomateType("CvUnit::m_eAutomateType", m_syncArchive)
+	, m_iProvinceLevy("CvUnit::m_iProvinceLevy", m_syncArchive)
+	, m_iLevyTarget("CvUnit::m_iLevyTarget", m_syncArchive)
 	, m_eUnitAIType("CvUnit::m_eUnitAIType", m_syncArchive)
 	, m_thisHandle(this)
 	, m_bWaitingForMove(false)
@@ -1624,6 +1626,8 @@ if (MOD_API_UNIT_CANNOT_BE_RANGED_ATTACKED)
 	m_iMissionTimer = 0;
 	m_eActivityType = ACTIVITY_AWAKE;
 	m_eAutomateType = NO_AUTOMATE;
+	m_iProvinceLevy = -1;
+	m_iLevyTarget = -1;
 
 	m_kLastPath.clear();
 	m_uiLastPathCacheDest = (uint)-1;
@@ -5187,6 +5191,10 @@ bool CvUnit::canGift(bool bTestVisible, bool bTestTransport) const
 	// Minors
 	if(GET_PLAYER(pPlot->getOwner()).isMinorCiv())
 	{
+		// Cannot gift to a city-state that already has a permanent ally
+		if (GET_PLAYER(pPlot->getOwner()).GetMinorCivAI()->HasPermanentAlly())
+			return false;
+
 		// No settlers
 		if(isFound() || IsFoundAbroad())
 			return false;
@@ -5326,6 +5334,10 @@ bool CvUnit::CanDistanceGift(PlayerTypes eToPlayer) const
 	// Minors
 	if(GET_PLAYER(eToPlayer).isMinorCiv())
 	{
+		// Cannot gift to a city-state that already has a permanent ally
+		if (GET_PLAYER(eToPlayer).GetMinorCivAI()->HasPermanentAlly())
+			return false;
+
 		// No settlers
 		if(isFound() || IsFoundAbroad())
 			return false;
@@ -14281,6 +14293,7 @@ bool CvUnit::CanUpgradeInTerritory(bool bOnlyTestVisible) const
 
 //	--------------------------------------------------------------------------------
 /// What UnitType does this Unit upgrade into?
+//--------------------------------------------------------------------------------
 UnitTypes CvUnit::GetUpgradeUnitType() const
 {
 	VALIDATE_OBJECT
@@ -15546,6 +15559,10 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 	iModifier += GetCombatModifierFromBuilding();
 
 	CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
+
+	// Dao grace: temporary empire-wide combat strength.
+	iModifier += kPlayer.GetDaoCombatModifier();
+
 	CvGameReligions* pReligions = GC.getGame().GetGameReligions();
 	ReligionTypes eFoundedReligion = pReligions->GetFounderBenefitsReligion(kPlayer.GetID());
 
@@ -16249,6 +16266,16 @@ int CvUnit::GetMaxDefenseStrength(const CvPlot* pInPlot, const CvUnit* pAttacker
 
 	if(GetBaseCombatStrength() == 0)
 		return 0;
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Dao war: a melee attacker voids every defensive bonus of the target.
+	if (MOD_GLOBAL_SUZERAIN && pAttacker != NULL && !bFromRangedAttack
+		&& !pAttacker->isRanged()
+		&& GET_PLAYER(pAttacker->getOwner()).HasDaoPerk(4))
+	{
+		return GetBaseCombatStrength();
+	}
+#endif
 
 	int iCombat;
 
@@ -29674,6 +29701,34 @@ bool CvUnit::IsAutomated() const
 {
 	VALIDATE_OBJECT
 	return (GetAutomateType() != NO_AUTOMATE);
+}
+
+//	--------------------------------------------------------------------------------
+int CvUnit::GetProvinceLevy() const
+{
+	VALIDATE_OBJECT
+	return m_iProvinceLevy;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetProvinceLevy(int iProvince)
+{
+	VALIDATE_OBJECT
+	m_iProvinceLevy = iProvince;
+}
+
+//	--------------------------------------------------------------------------------
+int CvUnit::GetLevyTarget() const
+{
+	VALIDATE_OBJECT
+	return m_iLevyTarget;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetLevyTarget(int iProvince)
+{
+	VALIDATE_OBJECT
+	m_iLevyTarget = iProvince;
 }
 
 

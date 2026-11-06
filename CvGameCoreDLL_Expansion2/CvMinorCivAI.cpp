@@ -4603,10 +4603,8 @@ bool CvMinorCivAI::IsProxyWarActiveForMajor(PlayerTypes eMajor)
 /// Update turn for Quests
 void CvMinorCivAI::DoTurnQuests()
 {
-	// Permanent ally: no quests for anyone
-	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
-		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
-			return;
+	// Permanent ally: quests stay enabled. Permanent allies have their influence
+	// locked, so quest rewards cannot inflate the relationship any further.
 
 	// ********************
 	// Check Current Quests
@@ -11980,13 +11978,13 @@ void CvMinorCivAI::DoAcquire(PlayerTypes eMajor, int &iNumUnits, int& iCapitalX,
 #endif
 {
 	// Clean up permanent ally status when CS is acquired/conquered
+	// (SetPermanentAlly keeps the prestige-exempt count in sync on its own)
 	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 	{
 		PlayerTypes e = (PlayerTypes)i;
 		if (GET_PLAYER(e).isAlive() && GET_PLAYER(e).IsPermanentAlly(GetPlayer()->GetID()))
 		{
 			GET_PLAYER(e).SetPermanentAlly(GetPlayer()->GetID(), false);
-			GET_PLAYER(e).ChangePrestigeExemptAllyCount(-1);
 		}
 	}
 
@@ -13113,6 +13111,14 @@ int CvMinorCivAI::GetPermanentAllyTargetInfluence(PlayerTypes ePlayer)
 	return iTarget;
 }
 
+bool CvMinorCivAI::HasPermanentAlly()
+{
+	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
+			return true;
+	return false;
+}
+
 void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUnit, bool bDistanceGift)
 {
 	CvAssertMsg(eFromPlayer >= 0, "eFromPlayer is expected to be non-negative (invalid Index)");
@@ -13122,10 +13128,13 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 	CvAssertMsg(pGiftUnit != NULL, "pGiftUnit is NULL");
 	if (pGiftUnit == NULL) return;
 
-	// Permanent ally: no unit gifts are accepted, the ally's influence is fully locked and the gift would be wasted
-	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
-		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
-			return;
+	// Permanent ally: no unit gifts are accepted, the ally's influence is fully locked and the gift would be wasted.
+	// The gift copy already exists on our side, so kill it to avoid leaving a free unit behind.
+	if (HasPermanentAlly())
+	{
+		pGiftUnit->kill(false);
+		return;
+	}
 
 	ChangeNumUnitsGifted(eFromPlayer, 1);
 
@@ -13137,19 +13146,18 @@ void CvMinorCivAI::DoUnitGiftFromMajor(PlayerTypes eFromPlayer, CvUnit* pGiftUni
 	if (pGiftUnit->IsGreatPerson() && GET_PLAYER(eFromPlayer).GetPlayerTraits()->IsGreatPersonGiftPermanentAlly())
 	{
 		// Only the first player to gift a Great Person becomes the permanent ally
-		bool bAlreadyPermanentAlly = false;
-		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		if (!HasPermanentAlly())
 		{
-			if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
-			{
-				bAlreadyPermanentAlly = true;
-				break;
-			}
-		}
-		if (!bAlreadyPermanentAlly)
-		{
+			// The gift above adds the gap against EFFECTIVE influence, but the
+			// change lands on BASE influence. When the two differ (temporary
+			// modifiers) the stored value can stop short of the target, so top
+			// up the base influence before locking the permanent ally.
+			int iBaseInf = GetBaseFriendshipWithMajorTimes100(eFromPlayer) / 100;
+			int iTargetInf = GetPermanentAllyTargetInfluence(eFromPlayer);
+			if (iBaseInf < iTargetInf)
+				ChangeFriendshipWithMajor(eFromPlayer, iTargetInf - iBaseInf);
+
 			GET_PLAYER(eFromPlayer).SetPermanentAlly(GetPlayer()->GetID(), true);
-			GET_PLAYER(eFromPlayer).ChangePrestigeExemptAllyCount(1);
 
 			// Clear all quests and notify players
 			ResetQuestList();
@@ -13279,10 +13287,8 @@ static CvCityStateUAEffectEntry* GetMinorUAGrantedEffect(CvMinorCivAI* pMinorAI,
 
 void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 {
-	// Permanent ally: no gold gifts from anyone
-	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
-		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
-			return;
+	// Permanent ally: gold gifts stay enabled. Influence is locked by the
+	// permanent-ally floor, so the gift only spends gold.
 
 	if(GET_PLAYER(ePlayer).GetTreasury()->GetGold() >= iGold)
 	{
@@ -13373,9 +13379,8 @@ void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 void CvMinorCivAI::DoFaithGiftFromMajor(PlayerTypes eMajor, int iEquivalentGold)
 {
 	// Permanent ally: no faith gifts from anyone
-	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
-		if (GET_PLAYER((PlayerTypes)i).IsPermanentAlly(GetPlayer()->GetID()))
-			return;
+	if (HasPermanentAlly())
+		return;
 
 	CvPlayer& kMajor = GET_PLAYER(eMajor);
 

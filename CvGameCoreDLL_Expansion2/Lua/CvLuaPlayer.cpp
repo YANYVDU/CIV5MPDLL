@@ -130,6 +130,145 @@ void CvLuaPlayer::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChangeUUFromExtra);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChangeUBFromExtra);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChangeUIFromExtra);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoVassalRankUp);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetVassalRankUpGold);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoVassalGift);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetVassalGiftOptionCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetVassalGiftOptionField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoVassalGiftOption);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoVassalProtect);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoVassalMediate);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lProposeVassalPeace);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAcceptVassalPeaceCounter);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetPendingVassalInvite);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lResolveVassalInvite);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lCanRequestSubmission);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lRequestVassalSubmission);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lCanSurrenderTo);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSurrenderTo);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetPendingWarOrder);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lResolveWarOrder);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSubmitVassalMemorial);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lIsSuzerainCiv);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetPendingDecreeCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetPendingDecreeField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lResolveDecree);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lIssueDecree);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lCanIssueDecree);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetVassalTitle);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetConcubineCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetConcubineField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetConcubineRank);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetEmpress);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetEmpress);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lFavorConcubine);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGiftConcubine);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetConcubineGiftGold);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetConcubineFavor);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lIsConcubineHostage);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDethroneEmpress);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetConcubineWish);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSatisfyConcubineWish);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lCanSatisfyConcubineWish);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lCanRestoreConcubineHomeland);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lRestoreConcubineHomeland);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialCandidateCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialCandidateField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAppointOfficial);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDismissOfficial);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lRemoveOfficialCandidate);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialExamStart);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialExamCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lClearOfficialExam);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lCreateProvince);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetCityProvince);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetCityProvince);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceCityCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAppointProvinceOfficial);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDismissProvinceOfficial);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceTreasury);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceTreasuryCap);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceAutonomy);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetProvinceAutonomy);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lIsCapitalProvince);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceQueueCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceQueueField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAddProvinceQueueItem);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lRemoveProvinceQueueItem);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lClearProvinceQueue);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceGarrisonCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceGarrisonTarget);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceMissionField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetProvinceMission);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lClearProvinceMission);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lLevyProvinceGarrison);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lReturnProvinceGarrison);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceLevyCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialAutonomy);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetOfficialAutonomy);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetMemorialBacklog);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetMemorialAdvice);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceWar);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceBorder);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetProvinceBorder);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lOrderLevyToProvince);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lOrderLevyRally);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceReportCount);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetProvinceReportField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDepositProvinceTreasury);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSpendProvinceTreasury);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialAdvicePost);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialAdviceTurn);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lResolveOfficialAdvice);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetOfficialEffectPercent);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetConcubineTemplateField);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lTryReleaseVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lForceReleaseVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lKeepVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAcceptVassalPeaceCounterEx);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGiftUnitToVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSpawnUnitForVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lOrderVassalJoinWar);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoEmbargoMonopoly);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDenounceTarget);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lOrderPermanentAllyCityStatesWar);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoTradeBlock);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lProposePeaceDemand);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lProposePeaceDemandWithCity);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAcceptPeaceCounter);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lPunishVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoReturnCityToVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoReturnCityToVassalByID);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lResolveVassalMemorial);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lGetMemorialDefault);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetMemorialDefault);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoVassalAid);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetVassalCourtPolicy);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoVassalPunish);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAddVassalWonderToPool);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lRemoveVassalWonderFromPool);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lRequestVassalWonder);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lApproveVassalWonderRequest);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetWonderRequestCondition);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoInviteVassal);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoSubjugate);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lHasVassalPunishRight);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoDaoGrace);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lAddDaoUC);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lHasDaoPerk);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lPurchaseDaoBelief);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSubmitPrayer);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lResolvePrayer);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChoosePrayerTech);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoEmbargoResource);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoFengshan);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoQifeng);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoRangzai);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoTianfa);
+	REGIST_STATIC_FUNCTION(CvLuaPlayer::lDoMandateVictory);
 
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lSetLostUC);
 	REGIST_STATIC_FUNCTION(CvLuaPlayer::lChangeFreeBuildingCount);
@@ -1486,6 +1625,229 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(IsVassalOf);
 	Method(IsOverlordOf);
 	Method(HasAnyVassal);
+	Method(GetVassalLoyalty);
+	Method(GetVassalLoyaltyCap);
+	Method(GetVassalRank);
+	Method(CanRankUpVassal);
+	Method(DoVassalRankUp);
+	Method(GetVassalRankUpGold);
+	Method(GetVassalGiftLoyalty);
+	Method(DoVassalGift);
+	Method(GetVassalGiftOptionCount);
+	Method(GetVassalGiftOptionField);
+	Method(DoVassalGiftOption);
+	Method(GetCourtGiftCount);
+	Method(GetCourtGiftVassal);
+	Method(GetCourtGiftGold);
+	Method(GetCourtGiftResource);
+	Method(GetCourtGiftAmount);
+	Method(GetVassalAggressor);
+	Method(DoVassalProtect);
+	Method(CanMediateVassals);
+	Method(DoVassalMediate);
+	Method(ProposeVassalPeace);
+	Method(AcceptVassalPeaceCounter);
+	Method(GetPendingVassalInvite);
+	Method(ResolveVassalInvite);
+	Method(CanRequestSubmission);
+	Method(RequestVassalSubmission);
+	Method(CanSurrenderTo);
+	Method(SurrenderTo);
+	Method(GetPendingWarOrder);
+	Method(ResolveWarOrder);
+	Method(SubmitVassalMemorial);
+	Method(IsSuzerainCiv);
+	Method(GetPendingDecreeCount);
+	Method(GetPendingDecreeField);
+	Method(ResolveDecree);
+	Method(IssueDecree);
+	Method(CanIssueDecree);
+	Method(GetVassalTitle);
+	Method(GetConcubineCount);
+	Method(GetConcubineField);
+	Method(GetConcubineRank);
+	Method(GetEmpress);
+	Method(SetEmpress);
+	Method(FavorConcubine);
+	Method(GiftConcubine);
+	Method(GetConcubineGiftGold);
+	Method(GetConcubineFavor);
+	Method(IsConcubineHostage);
+	Method(DethroneEmpress);
+	Method(GetConcubineWish);
+	Method(SatisfyConcubineWish);
+	Method(CanSatisfyConcubineWish);
+	Method(CanRestoreConcubineHomeland);
+	Method(RestoreConcubineHomeland);
+	Method(GetOfficialField);
+	Method(GetOfficialCandidateCount);
+	Method(GetOfficialCandidateField);
+	Method(AppointOfficial);
+	Method(DismissOfficial);
+	Method(RemoveOfficialCandidate);
+	Method(GetOfficialExamStart);
+	Method(GetOfficialExamCount);
+	Method(ClearOfficialExam);
+	Method(GetProvinceCount);
+	Method(GetProvinceField);
+	Method(CreateProvince);
+	Method(SetCityProvince);
+	Method(GetCityProvince);
+	Method(GetProvinceCityCount);
+	Method(AppointProvinceOfficial);
+	Method(DismissProvinceOfficial);
+	Method(GetProvinceTreasury);
+	Method(GetProvinceTreasuryCap);
+	Method(GetProvinceAutonomy);
+	Method(SetProvinceAutonomy);
+	Method(IsCapitalProvince);
+	Method(GetProvinceQueueCount);
+	Method(GetProvinceQueueField);
+	Method(AddProvinceQueueItem);
+	Method(RemoveProvinceQueueItem);
+	Method(ClearProvinceQueue);
+	Method(GetProvinceGarrisonCount);
+	Method(GetProvinceGarrisonTarget);
+	Method(GetProvinceMissionField);
+	Method(SetProvinceMission);
+	Method(ClearProvinceMission);
+	Method(LevyProvinceGarrison);
+	Method(ReturnProvinceGarrison);
+	Method(GetProvinceLevyCount);
+	Method(GetOfficialAutonomy);
+	Method(SetOfficialAutonomy);
+	Method(GetMemorialBacklog);
+	Method(GetMemorialAdvice);
+	Method(GetProvinceWar);
+	Method(GetProvinceBorder);
+	Method(SetProvinceBorder);
+	Method(OrderLevyToProvince);
+	Method(OrderLevyRally);
+	Method(GetProvinceReportCount);
+	Method(GetProvinceReportField);
+	Method(DepositProvinceTreasury);
+	Method(SpendProvinceTreasury);
+	Method(GetOfficialAdvicePost);
+	Method(GetOfficialAdviceTurn);
+	Method(ResolveOfficialAdvice);
+	Method(GetOfficialEffectPercent);
+	Method(GetConcubineTemplateField);
+	Method(TryReleaseVassal);
+	Method(ForceReleaseVassal);
+	Method(KeepVassal);
+	Method(GetVassalPeaceCounterField);
+	Method(AcceptVassalPeaceCounterEx);
+	Method(GetStrongestLandUnit);
+	Method(GetStrongestLandUnitCost);
+	Method(GiftUnitToVassal);
+	Method(SpawnUnitForVassal);
+	Method(OrderVassalJoinWar);
+	Method(DoEmbargoMonopoly);
+	Method(DenounceTarget);
+	Method(OrderPermanentAllyCityStatesWar);
+	Method(DoTradeBlock);
+	Method(ProposePeaceDemand);
+	Method(GetPeaceReturnCityCount);
+	Method(GetPeaceReturnCityField);
+	Method(GetPeaceCedeCityCount);
+	Method(GetPeaceCedeCityField);
+	Method(ProposePeaceDemandWithCity);
+	Method(GetPeaceCounterField);
+	Method(AcceptPeaceCounter);
+	Method(PunishVassal);
+	Method(CanReturnCityToVassal);
+	Method(DoReturnCityToVassal);
+	Method(DoReturnCityToVassalByID);
+	Method(GetVassalExecutionTier);
+	Method(GetVassalRevoltScore);
+	Method(CanVassalRevolt);
+	Method(GetVassalMemorialCount);
+	Method(GetVassalMemorialField);
+	Method(GetMemorialDefault);
+	Method(SetMemorialDefault);
+	Method(ResolveVassalMemorial);
+	Method(GetVassalCourtInterval);
+	Method(IsVassalCourtTurn);
+	Method(IsVassalLosingWar);
+	Method(IsVassalMismanaging);
+	Method(DoVassalAid);
+	Method(GetVassalCourtPolicy);
+	Method(SetVassalCourtPolicy);
+	Method(GetVassalBreachCount);
+	Method(HasVassalPunishRight);
+	Method(GetVassalPunishRightTurns);
+	Method(IsVassalIncompetent);
+	Method(CanPunishVassal);
+	Method(DoVassalPunish);
+	Method(GetMandate);
+	Method(GetDaoPoints);
+	Method(AddChronicle);
+	Method(GetChronicleCount);
+	Method(GetChronicleValue);
+	Method(GetEmpireSnapshotCount);
+	Method(GetEmpireSnapshotValue);
+	Method(GetDaoGraceCost);
+	Method(DoDaoGrace);
+	Method(HasDaoPerk);
+	Method(GetDaoUCPicks);
+	Method(AddDaoUC);
+	Method(GetDaoBeliefCost);
+	Method(GetDaoBeliefOptionCount);
+	Method(GetDaoBeliefOption);
+	Method(PurchaseDaoBelief);
+	Method(GetMandateMax);
+	Method(IsMandateFull);
+	Method(CanFengshan);
+	Method(DoFengshan);
+	Method(CanQifeng);
+	Method(DoQifeng);
+	Method(CanRangzai);
+	Method(DoRangzai);
+	Method(CanTianfa);
+	Method(DoTianfa);
+	Method(IsUnderMandatePunishment);
+	Method(GetPunishBy);
+	Method(GetVassalWonderPoolCapacity);
+	Method(GetVassalWonderPoolCount);
+	Method(GetVassalWonderPoolEntry);
+	Method(CanAddVassalWonderToPool);
+	Method(AddVassalWonderToPool);
+	Method(RemoveVassalWonderFromPool);
+	Method(RequestVassalWonder);
+	Method(GetWonderRequest);
+	Method(ApproveVassalWonderRequest);
+	Method(SetWonderRequestCondition);
+	Method(GetWonderConditionType);
+	Method(GetWonderConditionValue);
+	Method(GetWonderConditionTarget);
+	Method(GetWonderConditionTurns);
+	Method(CanVassalBuildWonder);
+	Method(CanInviteVassal);
+	Method(DoInviteVassal);
+	Method(CanSubjugate);
+	Method(DoSubjugate);
+	Method(CanSubmitPrayer);
+	Method(SubmitPrayer);
+	Method(GetPrayerCount);
+	Method(GetPrayerVassal);
+	Method(GetPrayerScience);
+	Method(GetPrayerCulture);
+	Method(GetPrayerFaith);
+	Method(GetPrayerGold);
+	Method(GetPrayerWish);
+	Method(GetPrayerChance);
+	Method(GetPrayerChanceForInvestment);
+	Method(GetPrayerFreeTechs);
+	Method(GetPrayerTechOptionCount);
+	Method(GetPrayerTechOption);
+	Method(ChoosePrayerTech);
+	Method(ResolvePrayer);
+	Method(GetPrayerDenyStreak);
+	Method(CanEmbargoResource);
+	Method(DoEmbargoResource);
+	Method(IsResourceEmbargoed);
+	Method(CanMandateVictory);
+	Method(DoMandateVictory);
 	Method(GetScienceTimes100FromVassals);
 	Method(GetCultureFromVassals);
 	Method(GetFaithFromVassals);
@@ -7196,6 +7558,1019 @@ int CvLuaPlayer::lIsOverlordOf(lua_State* L)
 int CvLuaPlayer::lHasAnyVassal(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayer::HasAnyVassal);
+}
+//------------------------------------------------------------------------------
+//int GetVassalLoyalty(PlayerTypes e);
+int CvLuaPlayer::lGetVassalLoyalty(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalLoyalty(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalLoyaltyCap(PlayerTypes e);
+int CvLuaPlayer::lGetVassalLoyaltyCap(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalLoyaltyCap(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalRank(PlayerTypes e);
+int CvLuaPlayer::lGetVassalRank(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalRank(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanRankUpVassal(PlayerTypes e);
+int CvLuaPlayer::lCanRankUpVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanRankUpVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void DoVassalRankUp(PlayerTypes e);
+int CvLuaPlayer::lDoVassalRankUp(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	pkPlayer->DoVassalRankUp(e);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetVassalRankUpGold(PlayerTypes e);
+int CvLuaPlayer::lGetVassalRankUpGold(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalRankUpGold(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalGiftLoyalty(PlayerTypes e);
+int CvLuaPlayer::lGetVassalGiftLoyalty(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalGiftLoyalty(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void DoVassalGift(PlayerTypes e);
+int CvLuaPlayer::lDoVassalGift(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	pkPlayer->DoVassalGift(e);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetVassalGiftOptionCount(PlayerTypes e, int iKind);
+int CvLuaPlayer::lGetVassalGiftOptionCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	int iKind = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetVassalGiftOptionCount(e, iKind));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalGiftOptionField(PlayerTypes e, int iKind, int iIndex, int iField);
+int CvLuaPlayer::lGetVassalGiftOptionField(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	int iKind = lua_tointeger(L, 3);
+	int iIndex = lua_tointeger(L, 4);
+	int iField = lua_tointeger(L, 5);
+	lua_pushinteger(L, pkPlayer->GetVassalGiftOptionField(e, iKind, iIndex, iField));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoVassalGiftOption(PlayerTypes e, int iKind, int iIndex);
+int CvLuaPlayer::lDoVassalGiftOption(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	int iKind = lua_tointeger(L, 3);
+	int iIndex = lua_tointeger(L, 4);
+	lua_pushboolean(L, pkPlayer->DoVassalGiftOption(e, iKind, iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCourtGiftCount();
+int CvLuaPlayer::lGetCourtGiftCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetCourtGiftCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCourtGiftVassal(int iIndex);
+int CvLuaPlayer::lGetCourtGiftVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCourtGiftVassal(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCourtGiftGold(int iIndex);
+int CvLuaPlayer::lGetCourtGiftGold(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCourtGiftGold(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCourtGiftResource(int iIndex);
+int CvLuaPlayer::lGetCourtGiftResource(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCourtGiftResource(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCourtGiftAmount(int iIndex);
+int CvLuaPlayer::lGetCourtGiftAmount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCourtGiftAmount(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//PlayerTypes GetVassalAggressor(PlayerTypes e);
+int CvLuaPlayer::lGetVassalAggressor(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalAggressor(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoVassalProtect(PlayerTypes e, bool bProtect);
+int CvLuaPlayer::lDoVassalProtect(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	bool bProtect = luaL_optbool(L, 3, false);
+	lua_pushboolean(L, pkPlayer->DoVassalProtect(e, bProtect));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanMediateVassals(PlayerTypes eA, PlayerTypes eB);
+int CvLuaPlayer::lCanMediateVassals(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eA = (PlayerTypes)lua_tointeger(L, 2);
+	PlayerTypes eB = (PlayerTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->CanMediateVassals(eA, eB));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoVassalMediate(PlayerTypes eA, PlayerTypes eB);
+int CvLuaPlayer::lDoVassalMediate(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eA = (PlayerTypes)lua_tointeger(L, 2);
+	PlayerTypes eB = (PlayerTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->DoVassalMediate(eA, eB));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanReturnCityToVassal(CvCity* pCity);
+int CvLuaPlayer::lCanReturnCityToVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvCity* pkCity = CvLuaCity::GetInstance(L, 2);
+	lua_pushboolean(L, pkPlayer->CanReturnCityToVassal(pkCity));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoReturnCityToVassal(CvCity* pCity);
+int CvLuaPlayer::lDoReturnCityToVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	CvCity* pkCity = CvLuaCity::GetInstance(L, 2);
+	lua_pushboolean(L, pkPlayer->DoReturnCityToVassal(pkCity));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoReturnCityToVassalByID(int iCityID);
+int CvLuaPlayer::lDoReturnCityToVassalByID(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iCityID = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoReturnCityToVassalByID(iCityID));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalExecutionTier(PlayerTypes e);
+int CvLuaPlayer::lGetVassalExecutionTier(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalExecutionTier(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalRevoltScore(PlayerTypes e);
+int CvLuaPlayer::lGetVassalRevoltScore(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalRevoltScore(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanVassalRevolt(PlayerTypes e);
+int CvLuaPlayer::lCanVassalRevolt(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanVassalRevolt(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalMemorialCount();
+int CvLuaPlayer::lGetVassalMemorialCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetVassalMemorialCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalMemorialField(int iIndex, int iField);
+int CvLuaPlayer::lGetVassalMemorialField(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetVassalMemorialField(iIndex, iField));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetMemorialDefault(int iType);
+int CvLuaPlayer::lGetMemorialDefault(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iType = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetMemorialDefault(iType));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void SetMemorialDefault(int iType, int iValue);
+int CvLuaPlayer::lSetMemorialDefault(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iType = lua_tointeger(L, 2);
+	int iValue = lua_tointeger(L, 3);
+	pkPlayer->SetMemorialDefault(iType, iValue);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//bool ResolveVassalMemorial(int iIndex, bool bApprove);
+int CvLuaPlayer::lResolveVassalMemorial(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	bool bApprove = luaL_optbool(L, 3, false);
+	lua_pushboolean(L, pkPlayer->ResolveVassalMemorial(iIndex, bApprove));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalCourtInterval();
+int CvLuaPlayer::lGetVassalCourtInterval(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetVassalCourtInterval());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsVassalCourtTurn();
+int CvLuaPlayer::lIsVassalCourtTurn(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->IsVassalCourtTurn());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsVassalLosingWar(PlayerTypes e);
+int CvLuaPlayer::lIsVassalLosingWar(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsVassalLosingWar(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsVassalMismanaging(PlayerTypes e);
+int CvLuaPlayer::lIsVassalMismanaging(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsVassalMismanaging(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoVassalAid(PlayerTypes e);
+int CvLuaPlayer::lDoVassalAid(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoVassalAid(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalCourtPolicy();
+int CvLuaPlayer::lGetVassalCourtPolicy(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetVassalCourtPolicy());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool SetVassalCourtPolicy(int iPolicy);
+int CvLuaPlayer::lSetVassalCourtPolicy(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iPolicy = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->SetVassalCourtPolicy(iPolicy));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalBreachCount(PlayerTypes e);
+int CvLuaPlayer::lGetVassalBreachCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalBreachCount(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool HasVassalPunishRight(PlayerTypes e);
+int CvLuaPlayer::lHasVassalPunishRight(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->HasVassalPunishRight(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalPunishRightTurns(PlayerTypes e);
+int CvLuaPlayer::lGetVassalPunishRightTurns(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalPunishRightTurns(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsVassalIncompetent(PlayerTypes e);
+int CvLuaPlayer::lIsVassalIncompetent(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsVassalIncompetent(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanPunishVassal(PlayerTypes e);
+int CvLuaPlayer::lCanPunishVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanPunishVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoVassalPunish(PlayerTypes e);
+int CvLuaPlayer::lDoVassalPunish(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoVassalPunish(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetMandate();
+int CvLuaPlayer::lGetMandate(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetMandate());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetDaoPoints();
+int CvLuaPlayer::lGetDaoPoints(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetDaoPoints());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void AddChronicle(int iType, int iSubject, int iObject, int iValue);
+int CvLuaPlayer::lAddChronicle(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iType = lua_tointeger(L, 2);
+	int iSubject = lua_tointeger(L, 3);
+	int iObject = lua_tointeger(L, 4);
+	int iValue = lua_tointeger(L, 5);
+	pkPlayer->AddChronicle(iType, iSubject, iObject, iValue);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetChronicleCount();
+int CvLuaPlayer::lGetChronicleCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetChronicleCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetChronicleValue(int iIndex, int iField);
+int CvLuaPlayer::lGetChronicleValue(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetChronicleValue(iIndex, iField));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetEmpireSnapshotCount();
+int CvLuaPlayer::lGetEmpireSnapshotCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetEmpireSnapshotCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetEmpireSnapshotValue(int iIndex, int iField);
+int CvLuaPlayer::lGetEmpireSnapshotValue(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetEmpireSnapshotValue(iIndex, iField));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetDaoGraceCost(int iGrace);
+int CvLuaPlayer::lGetDaoGraceCost(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iGrace = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDaoGraceCost(iGrace));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoDaoGrace(int iGrace);
+int CvLuaPlayer::lDoDaoGrace(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iGrace = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoDaoGrace(iGrace));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool HasDaoPerk(int iPerk);
+int CvLuaPlayer::lHasDaoPerk(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iPerk = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->HasDaoPerk(iPerk));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetDaoUCPicks();
+int CvLuaPlayer::lGetDaoUCPicks(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetDaoUCPicks());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void AddDaoUC(int iType, int iIndex);
+int CvLuaPlayer::lAddDaoUC(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iType = lua_tointeger(L, 2);
+	int iIndex = lua_tointeger(L, 3);
+	pkPlayer->AddDaoUC(iType, iIndex);
+	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetDaoBeliefCost();
+int CvLuaPlayer::lGetDaoBeliefCost(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetDaoBeliefCost());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetDaoBeliefOptionCount();
+int CvLuaPlayer::lGetDaoBeliefOptionCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetDaoBeliefOptionCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetDaoBeliefOption(int iIndex);
+int CvLuaPlayer::lGetDaoBeliefOption(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetDaoBeliefOption(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool PurchaseDaoBelief(BeliefTypes eBelief);
+int CvLuaPlayer::lPurchaseDaoBelief(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	BeliefTypes eBelief = (BeliefTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->PurchaseDaoBelief(eBelief));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetMandateMax();
+int CvLuaPlayer::lGetMandateMax(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetMandateMax());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsMandateFull();
+int CvLuaPlayer::lIsMandateFull(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->IsMandateFull());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanFengshan();
+int CvLuaPlayer::lCanFengshan(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->CanFengshan());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoFengshan();
+int CvLuaPlayer::lDoFengshan(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->DoFengshan());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanQifeng();
+int CvLuaPlayer::lCanQifeng(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->CanQifeng());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoQifeng();
+int CvLuaPlayer::lDoQifeng(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->DoQifeng());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanRangzai();
+int CvLuaPlayer::lCanRangzai(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->CanRangzai());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoRangzai();
+int CvLuaPlayer::lDoRangzai(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->DoRangzai());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanTianfa(PlayerTypes e);
+int CvLuaPlayer::lCanTianfa(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanTianfa(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoTianfa(PlayerTypes e);
+int CvLuaPlayer::lDoTianfa(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoTianfa(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsUnderMandatePunishment();
+int CvLuaPlayer::lIsUnderMandatePunishment(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->IsUnderMandatePunishment());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPunishBy();
+int CvLuaPlayer::lGetPunishBy(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetPunishBy());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalWonderPoolCapacity();
+int CvLuaPlayer::lGetVassalWonderPoolCapacity(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetVassalWonderPoolCapacity());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalWonderPoolCount();
+int CvLuaPlayer::lGetVassalWonderPoolCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetVassalWonderPoolCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetVassalWonderPoolEntry(int iIndex);
+int CvLuaPlayer::lGetVassalWonderPoolEntry(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalWonderPoolEntry(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanAddVassalWonderToPool(BuildingTypes e);
+int CvLuaPlayer::lCanAddVassalWonderToPool(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	BuildingTypes e = (BuildingTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanAddVassalWonderToPool(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool AddVassalWonderToPool(BuildingTypes e);
+int CvLuaPlayer::lAddVassalWonderToPool(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	BuildingTypes e = (BuildingTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->AddVassalWonderToPool(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool RemoveVassalWonderFromPool(BuildingTypes e);
+int CvLuaPlayer::lRemoveVassalWonderFromPool(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	BuildingTypes e = (BuildingTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->RemoveVassalWonderFromPool(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool RequestVassalWonder(BuildingTypes e);
+int CvLuaPlayer::lRequestVassalWonder(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	BuildingTypes e = (BuildingTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->RequestVassalWonder(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetWonderRequest();
+int CvLuaPlayer::lGetWonderRequest(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetWonderRequest());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool ApproveVassalWonderRequest(PlayerTypes e, bool bApprove);
+int CvLuaPlayer::lApproveVassalWonderRequest(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	bool bApprove = luaL_optbool(L, 3, false);
+	lua_pushboolean(L, pkPlayer->ApproveVassalWonderRequest(e, bApprove));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool SetWonderRequestCondition(PlayerTypes e, int iType, int iValue, PlayerTypes eTarget);
+int CvLuaPlayer::lSetWonderRequestCondition(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	int iType = lua_tointeger(L, 3);
+	int iValue = lua_tointeger(L, 4);
+	PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 5);
+	pkPlayer->SetWonderRequestCondition(e, iType, iValue, eTarget);
+	lua_pushboolean(L, true);
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetWonderConditionType();
+int CvLuaPlayer::lGetWonderConditionType(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetWonderConditionType());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetWonderConditionValue();
+int CvLuaPlayer::lGetWonderConditionValue(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetWonderConditionValue());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetWonderConditionTarget();
+int CvLuaPlayer::lGetWonderConditionTarget(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetWonderConditionTarget());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetWonderConditionTurns();
+int CvLuaPlayer::lGetWonderConditionTurns(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetWonderConditionTurns());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanVassalBuildWonder(PlayerTypes e, BuildingTypes eBuilding);
+int CvLuaPlayer::lCanVassalBuildWonder(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	BuildingTypes eBuilding = (BuildingTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->CanVassalBuildWonder(e, eBuilding));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanInviteVassal(PlayerTypes e);
+int CvLuaPlayer::lCanInviteVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanInviteVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoInviteVassal(PlayerTypes e);
+int CvLuaPlayer::lDoInviteVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoInviteVassal(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanSubjugate(PlayerTypes e);
+int CvLuaPlayer::lCanSubjugate(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanSubjugate(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoSubjugate(PlayerTypes e);
+int CvLuaPlayer::lDoSubjugate(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoSubjugate(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanSubmitPrayer();
+int CvLuaPlayer::lCanSubmitPrayer(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->CanSubmitPrayer());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool SubmitPrayer(int iScience, int iCulture, int iFaith, int iGold, int iWish);
+int CvLuaPlayer::lSubmitPrayer(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iScience = lua_tointeger(L, 2);
+	int iCulture = lua_tointeger(L, 3);
+	int iFaith = lua_tointeger(L, 4);
+	int iGold = lua_tointeger(L, 5);
+	int iWish = lua_tointeger(L, 6);
+	lua_pushboolean(L, pkPlayer->SubmitPrayer(iScience, iCulture, iFaith, iGold, iWish));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerCount();
+int CvLuaPlayer::lGetPrayerCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetPrayerCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerVassal(int iIndex);
+int CvLuaPlayer::lGetPrayerVassal(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerVassal(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerScience(int iIndex);
+int CvLuaPlayer::lGetPrayerScience(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerScience(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerCulture(int iIndex);
+int CvLuaPlayer::lGetPrayerCulture(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerCulture(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerFaith(int iIndex);
+int CvLuaPlayer::lGetPrayerFaith(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerFaith(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerGold(int iIndex);
+int CvLuaPlayer::lGetPrayerGold(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerGold(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerWish(int iIndex);
+int CvLuaPlayer::lGetPrayerWish(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerWish(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerChance(int iIndex);
+int CvLuaPlayer::lGetPrayerChance(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerChance(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool ResolvePrayer(int iIndex, bool bGrant);
+int CvLuaPlayer::lResolvePrayer(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	bool bGrant = (lua_toboolean(L, 3) != 0);
+	lua_pushboolean(L, pkPlayer->ResolvePrayer(iIndex, bGrant));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerDenyStreak(PlayerTypes e);
+int CvLuaPlayer::lGetPrayerDenyStreak(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerDenyStreak(e));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerChanceForInvestment(int iTotal);
+int CvLuaPlayer::lGetPrayerChanceForInvestment(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iTotal = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerChanceForInvestment(iTotal));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerFreeTechs();
+int CvLuaPlayer::lGetPrayerFreeTechs(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetPrayerFreeTechs());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerTechOptionCount();
+int CvLuaPlayer::lGetPrayerTechOptionCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetPrayerTechOptionCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPrayerTechOption(int iIndex);
+int CvLuaPlayer::lGetPrayerTechOption(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPrayerTechOption(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool ChoosePrayerTech(TechTypes eTech);
+int CvLuaPlayer::lChoosePrayerTech(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	TechTypes eTech = (TechTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->ChoosePrayerTech(eTech));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanEmbargoResource(PlayerTypes e, ResourceTypes eResource);
+int CvLuaPlayer::lCanEmbargoResource(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	ResourceTypes eResource = (ResourceTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->CanEmbargoResource(e, eResource));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoEmbargoResource(PlayerTypes e, ResourceTypes eResource);
+int CvLuaPlayer::lDoEmbargoResource(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes e = (PlayerTypes)lua_tointeger(L, 2);
+	ResourceTypes eResource = (ResourceTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->DoEmbargoResource(e, eResource));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool IsResourceEmbargoed(ResourceTypes eResource);
+int CvLuaPlayer::lIsResourceEmbargoed(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	ResourceTypes eResource = (ResourceTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsResourceEmbargoed(eResource));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanMandateVictory();
+int CvLuaPlayer::lCanMandateVictory(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->CanMandateVictory());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoMandateVictory();
+int CvLuaPlayer::lDoMandateVictory(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->DoMandateVictory());
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetScienceTimes100FromVassals();
@@ -14252,5 +15627,953 @@ int CvLuaPlayer::lGetBorderPromiseTurnLeft(lua_State* L)
 	return 1;
 }
 
-
-
+//int ProposeVassalPeace(PlayerTypes eA, PlayerTypes eB, PlayerTypes ePayer, int iGoldPercent, bool bReturnCities, int iTruceTurns, PlayerTypes eCensure);
+int CvLuaPlayer::lProposeVassalPeace(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eA = (PlayerTypes)lua_tointeger(L, 2);
+	const PlayerTypes eB = (PlayerTypes)lua_tointeger(L, 3);
+	const PlayerTypes ePayer = (PlayerTypes)lua_tointeger(L, 4);
+	const int iGoldPercent = lua_tointeger(L, 5);
+	const bool bReturnCities = lua_toboolean(L, 6);
+	const int iTruceTurns = lua_tointeger(L, 7);
+	const PlayerTypes eCensure = (PlayerTypes)lua_tointeger(L, 8);
+	lua_pushinteger(L, pkPlayer->ProposeVassalPeace(eA, eB, ePayer, iGoldPercent, bReturnCities, iTruceTurns, eCensure));
+	return 1;
+}
+//bool AcceptVassalPeaceCounter(PlayerTypes eA, PlayerTypes eB);
+int CvLuaPlayer::lAcceptVassalPeaceCounter(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eA = (PlayerTypes)lua_tointeger(L, 2);
+	const PlayerTypes eB = (PlayerTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->AcceptVassalPeaceCounter(eA, eB));
+	return 1;
+}
+//int GetPendingVassalInvite();
+int CvLuaPlayer::lGetPendingVassalInvite(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetPendingVassalInvite());
+	return 1;
+}
+//bool ResolveVassalInvite(bool bAccept);
+int CvLuaPlayer::lResolveVassalInvite(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const bool bAccept = lua_toboolean(L, 2);
+	lua_pushboolean(L, pkPlayer->ResolveVassalInvite(bAccept));
+	return 1;
+}
+//int CanRequestSubmission(PlayerTypes eProtector);
+int CvLuaPlayer::lCanRequestSubmission(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eProtector = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->CanRequestSubmission(eProtector));
+	return 1;
+}
+//int RequestVassalSubmission(PlayerTypes eProtector);
+int CvLuaPlayer::lRequestVassalSubmission(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eProtector = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->RequestVassalSubmission(eProtector));
+	return 1;
+}
+//int CanSurrenderTo(PlayerTypes eWinner);
+int CvLuaPlayer::lCanSurrenderTo(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eWinner = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->CanSurrenderTo(eWinner));
+	return 1;
+}
+//int SurrenderTo(PlayerTypes eWinner);
+int CvLuaPlayer::lSurrenderTo(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eWinner = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->SurrenderTo(eWinner));
+	return 1;
+}
+//int GetPendingWarOrder(int iField);
+int CvLuaPlayer::lGetPendingWarOrder(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iField = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPendingWarOrder(iField));
+	return 1;
+}
+//bool ResolveWarOrder(bool bObey);
+int CvLuaPlayer::lResolveWarOrder(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const bool bObey = lua_toboolean(L, 2);
+	lua_pushboolean(L, pkPlayer->ResolveWarOrder(bObey));
+	return 1;
+}
+//int SubmitVassalMemorial(int iType, int iTarget);
+int CvLuaPlayer::lSubmitVassalMemorial(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iType = lua_tointeger(L, 2);
+	const int iTarget = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->SubmitVassalMemorial(iType, iTarget));
+	return 1;
+}
+//bool IsSuzerainCiv();
+int CvLuaPlayer::lIsSuzerainCiv(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->IsSuzerainCiv());
+	return 1;
+}
+//int GetPendingDecreeCount();
+int CvLuaPlayer::lGetPendingDecreeCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetPendingDecreeCount());
+	return 1;
+}
+//int GetPendingDecreeField(int iIndex, int iField);
+int CvLuaPlayer::lGetPendingDecreeField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	const int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetPendingDecreeField(iIndex, iField));
+	return 1;
+}
+//bool ResolveDecree(int iIndex, bool bAccept);
+int CvLuaPlayer::lResolveDecree(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	const bool bAccept = lua_toboolean(L, 3);
+	lua_pushboolean(L, pkPlayer->ResolveDecree(iIndex, bAccept));
+	return 1;
+}
+//bool IssueDecree(int iType, PlayerTypes eVassal, int iTarget);
+int CvLuaPlayer::lIssueDecree(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iType = lua_tointeger(L, 2);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 3);
+	const int iTarget = lua_tointeger(L, 4);
+	lua_pushboolean(L, pkPlayer->IssueDecree(iType, eVassal, iTarget));
+	return 1;
+}
+//bool CanIssueDecree(int iType, PlayerTypes eVassal, int iTarget);
+int CvLuaPlayer::lCanIssueDecree(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iType = lua_tointeger(L, 2);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 3);
+	const int iTarget = lua_tointeger(L, 4);
+	lua_pushboolean(L, pkPlayer->CanIssueDecree(iType, eVassal, iTarget));
+	return 1;
+}
+//int GetVassalTitle(PlayerTypes eVassal);
+int CvLuaPlayer::lGetVassalTitle(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetVassalTitle(eVassal));
+	return 1;
+}
+//int GetConcubineTemplateField(int iTemplate, int iField);
+int CvLuaPlayer::lGetConcubineTemplateField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iTemplate = lua_tointeger(L, 2);
+	const int iField = lua_tointeger(L, 3);
+	CvString sVal = pkPlayer->GetConcubineTemplateField(iTemplate, iField);
+	lua_pushstring(L, sVal.c_str());
+	return 1;
+}
+//int GetConcubineCount();
+int CvLuaPlayer::lGetConcubineCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetConcubineCount());
+	return 1;
+}
+//int GetConcubineField(int iIndex, int iField);
+int CvLuaPlayer::lGetConcubineField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	const int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetConcubineField(iIndex, iField));
+	return 1;
+}
+//int GetConcubineRank(int iIndex);
+int CvLuaPlayer::lGetConcubineRank(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetConcubineRank(iIndex));
+	return 1;
+}
+//int GetEmpress();
+int CvLuaPlayer::lGetEmpress(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetEmpress());
+	return 1;
+}
+//bool SetEmpress(int iIndex);
+int CvLuaPlayer::lSetEmpress(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->SetEmpress(iIndex));
+	return 1;
+}
+//bool FavorConcubine(int iIndex);
+int CvLuaPlayer::lFavorConcubine(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->FavorConcubine(iIndex));
+	return 1;
+}
+//bool GiftConcubine(int iIndex);
+int CvLuaPlayer::lGiftConcubine(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->GiftConcubine(iIndex));
+	return 1;
+}
+//int GetConcubineGiftGold(int iIndex);
+int CvLuaPlayer::lGetConcubineGiftGold(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetConcubineGiftGold(iIndex));
+	return 1;
+}
+//int GetConcubineFavor(int iIndex);
+int CvLuaPlayer::lGetConcubineFavor(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetConcubineFavor(iIndex));
+	return 1;
+}
+//bool IsConcubineHostage(int iIndex);
+int CvLuaPlayer::lIsConcubineHostage(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsConcubineHostage(iIndex));
+	return 1;
+}
+//bool DethroneEmpress();
+int CvLuaPlayer::lDethroneEmpress(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->DethroneEmpress());
+	return 1;
+}
+//int GetConcubineWish(int iIndex);
+int CvLuaPlayer::lGetConcubineWish(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetConcubineWish(iIndex));
+	return 1;
+}
+//bool SatisfyConcubineWish(int iIndex);
+int CvLuaPlayer::lSatisfyConcubineWish(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->SatisfyConcubineWish(iIndex));
+	return 1;
+}
+//bool CanSatisfyConcubineWish(int iIndex);
+int CvLuaPlayer::lCanSatisfyConcubineWish(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanSatisfyConcubineWish(iIndex));
+	return 1;
+}
+//bool CanRestoreConcubineHomeland(int iIndex);
+int CvLuaPlayer::lCanRestoreConcubineHomeland(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CanRestoreConcubineHomeland(iIndex));
+	return 1;
+}
+//bool RestoreConcubineHomeland(int iIndex);
+int CvLuaPlayer::lRestoreConcubineHomeland(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->RestoreConcubineHomeland(iIndex));
+	return 1;
+}
+//int GetOfficialField(int iPost, int iField);
+int CvLuaPlayer::lGetOfficialField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iPost = lua_tointeger(L, 2);
+	const int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetOfficialField(iPost, iField));
+	return 1;
+}
+//int GetOfficialCandidateCount();
+int CvLuaPlayer::lGetOfficialCandidateCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetOfficialCandidateCount());
+	return 1;
+}
+//int GetOfficialCandidateField(int iIndex, int iField);
+int CvLuaPlayer::lGetOfficialCandidateField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	const int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetOfficialCandidateField(iIndex, iField));
+	return 1;
+}
+//bool AppointOfficial(int iPost, int iCandidate);
+int CvLuaPlayer::lAppointOfficial(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iPost = lua_tointeger(L, 2);
+	const int iCandidate = lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->AppointOfficial(iPost, iCandidate));
+	return 1;
+}
+//bool DismissOfficial(int iPost);
+int CvLuaPlayer::lDismissOfficial(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iPost = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DismissOfficial(iPost));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool RemoveOfficialCandidate(int iIndex);
+int CvLuaPlayer::lRemoveOfficialCandidate(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->RemoveOfficialCandidate(iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetOfficialExamStart();
+int CvLuaPlayer::lGetOfficialExamStart(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetOfficialExamStart());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetOfficialExamCount();
+int CvLuaPlayer::lGetOfficialExamCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetOfficialExamCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void ClearOfficialExam();
+int CvLuaPlayer::lClearOfficialExam(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	pkPlayer->ClearOfficialExam();
+	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetProvinceCount();
+int CvLuaPlayer::lGetProvinceCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetProvinceCount());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetProvinceField(int iProv, int iField);
+int CvLuaPlayer::lGetProvinceField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetProvinceField(iProv, iField));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CreateProvince(int iNameIndex);
+int CvLuaPlayer::lCreateProvince(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iNameIndex = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->CreateProvince(iNameIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool SetCityProvince(int iCityID, int iProv);
+int CvLuaPlayer::lSetCityProvince(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iCityID = lua_tointeger(L, 2);
+	int iProv = lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->SetCityProvince(iCityID, iProv));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetCityProvince(int iCityID);
+int CvLuaPlayer::lGetCityProvince(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iCityID = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetCityProvince(iCityID));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetProvinceCityCount(int iProv);
+int CvLuaPlayer::lGetProvinceCityCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceCityCount(iProv));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool AppointProvinceOfficial(int iProv, int iPost, int iCandidate);
+int CvLuaPlayer::lAppointProvinceOfficial(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iPost = lua_tointeger(L, 3);
+	int iCandidate = lua_tointeger(L, 4);
+	lua_pushboolean(L, pkPlayer->AppointProvinceOfficial(iProv, iPost, iCandidate));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//void DismissProvinceOfficial(int iProv, int iPost);
+int CvLuaPlayer::lDismissProvinceOfficial(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iPost = lua_tointeger(L, 3);
+	pkPlayer->DismissProvinceOfficial(iProv, iPost);
+	return 0;
+}
+//int GetProvinceTreasury(int iProv);
+int CvLuaPlayer::lGetProvinceTreasury(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceTreasury(iProv));
+	return 1;
+}
+//int GetProvinceTreasuryCap(int iProv);
+int CvLuaPlayer::lGetProvinceTreasuryCap(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceTreasuryCap(iProv));
+	return 1;
+}
+//int GetProvinceAutonomy(int iProv);
+int CvLuaPlayer::lGetProvinceAutonomy(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceAutonomy(iProv));
+	return 1;
+}
+//void SetProvinceAutonomy(int iProv, int iValue);
+int CvLuaPlayer::lSetProvinceAutonomy(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iValue = lua_tointeger(L, 3);
+	pkPlayer->SetProvinceAutonomy(iProv, iValue);
+	return 0;
+}
+//bool IsCapitalProvince(int iProv);
+int CvLuaPlayer::lIsCapitalProvince(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->IsCapitalProvince(iProv));
+	return 1;
+}
+//int GetProvinceQueueCount(int iProv);
+int CvLuaPlayer::lGetProvinceQueueCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceQueueCount(iProv));
+	return 1;
+}
+//int GetProvinceQueueField(int iProv, int iIndex, int iField);
+int CvLuaPlayer::lGetProvinceQueueField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iIndex = lua_tointeger(L, 3);
+	int iField = lua_tointeger(L, 4);
+	lua_pushinteger(L, pkPlayer->GetProvinceQueueField(iProv, iIndex, iField));
+	return 1;
+}
+//bool AddProvinceQueueItem(int iProv, int iType, int iTarget, int iCount);
+int CvLuaPlayer::lAddProvinceQueueItem(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iType = lua_tointeger(L, 3);
+	int iTarget = lua_tointeger(L, 4);
+	int iCount = lua_tointeger(L, 5);
+	lua_pushboolean(L, pkPlayer->AddProvinceQueueItem(iProv, iType, iTarget, iCount));
+	return 1;
+}
+//void RemoveProvinceQueueItem(int iProv, int iIndex);
+int CvLuaPlayer::lRemoveProvinceQueueItem(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iIndex = lua_tointeger(L, 3);
+	pkPlayer->RemoveProvinceQueueItem(iProv, iIndex);
+	return 0;
+}
+//void ClearProvinceQueue(int iProv);
+int CvLuaPlayer::lClearProvinceQueue(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	pkPlayer->ClearProvinceQueue(iProv);
+	return 0;
+}
+//int GetProvinceGarrisonCount(int iProv);
+int CvLuaPlayer::lGetProvinceGarrisonCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceGarrisonCount(iProv));
+	return 1;
+}
+//int GetProvinceGarrisonTarget(int iProv);
+int CvLuaPlayer::lGetProvinceGarrisonTarget(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceGarrisonTarget(iProv));
+	return 1;
+}
+//int GetProvinceMissionField(int iProv, int iField);
+int CvLuaPlayer::lGetProvinceMissionField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetProvinceMissionField(iProv, iField));
+	return 1;
+}
+//void SetProvinceMission(int iProv, int iType, int iX, int iY, int iDeadline, bool bCrossBorder);
+int CvLuaPlayer::lSetProvinceMission(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iType = lua_tointeger(L, 3);
+	int iX = lua_tointeger(L, 4);
+	int iY = lua_tointeger(L, 5);
+	int iDeadline = lua_tointeger(L, 6);
+	bool bCrossBorder = lua_toboolean(L, 7) != 0;
+	pkPlayer->SetProvinceMission(iProv, iType, iX, iY, iDeadline, bCrossBorder);
+	return 0;
+}
+//void ClearProvinceMission(int iProv);
+int CvLuaPlayer::lClearProvinceMission(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	pkPlayer->ClearProvinceMission(iProv);
+	return 0;
+}
+//int LevyProvinceGarrison(int iProv);
+int CvLuaPlayer::lLevyProvinceGarrison(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->LevyProvinceGarrison(iProv));
+	return 1;
+}
+//void ReturnProvinceGarrison(int iProv);
+int CvLuaPlayer::lReturnProvinceGarrison(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	pkPlayer->ReturnProvinceGarrison(iProv);
+	return 0;
+}
+//int GetProvinceLevyCount(int iProv);
+int CvLuaPlayer::lGetProvinceLevyCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceLevyCount(iProv));
+	return 1;
+}
+//int GetOfficialAutonomy(int iPost);
+int CvLuaPlayer::lGetOfficialAutonomy(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iPost = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetOfficialAutonomy(iPost));
+	return 1;
+}
+//void SetOfficialAutonomy(int iPost, int iValue);
+int CvLuaPlayer::lSetOfficialAutonomy(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iPost = lua_tointeger(L, 2);
+	int iValue = lua_tointeger(L, 3);
+	pkPlayer->SetOfficialAutonomy(iPost, iValue);
+	return 0;
+}
+//int GetMemorialBacklog(int iPost);
+int CvLuaPlayer::lGetMemorialBacklog(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iPost = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetMemorialBacklog(iPost));
+	return 1;
+}
+//int GetMemorialAdvice(int iIndex);
+int CvLuaPlayer::lGetMemorialAdvice(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iIndex = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetMemorialAdvice(iIndex));
+	return 1;
+}
+//int GetProvinceWar(int iProv);
+int CvLuaPlayer::lGetProvinceWar(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceWar(iProv));
+	return 1;
+}
+//int GetProvinceBorder(int iProv);
+int CvLuaPlayer::lGetProvinceBorder(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceBorder(iProv));
+	return 1;
+}
+//void SetProvinceBorder(int iProv, int iValue);
+int CvLuaPlayer::lSetProvinceBorder(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iValue = lua_tointeger(L, 3);
+	pkPlayer->SetProvinceBorder(iProv, iValue);
+	return 0;
+}
+//int OrderLevyToProvince(int iProv);
+int CvLuaPlayer::lOrderLevyToProvince(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->OrderLevyToProvince(iProv));
+	return 1;
+}
+//void OrderLevyRally(int iX, int iY);
+int CvLuaPlayer::lOrderLevyRally(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iX = lua_tointeger(L, 2);
+	int iY = lua_tointeger(L, 3);
+	pkPlayer->OrderLevyRally(iX, iY);
+	return 0;
+}
+//int GetProvinceReportCount(int iProv);
+int CvLuaPlayer::lGetProvinceReportCount(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetProvinceReportCount(iProv));
+	return 1;
+}
+//int GetProvinceReportField(int iProv, int iIndex, int iField);
+int CvLuaPlayer::lGetProvinceReportField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iIndex = lua_tointeger(L, 3);
+	int iField = lua_tointeger(L, 4);
+	lua_pushinteger(L, pkPlayer->GetProvinceReportField(iProv, iIndex, iField));
+	return 1;
+}
+//bool DepositProvinceTreasury(int iProv, int iGold);
+int CvLuaPlayer::lDepositProvinceTreasury(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iGold = lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->DepositProvinceTreasury(iProv, iGold));
+	return 1;
+}
+//bool SpendProvinceTreasury(int iProv, int iGold);
+int CvLuaPlayer::lSpendProvinceTreasury(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	int iProv = lua_tointeger(L, 2);
+	int iGold = lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->SpendProvinceTreasury(iProv, iGold));
+	return 1;
+}
+//int GetOfficialAdvicePost();
+int CvLuaPlayer::lGetOfficialAdvicePost(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetOfficialAdvicePost());
+	return 1;
+}
+//int GetOfficialAdviceTurn();
+int CvLuaPlayer::lGetOfficialAdviceTurn(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetOfficialAdviceTurn());
+	return 1;
+}
+//bool ResolveOfficialAdvice(bool bAdopt);
+int CvLuaPlayer::lResolveOfficialAdvice(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const bool bAdopt = lua_toboolean(L, 2) != 0;
+	lua_pushboolean(L, pkPlayer->ResolveOfficialAdvice(bAdopt));
+	return 1;
+}
+//int GetOfficialEffectPercent(int iPost);
+int CvLuaPlayer::lGetOfficialEffectPercent(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const int iPost = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetOfficialEffectPercent(iPost));
+	return 1;
+}
+//int TryReleaseVassal(PlayerTypes eVassal);
+int CvLuaPlayer::lTryReleaseVassal(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->TryReleaseVassal(eVassal));
+	return 1;
+}
+//bool ForceReleaseVassal(PlayerTypes eVassal);
+int CvLuaPlayer::lForceReleaseVassal(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->ForceReleaseVassal(eVassal));
+	return 1;
+}
+//bool KeepVassal(PlayerTypes eVassal);
+int CvLuaPlayer::lKeepVassal(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->KeepVassal(eVassal));
+	return 1;
+}
+//int GetVassalPeaceCounterField(PlayerTypes eA, PlayerTypes eB, int iField);
+int CvLuaPlayer::lGetVassalPeaceCounterField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eA = (PlayerTypes)lua_tointeger(L, 2);
+	const PlayerTypes eB = (PlayerTypes)lua_tointeger(L, 3);
+	const int iField = lua_tointeger(L, 4);
+	lua_pushinteger(L, pkPlayer->GetVassalPeaceCounterField(eA, eB, iField));
+	return 1;
+}
+//bool AcceptVassalPeaceCounterEx(PlayerTypes eA, PlayerTypes eB, PlayerTypes ePayer, int iGoldPercent, bool bReturnCities, PlayerTypes eCensure);
+int CvLuaPlayer::lAcceptVassalPeaceCounterEx(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eA = (PlayerTypes)lua_tointeger(L, 2);
+	const PlayerTypes eB = (PlayerTypes)lua_tointeger(L, 3);
+	const PlayerTypes ePayer = (PlayerTypes)lua_tointeger(L, 4);
+	const int iGoldPercent = lua_tointeger(L, 5);
+	const bool bReturnCities = lua_toboolean(L, 6);
+	const PlayerTypes eCensure = (PlayerTypes)lua_tointeger(L, 7);
+	lua_pushboolean(L, pkPlayer->AcceptVassalPeaceCounterEx(eA, eB, ePayer, iGoldPercent, bReturnCities, eCensure));
+	return 1;
+}
+//int GetStrongestLandUnit();
+int CvLuaPlayer::lGetStrongestLandUnit(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetStrongestLandUnit());
+	return 1;
+}
+//int GetStrongestLandUnitCost();
+int CvLuaPlayer::lGetStrongestLandUnitCost(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetStrongestLandUnitCost());
+	return 1;
+}
+//bool GiftUnitToVassal(PlayerTypes eVassal, int iUnitID);
+int CvLuaPlayer::lGiftUnitToVassal(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	const int iUnitID = lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->GiftUnitToVassal(eVassal, iUnitID));
+	return 1;
+}
+//bool SpawnUnitForVassal(PlayerTypes eVassal);
+int CvLuaPlayer::lSpawnUnitForVassal(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->SpawnUnitForVassal(eVassal));
+	return 1;
+}
+//bool OrderVassalJoinWar(PlayerTypes eVassal, PlayerTypes eTarget);
+int CvLuaPlayer::lOrderVassalJoinWar(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->OrderVassalJoinWar(eVassal, eTarget));
+	return 1;
+}
+//bool DoEmbargoMonopoly(PlayerTypes eTarget);
+int CvLuaPlayer::lDoEmbargoMonopoly(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoEmbargoMonopoly(eTarget));
+	return 1;
+}
+//void DenounceTarget(PlayerTypes eTarget);
+int CvLuaPlayer::lDenounceTarget(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	pkPlayer->DenounceTarget(eTarget);
+	return 0;
+}
+//void OrderPermanentAllyCityStatesWar(PlayerTypes eTarget);
+int CvLuaPlayer::lOrderPermanentAllyCityStatesWar(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	pkPlayer->OrderPermanentAllyCityStatesWar(eTarget);
+	return 0;
+}
+//bool DoTradeBlock(PlayerTypes eTarget);
+int CvLuaPlayer::lDoTradeBlock(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->DoTradeBlock(eTarget));
+	return 1;
+}
+//int ProposePeaceDemand(...);
+int CvLuaPlayer::lProposePeaceDemand(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	const PlayerTypes eBeneficiary = (PlayerTypes)lua_tointeger(L, 3);
+	const int iGoldPercent = lua_tointeger(L, 4);
+	const bool bReturnCities = lua_toboolean(L, 5);
+	const bool bCedeCity = lua_toboolean(L, 6);
+	const bool bCeaseFire = lua_toboolean(L, 7);
+	lua_pushinteger(L, pkPlayer->ProposePeaceDemand(eTarget, eBeneficiary, iGoldPercent, bReturnCities, bCedeCity, bCeaseFire));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPeaceReturnCityCount(PlayerTypes eTarget);
+int CvLuaPlayer::lGetPeaceReturnCityCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPeaceReturnCityCount(eTarget));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPeaceReturnCityField(PlayerTypes eTarget, int iIndex);
+int CvLuaPlayer::lGetPeaceReturnCityField(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	int iIndex = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetPeaceReturnCityField(eTarget, iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPeaceCedeCityCount(PlayerTypes eTarget);
+int CvLuaPlayer::lGetPeaceCedeCityCount(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetPeaceCedeCityCount(eTarget));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetPeaceCedeCityField(PlayerTypes eTarget, int iIndex);
+int CvLuaPlayer::lGetPeaceCedeCityField(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	int iIndex = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetPeaceCedeCityField(eTarget, iIndex));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int ProposePeaceDemandWithCity(PlayerTypes eTarget, PlayerTypes eBeneficiary, int iGoldPercent, int iReturnCityID, int iCedeCityID, bool bCeaseFire);
+int CvLuaPlayer::lProposePeaceDemandWithCity(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	PlayerTypes eBeneficiary = (PlayerTypes)lua_tointeger(L, 3);
+	int iGoldPercent = lua_tointeger(L, 4);
+	int iReturnCityID = lua_tointeger(L, 5);
+	int iCedeCityID = lua_tointeger(L, 6);
+	bool bCeaseFire = lua_toboolean(L, 7) != 0;
+	lua_pushinteger(L, pkPlayer->ProposePeaceDemandWithCity(eTarget, eBeneficiary, iGoldPercent, iReturnCityID, iCedeCityID, bCeaseFire));
+	return 1;
+}
+//int GetPeaceCounterField(PlayerTypes eTarget, int iField);
+int CvLuaPlayer::lGetPeaceCounterField(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	const int iField = lua_tointeger(L, 3);
+	lua_pushinteger(L, pkPlayer->GetPeaceCounterField(eTarget, iField));
+	return 1;
+}
+//bool AcceptPeaceCounter(PlayerTypes eTarget, PlayerTypes eBeneficiary);
+int CvLuaPlayer::lAcceptPeaceCounter(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eTarget = (PlayerTypes)lua_tointeger(L, 2);
+	const PlayerTypes eBeneficiary = (PlayerTypes)lua_tointeger(L, 3);
+	lua_pushboolean(L, pkPlayer->AcceptPeaceCounter(eTarget, eBeneficiary));
+	return 1;
+}
+//bool PunishVassal(PlayerTypes eVassal);
+int CvLuaPlayer::lPunishVassal(lua_State* L)
+{
+	CvPlayer* pkPlayer = GetInstance(L);
+	const PlayerTypes eVassal = (PlayerTypes)lua_tointeger(L, 2);
+	lua_pushboolean(L, pkPlayer->PunishVassal(eVassal));
+	return 1;
+}

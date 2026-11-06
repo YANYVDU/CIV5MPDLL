@@ -26,6 +26,33 @@
 #include "CvUnitCycler.h"
 
 
+// Prayer: a vassal offers yields to its overlord and asks for a grace. The overlord
+// later grants it or keeps the offering in court.
+enum TiandaoPrayerWish
+{
+	PRAYER_WISH_BLESSING = 0,
+	PRAYER_WISH_THRESHOLD,
+	PRAYER_WISH_GREAT_PERSON,
+	PRAYER_WISH_POLICY,
+	PRAYER_WISH_TECH,
+	PRAYER_WISH_BELIEF,
+	PRAYER_WISH_HAPPINESS,
+	PRAYER_WISH_PURCHASE,
+	PRAYER_WISH_WAR,
+	PRAYER_WISH_COUNT
+};
+
+struct TiandaoPrayerRequest
+{
+	PlayerTypes eVassal;
+	int iScience;
+	int iCulture;
+	int iFaith;
+	int iGold;
+	int iWish;
+	int iTurn;
+};
+
 class CvPlayerPolicies;
 class CvEconomicAI;
 class CvMilitaryAI;
@@ -67,6 +94,107 @@ typedef std::vector< std::pair<UnitCombatTypes, PromotionTypes> > UnitCombatProm
 typedef std::vector< std::pair<UnitClassTypes, PromotionTypes> > UnitClassPromotionArray;
 typedef std::vector< std::pair<CivilizationTypes, LeaderHeadTypes> > CivLeaderArray;
 typedef FStaticVector<int, 180*92, true, c_eCiv5GameplayDLL, 0> CvPlotsVector; // allocate the size of HUGE Terra world just in case (this is max that we ship with)
+
+// Chronicle event types. The numeric ranges are stable: the Lua UI maps each
+// type to a text template, and saved chronicles must stay readable forever.
+// Subject/object/value carry the IDs and numbers the template needs.
+enum TiandaoChronicleType
+{
+	CHRONICLE_NONE = 0,
+
+	// Vassals 1-19: subject = the vassal, value = loyalty/rank when relevant.
+	CHRONICLE_VASSAL_INVITE = 1,
+	CHRONICLE_VASSAL_SEEK = 2,
+	CHRONICLE_VASSAL_SUBJUGATE = 3,
+	CHRONICLE_VASSAL_ALLEGIANCE = 4,
+	CHRONICLE_VASSAL_RELEASE = 5,
+	CHRONICLE_VASSAL_REVOLT = 6,
+	CHRONICLE_VASSAL_RESTORE = 7,
+	CHRONICLE_VASSAL_PUNISH = 8,
+	CHRONICLE_VASSAL_INDEPENDENCE = 9,
+	CHRONICLE_VASSAL_BECOME = 10,
+	CHRONICLE_VASSAL_LOST = 11,
+
+	// Ranks 20-29: subject = the vassal, value = the new rank.
+	CHRONICLE_RANK_UP = 20,
+	CHRONICLE_RANK_PETITION = 21,
+	CHRONICLE_RANK_DECLINE = 22,
+
+	// Memorials 30-39: subject = the vassal, object = memorial type,
+	// value = 0 rejected, 1 approved, 2 held.
+	CHRONICLE_MEMORIAL_APPROVED = 30,
+	CHRONICLE_MEMORIAL_REJECTED = 31,
+	CHRONICLE_MEMORIAL_HELD = 32,
+
+	// Decrees 40-49: subject = the vassal, object = decree type,
+	// value = 0 sent, 1 obeyed, 2 refused, 3 completed.
+	CHRONICLE_DECREE_SENT = 40,
+	CHRONICLE_DECREE_OBEYED = 41,
+	CHRONICLE_DECREE_REFUSED = 42,
+	CHRONICLE_DECREE_DONE = 43,
+
+	// Palace 50-79: subject = the concubine index or template, value = amount.
+	CHRONICLE_CONCUBINE_JOIN = 50,
+	CHRONICLE_CONCUBINE_GIFT = 51,
+	CHRONICLE_EMPRESS_CROWN = 52,
+	CHRONICLE_EMPRESS_DEPOSE = 53,
+	CHRONICLE_CONCUBINE_WISH = 54,
+	CHRONICLE_CONCUBINE_WISH_DONE = 55,
+	CHRONICLE_CONCUBINE_LETTER = 56,
+	CHRONICLE_CONCUBINE_ADVICE = 57,
+	CHRONICLE_CONCUBINE_BLESS = 58,
+	CHRONICLE_CONCUBINE_FESTIVAL = 59,
+	CHRONICLE_CONCUBINE_PERFORM = 60,
+	CHRONICLE_CONCUBINE_CRAFT = 61,
+	CHRONICLE_CONCUBINE_BOND = 62,
+	CHRONICLE_CONCUBINE_TITLE = 63,
+	CHRONICLE_CONCUBINE_HOSTAGE = 64,
+	CHRONICLE_CONCUBINE_LEAVE = 65,
+	CHRONICLE_CONCUBINE_PLEA = 66,
+	CHRONICLE_CONCUBINE_WARN = 67,
+	CHRONICLE_CONCUBINE_INTEL = 68,
+	CHRONICLE_CONCUBINE_REVOLT_PREP = 69,
+	CHRONICLE_CONCUBINE_WAR_INTEL = 70,
+	CHRONICLE_CONCUBINE_RESTORE = 71,
+	CHRONICLE_CONCUBINE_FAVOR = 72,
+
+	// Officials 80-99: subject = post, object = candidate, value = ability.
+	CHRONICLE_EXAM = 80,
+	CHRONICLE_OFFICIAL_APPOINT = 81,
+	CHRONICLE_OFFICIAL_DISMISS = 82,
+	CHRONICLE_OFFICIAL_ADVICE = 83,
+	CHRONICLE_OFFICIAL_RESIGN = 84,
+	CHRONICLE_OFFICIAL_RETIRE = 85,
+
+	// Provinces 100-109: subject = province, object = post, value = city count.
+	CHRONICLE_PROVINCE_FOUND = 100,
+	CHRONICLE_PROVINCE_APPOINT = 101,
+	CHRONICLE_PROVINCE_CITY = 102,
+	CHRONICLE_PROVINCE_DISMISS = 103,
+
+	// Mandate 110-119: value = cost or amount.
+	CHRONICLE_MANDATE_TIANFA = 110,
+	CHRONICLE_MANDATE_FENGSHAN = 111,
+	CHRONICLE_MANDATE_QIFENG = 112,
+	CHRONICLE_MANDATE_RANGZAI = 113,
+	CHRONICLE_MANDATE_GRACE = 114,
+
+	// Diplomacy 120-139: subject = the other player, value = clause amount.
+	CHRONICLE_PEACE = 120,
+	CHRONICLE_WAR = 121,
+	CHRONICLE_DEMAND = 122,
+	CHRONICLE_TECH_SALE = 123,
+	CHRONICLE_GIFT = 124,
+	CHRONICLE_LEVY = 125,
+	CHRONICLE_INFIGHT = 126,
+	CHRONICLE_WONDER = 127,
+	CHRONICLE_RESEARCH_PACT = 128,
+	CHRONICLE_CITY_STATE = 129,
+
+	// Empire milestones 140-149.
+	CHRONICLE_ERA = 140,
+	CHRONICLE_EMPIRE_PEAK = 141
+};
 
 class CvPlayer : public CvGameObjectExtractable
 {
@@ -1945,23 +2073,475 @@ public:
 #endif
 
 	int GetPrestigeExemptAllyCount() const;
-	void SetPrestigeExemptAllyCount(int iValue);
-	void ChangePrestigeExemptAllyCount(int iChange);
 	bool IsPermanentAlly(PlayerTypes eMinor) const;
 	void SetPermanentAlly(PlayerTypes eMinor, bool bValue);
 
 #if defined(MOD_GLOBAL_SUZERAIN)
+	enum TiandaoMemorialField {
+		SUZERAIN_MEMORIAL_TYPE = 0,
+		SUZERAIN_MEMORIAL_LEVEL,
+		SUZERAIN_MEMORIAL_MINISTRY,
+		SUZERAIN_MEMORIAL_VASSAL,
+		SUZERAIN_MEMORIAL_TARGET,
+		SUZERAIN_MEMORIAL_CREATED,
+		SUZERAIN_MEMORIAL_DEADLINE,
+		SUZERAIN_MEMORIAL_STATE,
+		SUZERAIN_MEMORIAL_STRIDE
+	};
 	// Vassal suzerain relationship
 	PlayerTypes GetOverlord() const;
 	void SetOverlord(PlayerTypes e);
 	bool IsVassalOf(PlayerTypes e) const;
 	bool IsOverlordOf(PlayerTypes e) const;
+	// One check for every "is this a live vassal of mine" loop.
+	bool IsLiveVassal(PlayerTypes eVassal) const;
 	bool HasAnyVassal() const;
 	const std::vector<int>& GetVassals() const;
-	void AddVassal(PlayerTypes e);
+	// iHow: how the vassalage began (0 unknown, 1 invitation, 2 protection,
+	// 3 subjugation, 4 allegiance, 5 resolution, 6 restoration). Recorded in
+	// the chronicle so the annals can say why a civ submitted.
+	void AddVassal(PlayerTypes e, int iHow = 0);
 	void RemoveVassal(PlayerTypes e);
+	// Loyalty: willingness to stay, capped by rank
+	int GetVassalLoyalty(PlayerTypes eVassal) const;
+	void SetVassalLoyalty(PlayerTypes eVassal, int iValue);
+	void ChangeVassalLoyalty(PlayerTypes eVassal, int iDelta);
+	int GetVassalLoyaltyCap(PlayerTypes eVassal) const;
+	int GetVassalRank(PlayerTypes eVassal) const;
+	void SetVassalRank(PlayerTypes eVassal, int iRank);
+	int GetVassalRankTurn(PlayerTypes eVassal) const;
+	void SetVassalRankTurn(PlayerTypes eVassal, int iTurn);
+	// Gold the overlord pays to promote a vassal to its next rank.
+	int GetVassalRankUpGold(PlayerTypes eVassal) const;
+	bool CanRankUpVassal(PlayerTypes eVassal) const;
+	void DoVassalRankUp(PlayerTypes eVassal);
+	void DoVassalRankMandateTurn();
+	int GetVassalGiftLoyalty(PlayerTypes eVassal) const;
+	void DoVassalGift(PlayerTypes eVassal);
+	// Gift menu: kind 0 gold, 1 resource, 2 technology.
+	int GetVassalGiftOptionCount(PlayerTypes eVassal, int iKind) const;
+	// iField for gold: 0 cost, 1 loyalty. Resource: 0 type, 1 amount.
+	// Technology: 0 type.
+	int GetVassalGiftOptionField(PlayerTypes eVassal, int iKind, int iIndex, int iField) const;
+	bool DoVassalGiftOption(PlayerTypes eVassal, int iKind, int iIndex);
+	// Court gift log: who came to court this session and what they brought
+	int GetCourtGiftCount() const;
+	int GetCourtGiftVassal(int iIndex) const;
+	int GetCourtGiftGold(int iIndex) const;
+	int GetCourtGiftResource(int iIndex) const;
+	int GetCourtGiftAmount(int iIndex) const;
+	void ResetVassalGiftCounts();
+	PlayerTypes GetVassalAggressor(PlayerTypes eVassal) const;
+	bool DoVassalProtect(PlayerTypes eVassal, bool bProtect);
+	void ResetVassalProtectFlags();
+	bool CanMediateVassals(PlayerTypes eA, PlayerTypes eB) const;
+	bool DoVassalMediate(PlayerTypes eA, PlayerTypes eB);
+	int ProposeVassalPeace(PlayerTypes eA, PlayerTypes eB, PlayerTypes ePayer, int iGoldPercent, bool bReturnCities, int iTruceTurns, PlayerTypes eCensure);
+	bool IsVassalTruceActive(PlayerTypes eA, PlayerTypes eB) const;
+	bool AcceptVassalPeaceCounter(PlayerTypes eA, PlayerTypes eB);
+	int GetVassalPeaceCounterField(PlayerTypes eA, PlayerTypes eB, int iField) const;
+	bool AcceptVassalPeaceCounterEx(PlayerTypes eA, PlayerTypes eB, PlayerTypes ePayer, int iGoldPercent, bool bReturnCities, PlayerTypes eCensure);
+	UnitTypes GetStrongestLandUnit() const;
+	int GetStrongestLandUnitCost() const;
+	bool GiftUnitToVassal(PlayerTypes eVassal, int iUnitID);
+	bool SpawnUnitForVassal(PlayerTypes eVassal);
+	void OrderVassalsJoinWar(PlayerTypes eTarget);
+	bool OrderVassalJoinWar(PlayerTypes eVassal, PlayerTypes eTarget);
+	bool DoEmbargoMonopoly(PlayerTypes eTarget);
+	void DenounceTarget(PlayerTypes eTarget);
+	void OrderPermanentAllyCityStatesWar(PlayerTypes eTarget);
+	bool DoTradeBlock(PlayerTypes eTarget);
+	int GetPressureOnCiv(PlayerTypes eTarget) const;
+	void ChangePressureOnCiv(PlayerTypes eTarget, int iChange);
+	void DoPressureTurn();
+	bool CanDemandPeaceFrom(PlayerTypes eTarget) const;
+	int ProposePeaceDemand(PlayerTypes eTarget, PlayerTypes eBeneficiary, int iGoldPercent, bool bReturnCities, bool bCedeCity, bool bCeaseFire, bool bForce = false);
+	// Cities the peace panel can offer, and a demand naming one of each.
+	int GetPeaceReturnCityCount(PlayerTypes eTarget) const;
+	int GetPeaceReturnCityField(PlayerTypes eTarget, int iIndex) const;
+	int GetPeaceCedeCityCount(PlayerTypes eTarget) const;
+	int GetPeaceCedeCityField(PlayerTypes eTarget, int iIndex) const;
+	int ProposePeaceDemandWithCity(PlayerTypes eTarget, PlayerTypes eBeneficiary,
+		int iGoldPercent, int iReturnCityID, int iCedeCityID, bool bCeaseFire, bool bForce = false);
+	int GetPendingVassalInvite() const;
+	bool ResolveVassalInvite(bool bAccept);
+	int GetPeaceCounterField(PlayerTypes eTarget, int iField) const;
+	bool AcceptPeaceCounter(PlayerTypes eTarget, PlayerTypes eBeneficiary);
+	bool CanReturnCityToVassal(CvCity* pCity) const;
+	bool DoReturnCityToVassal(CvCity* pCity);
+	bool DoReturnCityToVassalByID(int iCityID);
+	// Shared by prayer offerings and wonder-request conditions: with valid
+	// balances, move yields from a vassal to this (overlord) player.
+	bool TransferYieldToOverlord(PlayerTypes eVassal, int iScience, int iCulture, int iFaith, int iGold);
+	// Shared one-way gold transfer used by gifts, court gifts and memorial aid.
+	void TransferGoldTo(PlayerTypes eTo, int iGold);
+	void DoVassalCallToArms();
+	void DoVassalAIDiplomacyTurn();
+	// Breach detection and the overlord's right to punish
+	void DoVassalBreachTurn();
+	bool HasVassalPunishRight(PlayerTypes eVassal) const;
+	void GrantVassalPunishRight(PlayerTypes eVassal, int iTurns);
+	int GetVassalPunishRightTurns(PlayerTypes eVassal) const;
+	void ClearVassalPunishRight(PlayerTypes eVassal);
+	int GetVassalExecutionTier(PlayerTypes eVassal) const;
+	int GetVassalRevoltScore(PlayerTypes eVassal) const;
+	bool CanVassalRevolt(PlayerTypes eVassal) const;
+	bool DoVassalRevolt(PlayerTypes eVassal);
+	void DoVassalRevoltCheck();
+	int GetVassalMemorialCount() const;
+	int GetVassalMemorialField(int iIndex, int iField) const;
+	bool HasPendingMemorial(PlayerTypes eVassal, int iType) const;
+	bool IsVassalMilitarilyOvermatched(PlayerTypes eVassal) const;
+	int GetMemorialDefault(int iType) const;
+	void SetMemorialDefault(int iType, int iValue);
+	int AddVassalMemorial(int iType, int iLevel, int iMinistry, PlayerTypes eVassal, PlayerTypes eTarget, int iDeadlineTurns);
+	bool ResolveVassalMemorial(int iIndex, bool bApprove);
+	void DoVassalMemorialTurn();
+	void DoVassalAIMemorialTurn();
+	int GetVassalCourtInterval() const;
+	bool IsVassalCourtTurn() const;
+	bool IsVassalLosingWar(PlayerTypes eVassal) const;
+	bool IsVassalMismanaging(PlayerTypes eVassal) const;
+	bool DoVassalAid(PlayerTypes eVassal);
+	int GetVassalCourtPolicy() const;
+	bool SetVassalCourtPolicy(int iPolicy);
+	bool IsSuzerainCiv() const;
+	int GetCourtPolicyType() const;
+	int GetCourtPolicyPercent() const;
+	void DoCourtPolicyTurn();
+	int GetVassalBreachCount(PlayerTypes eVassal) const;
+	void ChangeVassalBreachCount(PlayerTypes eVassal, int iChange);
+	bool IsVassalIncompetent(PlayerTypes eVassal) const;
+	bool CanPunishVassal(PlayerTypes eVassal) const;
+	bool DoVassalPunish(PlayerTypes eVassal);
+	// Chronicle: append-only event log and per-turn empire snapshots.
+	// The log is never trimmed; the UI pages through the whole game.
+	void AddChronicle(int iType, int iSubject = -1, int iObject = -1, int iValue = 0);
+	int GetChronicleCount() const;
+	int GetChronicleValue(int iIndex, int iField) const;
+	void RecordEmpireSnapshot();
+	int GetEmpireSnapshotCount() const;
+	int GetEmpireSnapshotValue(int iIndex, int iField) const;
+	int GetMandate() const;
+	int GetMandateMax() const;
+	void ChangeMandate(int iChange);
+	// Dao points: rewards for good governance, spent on strong graces
+	int GetDaoPoints() const;
+	void ChangeDaoPoints(int iChange);
+	bool CanSpendDaoPoints(int iCost) const;
+	int GetDaoGraceCost(int iGrace) const;
+	bool DoDaoGrace(int iGrace);
+	void DoDaoTurn();
+	// Permanent dao perks, bought once and kept for the rest of the game.
+	// 0 abundance, 1 diligence, 2 industry, 3 learning, 4 war, 5 teaching, 6 insight, 7 talent
+	bool HasDaoPerk(int iPerk) const { return (m_iDaoPerks & (1 << iPerk)) != 0; }
+	void GrantDaoPerk(int iPerk) { m_iDaoPerks |= (1 << iPerk); }
+	// Permanent unique content claimed by the dao insight grace. iType is
+	// 0 = unit, 1 = building, 2 = improvement; stored in the existing
+	// extra-UC sets, which are already serialized and usable.
+	int GetDaoUCPicks() const;
+	void AddDaoUC(int iType, int iIndex);
+	void AutoPickDaoUC();
+	// Faith purchase of beliefs (pantheon or a religion belief)
+	int GetDaoBeliefCost() const;
+	int GetDaoBeliefOptionCount() const;
+	int GetDaoBeliefOption(int iIndex) const;
+	bool PurchaseDaoBelief(BeliefTypes eBelief);
+	// Shared helper: spawn one random great person at this player's capital.
+	void SpawnRandomGreatPersonAtCapital();
+	// Active dao grace effects
+	int GetDaoCombatModifier() const;
+	bool HasDaoSiegeNoHeal() const;
+	bool HasDaoFaithGreatPeople() const;
+	bool HasDaoDenounceImmunity() const;
+	bool IsMandateFull() const;
+	bool CanFengshan() const;
+	bool DoFengshan();
+	bool CanQifeng() const;
+	bool DoQifeng();
+	bool CanRangzai() const;
+	bool DoRangzai();
+	void RemoveMandateBlessing();
+	void ApplyMandateBlessing(int iFood, int iProduction, int iCulture, int iTurns);
+	void DoMandateBlessingTurn();
+	bool CanTianfa(PlayerTypes eTarget) const;
+	bool DoTianfa(PlayerTypes eTarget);
+	bool IsUnderMandatePunishment() const;
+	PlayerTypes GetPunishBy() const;
+	bool IsTradeBlockedWith(PlayerTypes eOther) const;
+	void DoMandatePunishmentTurn();
+	bool CanMandateVictory() const;
+	bool DoMandateVictory();
+	bool CanVassalOverlordVictory() const;
+	bool DoVassalOverlordVictory();
+	void DoVassalOverlordVictoryCheck();
+	void DoVassalCourtGiftTurn();
+	int GetVassalWonderPoolCapacity() const;
+	int GetVassalWonderPoolCount() const;
+	int GetVassalWonderPoolEntry(int iIndex) const;
+	bool CanAddVassalWonderToPool(BuildingTypes eBuilding) const;
+	bool AddVassalWonderToPool(BuildingTypes eBuilding);
+	bool RemoveVassalWonderFromPool(BuildingTypes eBuilding);
+	bool RequestVassalWonder(BuildingTypes eBuilding);
+	int GetWonderRequest() const;
+	bool ApproveVassalWonderRequest(PlayerTypes eVassal, bool bApprove);
+	// Wonder request conditions: the overlord may refuse and ask for something
+	void SetWonderRequestCondition(PlayerTypes eVassal, int iType, int iValue, PlayerTypes eTarget);
+	bool CheckWonderRequestCondition(PlayerTypes eVassal);
+	int GetWonderConditionType() const;
+	int GetWonderConditionValue() const;
+	int GetWonderConditionTarget() const;
+	int GetWonderConditionTurns() const;
+	bool CanVassalBuildWonder(PlayerTypes eVassal, BuildingTypes eBuilding) const;
+	void DoVassalWonderPoolTurn();
+	void DoVassalWonderRequestTurn();
+	bool PunishVassal(PlayerTypes eVassal);
+	void DoVassalAutoJoinWarTurn();
+	bool CanInviteVassal(PlayerTypes eTarget) const;
+	bool DoInviteVassal(PlayerTypes eTarget);
+	// A lesser civ asks a suzerain to take it in. 0 = allowed/accepted,
+	// positive = reason the request cannot run, 2 = the protector declines.
+	int CanRequestSubmission(PlayerTypes eProtector) const;
+	int RequestVassalSubmission(PlayerTypes eProtector);
+	// A civ losing a war to a suzerain may offer to submit. 0 = allowed/accepted.
+	int CanSurrenderTo(PlayerTypes eWinner) const;
+	int SurrenderTo(PlayerTypes eWinner);
+	// A call to arms waiting for the human vassal's answer. iField:
+	// 0 = overlord, 1 = target, 2 = turns left.
+	int GetPendingWarOrder(int iField) const;
+	bool ResolveWarOrder(bool bObey);
+	void DoPendingWarOrderTurn();
+	void WarnVassalRevolt(PlayerTypes eVassal);
+	// Checks public works orders that have come due.
+	void DoVassalWorksCheck();
+
+	// Officials: seven posts (chancellor, then the six ministries). Candidates
+	// come from a random pool; every official has ability, character, a leaning
+	// and satisfaction, and the court hears one piece of advice at a time.
+	static const int OFFICIAL_POSTS = 7;
+	int GetOfficialField(int iPost, int iField) const;
+	int GetOfficialCandidateCount() const;
+	int GetOfficialCandidateField(int iIndex, int iField) const;
+	bool AppointOfficial(int iPost, int iCandidate);
+	bool DismissOfficial(int iPost);
+	// Imperial examination: drop one candidate, and read/clear the cohort.
+	bool RemoveOfficialCandidate(int iIndex);
+	int GetOfficialExamStart() const;
+	int GetOfficialExamCount() const;
+	void ClearOfficialExam();
+	// Provinces (dao): cities grouped under three local officials.
+	int GetProvinceCount() const;
+	int GetProvinceField(int iProv, int iField) const;
+	bool CreateProvince(int iNameIndex);
+	bool SetCityProvince(int iCityID, int iProv);
+	int GetCityProvince(int iCityID) const;
+	int GetProvinceCityCount(int iProv) const;
+	bool AppointProvinceOfficial(int iProv, int iPost, int iCandidate);
+	void DismissProvinceOfficial(int iProv, int iPost);
+	void DoProvinceTurn();
+	// Province treasury: a share of local gold kept for provincial spending.
+	int GetProvinceTreasury(int iProv) const;
+	int GetProvinceTreasuryCap(int iProv) const;
+	void ChangeProvinceTreasury(int iProv, int iChange);
+	bool SpendProvinceTreasury(int iProv, int iGold);
+	bool DepositProvinceTreasury(int iProv, int iGold);
+	bool IsCapitalProvince(int iProv) const;
+	void DoProvinceTreasuryTurn();
+	void DoProvinceBuildTurn();
+	// 0 = direct rule, 1 = review (build only), 2 = full autonomy.
+	int GetProvinceAutonomy(int iProv) const;
+	void SetProvinceAutonomy(int iProv, int iValue);
+	// Province production queue: player-ordered building/unit/project list.
+	int GetProvinceQueueCount(int iProv) const;
+	int GetProvinceQueueField(int iProv, int iIndex, int iField) const;
+	bool AddProvinceQueueItem(int iProv, int iType, int iTarget, int iCount);
+	void RemoveProvinceQueueItem(int iProv, int iIndex);
+	void ClearProvinceQueue(int iProv);
+	void DoProvinceQueueTurn();
+	void DoProvincePatrolTurn();
+	void DoProvinceDefenseTurn();
+	// Warn the player when a peaceful neighbour masses visible troops on the border.
+	void DoBackstabWarningTurn();
+	// Levied troops gathered at the capital engage enemies near it.
+	void DoLevyDefenseTurn();
+	int GetProvinceGarrisonCount(int iProv) const;
+	int GetProvinceGarrisonTarget(int iProv) const;
+	// Province military mission: 1 = exterminate barbarians near a target plot.
+	int GetProvinceMissionField(int iProv, int iField) const;
+	void SetProvinceMission(int iProv, int iType, int iX, int iY, int iDeadline, bool bCrossBorder);
+	void ClearProvinceMission(int iProv);
+	void DoProvinceMissionTurn();
+	// Levy: hand the province's garrison to the centre, or give it back.
+	int LevyProvinceGarrison(int iProv);
+	int LevyProvinceGarrisonUpTo(int iProv, int iCount, bool bMarchToBorder = false);
+	void ReturnProvinceGarrison(int iProv);
+	int GetProvinceLevyCount(int iProv) const;
+	// Wartime: a province near an active front levies its surplus garrison
+	// and builds for war until the fighting moves away.
+	int GetProvinceWar(int iProv) const;
+	void SetProvinceWar(int iProv, int iValue);
+	bool IsProvinceInWar(int iProv) const;
+	void DoProvinceWarTurn();
+	bool LevyProvinceUnitTo(int iSourceProv, int iTargetProv);
+	int OrderLevyToProvince(int iProv);
+	void OrderLevyRally(int iX, int iY);
+	// Province report log: stride 1 count + 16 entries * (turn, type, a, b).
+	void AddProvinceReport(int iProv, int iType, int iA, int iB);
+	int GetProvinceReportCount(int iProv) const;
+	int GetProvinceReportField(int iProv, int iIndex, int iField) const;
+	// Border provinces keep a larger standing garrison; interior ones keep less.
+	int GetProvinceBorder(int iProv) const;
+	void SetProvinceBorder(int iProv, int iValue);
+	void UpdateProvinceBorderFlags();
+	void DoOfficialTurn();
+	void DoOfficialAITurn();
+	// Memorial delegation: 0 = the player handles everything, 1 = the ministry
+	// handles what it can. Post 0 is the chancellor's master switch.
+	int GetOfficialAutonomy(int iPost) const;
+	void SetOfficialAutonomy(int iPost, int iValue);
+	void DoOfficialMemorialTurn();
+	int GetMemorialBacklog(int iPost) const;
+	bool ShouldMemorialBeApproved(int iIndex);
+	// -1 no advice, 0 reject, 1 approve (only when the ministry is on review).
+	int GetMemorialAdvice(int iIndex);
+	int GetOfficialAdvicePost() const;
+	int GetOfficialAdviceTurn() const;
+	bool ResolveOfficialAdvice(bool bAdopt);
+	// Ability with satisfaction and leaning applied, as a percentage (50..125).
+	int GetOfficialEffectPercent(int iPost) const;
+	// A fond concubine reports the muster behind a coming revolt.
+	void WarnConcubineRevoltPrep(PlayerTypes eVassal, int iPrepTurns);
+	// Decrees the overlord issues; the vassal answers each with bAccept meaning
+	// "comply" (receive/cooperate/confess/accept). Several may be pending.
+	int GetPendingDecreeCount() const;
+	// iField: 0 type, 1 target, 2 turns left, 3 sender.
+	int GetPendingDecreeField(int iIndex, int iField) const;
+	void CleanExpiredDecrees();
+	bool ResolveDecree(int iIndex, bool bAccept);
+	bool IssueDecree(int iType, PlayerTypes eVassal, int iTarget);
+	bool CanIssueDecree(int iType, PlayerTypes eVassal, int iTarget) const;
+	void DoVassalDecreeTurn();
+	// An AI overlord issues decrees of its own on a cycle.
+	void DoAIDecreeTurn();
+	// Best decree for one vassal at a given loyalty percentage, or 0 for none.
+	int PickAIDecree(PlayerTypes eVassal, int iLoyaltyPercent, int& iTarget);
+	int GetVassalTitle(PlayerTypes eVassal) const;
+	void SetVassalTitle(PlayerTypes eVassal, int iTitle);
+	// First title index not yet held by any vassal, or 0 when all are taken.
+	int PickFreeTitle() const;
+	// Finance: tribute relief and loans
+	int GetTributeRelief(PlayerTypes eVassal) const;
+	void SetTributeRelief(PlayerTypes eVassal, int iTurns);
+	int GetLoanDueTurn(PlayerTypes eVassal) const;
+	int GetLoanAmount(PlayerTypes eVassal) const;
+	void SetLoan(PlayerTypes eVassal, int iDueTurn, int iAmount);
+	void DoVassalFinanceTurn();
+	// Have a vassal trade unit open a route to one of our cities; false when
+	// the vassal has no trade unit available.
+	bool DoVassalTradeRoute(PlayerTypes eVassal);
+
+	// Concubines: template data lives in SQL (SUZERAIN_CONCUBINE_<n>), the
+	// DLL only stores runtime state.
+	int GetConcubineCount() const;
+	// iField: 0 template ID, 1 source vassal, 2 favour count, 3 last favour turn
+	int GetConcubineField(int iIndex, int iField) const;
+	// bDowry false means no dowry is paid. iKind: 0 offered, 1 taken, 2 tribute.
+	bool ReceiveConcubine(PlayerTypes eVassal, int iTemplate, bool bDowry = true, int iKind = 0);
+	// Pick a template not yet in the palace; 0 when every one is held.
+	int PickFreeConcubineTemplate();
+	bool FavorConcubine(int iIndex);
+	int GetConcubineRank(int iIndex) const;
+	int GetEmpress() const;
+	bool SetEmpress(int iIndex);
+	void DoConcubineTurn();
+	// An AI vassal periodically offers a concubine to its overlord.
+	void DoOfferConcubineTurn();
+	// Bestow a gift on one concubine: costs gold, lifts the home vassal's loyalty.
+	bool GiftConcubine(int iIndex);
+	// What the next gift would cost, so the UI can check before sending.
+	int GetConcubineGiftGold(int iIndex);
+	int GetConcubineFavor(int iIndex) const;
+	void ChangeConcubineFavor(int iIndex, int iDelta);
+	// True when her homeland is dead or no longer our vassal: she is a hostage.
+	bool IsConcubineHostage(int iIndex) const;
+	// Drop one concubine from the palace (she leaves or dies) and fix the empress index.
+	bool RemoveConcubine(int iIndex);
+	// A fond concubine may ask the overlord to resurrect her fallen homeland in
+	// one of our cities that was originally hers.
+	bool CanRestoreConcubineHomeland(int iIndex);
+	bool RestoreConcubineHomeland(int iIndex);
+	bool DethroneEmpress();
+	int GetConcubineWish(int iIndex) const;
+	void SetConcubineWish(int iIndex, int iWish);
+	bool SatisfyConcubineWish(int iIndex);
+	// Whether her current wish can be granted right now (gold check).
+	bool CanSatisfyConcubineWish(int iIndex);
+	void DoConcubineWishTurn();
+	// Periodic counsel from a random concubine.
+	void DoConcubineAdviceTurn();
+	// A palace performance: senior consorts bring culture to the capital.
+	void DoConcubinePerformTurn();
+	// A small keepsake, worth gold, culture or mandate depending on her origins.
+	void DoConcubineCraftTurn();
+	// Consorts from the same background draw each other's favour upward.
+	void DoConcubineBondTurn();
+	// A fond concubine reports an army on the march: where it left, its
+	// composition, and where it is heading.
+	void DoConcubineIntelTurn();
+	// Template field from SQL: 0 name key, 1 origin index, 2 temperament,
+	// 3 portrait path, 4 story key.
+	CvString GetConcubineTemplateField(int iTemplate, int iField) const;
+	// A human vassal petitions its overlord directly. 0 = accepted, 1 = not a
+	// vassal, 2 = type cannot be raised manually, 3 = already pending,
+	// 4 = invalid target.
+	int SubmitVassalMemorial(int iType, int iTarget);
+	// Voluntary release. 0 = released quietly, 1 = the vassal begs to stay,
+	// -1 = not our vassal. ForceReleaseVassal skips the plea; KeepVassal
+	// rewards a loyal vassal that asked to stay.
+	int TryReleaseVassal(PlayerTypes eVassal);
+	bool ForceReleaseVassal(PlayerTypes eVassal);
+	bool KeepVassal(PlayerTypes eVassal);
+	void DoSeekProtectionTurn();
+	void DoSubjugateTurn();
+	bool CanSubjugate(PlayerTypes eTarget) const;
+	bool DoSubjugate(PlayerTypes eTarget);
+	void DoSeekAllegianceTurn();
+	int GetMonopolyResourceCount() const;
+	bool HasMonopolyResource(ResourceTypes eResource) const;
+	int GetMonopolyYieldBonus(YieldTypes eYield) const;
+	int GetMonopolyHappiness() const;
+	void DoMonopolyTurn();
+	bool CanEmbargoResource(PlayerTypes eTarget, ResourceTypes eResource) const;
+	bool DoEmbargoResource(PlayerTypes eTarget, ResourceTypes eResource);
+	bool IsResourceEmbargoed(ResourceTypes eResource) const;
+	void DoEmbargoTurn();
+	void DoVassalLoyaltyDecay();
 	void RefreshUCFromVassals();
 	void ClearUCFromVassals();
+	// Prayer: vassal offers, overlord adjudicates
+	bool CanSubmitPrayer() const;
+	bool SubmitPrayer(int iScience, int iCulture, int iFaith, int iGold, int iWish);
+	int GetPrayerCount() const;
+	int GetPrayerVassal(int iIndex) const;
+	int GetPrayerScience(int iIndex) const;
+	int GetPrayerCulture(int iIndex) const;
+	int GetPrayerFaith(int iIndex) const;
+	int GetPrayerGold(int iIndex) const;
+	int GetPrayerWish(int iIndex) const;
+	int GetPrayerChance(int iIndex) const;
+	int GetPrayerChanceForInvestment(int iTotal) const;
+	int GetPrayerFreeTechs() const { return m_iPrayerFreeTechs; }
+	int GetPrayerTechOptionCount() const;
+	int GetPrayerTechOption(int iIndex) const;
+	bool ChoosePrayerTech(TechTypes eTech);
+	bool ResolvePrayer(int iIndex, bool bGrant);
+	int GetPrayerDenyStreak(PlayerTypes eVassal) const;
+	int GetPrayerPolicyCostModifier() const { return m_iPrayerPolicyCostModifier; }
+	void DoPrayerTurn();
+	void DoPrayerOverlordTurn();
+	void ApplyPrayerGrace(PlayerTypes eVassal, int iWish);
+	void ApplyPrayerBlessing(int iYield, int iAmount, int iTurns);
+	void RemovePrayerBlessing();
 	std::tr1::unordered_set<UnitTypes>& GetUUFromVassals();
 	std::tr1::unordered_set<BuildingTypes>& GetUBFromVassals();
 	std::tr1::unordered_set<ImprovementTypes>& GetUIFromVassals();
@@ -1980,6 +2560,14 @@ public:
 	int GetFaithToOverlord() const;
 	int GetGoldToOverlord() const;
 	int GetVassalTaxPercentFor(PlayerTypes eVassal) const;
+	int GetTariffPercentFor(PlayerTypes eOther) const;
+	int GetVassalTechDiscount() const;
+	int GetVassalDemandCityPopulationPercentFor(PlayerTypes eVassal) const;
+	int GetVassalDemandGoldPercentFor(PlayerTypes eVassal) const;
+	int GetVassalDemandGoldPerTurnPercentFor(PlayerTypes eVassal) const;
+	int GetVassalDemandLuxuryResourcePercentFor(PlayerTypes eVassal) const;
+	int GetVassalDemandStrategicResourcePercentFor(PlayerTypes eVassal) const;
+	int GetVassalDemandCooldownTurnsFor(PlayerTypes eVassal) const;
 	int GetGoldFromVassalDeals() const;
 	int GetGoldFromVassalDealsLumpSum() const;
 	void ResetGoldFromVassalDeals();
@@ -1987,6 +2575,8 @@ public:
 	void RecordVassalDealGPT(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax);
 	void RecordVassalDealGPTEnd(PlayerTypes eVassal, int iTax);
 	void NotifyVassalDealTax(PlayerTypes eVassal, PlayerTypes eCounterparty, int iTax, bool bPerTurn);
+	// Levy from vassals; the state is derived each turn and is not serialized.
+	void DoVassalLevy();
 #endif
 	int GetExtraUnitPlayerInstances() const;
 	void SetExtraUnitPlayerInstances(int iValue);
@@ -2971,8 +3561,7 @@ protected:
 #if defined(MOD_SP_CITYSTATE_BASIC)
 	int m_aiCSAllyCountByTrait[NUM_MINOR_CIV_TRAIT_TYPES]; // City-state ally count by trait type, refreshed each turn in RefreshCSAlliesFriends
 #endif
-	int m_iPrestigeExemptAllyCount;
-	std::vector<int> m_vecPermanentAllies;
+	FAutoVariable<std::vector<int>, CvPlayer> m_vecPermanentAllies;
 	int m_iExtraUnitPlayerInstances;
 	int m_iConquestCasualtiesModifier;
 	int m_iWaterTileDamageGlobal;
@@ -2987,6 +3576,144 @@ protected:
 	// Vassal suzerain relationship
 	PlayerTypes m_eOverlord;
 	std::vector<int> m_vecVassals;
+	// Loyalty and rank per vassal, indexed by vassal player id
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalLoyalty;
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalRank;
+	// Turn of the last promotion per vassal (0 = never promoted)
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalRankTurn;
+	// Gifts given this turn, used for the diminishing return
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalGiftCount;
+	// 1 while the current war on a vassal has already been answered
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalProtectHandled;
+	// Vassal memorials, flat array of SUZERAIN_MEMORIAL_STRIDE ints per entry
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalMemorials;
+	// Court policy: 0 none, 1 military, 2 science, 3 culture, 4 economy
+	FAutoVariable<int, CvPlayer> m_iVassalCourtPolicy;
+	FAutoVariable<int, CvPlayer> m_iPendingInviteFrom;
+	FAutoVariable<int, CvPlayer> m_iPendingInviteTurn;
+	// Call to arms from the overlord: who ordered it, whom to attack, deadline
+	FAutoVariable<int, CvPlayer> m_iPendingWarOrderFrom;
+	FAutoVariable<int, CvPlayer> m_iPendingWarOrderTarget;
+	FAutoVariable<int, CvPlayer> m_iPendingWarOrderTurn;
+	// Decrees waiting for this vassal's answer. Stride 4 per decree:
+	// type (1 title, 2 inspection, 3 summon, 4 questioning, 5 fief),
+	// target (city ID for fief, title index for a title), deadline turn,
+	// and sender. Several decrees may be pending at once.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiPendingDecrees;
+	// Title index granted to each vassal (0 = none, 1..N = named title)
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalTitle;
+	// Turns of full tribute relief remaining per vassal (0 = none)
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiTributeRelief;
+	// Concubines in the overlord's palace. Stride 4: template ID, source
+	// vassal, favour count, turn of the last favour.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiConcubines;
+	// Index of the empress in m_aiConcubines (-1 = none)
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiConcubineFavor;
+	FAutoVariable<int, CvPlayer> m_iEmpress;
+	// How each concubine entered the palace, same order as favour:
+	// 0 = offered by a vassal (she has a patron), 1 = taken, 2 = peace tribute.
+	// Only kind 0 has a homeland that can patronise her.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiConcubineKind;
+	// Turn on which the once-per-turn loyalty bonus was last granted
+	FAutoVariable<int, CvPlayer> m_iFavourBonusTurn;
+	// Loan due turn and amount owed per vassal
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiLoanDueTurn;
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiLoanAmount;
+	// Broken-obligation record: count and the turn of the last breach
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalBreachCount;
+	// Punish right expiry turn per vassal (serialized)
+	std::vector<int> m_aiVassalPunishRight;
+	// Revolt preparation: the turn an already-rebellious vassal actually rises
+	std::vector<int> m_aiVassalRevoltPrep;
+	// Public works order per vassal, stride 2: building ID and due turn
+	std::vector<int> m_aiWorksOrder;
+	// Palace officials: 7 posts, stride 5 (name index, ability, character,
+	// leaning, satisfaction). An empty post has name index 0.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiOfficials;
+	// Candidate pool, stride 4 (name index, ability, character, leaning)
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiOfficialCandidates;
+	// Pending advice: post index and the turn it was raised
+	FAutoVariable<int, CvPlayer> m_iOfficialAdvicePost;
+	FAutoVariable<int, CvPlayer> m_iOfficialAdviceTurn;
+	// Exam cohort: pool index of the first candidate from the last exam.
+	FAutoVariable<int, CvPlayer> m_iOfficialExamStart;
+	FAutoVariable<int, CvPlayer> m_iOfficialExamTurn;
+	// Province data: stride 13 = name index, then three officials x
+	// (name, ability, character, leaning).
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinces;
+	// Province index per city ID (-1 = unassigned).
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceCity;
+	// Gold held by each province for local development.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceTreasury;
+	// Autonomy level per province: 0 direct rule, 1 review, 2 full autonomy.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceAutonomy;
+	// Memorial delegation per post: 0 direct, 1 delegated. Index 0 is the chancellor.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiOfficialAutonomy;
+	// Wartime flag per province (1 = near an active front).
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceWar;
+	// Border flag per province (1 = frontier province, larger standing garrison).
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceBorder;
+	// Recent province report entries.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceReport;
+	// Turn of the last backstab warning (cooldown).
+	FAutoVariable<int, CvPlayer> m_iLastBackstabWarnTurn;
+	// Production queue per province: stride is one count + slots * (type, target, count).
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceQueue;
+	// Military mission per province: type, x, y, deadline, state, flags, spare, spare.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiProvinceMission;
+	// Full-game chronicle: stride 5 (turn, type, subject, object, value).
+	// Append-only and never trimmed; the UI pages through it from turn 0.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiChronicle;
+	// Empire snapshot: stride 8 (turn, vassals, rank sum, concubines,
+	// officials, mandate, dao points, cities), one row per turn.
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiEmpireSnapshot;
+	// Global unhappiness percentage currently applied by justices.
+	FAutoVariable<int, CvPlayer> m_iProvinceUnhappinessMod;
+	// Wars already counted as breaches (derived, rebuilt each turn; not serialized)
+	std::vector<int> m_aiVassalWarSeen;
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalBreachTurn;
+	// Mandate of Heaven, 0..TIANDAO_MANDATE_MAX
+	FAutoVariable<int, CvPlayer> m_iMandate;
+	// Dao points and their temporary grace state
+	int m_iDaoPoints;
+	int m_iDaoPerks;
+	int m_iDaoUCPicks;
+	// Era of the last Fengshan, -1 when never used
+	FAutoVariable<int, CvPlayer> m_iFengshanEra;
+	// Last era recorded in the chronicle (only advances)
+	FAutoVariable<int, CvPlayer> m_iChronicleEra;
+	// Temporary mandate blessing: per-city yields and the turn it expires
+	FAutoVariable<int, CvPlayer> m_iBlessingFood;
+	FAutoVariable<int, CvPlayer> m_iBlessingProduction;
+	FAutoVariable<int, CvPlayer> m_iBlessingCulture;
+	FAutoVariable<int, CvPlayer> m_iBlessingEndTurn;
+	// Mandate punishment applied to this player
+	FAutoVariable<int, CvPlayer> m_iPunishEndTurn;
+	FAutoVariable<int, CvPlayer> m_iPunishBy;
+	FAutoVariable<int, CvPlayer> m_iPunishUnhappiness;
+	FAutoVariable<int, CvPlayer> m_iPunishFood;
+	FAutoVariable<int, CvPlayer> m_iPunishProduction;
+	// Era-scoped wonder reward pool and the era it was filled for
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiWonderPool;
+	FAutoVariable<int, CvPlayer> m_iWonderPoolEra;
+	// A vassal's pending wonder request, and the overlord's approvals per vassal
+	FAutoVariable<int, CvPlayer> m_iWonderRequest;
+	// Wonder request condition set by the overlord and stored on the vassal.
+	// 0 = none, 1 = gold, 2 = science, 3 = culture, 4 = faith, 5 = declare war.
+	int m_iWonderConditionType;
+	int m_iWonderConditionValue;
+	int m_iWonderConditionTarget;
+	int m_iWonderConditionDeadline;
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiVassalWonderApproval;
+	// Resources this overlord (with its vassals) monopolizes
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiMonopolyResources;
+	// Cached monopoly bonuses, recomputed each turn
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiMonopolyYieldBonuses;
+	FAutoVariable<int, CvPlayer> m_iMonopolyHappiness;
+	// Resources an overlord has embargoed against this player
+	FAutoVariable<std::vector<int>, CvPlayer> m_aiEmbargoedResources;
+	FAutoVariable<int, CvPlayer> m_iEmbargoEndTurn;
+	FAutoVariable<int, CvPlayer> m_iEmbargoBy;
 	// UC caches from vassals
 	std::tr1::unordered_set<UnitTypes> m_sUUFromVassals;
 	std::tr1::unordered_set<BuildingTypes> m_sUBFromVassals;
@@ -2996,6 +3723,26 @@ protected:
 	std::tr1::array<int, MAX_MAJOR_CIVS> m_aCultureFromVassals;
 	std::tr1::array<int, MAX_MAJOR_CIVS> m_aFaithFromVassals;
 	std::tr1::array<int, MAX_MAJOR_CIVS> m_aGoldFromVassals;
+
+	// Prayer state. The overlord keeps the queue; the vassal keeps its temporary grace.
+	std::vector<TiandaoPrayerRequest> m_vPrayerRequests;
+	std::vector<int> m_aiPrayerDenyStreak;
+	std::vector<int> m_aiTruceUntil;
+	std::vector<int> m_aiPeaceRejects;
+	std::vector<int> m_aiPressureOnCiv;
+
+	// Court gift log (derived, rebuilt each court turn; not serialized)
+	std::vector<int> m_aiCourtGiftLog;
+	// Minister default verdict per memorial type: 0 = reject, 1 = approve
+	std::vector<int> m_aiMemorialDefault;
+	std::vector<int> m_aiPrayerBlessing;
+	int m_iPrayerBlessingEndTurn;
+	int m_iPrayerThresholdTurns;
+	int m_iPrayerResearchCostModifier;
+	int m_iPrayerPolicyCostModifier;
+	int m_iPrayerHappinessEndTurn;
+	int m_iPrayerCorruptionTurns;
+	int m_iPrayerFreeTechs;
 	// Per-turn tax paid to our overlord (vassal side)
 	unsigned long long m_iScienceTimes100ToOverlord;
 	int m_iCultureToOverlord;

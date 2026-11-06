@@ -382,6 +382,13 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 			if(iResourceQuantity < 0)
 				return false;
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+			// A resource embargo blocks any player from supplying that resource
+			// to the embargoed civilization.
+			if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(eToPlayer).IsResourceEmbargoed(eResource))
+				return false;
+#endif
+
 			if (GC.getGame().GetGameLeagues()->IsLuxuryHappinessBanned(ePlayer, eResource) || GC.getGame().GetGameLeagues()->IsLuxuryHappinessBanned(eToPlayer, eResource))
 			{
 				return false;
@@ -500,6 +507,26 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 	else if(eItem == TRADE_ITEM_UNITS)
 	{
 		return false;
+	}
+	// Technology sale: only the overlord may sell a technology to a direct vassal.
+	else if(eItem == TRADE_ITEM_TECHS)
+	{
+		if (GC.getGame().isOption(GAMEOPTION_NO_SCIENCE))
+			return false;
+#if defined(MOD_GLOBAL_SUZERAIN)
+		if (!MOD_GLOBAL_SUZERAIN || pToPlayer->GetOverlord() != ePlayer)
+			return false;
+#else
+		return false;
+#endif
+		TechTypes eTech = (TechTypes)iData1;
+		CvTechEntry* pTechInfo = eTech == NO_TECH ? NULL : GC.getTechInfo(eTech);
+		if (pTechInfo == NULL || pTechInfo->IsRepeat() || !pFromTeam->GetTeamTechs()->HasTech(eTech))
+			return false;
+		if (!pToPlayer->GetPlayerTechs()->CanResearch(eTech, false))
+			return false;
+		if (!bFinalizing && IsTechTrade(ePlayer, eTech))
+			return false;
 	}
 	// Embassy
 	else if(eItem == TRADE_ITEM_ALLOW_EMBASSY)
@@ -1203,6 +1230,22 @@ void CvDeal::AddUnitTrade(PlayerTypes eFrom, int iUnitID)
 	}
 }
 
+/// Insert a technology trade.
+void CvDeal::AddTechTrade(PlayerTypes eFrom, TechTypes eTech)
+{
+	CvAssertMsg(eFrom == m_eFromPlayer || eFrom == m_eToPlayer, "DEAL: Adding deal item for a player that's not actually in this deal!");
+	if (IsPossibleToTradeItem(eFrom, GetOtherPlayer(eFrom), TRADE_ITEM_TECHS, eTech))
+	{
+		CvTradedItem item;
+		item.m_eItemType = TRADE_ITEM_TECHS;
+		item.m_iDuration = 0;
+		item.m_iFinalTurn = -1;
+		item.m_iData1 = (int)eTech;
+		item.m_eFromPlayer = eFrom;
+		m_TradedItems.push_back(item);
+	}
+}
+
 /// Insert adding an embassy to the deal
 void CvDeal::AddAllowEmbassy(PlayerTypes eFrom)
 {
@@ -1826,6 +1869,17 @@ bool CvDeal::IsDualEmpireTreaty(PlayerTypes eFrom)
 	return false;
 }
 
+bool CvDeal::IsTechTrade(PlayerTypes eFrom, TechTypes eTech)
+{
+	TradedItemList::iterator it;
+	for (it = m_TradedItems.begin(); it != m_TradedItems.end(); ++it)
+	{
+		if (it->m_eItemType == TRADE_ITEM_TECHS && it->m_eFromPlayer == eFrom && (TechTypes)it->m_iData1 == eTech)
+			return true;
+	}
+	return false;
+}
+
 bool CvDeal::IsNonAggressionPactTrade(PlayerTypes eFrom)
 {
 	TradedItemList::iterator it;
@@ -1856,6 +1910,7 @@ CvDeal::DealRenewStatus CvDeal::GetItemTradeableState(TradeableItems eTradeItem)
 	case TRADE_ITEM_VOTE_COMMITMENT:
 	case TRADE_ITEM_DIPLOMATIC_MARRIAGE:
 	case TRADE_ITEM_DUAL_EMPIRE_TREATY:
+	case TRADE_ITEM_TECHS:
 	case TRADE_ITEM_NON_AGGRESSION_PACT:
 		return DEAL_NONRENEWABLE;
 		break;
@@ -1960,6 +2015,19 @@ void CvDeal::RemoveUnitTrade(int iUnitID)
 	{
 		if(it->m_eItemType == TRADE_ITEM_UNITS &&
 		        it->m_iData1 == iUnitID)
+		{
+			m_TradedItems.erase(it);
+			break;
+		}
+	}
+}
+
+void CvDeal::RemoveTechTrade(TechTypes eTech)
+{
+	TradedItemList::iterator it;
+	for (it = m_TradedItems.begin(); it != m_TradedItems.end(); ++it)
+	{
+		if (it->m_eItemType == TRADE_ITEM_TECHS && (TechTypes)it->m_iData1 == eTech)
 		{
 			m_TradedItems.erase(it);
 			break;
@@ -2331,8 +2399,86 @@ bool CvGameDeals::RemoveProposedDeal(PlayerTypes eFromPlayer, PlayerTypes eToPla
 	return true;
 }
 
+#endif
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+bool CvDeal::ValidateVassalDemand() const
+{
+	const PlayerTypes eOverlord = GetDemandingPlayer();
+	if (eOverlord == NO_PLAYER || eOverlord < 0 || eOverlord >= MAX_MAJOR_CIVS) return true;
+	const PlayerTypes eVassal = GetOtherPlayer(eOverlord);
+	if (eVassal == NO_PLAYER || eVassal < 0 || eVassal >= MAX_MAJOR_CIVS || GET_PLAYER(eVassal).GetOverlord() != eOverlord) return true;
+	const CvPlayer& kOverlord = GET_PLAYER(eOverlord);
+	const CvPlayer& kVassal = GET_PLAYER(eVassal);
+	int iGold = 0;
+	int iGoldPerTurn = 0;
+	int iCityPopulation = 0;
+	std::vector<int> vResourceDemand(GC.getNumResourceInfos(), 0);
+	bool bHasItem = false;
+	for (TradedItemList::const_iterator it = m_TradedItems.begin(); it != m_TradedItems.end(); ++it)
+	{
+		if (it->m_eFromPlayer != eVassal) return false;
+		bHasItem = true;
+		switch (it->m_eItemType)
+		{
+		case TRADE_ITEM_GOLD:
+			if (it->m_iData1 < 0 || iGold > INT_MAX - it->m_iData1) return false;
+			iGold += it->m_iData1;
+			break;
+		case TRADE_ITEM_GOLD_PER_TURN:
+			if (it->m_iData1 < 0 || iGoldPerTurn > INT_MAX - it->m_iData1) return false;
+			iGoldPerTurn += it->m_iData1;
+			break;
+		case TRADE_ITEM_CITIES:
+		{
+			CvPlot* pPlot = GC.getMap().plot(it->m_iData1, it->m_iData2);
+			CvCity* pCity = pPlot ? pPlot->getPlotCity() : NULL;
+			if (pCity == NULL || pCity->getOwner() != eVassal) return false;
+			for (TradedItemList::const_iterator itPrevious = m_TradedItems.begin(); itPrevious != it; ++itPrevious)
+			{
+				if (itPrevious->m_eItemType == TRADE_ITEM_CITIES && itPrevious->m_iData1 == it->m_iData1 && itPrevious->m_iData2 == it->m_iData2) return false;
+			}
+			iCityPopulation += pCity->getPopulation();
+			break;
+		}
+		case TRADE_ITEM_RESOURCES:
+		{
+			const ResourceTypes eResource = (ResourceTypes)it->m_iData1;
+			if (eResource < 0 || eResource >= GC.getNumResourceInfos() || it->m_iData2 < 0) return false;
+			if (vResourceDemand[eResource] > INT_MAX - it->m_iData2) return false;
+			vResourceDemand[eResource] += it->m_iData2;
+			break;
+		}
+		default: return false;
+		}
+	}
+	if (!bHasItem) return false;
+	const int iCityPercent = kOverlord.GetVassalDemandCityPopulationPercentFor(eVassal);
+	const int iGoldPercent = kOverlord.GetVassalDemandGoldPercentFor(eVassal);
+	const int iGPTPercent = kOverlord.GetVassalDemandGoldPerTurnPercentFor(eVassal);
+	const int iLuxuryPercent = kOverlord.GetVassalDemandLuxuryResourcePercentFor(eVassal);
+	const int iStrategicPercent = kOverlord.GetVassalDemandStrategicResourcePercentFor(eVassal);
+	if (iGold > (std::max(0, kVassal.GetTreasury()->GetGold()) * iGoldPercent) / 100) return false;
+	if (iGoldPerTurn > (std::max(0, kVassal.calculateGoldRate()) * iGPTPercent) / 100) return false;
+	if (iCityPopulation > (std::max(0, kVassal.getTotalPopulation()) * iCityPercent) / 100) return false;
+	for (int iResource = 0; iResource < GC.getNumResourceInfos(); ++iResource)
+	{
+		if (vResourceDemand[iResource] <= 0) continue;
+		CvResourceInfo* pResource = GC.getResourceInfo((ResourceTypes)iResource);
+		if (pResource == NULL) return false;
+		const int iPercent = pResource->getResourceUsage() == RESOURCEUSAGE_LUXURY ? iLuxuryPercent : (pResource->getResourceUsage() == RESOURCEUSAGE_STRATEGIC ? iStrategicPercent : 0);
+		if (iPercent <= 0 || vResourceDemand[iResource] > (std::max(0, kVassal.getNumResourceAvailable((ResourceTypes)iResource, false)) * iPercent) / 100) return false;
+	}
+	return true;
+}
+#endif
+
+#if defined(MOD_AI_MP_DIPLOMACY)
 bool CvDeal::AreAllTradeItemsValid()
 {
+#if defined(MOD_GLOBAL_SUZERAIN)
+	if (GetDemandingPlayer() != NO_PLAYER && !ValidateVassalDemand()) return false;
+#endif
 	TradedItemList::iterator iter;
 	for (iter = m_TradedItems.begin(); iter != m_TradedItems.end(); ++iter)
 	{
@@ -2352,23 +2498,46 @@ bool CvDeal::AreAllTradeItemsValid()
 //--------------------------------------------------------------------------------
 void CvGameDeals::ApplyVassalDealTax(PlayerTypes eRecipient, PlayerTypes eCounterparty, int iAmount, bool bPerTurn)
 {
-	PlayerTypes eVassalTaxOverlord = GET_PLAYER(eRecipient).GetOverlord();
-	if (eVassalTaxOverlord == NO_PLAYER) return;
-	int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(eRecipient);
-	if (iVassalTaxPercent <= 0) return;
-	int iVassalTax = iAmount * iVassalTaxPercent / 100;
-	if (iVassalTax <= 0) return;
-	if (bPerTurn)
+	// The tariff applies when one side is an overlord and the other is not its
+	// vassal. A vassal trades tariff-free with its overlord and with other
+	// vassals.
+	PlayerTypes eOverlord = NO_PLAYER;
+	PlayerTypes ePayer = NO_PLAYER;
+
+	if (GET_PLAYER(eCounterparty).HasAnyVassal() && !GET_PLAYER(eRecipient).IsVassalOf(eCounterparty))
 	{
-		GET_PLAYER(eRecipient).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
-		GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
-		GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPT(eRecipient, eCounterparty, iVassalTax);
+		eOverlord = eCounterparty;
+		ePayer = eRecipient;
+	}
+	else if (GET_PLAYER(eRecipient).HasAnyVassal() && !GET_PLAYER(eCounterparty).IsVassalOf(eRecipient))
+	{
+		eOverlord = eRecipient;
+		ePayer = eCounterparty;
 	}
 	else
 	{
-		GET_PLAYER(eRecipient).GetTreasury()->ChangeGold(-iVassalTax);
-		GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGold(iVassalTax);
-		GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGold(eRecipient, eCounterparty, iVassalTax);
+		return;
+	}
+
+	int iTariffPercent = GET_PLAYER(eOverlord).GetTariffPercentFor(ePayer);
+	if (iTariffPercent <= 0) return;
+
+	int iTariff = iAmount * iTariffPercent / 100;
+	if (iTariff <= 0) return;
+
+	PlayerTypes eOtherSide = (eOverlord == eCounterparty) ? eRecipient : eCounterparty;
+
+	if (bPerTurn)
+	{
+		GET_PLAYER(ePayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iTariff);
+		GET_PLAYER(eOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iTariff);
+		GET_PLAYER(eOverlord).RecordVassalDealGPT(ePayer, eOtherSide, iTariff);
+	}
+	else
+	{
+		GET_PLAYER(ePayer).GetTreasury()->ChangeGold(-iTariff);
+		GET_PLAYER(eOverlord).GetTreasury()->ChangeGold(iTariff);
+		GET_PLAYER(eOverlord).RecordVassalDealGold(ePayer, eOtherSide, iTariff);
 	}
 }
 #endif
@@ -2435,6 +2604,10 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 
 	if(bFoundIt)
 	{
+#if defined(MOD_GLOBAL_SUZERAIN)
+		if (kDeal.GetDemandingPlayer() != NO_PLAYER && !kDeal.ValidateVassalDemand())
+			bValid = false;
+#endif
 
 		TradedItemList::iterator iter;
 		for(iter = kDeal.m_TradedItems.begin(); iter != kDeal.m_TradedItems.end(); ++iter)
@@ -2621,6 +2794,10 @@ void CvGameDeals::FinalizeDealValidAndAccepted(PlayerTypes eFromPlayer, PlayerTy
 			CvCity* pCity = GC.getMap().plot(it->m_iData1, it->m_iData2)->getPlotCity();
 			if(pCity != NULL)
 				GET_PLAYER(eAcceptedToPlayer).acquireCity(pCity, false, true);
+		}
+		else if (it->m_eItemType == TRADE_ITEM_TECHS)
+		{
+			GET_TEAM(eToTeam).setHasTech((TechTypes)it->m_iData1, true, eAcceptedToPlayer, true, true);
 		}
 		else if(it->m_eItemType == TRADE_ITEM_ALLOW_EMBASSY)
 		{
@@ -2867,6 +3044,10 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 
 	if(bFoundIt)
 	{
+#if defined(MOD_GLOBAL_SUZERAIN)
+		if (kDeal.GetDemandingPlayer() != NO_PLAYER && !kDeal.ValidateVassalDemand())
+			bValid = false;
+#endif
 
 		TradedItemList::iterator iter;
 		for(iter = kDeal.m_TradedItems.begin(); iter != kDeal.m_TradedItems.end(); ++iter)
@@ -3040,6 +3221,10 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 					CvCity* pCity = GC.getMap().plot(it->m_iData1, it->m_iData2)->getPlotCity();
 					if(pCity != NULL)
 						GET_PLAYER(eAcceptedToPlayer).acquireCity(pCity, false, true);
+				}
+				else if (it->m_eItemType == TRADE_ITEM_TECHS)
+				{
+					GET_TEAM(eToTeam).setHasTech((TechTypes)it->m_iData1, true, eAcceptedToPlayer, true, true);
 				}
 				else if(it->m_eItemType == TRADE_ITEM_ALLOW_EMBASSY)
 				{
@@ -3710,19 +3895,34 @@ void CvGameDeals::DoEndTradedItem(CvTradedItem* pItem, PlayerTypes eToPlayer, bo
 		fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurn);
 		toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurn);
 #if defined(MOD_GLOBAL_SUZERAIN)
-		// Reverse the vassal deal tax we collected when this GPT deal was made
-		PlayerTypes eVassalTaxOverlord = toPlayer.GetOverlord();
-		if (eVassalTaxOverlord != NO_PLAYER)
+		// Reverse the tariff collected when this GPT deal was made.
 		{
-			int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(eToPlayer);
-			if (iVassalTaxPercent > 0)
+			PlayerTypes eTariffOverlord = NO_PLAYER;
+			PlayerTypes eTariffPayer = NO_PLAYER;
+
+			if (GET_PLAYER(eFromPlayer).HasAnyVassal() && !GET_PLAYER(eToPlayer).IsVassalOf(eFromPlayer))
 			{
-				int iVassalTax = iGoldPerTurn * iVassalTaxPercent / 100;
-				if (iVassalTax > 0)
+				eTariffOverlord = eFromPlayer;
+				eTariffPayer = eToPlayer;
+			}
+			else if (GET_PLAYER(eToPlayer).HasAnyVassal() && !GET_PLAYER(eFromPlayer).IsVassalOf(eToPlayer))
+			{
+				eTariffOverlord = eToPlayer;
+				eTariffPayer = eFromPlayer;
+			}
+
+			if (eTariffOverlord != NO_PLAYER)
+			{
+				int iTariffPercent = GET_PLAYER(eTariffOverlord).GetTariffPercentFor(eTariffPayer);
+				if (iTariffPercent > 0)
 				{
-					toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
-					GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
-					GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPTEnd(eToPlayer, iVassalTax);
+					int iTariff = iGoldPerTurn * iTariffPercent / 100;
+					if (iTariff > 0)
+					{
+						GET_PLAYER(eTariffPayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iTariff);
+						GET_PLAYER(eTariffOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iTariff);
+						GET_PLAYER(eTariffOverlord).RecordVassalDealGPTEnd(eTariffPayer, iTariff);
+					}
 				}
 			}
 		}
@@ -4206,26 +4406,42 @@ void CvGameDeals::PrepareRenewDeal(CvDeal* pOldDeal, const CvDeal* pNewDeal)
 						fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurnDelta);
 						toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurnDelta);
 #if defined(MOD_GLOBAL_SUZERAIN)
-						// Adjust vassal deal tax by the GPT delta (toPlayer is recipient here)
-						// Uses the current tax rate, so if the rate changed since the original deal this delta is approximate.
-						PlayerTypes eVassalTaxOverlord = toPlayer.GetOverlord();
-						if (eVassalTaxOverlord != NO_PLAYER)
+						// Adjust tariff by the GPT delta (toPlayer is the recipient here).
 						{
-							int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(toPlayer.GetID());
-							if (iVassalTaxPercent > 0)
+							PlayerTypes eOverlord = NO_PLAYER;
+							PlayerTypes ePayer = NO_PLAYER;
+							PlayerTypes eFrom = fromPlayer.GetID();
+							PlayerTypes eTo = toPlayer.GetID();
+
+							if (GET_PLAYER(eFrom).HasAnyVassal() && !GET_PLAYER(eTo).IsVassalOf(eFrom))
 							{
-								int iVassalTax = iGoldPerTurnDelta * iVassalTaxPercent / 100;
-								if (iVassalTax > 0)
+								eOverlord = eFrom;
+								ePayer = eTo;
+							}
+							else if (GET_PLAYER(eTo).HasAnyVassal() && !GET_PLAYER(eFrom).IsVassalOf(eTo))
+							{
+								eOverlord = eTo;
+								ePayer = eFrom;
+							}
+
+							if (eOverlord != NO_PLAYER)
+							{
+								int iPercent = GET_PLAYER(eOverlord).GetTariffPercentFor(ePayer);
+								if (iPercent > 0)
 								{
-									toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPT(toPlayer.GetID(), fromPlayer.GetID(), iVassalTax);
-								}
-								else if (iVassalTax < 0)
-								{
-									toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPTEnd(toPlayer.GetID(), -iVassalTax);
+									int iTariff = iGoldPerTurnDelta * iPercent / 100;
+									if (iTariff > 0)
+									{
+										GET_PLAYER(ePayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iTariff);
+										GET_PLAYER(eOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iTariff);
+										GET_PLAYER(eOverlord).RecordVassalDealGPT(ePayer, ePayer == eTo ? eFrom : eTo, iTariff);
+									}
+									else if (iTariff < 0)
+									{
+										GET_PLAYER(ePayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iTariff);
+										GET_PLAYER(eOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iTariff);
+										GET_PLAYER(eOverlord).RecordVassalDealGPTEnd(ePayer, -iTariff);
+									}
 								}
 							}
 						}
@@ -4236,26 +4452,42 @@ void CvGameDeals::PrepareRenewDeal(CvDeal* pOldDeal, const CvDeal* pNewDeal)
 						toPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iGoldPerTurnDelta);
 						fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iGoldPerTurnDelta);
 #if defined(MOD_GLOBAL_SUZERAIN)
-						// Adjust vassal deal tax by the GPT delta (fromPlayer is recipient here)
-						// Uses the current tax rate, so if the rate changed since the original deal this delta is approximate.
-						PlayerTypes eVassalTaxOverlord = fromPlayer.GetOverlord();
-						if (eVassalTaxOverlord != NO_PLAYER)
+						// Adjust tariff by the GPT delta (fromPlayer is the recipient here).
 						{
-							int iVassalTaxPercent = GET_PLAYER(eVassalTaxOverlord).GetVassalTaxPercentFor(fromPlayer.GetID());
-							if (iVassalTaxPercent > 0)
+							PlayerTypes eOverlord = NO_PLAYER;
+							PlayerTypes ePayer = NO_PLAYER;
+							PlayerTypes eFrom = fromPlayer.GetID();
+							PlayerTypes eTo = toPlayer.GetID();
+
+							if (GET_PLAYER(eFrom).HasAnyVassal() && !GET_PLAYER(eTo).IsVassalOf(eFrom))
 							{
-								int iVassalTax = iGoldPerTurnDelta * iVassalTaxPercent / 100;
-								if (iVassalTax > 0)
+								eOverlord = eFrom;
+								ePayer = eTo;
+							}
+							else if (GET_PLAYER(eTo).HasAnyVassal() && !GET_PLAYER(eFrom).IsVassalOf(eTo))
+							{
+								eOverlord = eTo;
+								ePayer = eFrom;
+							}
+
+							if (eOverlord != NO_PLAYER)
+							{
+								int iPercent = GET_PLAYER(eOverlord).GetTariffPercentFor(ePayer);
+								if (iPercent > 0)
 								{
-									fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPT(fromPlayer.GetID(), toPlayer.GetID(), iVassalTax);
-								}
-								else if (iVassalTax < 0)
-								{
-									fromPlayer.GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iVassalTax);
-									GET_PLAYER(eVassalTaxOverlord).RecordVassalDealGPTEnd(fromPlayer.GetID(), -iVassalTax);
+									int iTariff = iGoldPerTurnDelta * iPercent / 100;
+									if (iTariff > 0)
+									{
+										GET_PLAYER(ePayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iTariff);
+										GET_PLAYER(eOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iTariff);
+										GET_PLAYER(eOverlord).RecordVassalDealGPT(ePayer, ePayer == eFrom ? eTo : eFrom, iTariff);
+									}
+									else if (iTariff < 0)
+									{
+										GET_PLAYER(ePayer).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(-iTariff);
+										GET_PLAYER(eOverlord).GetTreasury()->ChangeGoldPerTurnFromDiplomacy(iTariff);
+										GET_PLAYER(eOverlord).RecordVassalDealGPTEnd(ePayer, -iTariff);
+									}
 								}
 							}
 						}
@@ -4451,6 +4683,9 @@ void CvGameDeals::LogDealComplete(CvDeal* pDeal)
 				break;
 			case TRADE_ITEM_VOTE_COMMITMENT:
 				strTemp.Format("***** Vote Commitment: ID %d, Choice %d *****", itemIter->m_iData1, itemIter->m_iData2);
+				break;
+			case TRADE_ITEM_TECHS:
+				strTemp.Format("***** Technology Trade: ID %d *****", itemIter->m_iData1);
 				break;
 			case TRADE_ITEM_NON_AGGRESSION_PACT:
 				strTemp.Format("***** Non-Aggression Pact Trade *****");
@@ -4660,6 +4895,9 @@ void CvGameDeals::LogDealFailed(CvDeal* pDeal, bool bNoRenew, bool bNotAccepted,
 				break;
 			case TRADE_ITEM_DUAL_EMPIRE_TREATY:
 				strTemp.Format("***** Dual Empire Treaty *****");
+				break;
+			case TRADE_ITEM_TECHS:
+				strTemp.Format("***** Technology Trade: ID %d *****", itemIter->m_iData1);
 				break;
 			case TRADE_ITEM_NON_AGGRESSION_PACT:
 				strTemp.Format("***** Non-Aggression Pact Trade *****");

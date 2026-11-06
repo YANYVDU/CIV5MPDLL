@@ -810,11 +810,53 @@ void CvTeam::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst)
 
 
 //	--------------------------------------------------------------------------------
+// Suzerain vision: collect the teams of every vassal held by a player on this team.
+// Rebuilt every turn, so no serialization is needed.
+void CvTeam::UpdateVassalVisionSources()
+{
+	m_viVassalVisionSources.clear();
+	if (!MOD_GLOBAL_SUZERAIN) return;
+
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		PlayerTypes ePlayer = (PlayerTypes)i;
+		CvPlayerAI& kPlayer = GET_PLAYER(ePlayer);
+		if (!kPlayer.isAlive()) continue;
+		if (kPlayer.getTeam() != GetID()) continue;
+
+		const std::vector<int>& vVassals = kPlayer.GetVassals();
+		for (size_t j = 0; j < vVassals.size(); j++)
+		{
+			PlayerTypes eVassal = (PlayerTypes)vVassals[j];
+			if (eVassal < 0 || eVassal >= MAX_MAJOR_CIVS) continue;
+			CvPlayerAI& kVassal = GET_PLAYER(eVassal);
+			if (!kVassal.isAlive()) continue;
+			TeamTypes eVassalTeam = kVassal.getTeam();
+			if (eVassalTeam == NO_TEAM || eVassalTeam == GetID()) continue;
+
+			bool bFound = false;
+			for (size_t k = 0; k < m_viVassalVisionSources.size(); k++)
+			{
+				if (m_viVassalVisionSources[k] == (int)eVassalTeam)
+				{
+					bFound = true;
+					break;
+				}
+			}
+			if (!bFound)
+				m_viVassalVisionSources.push_back((int)eVassalTeam);
+		}
+	}
+}
+
+//	--------------------------------------------------------------------------------
 void CvTeam::doTurn()
 {
 	int iI;
 
 	CvAssertMsg(isAlive(), "isAlive is expected to be true");
+
+	UpdateVassalVisionSources();
 
 	// Barbarians get all Techs that 3/4 of alive players get
 	if(isBarbarian())
@@ -1084,6 +1126,25 @@ bool CvTeam::canDeclareWar(TeamTypes eTeam) const
 		return false;
 	}
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// A court-ordered truce bars the vassal from restarting the war.
+	if (MOD_GLOBAL_SUZERAIN)
+	{
+		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		{
+			PlayerTypes eA = (PlayerTypes)i;
+			if (!GET_PLAYER(eA).isAlive() || GET_PLAYER(eA).getTeam() != GetID()) continue;
+			PlayerTypes eOverlord = GET_PLAYER(eA).GetOverlord();
+			if (eOverlord == NO_PLAYER) continue;
+			for (int j = 0; j < MAX_MAJOR_CIVS; j++)
+			{
+				PlayerTypes eB = (PlayerTypes)j;
+				if (!GET_PLAYER(eB).isAlive() || GET_PLAYER(eB).getTeam() != eTeam) continue;
+				if (GET_PLAYER(eOverlord).IsVassalTruceActive(eA, eB)) return false;
+			}
+		}
+	}
+#endif
 	// A Non-Aggression Pact in force between the two teams forbids declaring war
 	if(GC.getGame().GetGameDeals()->IsNonAggressionPactActive(GetID(), eTeam))
 	{
