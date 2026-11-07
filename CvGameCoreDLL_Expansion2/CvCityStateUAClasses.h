@@ -470,6 +470,8 @@ public:
 	int GetSpyGarrisonYieldModifiers(int i) const;
 	// Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1)
 	int GetSpyKillGainSpyProgress() const;
+	// Prague: killing an enemy spy grants this many Spy Points directly (plain points, 50 = +50, independent feature)
+	int GetSpyKillGainSpyPoints() const;
 	// Melbourne: a city that owns the specified improved resource grants yield percentage modifiers (per YieldType)
 	int GetResourceYieldModifiers(int i, int j) const;
 	// Antananarivo
@@ -691,6 +693,7 @@ private:
 	// Prague
 	int* m_piSpyGarrisonYieldModifiers;
 	int m_iSpyKillGainSpyProgress;
+	int m_iSpyKillGainSpyPoints;
 	// Melbourne
 	int** m_ppiResourceYieldModifiers;
 	// Antananarivo
@@ -992,6 +995,7 @@ public:
 	int GetSpyGarrisonYieldModifier(YieldTypes eYieldType) const;
 	bool HasSpyGarrisonYieldModifiers() const;
 	int GetSpyKillGainSpyProgress() const;
+	int GetSpyKillGainSpyPoints() const;
 	int GetResourceYieldModifier(ResourceTypes eResource, YieldTypes eYield) const;
 	bool HasResourceYieldModifiers() const;
 	// Antananarivo
@@ -1290,6 +1294,7 @@ protected:
 	std::vector<int> m_aiSpyGarrisonYieldModifiers;
 	int m_iSpyGarrisonYieldModifierCount;
 	int m_iSpyKillGainSpyProgress;
+	int m_iSpyKillGainSpyPoints;
 	// Melbourne
 	int** m_ppiResourceYieldModifiers;
 	int m_iResourceYieldModifierCount;

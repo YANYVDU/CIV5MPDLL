@@ -14895,6 +14895,22 @@ void CvPlayer::DoCityStateUASpyKill(int iProgressGained)
 #endif
 }
 
+/// CityState UA (Prague): spy points granted per enemy spy killed (plain points granted to the spy-point pool)
+int CvPlayer::GetSpyKillGainSpyPointsPerKill() const
+{
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if (!MOD_SP_UNIQUE_CITYSTATE)
+		return 0;
+
+	int iPoints = 0;
+	if (m_pCityStateUA)
+		iPoints += m_pCityStateUA->GetSpyKillGainSpyPoints();
+	return iPoints;
+#else
+	return 0;
+#endif
+}
+
 /// CityState UA (Prague): aggregated spy progress gained per enemy spy killed from all sources (currently city-state UA; future policies / buildings accumulate here)
 int CvPlayer::GetSpyKillGainSpyProgressPerKill() const
 {

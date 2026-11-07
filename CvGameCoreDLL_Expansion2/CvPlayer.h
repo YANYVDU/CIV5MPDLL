@@ -2204,6 +2204,7 @@ public:
 	void DoUnitBornYield(UnitClassTypes eUnitClass);
 	void DoCityStateUASpyKill(int iProgressGained);
 	int GetSpyKillGainSpyProgressPerKill() const;
+	int GetSpyKillGainSpyPointsPerKill() const;
 	CvEconomicAI* GetEconomicAI() const;
 	CvMilitaryAI* GetMilitaryAI() const;
 	CvCitySpecializationAI* GetCitySpecializationAI() const;

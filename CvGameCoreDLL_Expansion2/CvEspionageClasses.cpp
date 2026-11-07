@@ -762,9 +762,15 @@ void CvPlayerEspionage::ProcessSpy(uint uiSpyIndex)
 					if (eCityOwner != NO_PLAYER)
 					{
 						CvPlayer& kDefender = GET_PLAYER(eCityOwner);
+						// Legacy CSUA progress pool (100 = one new spy), kept as an independent feature
 						int iSpyKillGainSpyProgress = kDefender.GetSpyKillGainSpyProgressPerKill();
 						if (iSpyKillGainSpyProgress > 0)
 							kDefender.DoCityStateUASpyKill(iSpyKillGainSpyProgress);
+
+						// Spy-point pool (plain points, shared with buildings/policies/beliefs/traits)
+						int iSpyKillGainSpyPoints = kDefender.GetSpyKillGainSpyPointsPerKill();
+						if (iSpyKillGainSpyPoints > 0)
+							kDefender.ChangeSpyPoints(iSpyKillGainSpyPoints);
 					}
 #endif
 				}
@@ -1848,9 +1854,15 @@ void CvPlayerEspionage::SetOutcome(uint uiSpyIndex, uint uiSpyResult, bool bAffe
 				if (eCityOwner != NO_PLAYER)
 				{
 					CvPlayer& kDefender = GET_PLAYER(eCityOwner);
+					// Legacy CSUA progress pool (100 = one new spy), kept as an independent feature
 					int iSpyKillGainSpyProgress = kDefender.GetSpyKillGainSpyProgressPerKill();
 					if (iSpyKillGainSpyProgress > 0)
 						kDefender.DoCityStateUASpyKill(iSpyKillGainSpyProgress);
+
+					// Spy-point pool (plain points, shared with buildings/policies/beliefs/traits)
+					int iSpyKillGainSpyPoints = kDefender.GetSpyKillGainSpyPointsPerKill();
+					if (iSpyKillGainSpyPoints > 0)
+						kDefender.ChangeSpyPoints(iSpyKillGainSpyPoints);
 				}
 #endif
 			}

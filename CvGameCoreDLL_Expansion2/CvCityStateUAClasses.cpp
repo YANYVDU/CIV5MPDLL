@@ -364,6 +364,7 @@ CvCityStateUAEffectEntry::CvCityStateUAEffectEntry(void)
 	, m_piGreatPersonOneShotModifier(nullptr)
 	, m_piSpyGarrisonYieldModifiers(nullptr)
 	, m_iSpyKillGainSpyProgress(0)
+	, m_iSpyKillGainSpyPoints(0)
 	, m_ppiResourceYieldModifiers(NULL)
 	, m_iCoastalCityGrowthThresholdModifier(0)
 	, m_iDiplomaticPrestigePerCity(0)
@@ -576,6 +577,7 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 
 	m_iEnemyCityNoHealBesiegeCount					= kResults.GetInt("EnemyCityNoHealBesiegeCount");
 	m_iSpyKillGainSpyProgress						= kResults.GetInt("SpyKillGainSpyProgress");
+	m_iSpyKillGainSpyPoints						= kResults.GetInt("SpyKillGainSpyPoints");
 
 	m_iCoastalCityGrowthThresholdModifier			= kResults.GetInt("CoastalCityGrowthThresholdModifier");
 	m_iDiplomaticPrestigePerCity					= kResults.GetInt("DiplomaticPrestigePerCity");
@@ -1457,6 +1459,11 @@ int CvCityStateUAEffectEntry::GetSpyKillGainSpyProgress() const
 	return m_iSpyKillGainSpyProgress;
 }
 
+int CvCityStateUAEffectEntry::GetSpyKillGainSpyPoints() const
+{
+	return m_iSpyKillGainSpyPoints;
+}
+
 int CvCityStateUAEffectEntry::GetResourceYieldModifiers(int i, int j) const
 {
 	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
@@ -1831,6 +1838,7 @@ CvPlayerCityStateUA::CvPlayerCityStateUA()
 	, m_ppiBuildingClassYieldModifiers(NULL)
 	, m_iSpyGarrisonYieldModifierCount(0)
 	, m_iSpyKillGainSpyProgress(0)
+	, m_iSpyKillGainSpyPoints(0)
 	, m_ppiResourceYieldModifiers(NULL)
 	, m_iResourceYieldModifierCount(0)
 	, m_iCoastalCityGrowthThresholdModifier(0)
@@ -1967,6 +1975,7 @@ void CvPlayerCityStateUA::Reset()
 	m_iResearchAgreementBreakBonusPercent = 0;
 	m_iBuildingClassYieldModifierCount = 0;
 	m_iSpyKillGainSpyProgress = 0;
+	m_iSpyKillGainSpyPoints = 0;
 	m_iSpyGarrisonYieldModifierCount = 0;
 	m_aiSpyGarrisonYieldModifiers.assign(NUM_YIELD_TYPES, 0);
 	m_iResourceYieldModifierCount = 0;
@@ -2265,6 +2274,7 @@ void CvPlayerCityStateUA::ApplyEffect(int iEffectID, int iChange)
 	m_iResearchAgreementBreakBonusPercent			+= pEffect->GetResearchAgreementBreakBonusPercent() * iChange;
 	m_iEnemyCityNoHealBesiegeCount					+= pEffect->GetEnemyCityNoHealBesiegeCount() * iChange;
 	m_iSpyKillGainSpyProgress						+= pEffect->GetSpyKillGainSpyProgress() * iChange;
+	m_iSpyKillGainSpyPoints						+= pEffect->GetSpyKillGainSpyPoints() * iChange;
 	m_iCoastalCityGrowthThresholdModifier			+= pEffect->GetCoastalCityGrowthThresholdModifier() * iChange;
 	m_iDiplomaticPrestigePerCity					+= pEffect->GetDiplomaticPrestigePerCity() * iChange;
 	{
@@ -2854,6 +2864,11 @@ bool CvPlayerCityStateUA::HasSpyGarrisonYieldModifiers() const
 int CvPlayerCityStateUA::GetSpyKillGainSpyProgress() const
 {
 	return m_iSpyKillGainSpyProgress;
+}
+
+int CvPlayerCityStateUA::GetSpyKillGainSpyPoints() const
+{
+	return m_iSpyKillGainSpyPoints;
 }
 
 int CvPlayerCityStateUA::GetResourceYieldModifier(ResourceTypes eResource, YieldTypes eYield) const
