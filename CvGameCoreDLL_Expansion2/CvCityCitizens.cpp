@@ -475,13 +475,19 @@ void CvCityCitizens::DoTurn()
 #else
 	CvAssertMsg((GetNumCitizensWorkingPlots() + GetTotalSpecialistCount() + GetNumUnassignedCitizens()) <= GetCity()->getPopulation(), "Gameplay: More workers than population in the city.");
 #endif
-	DoReallocateCitizens();
+	{
+		AI_PERF_FORMAT_NESTED("City-AI-perf.csv", ("CvCityCitizens::DoReallocateCitizens, Turn %03d, %s, %s", GC.getGame().getElapsedGameTurns(), m_pCity->GetPlayer()->getCivilizationShortDescription(), m_pCity->getName().c_str()) );
+		DoReallocateCitizens();
+	}
 #if defined(MOD_GLOBAL_CITY_AUTOMATON_WORKERS)
 	CvAssertMsg((GetNumCitizensWorkingPlots() + GetTotalSpecialistCount() + GetNumUnassignedCitizens()) <= GetCity()->getPopulation(true), "Gameplay: More workers than population in the city.");
 #else
 	CvAssertMsg((GetNumCitizensWorkingPlots() + GetTotalSpecialistCount() + GetNumUnassignedCitizens()) <= GetCity()->getPopulation(), "Gameplay: More workers than population in the city.");
 #endif
-	DoSpecialists();
+	{
+		AI_PERF_FORMAT_NESTED("City-AI-perf.csv", ("CvCityCitizens::DoSpecialists, Turn %03d, %s, %s", GC.getGame().getElapsedGameTurns(), m_pCity->GetPlayer()->getCivilizationShortDescription(), m_pCity->getName().c_str()) );
+		DoSpecialists();
+	}
 
 #if defined(MOD_GLOBAL_CITY_AUTOMATON_WORKERS)
 	CvAssertMsg((GetNumCitizensWorkingPlots() + GetTotalSpecialistCount() + GetNumUnassignedCitizens()) <= GetCity()->getPopulation(true), "Gameplay: More workers than population in the city.");
@@ -1620,48 +1626,57 @@ void CvCityCitizens::DoReallocateCitizens()
 	DoValidateForcedWorkingPlots();
 
 	// Remove all of the allocated guys
-	int iNumCitizensToRemove = GetNumCitizensWorkingPlots();
-	for(int iWorkerLoop = 0; iWorkerLoop < iNumCitizensToRemove; iWorkerLoop++)
 	{
-		DoRemoveWorstCitizen();
-	}
-
-	int iSpecialistLoop;
-
-	// Remove Non-Forced Specialists in Buildings
-	int iNumSpecialistsToRemove;
-	BuildingTypes eBuilding;
-	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
-	{
-		eBuilding = (BuildingTypes) iBuildingLoop;
-
-		// Have this Building in the City?
-		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
+		AI_PERF_FORMAT_NESTED("City-AI-perf.csv", ("CvCityCitizens::DoRealloc_RemoveCitizens, Turn %03d, %s, %s", GC.getGame().getElapsedGameTurns(), m_pCity->GetPlayer()->getCivilizationShortDescription(), m_pCity->getName().c_str()) );
+		int iNumCitizensToRemove = GetNumCitizensWorkingPlots();
+		for(int iWorkerLoop = 0; iWorkerLoop < iNumCitizensToRemove; iWorkerLoop++)
 		{
-			iNumSpecialistsToRemove = GetNumSpecialistsInBuilding(eBuilding) - GetNumForcedSpecialistsInBuilding(eBuilding);	// Don't include Forced guys
-
-			// Loop through guys to remove (if there are any)
-			for(iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistsToRemove; iSpecialistLoop++)
-			{
-				DoRemoveSpecialistFromBuilding(eBuilding, /*bForced*/ false);
-			}
+			DoRemoveWorstCitizen();
 		}
 	}
 
-	// Remove Default Specialists
-	int iNumDefaultsToRemove = GetNumDefaultSpecialists() - GetNumForcedDefaultSpecialists();
-	for(iSpecialistLoop = 0; iSpecialistLoop < iNumDefaultsToRemove; iSpecialistLoop++)
 	{
-		ChangeNumDefaultSpecialists(-1);
+		AI_PERF_FORMAT_NESTED("City-AI-perf.csv", ("CvCityCitizens::DoRealloc_RemoveSpecialists, Turn %03d, %s, %s", GC.getGame().getElapsedGameTurns(), m_pCity->GetPlayer()->getCivilizationShortDescription(), m_pCity->getName().c_str()) );
+		int iSpecialistLoop;
+
+		// Remove Non-Forced Specialists in Buildings
+		int iNumSpecialistsToRemove;
+		BuildingTypes eBuilding;
+		for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+		{
+			eBuilding = (BuildingTypes) iBuildingLoop;
+
+			// Have this Building in the City?
+			if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
+			{
+				iNumSpecialistsToRemove = GetNumSpecialistsInBuilding(eBuilding) - GetNumForcedSpecialistsInBuilding(eBuilding);	// Don't include Forced guys
+
+				// Loop through guys to remove (if there are any)
+				for(iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistsToRemove; iSpecialistLoop++)
+				{
+					DoRemoveSpecialistFromBuilding(eBuilding, /*bForced*/ false);
+				}
+			}
+		}
+
+		// Remove Default Specialists
+		int iNumDefaultsToRemove = GetNumDefaultSpecialists() - GetNumForcedDefaultSpecialists();
+		for(iSpecialistLoop = 0; iSpecialistLoop < iNumDefaultsToRemove; iSpecialistLoop++)
+		{
+			ChangeNumDefaultSpecialists(-1);
+		}
 	}
 
 
 
 	// Now put all of the unallocated guys back
-	int iNumToAllocate = GetNumUnassignedCitizens();
-	for(int iUnallocatedLoop = 0; iUnallocatedLoop < iNumToAllocate; iUnallocatedLoop++)
 	{
-		DoAddBestCitizenFromUnassigned();
+		AI_PERF_FORMAT_NESTED("City-AI-perf.csv", ("CvCityCitizens::DoRealloc_ReAddCitizens, Turn %03d, %s, %s", GC.getGame().getElapsedGameTurns(), m_pCity->GetPlayer()->getCivilizationShortDescription(), m_pCity->getName().c_str()) );
+		int iNumToAllocate = GetNumUnassignedCitizens();
+		for(int iUnallocatedLoop = 0; iUnallocatedLoop < iNumToAllocate; iUnallocatedLoop++)
+		{
+			DoAddBestCitizenFromUnassigned();
+		}
 	}
 
 	// do a single update, but treat player happiness as constant
