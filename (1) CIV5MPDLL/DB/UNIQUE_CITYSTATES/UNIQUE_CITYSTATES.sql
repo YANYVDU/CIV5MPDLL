@@ -172,8 +172,7 @@ CREATE TABLE CityStateUAEffects (
     ResearchAgreementBreakBonusPercent              integer DEFAULT 0,
     -- Valletta: enemy city besieged by >= this many of our combat units cannot heal
     EnemyCityNoHealBesiegeCount                      integer DEFAULT 0,
-    -- Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1, 20 = kill 5 gain 1).
-    -- Independent from SpyKillGainSpyPoints below; both apply when a spy is killed.
+    -- Prague: killing an enemy spy grants spy progress toward a new spy (100 = kill 1 gain 1, 20 = kill 5 gain 1)
     SpyKillGainSpyProgress                           integer DEFAULT 0,
     -- Prague: killing an enemy spy grants this many Spy Points directly to the spy-point pool (plain points, 50 = +50).
     -- Independent from SpyKillGainSpyProgress above; both apply when a spy is killed.
