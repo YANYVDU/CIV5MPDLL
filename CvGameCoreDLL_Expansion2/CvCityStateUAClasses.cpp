@@ -2818,7 +2818,7 @@ int CvPlayerCityStateUA::GetBuildingGreatPersonPointsForCity(const CvCity* pCity
 		const BuildingGreatPersonPointsEntry& entry = m_vBuildingGPP[i];
 		if (entry.m_iSpecialist == (int)eSpecialist && entry.m_iPoints > 0)
 		{
-			int iCount = pCity->GetNumBuildingClass((BuildingClassTypes)entry.m_iBuildingClass);
+			int iCount = pCity->GetNumBuildingClassActive((BuildingClassTypes)entry.m_iBuildingClass);
 			iTotal += entry.m_iPoints * iCount;
 		}
 	}

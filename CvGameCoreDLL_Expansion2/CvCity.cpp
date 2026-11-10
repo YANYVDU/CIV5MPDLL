@@ -12924,7 +12924,7 @@ int CvCity::GetLocalHappiness() const
 			int iBCHappy = pCityStateUA->GetBuildingClassHappiness((BuildingClassTypes)iBC);
 			if (iBCHappy != 0)
 			{
-				iLocalHappiness += iBCHappy * GetNumBuildingClass((BuildingClassTypes)iBC);
+				iLocalHappiness += iBCHappy * GetNumBuildingClassActive((BuildingClassTypes)iBC);
 			}
 		}
 	}
@@ -13681,7 +13681,7 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 		iTempMod = 0;
 		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
 		{
-			int iCount = GetNumBuildingClass((BuildingClassTypes)iBC);
+			int iCount = GetNumBuildingClassActive((BuildingClassTypes)iBC);
 			if (iCount > 0)
 				iTempMod += pCityStateUA->GetBuildingClassYieldModifier((BuildingClassTypes)iBC, eIndex) * iCount;
 		}
