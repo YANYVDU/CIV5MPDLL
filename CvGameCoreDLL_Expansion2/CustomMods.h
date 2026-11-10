@@ -988,6 +988,9 @@
 #define MOD_SP_FASTER_AI	 gCustomMods.isSP_FASTER_AI()
 #define MOD_SP_UNIQUE_CITYSTATE gCustomMods.isSP_UNIQUE_CITYSTATE()
 #define MOD_SP_CITYSTATE_BASIC gCustomMods.isSP_CITYSTATE_BASIC()
+// Policy/belief building-class bonuses count every (non-obsolete) building of the class
+// the city owns, instead of only the civilization's own building for that class.
+#define MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES gCustomMods.isSP_BUILDING_CLASS_COUNT_ALL_TYPES()
 #define MOD_LUXURY_ERA_DECAY gCustomMods.isLUXURY_ERA_DECAY()
 
 #define MOD_TRAITS_SPREAD_RELIGION_AFTER_KILLING gCustomMods.isTRAITS_SPREAD_RELIGION_AFTER_KILLING()
@@ -1841,6 +1844,7 @@ public:
 	MOD_OPT_DECL(SP_FASTER_AI);
 	MOD_OPT_DECL(SP_UNIQUE_CITYSTATE);
 	MOD_OPT_DECL(SP_CITYSTATE_BASIC);
+	MOD_OPT_DECL(SP_BUILDING_CLASS_COUNT_ALL_TYPES);
 	MOD_OPT_DECL(LUXURY_ERA_DECAY);
 
 	MOD_OPT_DECL(TRAITS_SPREAD_RELIGION_AFTER_KILLING);

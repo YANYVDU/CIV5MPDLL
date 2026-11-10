@@ -1296,6 +1296,11 @@ public:
 	bool HasBuildingClass(BuildingClassTypes iBuildingClassType) const;
 	int GetNumBuildingClass(BuildingClassTypes iBuildingClassType) const;
 	void ChangeNumBuildingClass(BuildingClassTypes iBuildingClassType, int iValue);
+	// Like GetNumBuildingClass, but counts only non-obsolete buildings (all types of the class).
+	// Maintained incrementally in processBuilding; rebuilt lazily on first use (e.g. after a load).
+	int GetNumBuildingClassActive(BuildingClassTypes iBuildingClassType) const;
+	void ChangeNumBuildingClassActive(BuildingClassTypes iBuildingClassType, int iValue);
+	void RebuildActiveBuildingClassCounts();
 	bool HasAnyWonder() const;
 	bool HasWonder(BuildingTypes iBuildingType) const;
 	bool IsCivilization(CivilizationTypes iCivilizationType) const;
@@ -1913,6 +1918,9 @@ protected:
 	int m_iDefendedAgainstSpreadUntilTurn = 0;
 
 	std::vector<int> m_paiNumBuildingClasses;
+	// Non-obsolete buildings per class; not serialized (rebuilt lazily on first use).
+	std::vector<int> m_paiNumActiveBuildingClasses;
+	bool m_bActiveBuildingClassCountsValid;
 };
 
 namespace FSerialization

@@ -454,6 +454,8 @@ CvCity::CvCity() :
 	, m_iLastTurnWorkerDisbanded(0)
 	, m_iDefendedAgainstSpreadUntilTurn(0)
 	, m_paiNumBuildingClasses()
+	, m_paiNumActiveBuildingClasses()
+	, m_bActiveBuildingClassCountsValid(false)
 {
 	OBJECT_ALLOCATED
 	FSerialization::citiesToCheck.insert(this);
@@ -1713,6 +1715,14 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	{
 		m_paiNumBuildingClasses[i] = 0;
 	}
+	m_paiNumActiveBuildingClasses.clear();
+	m_paiNumActiveBuildingClasses.resize(GC.getNumBuildingClassInfos());
+	for (int i = 0; i < m_paiNumActiveBuildingClasses.size(); ++i)
+	{
+		m_paiNumActiveBuildingClasses[i] = 0;
+	}
+	// Derived state: rebuild on first use (after a load the team data may not be ready yet).
+	m_bActiveBuildingClassCountsValid = false;
 }
 
 
@@ -8692,6 +8702,14 @@ void CvCity::processBuilding(BuildingTypes eBuilding, int iChange, bool bFirst, 
 		owningTeam.changeBuildingClassCount(eBuildingClass, iChange);
 		owningPlayer.changeBuildingClassCount(eBuildingClass, iChange);
 		ChangeNumBuildingClass(eBuildingClass, iChange);
+	}
+
+	// Active (= non-obsolete) class counter. The obsolescence transition arrives here with
+	// bObsolete == true and iChange == -1 (or +1 when un-obsoleting), while a building that is
+	// added or removed is only active when it is not obsolete for the owning team.
+	if (bObsolete || !owningTeam.isObsoleteBuilding(eBuilding))
+	{
+		ChangeNumBuildingClassActive(eBuildingClass, iChange);
 	}
 
 	UpdateReligion(GetCityReligions()->GetReligiousMajority());
@@ -21505,6 +21523,9 @@ void CvCity::read(FDataStream& kStream)
 	}
 	kStream >> m_paiNumBuildingClasses;
 
+	// The active class counter is derived state and is rebuilt lazily on first use, once the
+	// whole game state (including team techs/obsolete building counts) is available.
+
 	CvCityManager::OnCityCreated(this);
 }
 
@@ -23655,6 +23676,59 @@ int CvCity::GetNumBuildingClass(BuildingClassTypes iBuildingClassType) const
 void CvCity::ChangeNumBuildingClass(BuildingClassTypes iBuildingClassType, int iValue)
 {
 	m_paiNumBuildingClasses[iBuildingClassType] += iValue;
+}
+
+//	--------------------------------------------------------------------------------
+/// Like GetNumBuildingClass, but only counts buildings that are not obsolete for the owning team.
+int CvCity::GetNumBuildingClassActive(BuildingClassTypes iBuildingClassType) const
+{
+	if (!m_bActiveBuildingClassCountsValid)
+	{
+		const_cast<CvCity*>(this)->RebuildActiveBuildingClassCounts();
+	}
+	return m_paiNumActiveBuildingClasses[iBuildingClassType];
+}
+
+void CvCity::ChangeNumBuildingClassActive(BuildingClassTypes iBuildingClassType, int iValue)
+{
+	m_paiNumActiveBuildingClasses[iBuildingClassType] += iValue;
+}
+
+//	--------------------------------------------------------------------------------
+/// Rebuilds the active class counter from the city's buildings. Called lazily on first use
+/// (and thus after a load), because the counter is derived state and is not serialized.
+void CvCity::RebuildActiveBuildingClassCounts()
+{
+	m_paiNumActiveBuildingClasses.assign(GC.getNumBuildingClassInfos(), 0);
+
+	CvCityBuildings* pCityBuildings = GetCityBuildings();
+	for (int i = 0; i < GC.getNumBuildingInfos(); i++)
+	{
+		const BuildingTypes eBuilding = (BuildingTypes)i;
+		const int iNumHere = pCityBuildings->GetNumBuilding(eBuilding);
+		if (iNumHere <= 0)
+		{
+			continue;
+		}
+		if (GET_TEAM(getTeam()).isObsoleteBuilding(eBuilding))
+		{
+			continue;
+		}
+
+		const CvBuildingEntry* pEntry = GC.getBuildingInfo(eBuilding);
+		if (pEntry == NULL)
+		{
+			continue;
+		}
+
+		const int iClass = pEntry->GetBuildingClassType();
+		if (iClass >= 0 && iClass < (int)m_paiNumActiveBuildingClasses.size())
+		{
+			m_paiNumActiveBuildingClasses[iClass] += iNumHere;
+		}
+	}
+
+	m_bActiveBuildingClassCountsValid = true;
 }
 
 bool CvCity::HasAnyWonder() const

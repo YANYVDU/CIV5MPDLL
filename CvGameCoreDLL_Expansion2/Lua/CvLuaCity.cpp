@@ -312,6 +312,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(IsHasBuilding);
 #if defined(MOD_API_LUA_EXTENSIONS)
 	Method(GetNumBuildingClass);
+	Method(GetNumBuildingClassActive);
 	Method(IsHasBuildingClass);
 	Method(SetNumRealBuildingClass);
 #endif
@@ -2395,6 +2396,21 @@ int CvLuaCity::lGetNumBuildingClass(lua_State* L)
 		return 1;
 	}
 	lua_pushinteger(L, pkCity->GetNumBuildingClass(eBuildingClassType));
+
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int getNumBuildingClassActive(BuildingClassTypes eBuildingClassType);
+int CvLuaCity::lGetNumBuildingClassActive(lua_State* L)
+{
+	CvCity* pkCity = GetInstance(L);
+	const BuildingClassTypes eBuildingClassType = (BuildingClassTypes)lua_tointeger(L, 2);
+	if (eBuildingClassType == NO_BUILDINGCLASS)
+	{
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+	lua_pushinteger(L, pkCity->GetNumBuildingClassActive(eBuildingClassType));
 
 	return 1;
 }

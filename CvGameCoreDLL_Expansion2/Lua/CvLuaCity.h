@@ -189,6 +189,7 @@ protected:
 	static int lIsHasBuilding(lua_State* L);
 #if defined(MOD_API_LUA_EXTENSIONS)
 	LUAAPIEXTN(GetNumBuildingClass, int, iBuildingClassType);
+	LUAAPIEXTN(GetNumBuildingClassActive, int, iBuildingClassType);
 	LUAAPIEXTN(IsHasBuildingClass, bool, iBuildingClassType);
 	LUAAPIEXTN(SetNumRealBuildingClass, int, iBuildingClassType, iNum);
 #endif

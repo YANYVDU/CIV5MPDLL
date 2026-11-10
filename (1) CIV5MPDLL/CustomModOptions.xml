@@ -1199,6 +1199,8 @@
     <Row Class="6" Name="SP_FASTER_AI" Value="0"/>
     <Row Class="6" Name="SP_UNIQUE_CITYSTATE" Value="0"/>
     <Row Class="6" Name="SP_CITYSTATE_BASIC" Value="0"/>
+    <!-- Policy/belief building-class bonuses count all (non-obsolete) buildings of the class in a city -->
+    <Row Class="6" Name="SP_BUILDING_CLASS_COUNT_ALL_TYPES" Value="0"/>
     <Row Class="6" Name="LUXURY_ERA_DECAY" Value="0"/>
 
     <!-- Wittenberg: base faith cost of the CSUA self-chosen belief purchase, scaled by the game speed FaithPercent -->
