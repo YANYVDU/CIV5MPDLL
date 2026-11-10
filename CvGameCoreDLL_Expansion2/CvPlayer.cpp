@@ -30131,18 +30131,31 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 
 			eBuilding = (BuildingTypes) getCivilizationInfo().getCivilizationBuildings(eBuildingClass);
 
-			if(eBuilding == NO_BUILDING) continue;
-			// No Yield Bonus for Obsoleted Building
-			if(GET_TEAM(getTeam()).isObsoleteBuilding(eBuilding)) continue;
+			int iNumBuildingClass = 0;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+			if (MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+			{
+				// O(1) lookup in the city's per-class counter (every non-obsolete type of the class)
+				iNumBuildingClass = pLoopCity->GetNumBuildingClassActive(eBuildingClass);
+			}
+			else
+#endif
+			{
+				if(eBuilding == NO_BUILDING) continue;
+				// No Yield Bonus for Obsoleted Building
+				if(GET_TEAM(getTeam()).isObsoleteBuilding(eBuilding)) continue;
 
-			CvBuildingEntry* pkBuilding = GC.getBuildingInfo(eBuilding);
-			if(!pkBuilding) continue;
-				
-			iBuildingCount = pLoopCity->GetCityBuildings()->GetNumBuilding(eBuilding);
-			if(iBuildingCount <= 0) continue;
+				CvBuildingEntry* pkBuilding = GC.getBuildingInfo(eBuilding);
+				if(!pkBuilding) continue;
+
+				iNumBuildingClass = pLoopCity->GetCityBuildings()->GetNumBuilding(eBuilding);
+			}
+			if(iNumBuildingClass <= 0) continue;
+
+			iBuildingCount = iNumBuildingClass;
 
 #if defined(MOD_API_UNIFIED_YIELDS)
-			if (isWorldWonderClass(pkBuilding->GetBuildingClassInfo())) {
+			if (isWorldWonderClass(*pkBuildingClassInfo)) {
 				iTotalWonders += iBuildingCount;
 			}
 #endif

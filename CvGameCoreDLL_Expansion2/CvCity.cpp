@@ -9041,25 +9041,37 @@ void CvCity::UpdateReligion(ReligionTypes eNewMajority)
 						continue;
 					}
 
-					CvCivilizationInfo& playerCivilizationInfo = getCivilizationInfo();
-					BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
-
-					if(eBuilding != NO_BUILDING)
+					int iNumBuildingClass = 0;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+					if (MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
 					{
-						if(GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
+						// O(1) lookup in the city's per-class counter (every non-obsolete type of the class)
+						iNumBuildingClass = GetNumBuildingClassActive(eBuildingClass);
+					}
+					else
+#endif
+					{
+						CvCivilizationInfo& playerCivilizationInfo = getCivilizationInfo();
+						BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
+						if(eBuilding != NO_BUILDING)
 						{
-							int iYieldFromBuilding = pReligion->m_Beliefs.GetBuildingClassYieldChange(eBuildingClass, eYield, iFollowers);
+							iNumBuildingClass = GetCityBuildings()->GetNumBuilding(eBuilding);
+						}
+					}
+
+					if(iNumBuildingClass > 0)
+					{
+						int iYieldFromBuilding = pReligion->m_Beliefs.GetBuildingClassYieldChange(eBuildingClass, eYield, iFollowers);
 #if defined(MOD_BUGFIX_MINOR)
-							iYieldFromBuilding *= GetCityBuildings()->GetNumBuilding(eBuilding);
+						iYieldFromBuilding *= iNumBuildingClass;
 #endif
 
-							if (isWorldWonderClass(*pkBuildingClassInfo))
-							{
-								iYieldFromBuilding += pReligion->m_Beliefs.GetYieldChangeWorldWonder(eYield);
-							}
-
-							ChangeBaseYieldRateFromReligion(eYield, iYieldFromBuilding);
+						if (isWorldWonderClass(*pkBuildingClassInfo))
+						{
+							iYieldFromBuilding += pReligion->m_Beliefs.GetYieldChangeWorldWonder(eYield);
 						}
+
+						ChangeBaseYieldRateFromReligion(eYield, iYieldFromBuilding);
 					}
 				}
 			}
@@ -12761,19 +12773,31 @@ int CvCity::GetLocalHappiness() const
 					continue;
 				}
 
-				CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
-				BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
-
-				if(eBuilding != NO_BUILDING)
+				int iNumBuildingClass = 0;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+				if (MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
 				{
-					if(GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
-					{
-#if defined(MOD_BUGFIX_MINOR)
-						iHappinessFromReligion += pReligion->m_Beliefs.GetBuildingClassHappiness(eBuildingClass, iFollowers) * GetCityBuildings()->GetNumBuilding(eBuilding);
-#else
-						iHappinessFromReligion += pReligion->m_Beliefs.GetBuildingClassHappiness(eBuildingClass, iFollowers);
+					// O(1) lookup in the city's per-class counter (every non-obsolete type of the class)
+					iNumBuildingClass = GetNumBuildingClassActive(eBuildingClass);
+				}
+				else
 #endif
+				{
+					CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
+					BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
+					if(eBuilding != NO_BUILDING)
+					{
+						iNumBuildingClass = GetCityBuildings()->GetNumBuilding(eBuilding);
 					}
+				}
+
+				if(iNumBuildingClass > 0)
+				{
+#if defined(MOD_BUGFIX_MINOR)
+					iHappinessFromReligion += pReligion->m_Beliefs.GetBuildingClassHappiness(eBuildingClass, iFollowers) * iNumBuildingClass;
+#else
+					iHappinessFromReligion += pReligion->m_Beliefs.GetBuildingClassHappiness(eBuildingClass, iFollowers);
+#endif
 				}
 			}
 		}
@@ -12785,10 +12809,12 @@ int CvCity::GetLocalHappiness() const
 
 	// Policy Building Mods
 	// The original loop visited every building class in the game for every owned policy.
-	// A class contributes only when the city owns that class's civilization building, so
-	// collect the buildings this city owns once and visit those instead: the same products
+	// Collect the buildings this city owns once and visit those instead: the same products
 	// are added for the same (policy, class) pairs, in a different order but the same sum.
 	// (Same idea as Community Patch PR #13523.)
+	// By default a class contributes only when the city owns that class's civilization
+	// building; SP_BUILDING_CLASS_COUNT_ALL_TYPES lifts that restriction so every building
+	// of the class counts.
 	int iSpecialPolicyBuildingHappiness = 0;
 	typedef std::pair<BuildingTypes, int> OwnedBuilding;
 	std::vector<OwnedBuilding> aBuildingsHere;
@@ -12807,7 +12833,6 @@ int CvCity::GetLocalHappiness() const
 
 	if(!aBuildingsHere.empty())
 	{
-		CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
 		for(int iPolicyLoop = 0; iPolicyLoop < GC.getNumPolicyInfos(); iPolicyLoop++)
 		{
 			PolicyTypes ePolicy = (PolicyTypes)iPolicyLoop;
@@ -12837,11 +12862,18 @@ int CvCity::GetLocalHappiness() const
 					continue;
 				}
 
-				// Only the civilization's building for the class counts (the ConquestDLX scenario
-				// has civ specific wonders whose class building is different or missing)
-				if((BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass) != eBuilding)
+				// Unless SP_BUILDING_CLASS_COUNT_ALL_TYPES is enabled, only the civilization's
+				// building for the class counts (the ConquestDLX scenario has civ specific
+				// wonders whose class building is different or missing).
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+				if(!MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+#endif
 				{
-					continue;
+					CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
+					if((BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass) != eBuilding)
+					{
+						continue;
+					}
 				}
 
 				int iHappiness = pkPolicyInfo->GetBuildingClassHappiness(eBuildingClass);

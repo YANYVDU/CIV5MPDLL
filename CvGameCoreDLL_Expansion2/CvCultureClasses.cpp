@@ -4625,19 +4625,31 @@ void CvCityCulture::CalculateBaseTourismBeforeModifiers(CvString& toolTipSink)
 				continue;
 			}
 
-			CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
-			BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
-
-			if(eBuilding != NO_BUILDING)
+			int iNumBuildingClass = 0;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+			if (MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
 			{
-				if(m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
-				{
-#if defined(MOD_BUGFIX_MINOR)
-					iReligiousArtTourism += pReligion->m_Beliefs.GetBuildingClassTourism(eBuildingClass) * m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding);
-#else
-					iReligiousArtTourism += pReligion->m_Beliefs.GetBuildingClassTourism(eBuildingClass);
+				// O(1) lookup in the city's per-class counter (every non-obsolete type of the class)
+				iNumBuildingClass = m_pCity->GetNumBuildingClassActive(eBuildingClass);
+			}
+			else
 #endif
+			{
+				CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
+				BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
+				if(eBuilding != NO_BUILDING)
+				{
+					iNumBuildingClass = m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding);
 				}
+			}
+
+			if(iNumBuildingClass > 0)
+			{
+#if defined(MOD_BUGFIX_MINOR)
+				iReligiousArtTourism += pReligion->m_Beliefs.GetBuildingClassTourism(eBuildingClass) * iNumBuildingClass;
+#else
+				iReligiousArtTourism += pReligion->m_Beliefs.GetBuildingClassTourism(eBuildingClass);
+#endif
 			}
 		}
 		if(bShouldBuildTip && iReligiousArtTourism != 0)
@@ -4759,28 +4771,44 @@ int CvCityCulture::CalculateBaseTourism(CvString& toolTipSink)
 	int iBuildingModTotal = 0;
 	for(int iBuildingClassLoop = 0; iBuildingClassLoop < GC.getNumBuildingClassInfos(); iBuildingClassLoop++)
 	{
+		const BuildingClassTypes eBuildingClass = (BuildingClassTypes)iBuildingClassLoop;
+
 		CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
-		BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings((BuildingClassTypes)iBuildingClassLoop);
-		if (eBuilding != NO_BUILDING)
+		BuildingTypes eBuilding = (BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass);
+
+		int iNumBuildingClass = 0;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+		if (MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
 		{
-			CvBuildingEntry *pkEntry = GC.getBuildingInfo(eBuilding);
-			if (pkEntry)
-			{
-				iBuildingMod = kPlayer.GetPlayerPolicies()->GetBuildingClassTourismModifier((BuildingClassTypes)iBuildingClassLoop);
-				if (iBuildingMod != 0 && m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
-				{
-					if(bShouldBuildTip)
-					{
-						toolTipSink += "[NEWLINE][ICON_BULLET]";
-						toolTipSink += GetLocalizedText("TXT_KEY_CO_CITY_TOURISM_BUILDING_BONUS", iBuildingMod, pkEntry->GetDescription());
-					}
-#if defined(MOD_BUGFIX_MINOR)
-					iModifier += iBuildingMod * m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding);
-#else
-					iModifier += iBuildingMod;
+			// O(1) lookup in the city's per-class counter (every non-obsolete type of the class)
+			iNumBuildingClass = m_pCity->GetNumBuildingClassActive(eBuildingClass);
+		}
+		else
 #endif
+		{
+			if (eBuilding != NO_BUILDING)
+			{
+				iNumBuildingClass = m_pCity->GetCityBuildings()->GetNumBuilding(eBuilding);
+			}
+		}
+
+		iBuildingMod = kPlayer.GetPlayerPolicies()->GetBuildingClassTourismModifier(eBuildingClass);
+		if (iBuildingMod != 0 && iNumBuildingClass > 0)
+		{
+			if(bShouldBuildTip && eBuilding != NO_BUILDING)
+			{
+				CvBuildingEntry *pkEntry = GC.getBuildingInfo(eBuilding);
+				if (pkEntry)
+				{
+					toolTipSink += "[NEWLINE][ICON_BULLET]";
+					toolTipSink += GetLocalizedText("TXT_KEY_CO_CITY_TOURISM_BUILDING_BONUS", iBuildingMod, pkEntry->GetDescription());
 				}
 			}
+#if defined(MOD_BUGFIX_MINOR)
+			iModifier += iBuildingMod * iNumBuildingClass;
+#else
+			iModifier += iBuildingMod;
+#endif
 		}
 	}
 
