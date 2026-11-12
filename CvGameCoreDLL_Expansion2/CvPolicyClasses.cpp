@@ -155,6 +155,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_iMinorGoldFriendshipMod(0),
 	m_iMinorFriendshipMinimum(0),
 	m_iMinorFriendshipDecayMod(0),
+	m_iMinorFriendshipGrowthMod(0),
 	m_iOtherPlayersMinorFriendshipDecayMod(0),
 	m_iCityStateUnitFrequencyModifier(0),
 	m_iCommonFoeTourismModifier(0),
@@ -521,6 +522,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_iMinorGoldFriendshipMod = kResults.GetInt("MinorGoldFriendshipMod");
 	m_iMinorFriendshipMinimum = kResults.GetInt("MinorFriendshipMinimum");
 	m_iMinorFriendshipDecayMod = kResults.GetInt("MinorFriendshipDecayMod");
+	m_iMinorFriendshipGrowthMod = kResults.GetInt("MinorFriendshipGrowthMod");
 	m_iOtherPlayersMinorFriendshipDecayMod = kResults.GetInt("OtherPlayersMinorFriendshipDecayMod");
 	m_iCityStateUnitFrequencyModifier = kResults.GetInt("CityStateUnitFrequencyModifier");
 	m_iCommonFoeTourismModifier = kResults.GetInt("CommonFoeTourismModifier");
@@ -2336,6 +2338,11 @@ int CvPolicyEntry::GetMinorFriendshipMinimum() const
 int CvPolicyEntry::GetMinorFriendshipDecayMod() const
 {
 	return m_iMinorFriendshipDecayMod;
+}
+
+int CvPolicyEntry::GetMinorFriendshipGrowthMod() const
+{
+	return m_iMinorFriendshipGrowthMod;
 }
 
 /// OTHER PLAYERS' Friendship decay mod with Minors (50 = 150% normal decay)

@@ -8180,6 +8180,7 @@ int CvMinorCivAI::GetFriendshipChangePerTurnTimes100(PlayerTypes ePlayer)
 		int iRecoveryMod = 100;
 		iRecoveryMod += iTraitMod;
 		iRecoveryMod += iReligionMod;
+		iRecoveryMod += kPlayer.GetMinorFriendshipGrowthMod();
 #if defined(MOD_BELIEF_NEW_EFFECT_FOR_SP)
 		iRecoveryMod += GetSameReligionRecoveryModifier(ePlayer);
 #endif

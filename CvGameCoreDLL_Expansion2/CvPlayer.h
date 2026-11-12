@@ -1218,6 +1218,8 @@ public:
 	int GetMinorFriendshipDecayMod() const;
 	void changeGetMinorFriendshipDecayMod(int iChange);
 
+	int GetMinorFriendshipGrowthMod() const;
+
 	bool IsMinorScienceAllies() const;
 	int GetMinorScienceAlliesCount() const;
 	void ChangeMinorScienceAlliesCount(int iChange);
