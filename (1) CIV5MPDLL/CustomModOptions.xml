@@ -1201,6 +1201,11 @@
     <Row Class="6" Name="SP_CITYSTATE_BASIC" Value="0"/>
     <!-- Policy/belief building-class bonuses count all (non-obsolete) buildings of the class in a city -->
     <Row Class="6" Name="SP_BUILDING_CLASS_COUNT_ALL_TYPES" Value="0"/>
+    <!-- Specialist AI searches the best Specialist TYPE in the City-owned slot inventory instead of
+         every building; set to 0 to use the original per-building search -->
+    <Row Class="6" Name="SP_SPECIALIST_AI_BY_TYPE" Value="0"/>
+    <!-- Citizen reallocation plans the whole assignment and applies only the differences -->
+    <Row Class="6" Name="SP_CITIZEN_REALLOC_PLANNED" Value="0"/>
     <Row Class="6" Name="LUXURY_ERA_DECAY" Value="0"/>
 
     <!-- Wittenberg: base faith cost of the CSUA self-chosen belief purchase, scaled by the game speed FaithPercent -->

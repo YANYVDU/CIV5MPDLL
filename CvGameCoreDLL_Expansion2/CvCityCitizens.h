@@ -55,6 +55,9 @@ public:
 	// Specialist AI
 	bool IsAIWantSpecialistRightNow();
 	BuildingTypes GetAIBestSpecialistBuilding(int& iSpecialistValue);
+	// SP_SPECIALIST_AI_BY_TYPE: pick the best Specialist TYPE from the City-owned slot pool
+	// instead of walking every building that offers a slot.
+	SpecialistTypes GetAIBestSpecialist(int& iSpecialistValue);
 	int GetSpecialistValue(SpecialistTypes eSpecialist);
 	bool IsBetterThanDefaultSpecialist(SpecialistTypes eSpecialist);
 
@@ -68,6 +71,8 @@ public:
 	bool DoRemoveWorstCitizen(bool bRemoveForcedStatus = false, SpecialistTypes eDontChangeSpecialist = NO_SPECIALIST, int iCurrentCityPopulation = -1);
 
 	void DoReallocateCitizens();
+	// SP_CITIZEN_REALLOC_PLANNED: plan the whole assignment, then apply only the differences.
+	void DoReallocateCitizensPlanned();
 
 	CvPlot* GetBestCityPlotWithValue(int& iValue, bool bWantBest, bool bWantWorked);
 

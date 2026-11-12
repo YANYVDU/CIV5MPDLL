@@ -12819,16 +12819,12 @@ int CvCity::GetLocalHappiness() const
 	typedef std::pair<BuildingTypes, int> OwnedBuilding;
 	std::vector<OwnedBuilding> aBuildingsHere;
 	aBuildingsHere.reserve(64);
-	const int iNumBuildings = GC.getNumBuildingInfos();
 	CvCityBuildings* pkCityBuildings = GetCityBuildings();
-	for(int iBuildingLoop = 0; iBuildingLoop < iNumBuildings; iBuildingLoop++)
+	const std::vector<BuildingTypes>& aOwnedBuildings = pkCityBuildings->GetOwnedBuildings();
+	for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
 	{
-		BuildingTypes eBuilding = (BuildingTypes)iBuildingLoop;
-		const int iNumHere = pkCityBuildings->GetNumBuilding(eBuilding);
-		if(iNumHere > 0)
-		{
-			aBuildingsHere.push_back(std::make_pair(eBuilding, iNumHere));
-		}
+		const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
+		aBuildingsHere.push_back(std::make_pair(eBuilding, pkCityBuildings->GetNumBuilding(eBuilding)));
 	}
 
 	if(!aBuildingsHere.empty())

@@ -1179,6 +1179,11 @@ public:
 	int GetNumBuilding(BuildingTypes eIndex) const;
 	int GetNumActiveBuilding(BuildingTypes eIndex) const;
 
+	// Building types this City currently owns (GetNumBuilding() > 0), ascending by type.
+	// Lets callers that walk "the buildings this City has" skip scanning every BuildingInfo.
+	const std::vector<BuildingTypes>& GetOwnedBuildings() const;
+	void RebuildOwnedBuildings();
+
 	bool IsBuildingSellable(const CvBuildingEntry& kBuilding) const;
 	void DoSellBuilding(BuildingTypes eIndex);
 	int GetSellBuildingRefund(BuildingTypes eIndex) const;
@@ -1295,6 +1300,10 @@ private:
 	int* m_paiBuildingOriginalTime;
 	int* m_paiNumRealBuilding;
 	int* m_paiNumFreeBuilding;
+
+	// Kept in step with GetNumBuilding() by the two building setters; rebuilt after a load.
+	std::vector<BuildingTypes> m_vOwnedBuildings;
+	void UpdateOwnedBuilding(BuildingTypes eIndex);
 
 #if defined(MOD_ROG_CORE)
 	std::vector<BuildingTypes> m_buildingsThatExistAtLeastOnce;

@@ -477,7 +477,14 @@ void CvCityCitizens::DoTurn()
 #endif
 	{
 		AI_PERF_FORMAT_NESTED("City-AI-perf.csv", ("CvCityCitizens::DoReallocateCitizens, Turn %03d, %s, %s", GC.getGame().getElapsedGameTurns(), m_pCity->GetPlayer()->getCivilizationShortDescription(), m_pCity->getName().c_str()) );
-		DoReallocateCitizens();
+		if (MOD_SP_CITIZEN_REALLOC_PLANNED)
+		{
+			DoReallocateCitizensPlanned();
+		}
+		else
+		{
+			DoReallocateCitizens();
+		}
 	}
 #if defined(MOD_GLOBAL_CITY_AUTOMATON_WORKERS)
 	CvAssertMsg((GetNumCitizensWorkingPlots() + GetTotalSpecialistCount() + GetNumUnassignedCitizens()) <= GetCity()->getPopulation(true), "Gameplay: More workers than population in the city.");
@@ -1154,6 +1161,57 @@ BuildingTypes CvCityCitizens::GetAIBestSpecialistBuilding(int& iSpecialistValue)
 	return eBestBuilding;
 }
 
+/// What is the Specialist Type the AI likes the most right now?
+/// Specialist slots belong to the City (see CvCity::GetMaxSpecialistCount), so the choice is made
+/// per specialist TYPE: a building only supplies the slot the citizen ends up sitting in, and
+/// DoAddSpecialist() picks that building on its own.
+SpecialistTypes CvCityCitizens::GetAIBestSpecialist(int& iSpecialistValue)
+{
+	SpecialistTypes eBestSpecialist = NO_SPECIALIST;
+	int iBestSpecialistValue = -1;
+	int iBestUnmodifiedSpecialistValue = -1;
+
+	const int iNumSpecialistInfos = GC.getNumSpecialistInfos();
+	for(int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistInfos; iSpecialistLoop++)
+	{
+		const SpecialistTypes eSpecialist = static_cast<SpecialistTypes>(iSpecialistLoop);
+
+		// The default (slacker) Specialist is not a slot type: it is handed out by
+		// ChangeNumDefaultSpecialists() as the last resort and DoAddSpecialist() refuses it, so it
+		// must never win the search here.
+		if(eSpecialist == (SpecialistTypes) GC.getDEFAULT_SPECIALIST())
+		{
+			continue;
+		}
+
+		// City-wide slot inventory and the population cap; there is no per-building check any more
+		if(!IsCanAddSpecialist(eSpecialist))
+		{
+			continue;
+		}
+
+		int iValue = GetSpecialistValue(eSpecialist);
+
+		// A type with more slots gets a small bonus (10% each), the same shape as the old
+		// per-building bias but read from the City-owned slot inventory.
+		const int iSlots = GetCity()->GetMaxSpecialistCount(eSpecialist);
+		int iTemp = ((iSlots - 1) * iValue * 10);
+		iTemp /= 100;
+		iValue += iTemp;
+
+		if(iValue > iBestSpecialistValue)
+		{
+			eBestSpecialist = eSpecialist;
+			iBestSpecialistValue = iValue;
+			iBestUnmodifiedSpecialistValue = iValue - iTemp;
+		}
+	}
+
+	// Callers compare this against the best Plot value, so it stays the value WITHOUT the bias
+	iSpecialistValue = iBestUnmodifiedSpecialistValue;
+	return eBestSpecialist;
+}
+
 /// How valuable is eSpecialist?
 int CvCityCitizens::GetSpecialistValue(SpecialistTypes eSpecialist)
 {
@@ -1398,36 +1456,59 @@ bool CvCityCitizens::DoAddBestCitizenFromUnassigned()
 
 	// First Specialist Pass
 	int iSpecialistValue = 0;
+	SpecialistTypes eBestSpecialist = NO_SPECIALIST;
 	BuildingTypes eBestSpecialistBuilding = NO_BUILDING;
+	bool bSpecialistSearched = false;
+
 	if (!IsNoAutoAssignSpecialists())
 	{
-		eBestSpecialistBuilding = GetAIBestSpecialistBuilding(iSpecialistValue);
+		if (MOD_SP_SPECIALIST_AI_BY_TYPE)
+		{
+			// Specialist slots belong to the City, so the best slot is searched per Specialist TYPE
+			// and DoAddSpecialist() resolves the building that supplies it.
+			eBestSpecialist = GetAIBestSpecialist(iSpecialistValue);
+			bSpecialistSearched = true;
+		}
+		else
+		{
+			eBestSpecialistBuilding = GetAIBestSpecialistBuilding(iSpecialistValue);
+			if (eBestSpecialistBuilding != NO_BUILDING)
+			{
+				CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBestSpecialistBuilding);
+				if (pkBuildingInfo)
+				{
+					eBestSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+				}
+			}
+		}
 	}
 
 	bool bBetterThanSlacker = false;
-	if (eBestSpecialistBuilding != NO_BUILDING)
+	if (eBestSpecialist != NO_SPECIALIST)
 	{
-		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBestSpecialistBuilding);
-		if(pkBuildingInfo)
+		// Must not be worse than a default Specialist for our focus!
+		if (IsBetterThanDefaultSpecialist(eBestSpecialist))
 		{
-			SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
-			// Must not be worse than a default Specialist for our focus!
-			if (IsBetterThanDefaultSpecialist(eSpecialist))
-			{
-				bBetterThanSlacker = true;
-			}
+			bBetterThanSlacker = true;
 		}
 	}
 
 	int iBestPlotValue = 0;
 	CvPlot* pBestPlot = GetBestCityPlotWithValue(iBestPlotValue, /*bBest*/ true, /*bWorked*/ false);
 
-	bool bSpecialistBetterThanPlot = (eBestSpecialistBuilding != NO_BUILDING && iSpecialistValue >= iBestPlotValue);
+	bool bSpecialistBetterThanPlot = (eBestSpecialist != NO_SPECIALIST && iSpecialistValue >= iBestPlotValue);
 
 	// Is there a Specialist we can assign?
 	if (bSpecialistBetterThanPlot && bBetterThanSlacker)
 	{
-		DoAddSpecialistToBuilding(eBestSpecialistBuilding, /*bForced*/ false);
+		if (MOD_SP_SPECIALIST_AI_BY_TYPE)
+		{
+			DoAddSpecialist(eBestSpecialist, /*bForced*/ false);
+		}
+		else
+		{
+			DoAddSpecialistToBuilding(eBestSpecialistBuilding, /*bForced*/ false);
+		}
 		return true;
 	}
 	// Found a Valid Plot to place a guy?
@@ -1448,18 +1529,40 @@ bool CvCityCitizens::DoAddBestCitizenFromUnassigned()
 		{
 			if (!GET_PLAYER(GetOwner()).isHuman() || !IsNoAutoAssignSpecialists())
 			{
-				BuildingTypes eBestBuilding = GetAIBestSpecialistBuilding(iSpecialistValue);
-				if(eBestBuilding != NO_BUILDING)
+				if (MOD_SP_SPECIALIST_AI_BY_TYPE)
 				{
-					CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBestBuilding);
-					if(pkBuildingInfo)
+					// The first pass already ran the search unless auto-assign is turned off
+					SpecialistTypes eFallbackSpecialist = eBestSpecialist;
+					if (!bSpecialistSearched)
 					{
-						SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+						eFallbackSpecialist = GetAIBestSpecialist(iSpecialistValue);
+					}
+
+					if(eFallbackSpecialist != NO_SPECIALIST)
+					{
 						// Must not be worse than a default Specialist for our focus!
-						if (IsBetterThanDefaultSpecialist(eSpecialist))
+						if (IsBetterThanDefaultSpecialist(eFallbackSpecialist))
 						{
-							DoAddSpecialistToBuilding(eBestBuilding, false);
+							DoAddSpecialist(eFallbackSpecialist, false);
 							return true;
+						}
+					}
+				}
+				else
+				{
+					BuildingTypes eBestBuilding = GetAIBestSpecialistBuilding(iSpecialistValue);
+					if(eBestBuilding != NO_BUILDING)
+					{
+						CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBestBuilding);
+						if(pkBuildingInfo)
+						{
+							SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+							// Must not be worse than a default Specialist for our focus!
+							if (IsBetterThanDefaultSpecialist(eSpecialist))
+							{
+								DoAddSpecialistToBuilding(eBestBuilding, false);
+								return true;
+							}
 						}
 					}
 				}
@@ -1641,21 +1744,17 @@ void CvCityCitizens::DoReallocateCitizens()
 
 		// Remove Non-Forced Specialists in Buildings
 		int iNumSpecialistsToRemove;
-		BuildingTypes eBuilding;
-		for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+		const std::vector<BuildingTypes>& aOwnedBuildings = GetCity()->GetCityBuildings()->GetOwnedBuildings();
+		for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
 		{
-			eBuilding = (BuildingTypes) iBuildingLoop;
+			const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
 
-			// Have this Building in the City?
-			if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) > 0)
+			iNumSpecialistsToRemove = GetNumSpecialistsInBuilding(eBuilding) - GetNumForcedSpecialistsInBuilding(eBuilding);	// Don't include Forced guys
+
+			// Loop through guys to remove (if there are any)
+			for(iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistsToRemove; iSpecialistLoop++)
 			{
-				iNumSpecialistsToRemove = GetNumSpecialistsInBuilding(eBuilding) - GetNumForcedSpecialistsInBuilding(eBuilding);	// Don't include Forced guys
-
-				// Loop through guys to remove (if there are any)
-				for(iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistsToRemove; iSpecialistLoop++)
-				{
-					DoRemoveSpecialistFromBuilding(eBuilding, /*bForced*/ false);
-				}
+				DoRemoveSpecialistFromBuilding(eBuilding, /*bForced*/ false);
 			}
 		}
 
@@ -1678,6 +1777,327 @@ void CvCityCitizens::DoReallocateCitizens()
 			DoAddBestCitizenFromUnassigned();
 		}
 	}
+
+	// do a single update, but treat player happiness as constant
+	m_pCity->UpdateAllNonPlotYields();
+}
+
+/// SP_CITIZEN_REALLOC_PLANNED: same assignment as DoReallocateCitizens(), but the assignment is
+/// planned first and only the differences are applied to the City. A City whose citizens are
+/// already where they belong therefore costs a few dozen comparisons instead of a full
+/// "unassign everybody, then assign everybody again" pass.
+void CvCityCitizens::DoReallocateCitizensPlanned()
+{
+	DoValidateForcedWorkingPlots();
+
+	CvCity* pCity = GetCity();
+	CvCityBuildings* pBuildings = pCity->GetCityBuildings();
+
+#if defined(MOD_GLOBAL_CITY_AUTOMATON_WORKERS)
+	const int iPopulation = pCity->getPopulation(true);
+#else
+	const int iPopulation = pCity->getPopulation();
+#endif
+
+	const int iNumSpecialistTypes = GC.getNumSpecialistInfos();
+	const SpecialistTypes eDefaultSpecialist = (SpecialistTypes) GC.getDEFAULT_SPECIALIST();
+
+	// Forced Specialists are never removed, so every plan keeps them where they are
+	std::vector<int> aiForcedSpecialists(iNumSpecialistTypes, 0);
+	int iNumForced = 0;
+	{
+		const std::vector<BuildingTypes>& aOwnedBuildings = pBuildings->GetOwnedBuildings();
+		for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
+		{
+			const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
+			CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+			if(pkBuildingInfo == NULL)
+			{
+				continue;
+			}
+
+			const SpecialistTypes eSpecialist = (SpecialistTypes) pkBuildingInfo->GetSpecialistType();
+			if(eSpecialist == NO_SPECIALIST)
+			{
+				continue;
+			}
+
+			const int iForced = GetNumForcedSpecialistsInBuilding(eBuilding);
+			if(iForced > 0)
+			{
+				aiForcedSpecialists[eSpecialist] += iForced;
+				iNumForced += iForced;
+			}
+		}
+	}
+	iNumForced += GetNumForcedDefaultSpecialists();
+
+	// Citizens this pass has to place (the forced ones stay assigned)
+	const int iCitizensToPlace = iPopulation - iNumForced;
+
+	// ---- 1. Value every candidate once ----
+	// GetPlotValue() and GetSpecialistValue() read the per-turn static yield cache, which does not
+	// change while citizens are moved around, so one evaluation per candidate is enough.
+#if defined(MOD_GLOBAL_CITY_WORKING)
+	const int iNumPlotIndices = pCity->GetNumWorkablePlots();
+#else
+	const int iNumPlotIndices = NUM_CITY_PLOTS;
+#endif
+
+	std::vector<int> aiPlotValue(iNumPlotIndices, 0);
+	std::vector<CvPlot*> apPlots(iNumPlotIndices, NULL);
+	std::vector<char> abPlotUsable(iNumPlotIndices, 0);
+	std::vector<char> abPlotPlanned(iNumPlotIndices, 0);
+
+	for(int iPlotLoop = 0; iPlotLoop < iNumPlotIndices; iPlotLoop++)
+	{
+		if(iPlotLoop == CITY_HOME_PLOT)
+		{
+			continue;
+		}
+
+		CvPlot* pPlot = GetCityPlotFromIndex(iPlotLoop);
+		if(pPlot == NULL)
+		{
+			continue;
+		}
+
+		// Only Plots this City controls can be worked (this is what the classic search checks)
+		if(pPlot->getWorkingCity() == NULL || pPlot->getWorkingCity()->GetID() != pCity->GetID())
+		{
+			continue;
+		}
+
+		if(!IsCanWork(pPlot))
+		{
+			continue;
+		}
+
+		int iValue = GetPlotValue(pPlot, /*bUseAllowGrowthFlag*/ true);
+		if(IsForcedWorkingPlot(pPlot))
+		{
+			// Forced Plots are picked first, exactly like the +10000 in GetBestCityPlotWithValue()
+			iValue += 10000;
+		}
+
+		apPlots[iPlotLoop] = pPlot;
+		aiPlotValue[iPlotLoop] = iValue;
+		abPlotUsable[iPlotLoop] = 1;
+	}
+
+	std::vector<int> aiSpecialistValue(iNumSpecialistTypes, 0);
+	std::vector<int> aiSpecialistRawValue(iNumSpecialistTypes, 0);
+	std::vector<char> abSpecialistUsable(iNumSpecialistTypes, 0);
+	std::vector<int> aiSpecialistPlanned(iNumSpecialistTypes, 0);
+
+	if(!IsNoAutoAssignSpecialists())
+	{
+		for(int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistTypes; iSpecialistLoop++)
+		{
+			if(iSpecialistLoop == (int) eDefaultSpecialist)
+			{
+				continue;
+			}
+
+			const SpecialistTypes eSpecialist = (SpecialistTypes) iSpecialistLoop;
+			const int iSlots = pCity->GetMaxSpecialistCount(eSpecialist);
+			if(iSlots <= 0)
+			{
+				continue;
+			}
+
+			const int iValue = GetSpecialistValue(eSpecialist);
+			// Same bias GetAIBestSpecialist() applies when it ranks the types
+			const int iBias = ((iSlots - 1) * iValue * 10) / 100;
+
+			aiSpecialistRawValue[iSpecialistLoop] = iValue;
+			aiSpecialistValue[iSpecialistLoop] = iValue + iBias;
+			abSpecialistUsable[iSpecialistLoop] = 1;
+		}
+	}
+
+	const bool bMayAssignSpecialist =
+		!GET_PLAYER(GetOwner()).isHuman() || !IsNoAutoAssignSpecialists();
+
+	int iNumPlannedPlots = 0;
+	int iNumPlannedSpecialists = 0;
+	int iNumPlannedSlackers = 0;
+
+	// ---- 2. Greedy plan, decision order identical to DoAddBestCitizenFromUnassigned() ----
+	for(int iCitizen = 0; iCitizen < iCitizensToPlace; iCitizen++)
+	{
+		SpecialistTypes eBestSpecialist = NO_SPECIALIST;
+		int iBestSpecialistValue = -1;
+		for(int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistTypes; iSpecialistLoop++)
+		{
+			if(!abSpecialistUsable[iSpecialistLoop])
+			{
+				continue;
+			}
+
+			const SpecialistTypes eSpecialist = (SpecialistTypes) iSpecialistLoop;
+			const int iAssigned = aiForcedSpecialists[iSpecialistLoop] + aiSpecialistPlanned[iSpecialistLoop];
+
+			// Same two limits IsCanAddSpecialist() enforces
+			if(iAssigned >= pCity->GetMaxSpecialistCount(eSpecialist) || iAssigned >= iPopulation)
+			{
+				continue;
+			}
+
+			if(aiSpecialistValue[iSpecialistLoop] > iBestSpecialistValue)
+			{
+				iBestSpecialistValue = aiSpecialistValue[iSpecialistLoop];
+				eBestSpecialist = eSpecialist;
+			}
+		}
+
+		int iBestPlotIndex = -1;
+		int iBestPlotValue = -1;
+		for(int iPlotLoop = 0; iPlotLoop < iNumPlotIndices; iPlotLoop++)
+		{
+			if(!abPlotUsable[iPlotLoop] || abPlotPlanned[iPlotLoop])
+			{
+				continue;
+			}
+
+			if(aiPlotValue[iPlotLoop] > iBestPlotValue)
+			{
+				iBestPlotValue = aiPlotValue[iPlotLoop];
+				iBestPlotIndex = iPlotLoop;
+			}
+		}
+
+		const bool bSpecialistExists = (eBestSpecialist != NO_SPECIALIST);
+		const bool bBetterThanSlacker = bSpecialistExists && IsBetterThanDefaultSpecialist(eBestSpecialist);
+		// With no Plot left GetBestCityPlotWithValue() reports -1, which any Specialist beats
+		const int iBestPlotValueOrMinusOne = (iBestPlotIndex >= 0) ? iBestPlotValue : -1;
+		const bool bSpecialistBetterThanPlot =
+			bSpecialistExists && aiSpecialistRawValue[eBestSpecialist] >= iBestPlotValueOrMinusOne;
+
+		if(bSpecialistBetterThanPlot && bBetterThanSlacker)
+		{
+			aiSpecialistPlanned[eBestSpecialist]++;
+			iNumPlannedSpecialists++;
+		}
+		else if(!bSpecialistBetterThanPlot && iBestPlotIndex >= 0)
+		{
+			abPlotPlanned[iBestPlotIndex] = 1;
+			iNumPlannedPlots++;
+		}
+		else if(bMayAssignSpecialist && bBetterThanSlacker)
+		{
+			// Parity with the fallback branch of DoAddBestCitizenFromUnassigned(): a Specialist that
+			// beats the remaining Plots is taken here; one that loses to a slacker is not.
+			aiSpecialistPlanned[eBestSpecialist]++;
+			iNumPlannedSpecialists++;
+		}
+		else
+		{
+			iNumPlannedSlackers++;
+		}
+	}
+
+	// ---- 3. Apply only the differences ----
+	// Removals first, so the unassigned pool holds exactly the citizens handed out below.
+	for(int iPlotLoop = 0; iPlotLoop < iNumPlotIndices; iPlotLoop++)
+	{
+		if(iPlotLoop == CITY_HOME_PLOT)
+		{
+			continue;
+		}
+
+		CvPlot* pPlot = GetCityPlotFromIndex(iPlotLoop);
+		if(pPlot == NULL || !IsWorkingPlot(pPlot))
+		{
+			continue;
+		}
+
+		if(!abPlotPlanned[iPlotLoop])
+		{
+			SetWorkingPlot(pPlot, false);
+		}
+	}
+
+	for(int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistTypes; iSpecialistLoop++)
+	{
+		if(iSpecialistLoop == (int) eDefaultSpecialist)
+		{
+			continue;
+		}
+
+		const SpecialistTypes eSpecialist = (SpecialistTypes) iSpecialistLoop;
+		const int iTarget = aiForcedSpecialists[iSpecialistLoop] + aiSpecialistPlanned[iSpecialistLoop];
+		int iToRemove = GetSpecialistCount(eSpecialist) - iTarget;
+		if(iToRemove <= 0)
+		{
+			continue;
+		}
+
+		const std::vector<BuildingTypes>& aOwnedBuildings = pBuildings->GetOwnedBuildings();
+		for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size() && iToRemove > 0; iBuildingLoop++)
+		{
+			const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
+			CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+			if(pkBuildingInfo == NULL || (SpecialistTypes) pkBuildingInfo->GetSpecialistType() != eSpecialist)
+			{
+				continue;
+			}
+
+			// Only the non-forced ones may go, exactly like DoReallocateCitizens()
+			int iRemovable = GetNumSpecialistsInBuilding(eBuilding) - GetNumForcedSpecialistsInBuilding(eBuilding);
+			while(iRemovable > 0 && iToRemove > 0)
+			{
+				DoRemoveSpecialistFromBuilding(eBuilding, /*bForced*/ false);
+				iRemovable--;
+				iToRemove--;
+			}
+		}
+
+		// Anything left sits in the City pool without a building (slots from policies/Lua)
+		while(iToRemove > 0 && DoRemoveSpecialist(eSpecialist, /*bForced*/ false))
+		{
+			iToRemove--;
+		}
+	}
+
+	const int iTargetDefaultSpecialists = GetNumForcedDefaultSpecialists() + iNumPlannedSlackers;
+	if(GetNumDefaultSpecialists() > iTargetDefaultSpecialists)
+	{
+		ChangeNumDefaultSpecialists(iTargetDefaultSpecialists - GetNumDefaultSpecialists());
+	}
+
+	// Additions
+	for(int iPlotLoop = 0; iPlotLoop < iNumPlotIndices; iPlotLoop++)
+	{
+		if(!abPlotPlanned[iPlotLoop] || IsWorkingPlot(apPlots[iPlotLoop]))
+		{
+			continue;
+		}
+
+		SetWorkingPlot(apPlots[iPlotLoop], true);
+	}
+
+	for(int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistTypes; iSpecialistLoop++)
+	{
+		if(iSpecialistLoop == (int) eDefaultSpecialist)
+		{
+			continue;
+		}
+
+		const SpecialistTypes eSpecialist = (SpecialistTypes) iSpecialistLoop;
+		const int iTarget = aiForcedSpecialists[iSpecialistLoop] + aiSpecialistPlanned[iSpecialistLoop];
+		for(int iToAdd = iTarget - GetSpecialistCount(eSpecialist); iToAdd > 0; iToAdd--)
+		{
+			DoAddSpecialist(eSpecialist, /*bForced*/ false);
+		}
+	}
+
+	if(GetNumDefaultSpecialists() < iTargetDefaultSpecialists)
+	{
+		ChangeNumDefaultSpecialists(iTargetDefaultSpecialists - GetNumDefaultSpecialists());
+	}
+
+	CvAssertMsg(GetNumUnassignedCitizens() == 0, "Planned reallocation left citizens without a job");
 
 	// do a single update, but treat player happiness as constant
 	m_pCity->UpdateAllNonPlotYields();
@@ -2533,18 +2953,12 @@ int CvCityCitizens::GetNumSpecialistsInBuildings(SpecialistTypes eSpecialist)
 {
 	int iNumSpecialists = 0;
 
-	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	const std::vector<BuildingTypes>& aOwnedBuildings = GetCity()->GetCityBuildings()->GetOwnedBuildings();
+	for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
 	{
-		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
+		const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
 
 		if(m_aiNumSpecialistsInBuilding[eBuilding] <= 0)
-		{
-			continue;
-		}
-
-		// A building the City no longer owns holds nobody; skipping it keeps the total here
-		// from running ahead of the city-wide count of this type.
-		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) <= 0)
 		{
 			continue;
 		}
@@ -2571,14 +2985,10 @@ BuildingTypes CvCityCitizens::GetSpecialistRemovalBuilding(SpecialistTypes eSpec
 	BuildingTypes eBestBuilding = NO_BUILDING;
 	int iMostSpecialists = 0;
 
-	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	const std::vector<BuildingTypes>& aOwnedBuildings = GetCity()->GetCityBuildings()->GetOwnedBuildings();
+	for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
 	{
-		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
-
-		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) <= 0)
-		{
-			continue;
-		}
+		const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
 
 		if(m_aiNumSpecialistsInBuilding[eBuilding] <= iMostSpecialists)
 		{
@@ -2607,14 +3017,10 @@ BuildingTypes CvCityCitizens::GetSpecialistProviderBuilding(SpecialistTypes eSpe
 	BuildingTypes eBestBuilding = NO_BUILDING;
 	int iBestFreeSlots = 0;
 
-	for(int iBuildingLoop = 0; iBuildingLoop < GC.getNumBuildingInfos(); iBuildingLoop++)
+	const std::vector<BuildingTypes>& aOwnedBuildings = GetCity()->GetCityBuildings()->GetOwnedBuildings();
+	for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
 	{
-		const BuildingTypes eBuilding = static_cast<BuildingTypes>(iBuildingLoop);
-
-		if(GetCity()->GetCityBuildings()->GetNumBuilding(eBuilding) <= 0)
-		{
-			continue;
-		}
+		const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
 
 		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
 		if(pkBuildingInfo == NULL || (SpecialistTypes) pkBuildingInfo->GetSpecialistType() != eSpecialist)
@@ -2622,7 +3028,19 @@ BuildingTypes CvCityCitizens::GetSpecialistProviderBuilding(SpecialistTypes eSpe
 			continue;
 		}
 
-		const int iFreeSlots = pkBuildingInfo->GetSpecialistCount() - m_aiNumSpecialistsInBuilding[eBuilding];
+		const int iNumAssigned = m_aiNumSpecialistsInBuilding[eBuilding];
+
+		// With the type-based search the City-owned slot inventory decides whether a Specialist can
+		// be added, so only hand out a building that can really take the citizen (the same two limits
+		// DoAddSpecialistInternal() enforces). Without the option this keeps the old behaviour.
+		if (MOD_SP_SPECIALIST_AI_BY_TYPE &&
+		        (iNumAssigned >= pkBuildingInfo->GetSpecialistCount() ||
+		         iNumAssigned >= GC.getMAX_SPECIALISTS_FROM_BUILDING()))
+		{
+			continue;
+		}
+
+		const int iFreeSlots = pkBuildingInfo->GetSpecialistCount() - iNumAssigned;
 		if(iFreeSlots > iBestFreeSlots)
 		{
 			iBestFreeSlots = iFreeSlots;

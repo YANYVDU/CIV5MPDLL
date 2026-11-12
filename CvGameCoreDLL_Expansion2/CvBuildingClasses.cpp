@@ -4923,9 +4923,58 @@ void CvCityBuildings::Uninit()
 }
 
 /// Reset status arrays to all false
+/// Building types this City currently owns, ascending by type
+const std::vector<BuildingTypes>& CvCityBuildings::GetOwnedBuildings() const
+{
+	return m_vOwnedBuildings;
+}
+
+/// Rebuild the owned-building list from the per-type counts
+void CvCityBuildings::RebuildOwnedBuildings()
+{
+	m_vOwnedBuildings.clear();
+
+	if(m_pBuildings == NULL)
+	{
+		return;
+	}
+
+	for(int iI = 0; iI < m_pBuildings->GetNumBuildings(); iI++)
+	{
+		if(GetNumBuilding((BuildingTypes)iI) > 0)
+		{
+			m_vOwnedBuildings.push_back((BuildingTypes)iI);
+		}
+	}
+}
+
+/// Keep the owned-building list in step with one building type
+void CvCityBuildings::UpdateOwnedBuilding(BuildingTypes eIndex)
+{
+	size_t iPos = 0;
+	while(iPos < m_vOwnedBuildings.size() && m_vOwnedBuildings[iPos] < eIndex)
+	{
+		iPos++;
+	}
+
+	const bool bListed = (iPos < m_vOwnedBuildings.size() && m_vOwnedBuildings[iPos] == eIndex);
+	const bool bOwned = (GetNumBuilding(eIndex) > 0);
+
+	if(bOwned && !bListed)
+	{
+		m_vOwnedBuildings.insert(m_vOwnedBuildings.begin() + iPos, eIndex);
+	}
+	else if(!bOwned && bListed)
+	{
+		m_vOwnedBuildings.erase(m_vOwnedBuildings.begin() + iPos);
+	}
+}
+
 void CvCityBuildings::Reset()
 {
 	int iI;
+
+	m_vOwnedBuildings.clear();
 
 	// Initialize non-arrays
 	m_iNumBuildings = 0;
@@ -4982,6 +5031,9 @@ void CvCityBuildings::Read(FDataStream& kStream)
 
 	kStream >> m_aBuildingYieldChange;
 	kStream >> m_aBuildingGreatWork;
+
+	// The owned-building list is derived from the counts we just read
+	RebuildOwnedBuildings();
 }
 
 /// Serialization write
@@ -5402,6 +5454,7 @@ void CvCityBuildings::SetNumRealBuildingTimed(BuildingTypes eIndex, int iNewValu
 	// rather than iChangeNumRealBuilding, because a building counts once while the City
 	// owns it (see CvCity::ChangeMaxSpecialistCountFromBuilding).
 	m_pCity->ChangeMaxSpecialistCountFromBuilding(eIndex, GetNumBuilding(eIndex) - iNumBuildingBefore);
+	UpdateOwnedBuilding(eIndex);
 
 	// Maintenance cost
 	if (buildingEntry->GetGoldMaintenance() != 0)
@@ -5638,6 +5691,7 @@ void CvCityBuildings::SetNumFreeBuilding(BuildingTypes eIndex, int iNewValue)
 		// Specialist slots this building supplies, counted the way the City counts the
 		// building itself (see CvCity::ChangeMaxSpecialistCountFromBuilding)
 		m_pCity->ChangeMaxSpecialistCountFromBuilding(eIndex, GetNumBuilding(eIndex) - iNumBuildingBefore);
+		UpdateOwnedBuilding(eIndex);
 
 		CvBuildingEntry* buildingEntry = GC.getBuildingInfo(eIndex);
 		if(buildingEntry->GetSpyPoints() != 0)

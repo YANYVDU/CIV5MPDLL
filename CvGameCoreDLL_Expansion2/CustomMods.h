@@ -988,6 +988,11 @@
 #define MOD_SP_FASTER_AI	 gCustomMods.isSP_FASTER_AI()
 #define MOD_SP_UNIQUE_CITYSTATE gCustomMods.isSP_UNIQUE_CITYSTATE()
 #define MOD_SP_CITYSTATE_BASIC gCustomMods.isSP_CITYSTATE_BASIC()
+// Specialist AI searches the City-owned slot inventory per Specialist TYPE instead of walking
+// every building that offers a slot (same picks, far less work per unassigned citizen).
+#define MOD_SP_SPECIALIST_AI_BY_TYPE gCustomMods.isSP_SPECIALIST_AI_BY_TYPE()
+// Citizen reallocation plans the whole assignment first and applies only the changes.
+#define MOD_SP_CITIZEN_REALLOC_PLANNED gCustomMods.isSP_CITIZEN_REALLOC_PLANNED()
 // Policy/belief building-class bonuses count every (non-obsolete) building of the class
 // the city owns, instead of only the civilization's own building for that class.
 #define MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES gCustomMods.isSP_BUILDING_CLASS_COUNT_ALL_TYPES()
@@ -1844,6 +1849,8 @@ public:
 	MOD_OPT_DECL(SP_FASTER_AI);
 	MOD_OPT_DECL(SP_UNIQUE_CITYSTATE);
 	MOD_OPT_DECL(SP_CITYSTATE_BASIC);
+	MOD_OPT_DECL(SP_SPECIALIST_AI_BY_TYPE);
+	MOD_OPT_DECL(SP_CITIZEN_REALLOC_PLANNED);
 	MOD_OPT_DECL(SP_BUILDING_CLASS_COUNT_ALL_TYPES);
 	MOD_OPT_DECL(LUXURY_ERA_DECAY);
 
