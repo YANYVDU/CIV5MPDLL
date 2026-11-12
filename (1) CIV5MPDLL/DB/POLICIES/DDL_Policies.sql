@@ -67,6 +67,9 @@ alter table Policies add TourismModifierPerGPCreation boolean default 0;
 alter table Policies add DiplomatPropagandaModifier integer default 0;
 
 alter table Policies add GlobalHappinessFromFaithPercent integer not null default 0;
+-- Local happiness from city faith output (percent form; 10 = +1 local happiness per 10 faith/turn).
+-- Faith converted from local happiness itself is excluded to avoid a feedback loop.
+alter table Policies add LocalHappinessFromFaithPercent integer not null default 0;
 alter table Policies add HappinessInWLTKDCities integer not null default 0;
 alter table Policies add HappinessPerReligionInCity integer default 0;
 alter table Policies add HappinessPerPolicy integer default 0;

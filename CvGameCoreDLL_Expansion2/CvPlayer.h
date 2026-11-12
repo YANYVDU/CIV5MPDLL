@@ -2432,6 +2432,7 @@ public:
 	const std::vector<PolicyResourceInfo>& GetCityResourcesFromPolicy() const;
 	int GetGlobalHappinessFromFaithPercent() const;
 	void ChangeGlobalHappinessFromFaithPercent(int iChange);
+	int GetLocalHappinessFromFaithPercent() const;
 
 	int GetHappinessInWLTKDCities() const;
 	void ChangeHappinessInWLTKDCities(int iChange);

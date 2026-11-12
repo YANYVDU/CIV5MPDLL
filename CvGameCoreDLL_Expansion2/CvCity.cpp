@@ -12720,6 +12720,80 @@ void CvCity::DoAnnex()
 }
 
 //	--------------------------------------------------------------------------------
+// Local happiness produced by faith. Only "unconverted" faith counts: the faith that a
+// local-happiness-to-faith belief (e.g. BELIEF_D_HLJT) produces is subtracted, so
+// "faith -> local happiness -> faith" cannot feed back into itself.
+int CvCity::CalculateLocalHappinessFromFaith(int iLocalHappinessWithoutFaith) const
+{
+	VALIDATE_OBJECT
+
+	CvPlayer& kPlayer = GET_PLAYER(m_eOwner);
+	const int iPercent = kPlayer.GetLocalHappinessFromFaithPercent();
+	if(iPercent <= 0)
+	{
+		return 0;
+	}
+
+	const int iFaith = GetFaithPerTurn(true);
+	if(iFaith <= 0)
+	{
+		return 0;
+	}
+
+	int iConvertedRate = 0;
+	ReligionTypes eMajority = GetCityReligions()->GetReligiousMajority();
+	if(eMajority != NO_RELIGION)
+	{
+		const CvReligion* pReligion = GC.getGame().GetGameReligions()->GetReligion(eMajority, kPlayer.GetID());
+		if(pReligion != NULL)
+		{
+			iConvertedRate += pReligion->m_Beliefs.GetLocalHappinessYieldRate(YIELD_FAITH);
+		}
+	}
+	BeliefTypes eSecondaryPantheon = GetCityReligions()->GetSecondaryReligionPantheonBelief();
+	if(eSecondaryPantheon != NO_BELIEF)
+	{
+		const CvBeliefEntry* pSecondaryPantheon = GC.GetGameBeliefs()->GetEntry(eSecondaryPantheon);
+		if(pSecondaryPantheon != NULL)
+		{
+			iConvertedRate += pSecondaryPantheon->GetLocalHappinessYieldRate(YIELD_FAITH);
+		}
+	}
+
+	if(iConvertedRate <= 0)
+	{
+		return iFaith * iPercent / 100;
+	}
+
+	// The belief conversion is scaled by the same city faith modifier as every other
+	// faith component, so the effective conversion rate must include that modifier.
+	int iFaithModifier = getBaseYieldRateModifier(YIELD_FAITH);
+	if(IsPuppet())
+	{
+		iFaithModifier += GC.getPUPPET_FAITH_MODIFIER();
+	}
+	const int iEffectiveRate = iConvertedRate * iFaithModifier / 100;
+	if(iEffectiveRate <= 0)
+	{
+		return iFaith * iPercent / 100;
+	}
+
+	// Solve the fixed point so the feedback term cancels exactly:
+	//   H = H0 + p/100 * (F - R/100 * H)
+	// where R is the effective conversion rate and p is the local-happiness percent.
+	// The faith-derived term is
+	//   H - H0 = p * (100 * F - R * H0) / (10000 + p * R)
+	const long long iNumerator = (long long)iPercent * (100LL * iFaith - (long long)iEffectiveRate * iLocalHappinessWithoutFaith);
+	const long long iDenominator = 10000LL + (long long)iPercent * iEffectiveRate;
+	const long long iTerm = iNumerator / iDenominator;
+	if(iTerm <= 0)
+	{
+		return 0;
+	}
+	return (int)iTerm;
+}
+
+//	--------------------------------------------------------------------------------
 int CvCity::GetLocalHappiness() const
 {
 	CvPlayer& kPlayer = GET_PLAYER(m_eOwner);
@@ -12930,6 +13004,9 @@ int CvCity::GetLocalHappiness() const
 	{
 		iLocalHappiness += kPlayer.GetHappinessInWLTKDCities();
 	}
+
+	// Local happiness from faith (counts toward the population cap; unconverted faith only)
+	iLocalHappiness += CalculateLocalHappinessFromFaith(iLocalHappiness);
 
 	int iLocalHappinessCap = getPopulation();
 

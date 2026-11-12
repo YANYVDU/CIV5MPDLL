@@ -386,6 +386,7 @@ public:
 	std::vector<PolicyFreeBuildingClassInfo>& GetFreeBuildingClassCityStatesInfo();
 
 	int GetGlobalHappinessFromFaithPercent() const;
+	int GetLocalHappinessFromFaithPercent() const;
 	int GetHappinessInWLTKDCities() const;
 
 #ifdef MOD_RESOURCE_EXTRA_BUFF
@@ -722,6 +723,7 @@ private:
 	std::vector<PolicyYieldInfo> m_vHappinessYieldModifier;
 	std::vector<PolicyYieldInfo> m_vYieldPercentPerCityFollowingReligion;
 	int m_iGlobalHappinessFromFaithPercent = 0;
+	int m_iLocalHappinessFromFaithPercent = 0;
 	int m_iHappinessInWLTKDCities = 0;
 
 #ifdef MOD_RESOURCE_EXTRA_BUFF

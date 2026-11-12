@@ -1453,6 +1453,7 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	}
 
 	m_iGlobalHappinessFromFaithPercent = kResults.GetInt("GlobalHappinessFromFaithPercent");
+	m_iLocalHappinessFromFaithPercent = kResults.GetInt("LocalHappinessFromFaithPercent");
 	m_iHappinessInWLTKDCities = kResults.GetInt("HappinessInWLTKDCities");
 
 #ifdef MOD_RESOURCE_EXTRA_BUFF
@@ -3427,6 +3428,11 @@ std::vector<PolicyFreeBuildingClassInfo>& CvPolicyEntry::GetFreeBuildingClassCit
 int CvPolicyEntry::GetGlobalHappinessFromFaithPercent() const
 {
 	return m_iGlobalHappinessFromFaithPercent;
+}
+
+int CvPolicyEntry::GetLocalHappinessFromFaithPercent() const
+{
+	return m_iLocalHappinessFromFaithPercent;
 }
 
 int CvPolicyEntry::GetHappinessInWLTKDCities() const

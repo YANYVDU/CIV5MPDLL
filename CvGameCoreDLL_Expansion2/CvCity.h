@@ -733,6 +733,7 @@ public:
 	void DoAnnex();
 
 	int GetLocalHappiness() const;
+	int CalculateLocalHappinessFromFaith(int iLocalHappinessWithoutFaith) const;
 	int GetHappinessFromBuildings() const;
 	int GetBaseHappinessFromBuildings() const;
 	void ChangeBaseHappinessFromBuildings(int iChange);

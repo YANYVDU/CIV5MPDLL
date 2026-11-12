@@ -37323,6 +37323,27 @@ int CvPlayer::GetHappinessFromFaith() const
 	return std::max(0, m_iGlobalHappinessFromFaithPercent * GetCachedTotalFaithPerTurn() / 100);
 }
 
+// Cached-local-happiness percent from every adopted policy. Kept dynamic so it needs no save field.
+int CvPlayer::GetLocalHappinessFromFaithPercent() const
+{
+	int iPercent = 0;
+	CvPlayerPolicies* pPolicies = GetPlayerPolicies();
+	for(int iPolicyLoop = 0; iPolicyLoop < GC.getNumPolicyInfos(); iPolicyLoop++)
+	{
+		PolicyTypes ePolicy = (PolicyTypes)iPolicyLoop;
+		if(!pPolicies->HasPolicy(ePolicy) || pPolicies->IsPolicyBlocked(ePolicy))
+		{
+			continue;
+		}
+		CvPolicyEntry* pPolicyInfo = GC.getPolicyInfo(ePolicy);
+		if(pPolicyInfo != NULL)
+		{
+			iPercent += pPolicyInfo->GetLocalHappinessFromFaithPercent();
+		}
+	}
+	return iPercent;
+}
+
 LuaFormulaTypes CvPlayer::GetCaptureCityResistanceTurnsChangeFormula() const
 {
 	return m_iCaptureCityResistanceTurnsChangeFormula;
