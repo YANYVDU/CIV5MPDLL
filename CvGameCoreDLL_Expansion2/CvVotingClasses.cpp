@@ -5868,6 +5868,33 @@ std::vector<CvString> CvLeague::GetCurrentEffectsSummary(PlayerTypes /*eObserver
 		sTemp << sEntries;
 		vsEffects.push_back(sTemp.toUTF8());
 	}
+	if (effects.iWorldBankInterestBasisPoints != 0)
+	{
+		CvString sBaseRate;
+		sBaseRate.Format("%g", (double)effects.iWorldBankInterestBasisPoints / 100.0);
+		CvString sRouteRate;
+		sRouteRate.Format("%g", (double)effects.iWorldBankRouteInterestBasisPoints / 100.0);
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_WORLD_BANK");
+		sTemp << sBaseRate << sRouteRate << effects.iWorldBankIntervalTurns;
+		vsEffects.push_back(sTemp.toUTF8());
+	}
+	if (effects.iWHOFoodConsumptionModifier != 0)
+	{
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_WHO");
+		sTemp << -effects.iWHOFoodConsumptionModifier << effects.iWHOSanitationFoodKeptPercent;
+		vsEffects.push_back(sTemp.toUTF8());
+	}
+	if (effects.iIMOOceanRouteGoldModifier != 0)
+	{
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_IMO_GOLD");
+		sTemp << effects.iIMOOceanRouteGoldModifier;
+		vsEffects.push_back(sTemp.toUTF8());
+	}
+	if (effects.bIMOForbidWeakPlunder)
+	{
+		Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_IMO_PLUNDER");
+		vsEffects.push_back(sTemp.toUTF8());
+	}
 #endif
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	if (effects.bPermanentAlly)

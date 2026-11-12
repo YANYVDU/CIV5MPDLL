@@ -471,6 +471,18 @@
 		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY_ENTRY">
 			<Text>{1_CivName}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_WORLD_BANK">
+			<Text>世界银行：每{3_Turns}回合，所有文明获得相当于国库{1_Rate}%的[ICON_GOLD]金钱结息，每有一条国际商路额外+{2_RouteRate}%。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_WHO">
+			<Text>世界卫生组织：市民[ICON_FOOD]食物消耗-{1_Food}%；没有卫生设施的城市仍可保留{2_Kept}%的余粮。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_IMO_GOLD">
+			<Text>国际海事组织：海洋国际商路[ICON_GOLD]金钱产出+{1_Gold}%。</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_IMO_PLUNDER">
+			<Text>国际海事组织：城邦、蛮族和实力低于平均的文明无法劫掠海洋国际商路。</Text>
+		</Row>
 		<Row Tag="TXT_KEY_RESOLUTION_WAR_CONVENTION">
 			<Text>战争公约</Text>
 		</Row>

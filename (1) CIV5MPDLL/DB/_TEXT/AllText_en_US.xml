@@ -471,6 +471,18 @@
 		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_PERMANENT_ALLY_ENTRY">
 			<Text>{1_CivName}</Text>
 		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_WORLD_BANK">
+			<Text>World Bank: every {3_Turns} turns, +{1_Rate}% [ICON_GOLD] Gold interest, +{2_RouteRate}% per international trade route.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_WHO">
+			<Text>World Health Organization: citizens consume {1_Food}% less [ICON_FOOD] Food; cities without sanitation keep {2_Kept}% of their surplus.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_IMO_GOLD">
+			<Text>International Maritime Organization: ocean international trade routes earn +{1_Gold}% [ICON_GOLD] Gold.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_LEAGUE_OVERVIEW_EFFECT_SUMMARY_IMO_PLUNDER">
+			<Text>International Maritime Organization: City-States, Barbarians and below-average civilizations cannot plunder ocean international trade routes.</Text>
+		</Row>
 		<Row Tag="TXT_KEY_RESOLUTION_WAR_CONVENTION">
 			<Text>War Convention</Text>
 		</Row>
