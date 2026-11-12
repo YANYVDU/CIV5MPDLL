@@ -984,7 +984,7 @@ int CvDealAI::GetTradeItemValue(TradeableItems eItem, bool bFromMe, PlayerTypes 
 
 	// TODO
 
-	CvAssertMsg(iItemValue >= 0, "DEAL_AI: Trade Item value is negative.  Please send Jon this with your last 5 autosaves and what changelist # you're playing.");
+	CvAssertMsg(iItemValue >= 0 || eItem == TRADE_ITEM_NON_AGGRESSION_PACT, "DEAL_AI: Trade Item value is negative.  Please send Jon this with your last 5 autosaves and what changelist # you're playing.");
 
 	return iItemValue;
 }
@@ -1997,92 +1997,82 @@ int CvDealAI::GetNonAggressionPactValue(bool bFromMe, PlayerTypes eOtherPlayer, 
 {
 	CvAssertMsg(GetPlayer()->GetID() != eOtherPlayer, "DEAL_AI: Trying to check value of a Non-Aggression Pact with oneself.  Please send Jon this with your last 5 autosaves and what changelist # you're playing.");
 
-	int iItemValue = 100;
-
-	const bool bWeWantWar = GetPlayer()->GetDiplomacyAI()->GetWarGoal(eOtherPlayer) >= WAR_GOAL_DAMAGE;
-
-	// Signing the pact means giving up the option to attack them for its duration
-	if(bFromMe)
+	// Cost of committing not to attack them for the pact's duration.
+	int iCost = 300;
+	if(GetPlayer()->GetDiplomacyAI()->GetWarGoal(eOtherPlayer) >= WAR_GOAL_DAMAGE)
 	{
-		if(bWeWantWar)
-		{
-			iItemValue = 5000;
-		}
-		else
-		{
-			switch(GetPlayer()->GetDiplomacyAI()->GetMajorCivOpinion(eOtherPlayer))
-			{
-			case MAJOR_CIV_OPINION_ALLY:
-				iItemValue = 100;
-				break;
-			case MAJOR_CIV_OPINION_FRIEND:
-				iItemValue = 120;
-				break;
-			case MAJOR_CIV_OPINION_FAVORABLE:
-				iItemValue = 150;
-				break;
-			case MAJOR_CIV_OPINION_NEUTRAL:
-				iItemValue = 300;
-				break;
-			case MAJOR_CIV_OPINION_COMPETITOR:
-				iItemValue = 800;
-				break;
-			case MAJOR_CIV_OPINION_ENEMY:
-				iItemValue = 1500;
-				break;
-			case MAJOR_CIV_OPINION_UNFORGIVABLE:
-				iItemValue = 2500;
-				break;
-			default:
-				iItemValue = 300;
-				break;
-			}
-		}
+		iCost = 5000;
 	}
-	// Receiving the pact means they cannot attack us either; it is worth more when they are stronger
 	else
 	{
-		if(bWeWantWar)
+		switch(GetPlayer()->GetDiplomacyAI()->GetMajorCivOpinion(eOtherPlayer))
 		{
-			iItemValue = 5000;
-		}
-		else
-		{
-			switch(GetPlayer()->GetDiplomacyAI()->GetPlayerMilitaryStrengthComparedToUs(eOtherPlayer))
-			{
-			case STRENGTH_PATHETIC:
-				iItemValue = 10;
-				break;
-			case STRENGTH_WEAK:
-				iItemValue = 40;
-				break;
-			case STRENGTH_POOR:
-				iItemValue = 70;
-				break;
-			case STRENGTH_AVERAGE:
-				iItemValue = 100;
-				break;
-			case STRENGTH_STRONG:
-				iItemValue = 130;
-				break;
-			case STRENGTH_POWERFUL:
-				iItemValue = 170;
-				break;
-			case STRENGTH_IMMENSE:
-				iItemValue = 220;
-				break;
-			default:
-				iItemValue = 100;
-				break;
-			}
+		case MAJOR_CIV_OPINION_ALLY:
+			iCost = 0;
+			break;
+		case MAJOR_CIV_OPINION_FRIEND:
+			iCost = 25;
+			break;
+		case MAJOR_CIV_OPINION_FAVORABLE:
+			iCost = 75;
+			break;
+		case MAJOR_CIV_OPINION_NEUTRAL:
+			iCost = 200;
+			break;
+		case MAJOR_CIV_OPINION_COMPETITOR:
+			iCost = 800;
+			break;
+		case MAJOR_CIV_OPINION_ENEMY:
+			iCost = 1500;
+			break;
+		case MAJOR_CIV_OPINION_UNFORGIVABLE:
+			iCost = 2500;
+			break;
+		default:
+			iCost = 300;
+			break;
 		}
 	}
 
-	// Are we trying to find the middle point between what we think this item is worth and what another player thinks it's worth?
+	// Security benefit of their matching commitment; worth more when they are stronger.
+	int iBenefit = 100;
+	switch(GetPlayer()->GetDiplomacyAI()->GetPlayerMilitaryStrengthComparedToUs(eOtherPlayer))
+	{
+	case STRENGTH_PATHETIC:
+		iBenefit = 10;
+		break;
+	case STRENGTH_WEAK:
+		iBenefit = 40;
+		break;
+	case STRENGTH_POOR:
+		iBenefit = 70;
+		break;
+	case STRENGTH_AVERAGE:
+		iBenefit = 100;
+		break;
+	case STRENGTH_STRONG:
+		iBenefit = 130;
+		break;
+	case STRENGTH_POWERFUL:
+		iBenefit = 170;
+		break;
+	case STRENGTH_IMMENSE:
+		iBenefit = 220;
+		break;
+	default:
+		iBenefit = 100;
+		break;
+	}
+
+	// Net value: positive means we demand compensation for giving up the attack option,
+	// negative means the security benefit outweighs it and we would sign for free.
+	// The pact binds both sides, so the net value does not depend on who puts it on the table.
+	const int iNetValue = iCost - iBenefit;
+	int iItemValue = bFromMe ? iNetValue : -iNetValue;
+
 	if(bUseEvenValue)
 	{
 		iItemValue += GET_PLAYER(eOtherPlayer).GetDealAI()->GetNonAggressionPactValue(!bFromMe, GetPlayer()->GetID(), /*bUseEvenValue*/ false);
-
 		iItemValue /= 2;
 	}
 
