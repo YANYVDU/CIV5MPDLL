@@ -176,8 +176,6 @@ alter table Policies add SameReligionMinorFriendshipMinimum integer default 0;
 -- FoundedReligionMinorPerTurnInfluence: per-turn influence with a city-state following the religion
 -- founded by the player
 alter table Policies add FoundedReligionMinorPerTurnInfluence integer default 0;
--- MinorFriendshipGrowthMod: city-state influence recovery speed modifier (25 = +25%)
-alter table Policies add MinorFriendshipGrowthMod integer default 0;
 -- CityStateGiftUnitExperience: extra experience granted to military units gifted by a city-state
 alter table Policies add CityStateGiftUnitExperience integer default 0;
 

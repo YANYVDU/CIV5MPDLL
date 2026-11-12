@@ -20953,29 +20953,6 @@ int CvPlayer::GetMinorFriendshipDecayMod() const
 	return iDecay;
 }
 
-//	--------------------------------------------------------------------------------
-// Sum of MinorFriendshipGrowthMod across adopted policies. Kept dynamic so no save field is needed.
-int CvPlayer::GetMinorFriendshipGrowthMod() const
-{
-	int iMod = 0;
-	CvPlayerPolicies* pPolicies = GetPlayerPolicies();
-	for(int iPolicyLoop = 0; iPolicyLoop < GC.getNumPolicyInfos(); iPolicyLoop++)
-	{
-		PolicyTypes ePolicy = (PolicyTypes)iPolicyLoop;
-		if(!pPolicies->HasPolicy(ePolicy) || pPolicies->IsPolicyBlocked(ePolicy))
-		{
-			continue;
-		}
-		CvPolicyEntry* pPolicyInfo = GC.getPolicyInfo(ePolicy);
-		if(pPolicyInfo != NULL)
-		{
-			iMod += pPolicyInfo->GetMinorFriendshipGrowthMod();
-		}
-	}
-	return iMod;
-}
-
-
 
 //	--------------------------------------------------------------------------------
 void CvPlayer::changeGetMinorFriendshipDecayMod(int iChange)

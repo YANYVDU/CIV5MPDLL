@@ -178,7 +178,6 @@ public:
 	int GetMinorGoldFriendshipMod() const;
 	int GetMinorFriendshipMinimum() const;
 	int GetMinorFriendshipDecayMod() const;
-	int GetMinorFriendshipGrowthMod() const;
 	int GetOtherPlayersMinorFriendshipDecayMod() const;
 	int GetCityStateUnitFrequencyModifier() const;
 	int GetCommonFoeTourismModifier() const;
@@ -536,7 +535,6 @@ private:
 	int m_iMinorGoldFriendshipMod;
 	int m_iMinorFriendshipMinimum;
 	int m_iMinorFriendshipDecayMod;
-	int m_iMinorFriendshipGrowthMod;
 	int m_iOtherPlayersMinorFriendshipDecayMod;
 	int m_iCityStateUnitFrequencyModifier;
 	int m_iCommonFoeTourismModifier;
