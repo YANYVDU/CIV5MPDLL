@@ -11925,6 +11925,41 @@ void CvDiplomacyAI::DoSendStatementToPlayer(PlayerTypes ePlayer, DiploStatementT
 		}
 	}
 
+	// Offer Trade Agreement
+	else if(eStatement == DIPLO_STATEMENT_TRADE_AGREEMENT_OFFER)
+	{
+		// Active human
+		if(bShouldShowLeaderScene)
+		{
+#if defined(MOD_DIPLOMACY_STFU)
+			SendAIDealRequest(GetPlayer()->GetID(), ePlayer, pDeal, DIPLO_UI_STATE_TRADE_AI_MAKES_OFFER, DIPLO_MESSAGE_TRADE_AGREEMENT_OFFER, LEADERHEAD_ANIM_REQUEST);
+#else
+			szText = GetDiploStringForMessage(DIPLO_MESSAGE_TRADE_AGREEMENT_OFFER);
+#if defined(MOD_API_PLAYER_LOGS)
+			CvDiplomacyRequests::SendDealRequest(GetPlayer()->GetID(), ePlayer, pDeal, DIPLO_UI_STATE_TRADE_AI_MAKES_OFFER, DIPLO_MESSAGE_TRADE_AGREEMENT_OFFER, szText, LEADERHEAD_ANIM_REQUEST);
+#else
+			CvDiplomacyRequests::SendDealRequest(GetPlayer()->GetID(), ePlayer, pDeal, DIPLO_UI_STATE_TRADE_AI_MAKES_OFFER, szText, LEADERHEAD_ANIM_REQUEST);
+#endif
+#endif
+		}
+		// Offer to an AI player
+		else if(!bHuman)
+		{
+			CvDeal kDeal = *pDeal;
+
+#if defined(MOD_AI_MP_DIPLOMACY)
+			if (MOD_AI_MP_DIPLOMACY) {
+				GC.getGame().GetGameDeals()->FinalizeDeal(*pDeal, true);
+			} else {
+#endif
+			GC.getGame().GetGameDeals()->AddProposedDeal(kDeal);
+			GC.getGame().GetGameDeals()->FinalizeDeal(GetPlayer()->GetID(), ePlayer, true);
+#if defined(MOD_AI_MP_DIPLOMACY)
+			}
+#endif
+		}
+	}
+
 	// Offer Non-Aggression Pact
 	else if(eStatement == DIPLO_STATEMENT_NON_AGGRESSION_PACT_OFFER)
 	{
@@ -13280,7 +13315,12 @@ void CvDiplomacyAI::DoContactPlayer(PlayerTypes ePlayer)
 		DoEmbassyOffer(ePlayer, eStatement, pDeal);
 		DoOpenBordersExchange(ePlayer, eStatement, pDeal);
 		DoOpenBordersOffer(ePlayer, eStatement, pDeal);
+		const bool bStrongTradeDesire = GC.getGame().GetGameTrade()->CountNumPlayerConnectionsToPlayer(GetPlayer()->GetID(), ePlayer) > 4;
+		if(bStrongTradeDesire)
+			DoTradeAgreementOffer(ePlayer, eStatement, pDeal);
 		DoResearchAgreementOffer(ePlayer, eStatement, pDeal);
+		if(!bStrongTradeDesire)
+			DoTradeAgreementOffer(ePlayer, eStatement, pDeal);
 		DoNonAggressionPactOffer(ePlayer, eStatement, pDeal);
 		DoRenewExpiredDeal(ePlayer, eStatement, pDeal);
 		DoShareIntrigueStatement(ePlayer, eStatement);
@@ -14954,7 +14994,10 @@ void CvDiplomacyAI::DoDoFStatement(PlayerTypes ePlayer, DiploStatementTypes& eSt
 			{
 				DiploStatementTypes eTempStatement = DIPLO_STATEMENT_WORK_WITH_US;
 
-				if(GetNumTurnsSinceStatementSent(ePlayer, eTempStatement) >= 60 &&
+				const bool bStrongTradeDesire = GC.getGame().GetGameTrade()->CountNumPlayerConnectionsToPlayer(GetPlayer()->GetID(), ePlayer) > 4;
+				int iTurnsBetweenStatements = bStrongTradeDesire ? 20 : 60;
+
+				if(GetNumTurnsSinceStatementSent(ePlayer, eTempStatement) >= iTurnsBetweenStatements &&
 				        GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_WORK_WITH_US_RANDFAILED) >= 10)
 				{
 					bool bSendStatement = true;
@@ -15336,6 +15379,32 @@ void CvDiplomacyAI::DoResearchAgreementOffer(PlayerTypes ePlayer, DiploStatement
 				// Clear out the deal if we don't want to offer it so that it's not tainted for the next trade possibility we look at
 				pDeal->ClearItems();
 			}
+		}
+	}
+}
+
+/// Possible Contact Statement - Trade Agreement Offer
+void CvDiplomacyAI::DoTradeAgreementOffer(PlayerTypes ePlayer, DiploStatementTypes& eStatement, CvDeal* pDeal)
+{
+	CvAssertMsg(ePlayer >= 0, "DIPLOMACY_AI: Invalid Player Index.");
+	CvAssertMsg(ePlayer < MAX_MAJOR_CIVS, "DIPLOMACY_AI: Invalid Player Index.");
+
+	if(eStatement == NO_DIPLO_STATEMENT_TYPE)
+	{
+		if(GetPlayer()->GetDealAI()->IsMakeOfferForTradeAgreement(ePlayer, /*pDeal can be modified in this function*/ pDeal))
+		{
+			DiploStatementTypes eTempStatement = DIPLO_STATEMENT_TRADE_AGREEMENT_OFFER;
+			const bool bStrongTradeDesire = GC.getGame().GetGameTrade()->CountNumPlayerConnectionsToPlayer(GetPlayer()->GetID(), ePlayer) > 4;
+			int iTurnsBetweenStatements = bStrongTradeDesire ? 10 : 20;
+
+			if(GetNumTurnsSinceStatementSent(ePlayer, eTempStatement) >= iTurnsBetweenStatements)
+				eStatement = eTempStatement;
+			else
+				pDeal->ClearItems();
+		}
+		else
+		{
+			pDeal->ClearItems();
 		}
 	}
 }
@@ -17020,6 +17089,8 @@ const char* GetResponseKeyForMessage(DiploMessageTypes eDiploMessage)
 		return "RESPONSE_PLAN_RESEARCH_AGREEMENT";
 	case DIPLO_MESSAGE_RESEARCH_AGREEMENT_OFFER:
 		return "RESPONSE_RESEARCH_AGREEMENT_OFFER";
+	case DIPLO_MESSAGE_TRADE_AGREEMENT_OFFER:
+		return "RESPONSE_TRADE_AGREEMENT_OFFER";
 	case DIPLO_MESSAGE_NON_AGGRESSION_PACT_OFFER:
 		return "RESPONSE_NON_AGGRESSION_PACT_OFFER";
 	case DIPLO_MESSAGE_RENEW_DEAL:
@@ -17731,6 +17802,11 @@ const char* CvDiplomacyAI::GetDiploStringForMessage(DiploMessageTypes eDiploMess
 		// AI wants RA with player
 	case DIPLO_MESSAGE_RESEARCH_AGREEMENT_OFFER:
 		strText = GetDiploTextFromTag("RESPONSE_RESEARCH_AGREEMENT_OFFER");
+		break;
+
+		// AI wants a Trade Agreement with player
+	case DIPLO_MESSAGE_TRADE_AGREEMENT_OFFER:
+		strText = GetDiploTextFromTag("RESPONSE_TRADE_AGREEMENT_OFFER");
 		break;
 
 		// AI wants a Non-Aggression Pact with player
@@ -21820,6 +21896,10 @@ bool CvDiplomacyAI::IsDoFAcceptable(PlayerTypes ePlayer)
 
 	// Base Personality value; ranges from 0 to 10 (ish)
 	iWeight += GetDoFWillingness();
+
+	// Strong trade links make a Declaration of Friendship more attractive
+	if(GC.getGame().GetGameTrade()->CountNumPlayerConnectionsToPlayer(GetPlayer()->GetID(), ePlayer) > 4)
+		iWeight += 5;
 
 	// Weight for Approach
 	if(eApproach == MAJOR_CIV_APPROACH_DECEPTIVE)
@@ -30469,6 +30549,9 @@ void CvDiplomacyAI::LogStatementToPlayer(PlayerTypes ePlayer, DiploStatementType
 			break;
 		case DIPLO_STATEMENT_RESEARCH_AGREEMENT_OFFER:
 			strTemp.Format("Research Agreement Offer");
+			break;
+		case DIPLO_STATEMENT_TRADE_AGREEMENT_OFFER:
+			strTemp.Format("Trade Agreement Offer");
 			break;
 		case DIPLO_STATEMENT_NON_AGGRESSION_PACT_OFFER:
 			strTemp.Format("Non-Aggression Pact Offer");

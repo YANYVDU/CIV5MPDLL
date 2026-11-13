@@ -2114,6 +2114,15 @@ int CvDealAI::GetTradeAgreementValue(bool bFromMe, PlayerTypes eOtherPlayer, boo
 		iItemValue /= 100;
 	}
 
+	// Strong existing trade links: the AI is eager to formalize them
+	if(GC.getGame().GetGameTrade()->CountNumPlayerConnectionsToPlayer(GetPlayer()->GetID(), eOtherPlayer) > 4)
+	{
+		if(bFromMe)
+			iItemValue = iItemValue * 50 / 100;
+		else
+			iItemValue += 100;
+	}
+
 	// Are we trying to find the middle point between what we think this item is worth and what another player thinks it's worth?
 	if(bUseEvenValue)
 	{
@@ -4126,6 +4135,38 @@ bool CvDealAI::IsMakeOfferForResearchAgreement(PlayerTypes eOtherPlayer, CvDeal*
 		bool bUselessReferenceVariable;
 		bool bCantMatchOffer;
 		bDealAcceptable = DoEqualizeDealWithHuman(pDeal, eOtherPlayer, true, false, bUselessReferenceVariable, bCantMatchOffer);	// Change the deal as necessary to make it work
+	}
+
+	return bDealAcceptable;
+}
+
+/// A good time to make an offer for a Trade Agreement?
+bool CvDealAI::IsMakeOfferForTradeAgreement(PlayerTypes eOtherPlayer, CvDeal* pDeal)
+{
+	CvAssert(eOtherPlayer >= 0);
+	CvAssert(eOtherPlayer < MAX_MAJOR_CIVS);
+
+	// Can we actually complete this deal? (tech, embassies, DoF, no existing agreement)
+	if(!pDeal->IsPossibleToTradeItem(GetPlayer()->GetID(), eOtherPlayer, TRADE_ITEM_TRADE_AGREEMENT))
+	{
+		return false;
+	}
+
+	// Seed both sides: the agreement binds both players
+	pDeal->AddTradeAgreement(GetPlayer()->GetID(), GC.getGame().GetDealDuration());
+	pDeal->AddTradeAgreement(eOtherPlayer, GC.getGame().GetDealDuration());
+
+	bool bDealAcceptable = false;
+
+	if(!GET_PLAYER(eOtherPlayer).isHuman())
+	{
+		bDealAcceptable = DoEqualizeDealWithAI(pDeal, eOtherPlayer);
+	}
+	else
+	{
+		bool bUselessReferenceVariable;
+		bool bCantMatchOffer;
+		bDealAcceptable = DoEqualizeDealWithHuman(pDeal, eOtherPlayer, true, false, bUselessReferenceVariable, bCantMatchOffer);
 	}
 
 	return bDealAcceptable;

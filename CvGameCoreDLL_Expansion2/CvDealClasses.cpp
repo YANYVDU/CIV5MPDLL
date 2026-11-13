@@ -615,6 +615,12 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 		// Neither of us yet has the Tech for TA
 		if(!pFromTeam->IsTradeAgreementTradingAllowed() && !pToTeam->IsTradeAgreementTradingAllowed())
 			return false;
+		// Embassy has not been established
+		if(!pFromTeam->HasEmbassyAtTeam(eToTeam) || !pToTeam->HasEmbassyAtTeam(eFromTeam))
+			return false;
+		// DoF has not been made with this player
+		if(!pFromPlayer->GetDiplomacyAI()->IsDoFAccepted(eToPlayer) || !pToPlayer->GetDiplomacyAI()->IsDoFAccepted(ePlayer))
+			return false;
 		// Already has TA
 		if(pFromTeam->IsHasTradeAgreement(eToTeam))
 			return false;
@@ -4111,7 +4117,7 @@ int CvGameDeals::GetTradeItemGoldCost(TradeableItems eItem, PlayerTypes ePlayer1
 		break;
 	}
 	case TRADE_ITEM_TRADE_AGREEMENT:
-		iGoldCost = 250;
+		iGoldCost = 0;
 		break;
 	}
 

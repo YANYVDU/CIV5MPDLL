@@ -2702,6 +2702,12 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 						iModifier += kOriginPlayer.GetCSUATradeRouteGoldModifier(kTradeConnection);
 					}
 #endif
+					// Trade Agreement: the two parties' international routes earn +20% Gold
+					if (GET_TEAM(kOriginPlayer.getTeam()).IsHasTradeAgreement(kDestPlayer.getTeam())
+						|| GET_TEAM(kDestPlayer.getTeam()).IsHasTradeAgreement(kOriginPlayer.getTeam()))
+					{
+						iModifier += 20;
+					}
 
 					iMinValue = 100;
 				}
@@ -2853,6 +2859,12 @@ int CvPlayerTrade::GetTradeConnectionValueTimes100 (const TradeConnection& kTrad
 						if (MOD_VOTING_NEW_EFFECT_FOR_SP && kTradeConnection.m_eDomain == DOMAIN_SEA)
 							iModifier += GC.getGame().GetGameLeagues()->GetIMOOceanRouteGoldModifier();
 #endif
+					// Trade Agreement: the two parties' international routes earn +20% Gold
+					if (GET_TEAM(kOriginPlayer.getTeam()).IsHasTradeAgreement(kDestPlayer.getTeam())
+						|| GET_TEAM(kDestPlayer.getTeam()).IsHasTradeAgreement(kOriginPlayer.getTeam()))
+					{
+						iModifier += 20;
+					}
 					}
 					break;
 #if defined(MOD_API_UNIFIED_YIELDS)
