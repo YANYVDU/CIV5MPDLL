@@ -1945,6 +1945,9 @@ int CvDealAI::GetResearchAgreementValue(bool bFromMe, PlayerTypes eOtherPlayer, 
 
 	int iItemValue = 100;
 
+	if(GetPlayer()->GetDiplomacyAI()->IsResearchAgreementQuestWithPlayer(eOtherPlayer))
+		return 0;
+
 	if(bFromMe)
 	{
 		// if they are ahead of me in tech by one or more eras ratchet up the value since they are more likely to get a good tech than I am
@@ -4138,6 +4141,21 @@ bool CvDealAI::IsMakeOfferForResearchAgreement(PlayerTypes eOtherPlayer, CvDeal*
 	}
 
 	return bDealAcceptable;
+}
+
+/// City-state Research Agreement quest: offer the deal without AI valuation.
+bool CvDealAI::IsMakeOfferForResearchAgreementForced(PlayerTypes eOtherPlayer, CvDeal* pDeal)
+{
+	CvAssert(eOtherPlayer >= 0);
+	CvAssert(eOtherPlayer < MAX_MAJOR_CIVS);
+
+	if(!pDeal->IsPossibleToTradeItem(GetPlayer()->GetID(), eOtherPlayer, TRADE_ITEM_RESEARCH_AGREEMENT))
+		return false;
+
+	pDeal->AddResearchAgreement(GetPlayer()->GetID(), GC.getGame().GetDealDuration());
+	pDeal->AddResearchAgreement(eOtherPlayer, GC.getGame().GetDealDuration());
+
+	return true;
 }
 
 /// A good time to make an offer for a Trade Agreement?

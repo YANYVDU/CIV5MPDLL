@@ -1869,7 +1869,9 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 	// Sign a research agreement with another civilization
 	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
 	{
-		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestResearchAgreementTargetForQuest(m_eAssignedPlayer);
+		PlayerTypes eTarget = eForcedTarget;
+		if(eTarget == NO_PLAYER)
+			eTarget = pMinor->GetMinorCivAI()->GetBestResearchAgreementTargetForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to sign a research agreement.");
 
@@ -1881,6 +1883,15 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		strMessage << strCivKey;
 		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_RESEARCH_AGREEMENT");
 		strSummary << strCivKey;
+
+		// Normal draws mirror the quest onto the target, so both sides are asked.
+		// The mirrored quest carries eForcedTarget and must not mirror again.
+		if(eForcedTarget == NO_PLAYER && eTarget != NO_PLAYER && eTarget != m_eAssignedPlayer)
+		{
+			CvMinorCivAI* pMinorAI = pMinor->GetMinorCivAI();
+			if(!pMinorAI->IsActiveQuestForPlayer(eTarget, MINOR_CIV_QUEST_RESEARCH_AGREEMENT))
+				pMinorAI->AddQuestForPlayer(eTarget, MINOR_CIV_QUEST_RESEARCH_AGREEMENT, iStartTurn, m_eAssignedPlayer);
+		}
 	}
 	// Contest: most world wonders completed
 	else if(m_eType == MINOR_CIV_QUEST_CONTEST_WORLD_WONDERS)
@@ -7639,7 +7650,11 @@ PlayerTypes CvMinorCivAI::GetBestOriginalCapitalTargetForQuest(PlayerTypes ePlay
 PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePlayer)
 {
 	// The player we ask must have enough influence with us
-	if(GetEffectiveFriendshipWithMajor(ePlayer) <= 60)
+	if(GetEffectiveFriendshipWithMajor(ePlayer) <= 30)
+		return NO_PLAYER;
+
+	// The player we ask must have a free personal quest slot
+	if(GetNumActivePersonalQuestsForPlayer(ePlayer) >= GetMaxActivePersonalQuestsForPlayer())
 		return NO_PLAYER;
 
 	FStaticVector<PlayerTypes, MAX_CIV_PLAYERS, true, c_eCiv5GameplayDLL, 0> veValidPlayers;
@@ -7656,6 +7671,10 @@ PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePl
 		if(eLoopPlayer == ePlayer)
 			continue;
 
+		// Skip teammates: a Research Agreement cannot be signed within the same team
+		if(GET_PLAYER(ePlayer).getTeam() == pLoopPlayer->getTeam())
+			continue;
+
 		// The target must not be at war with us
 		if(GET_TEAM(GetPlayer()->getTeam()).isAtWar(pLoopPlayer->getTeam()))
 			continue;
@@ -7669,7 +7688,11 @@ PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePl
 			continue;
 
 		// The target must also have enough influence with us
-		if(GetEffectiveFriendshipWithMajor(eLoopPlayer) <= 60)
+		if(GetEffectiveFriendshipWithMajor(eLoopPlayer) <= 30)
+			continue;
+
+		// The target must also have a free personal quest slot
+		if(GetNumActivePersonalQuestsForPlayer(eLoopPlayer) >= GetMaxActivePersonalQuestsForPlayer())
 			continue;
 
 		// They must not already share a research agreement

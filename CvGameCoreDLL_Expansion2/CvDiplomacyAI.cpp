@@ -198,6 +198,7 @@ CvDiplomacyAI::CvDiplomacyAI():
 	m_paiNoConnectToMinorTurn(NULL),
 	m_iLastCityStateQuestTurn(-1),
 	m_eCityStateQuestBuildingTarget(NO_BUILDING),
+	m_iResearchAgreementQuestCacheTurn(-1),
 	m_iLastCityStateAidPointTurn(-1),
 	m_paeWarFace(NULL),
 	m_paeWarState(NULL),
@@ -997,6 +998,7 @@ void CvDiplomacyAI::Reset()
 
 	m_iLastCityStateQuestTurn = -1;
 	m_eCityStateQuestBuildingTarget = NO_BUILDING;
+	m_iResearchAgreementQuestCacheTurn = -1;
 
 	m_iLastCityStateAidPointTurn = -1;
 	for(iI = 0; iI < MAX_CIV_PLAYERS; iI++)
@@ -14994,6 +14996,13 @@ void CvDiplomacyAI::DoDoFStatement(PlayerTypes ePlayer, DiploStatementTypes& eSt
 			{
 				DiploStatementTypes eTempStatement = DIPLO_STATEMENT_WORK_WITH_US;
 
+				if(IsResearchAgreementQuestWithPlayer(ePlayer))
+				{
+					if(GetNumTurnsSinceStatementSent(ePlayer, eTempStatement) >= 10)
+						eStatement = eTempStatement;
+					return;
+				}
+
 				const bool bStrongTradeDesire = GC.getGame().GetGameTrade()->CountNumPlayerConnectionsToPlayer(GetPlayer()->GetID(), ePlayer) > 4;
 				int iTurnsBetweenStatements = bStrongTradeDesire ? 20 : 60;
 
@@ -15364,6 +15373,20 @@ void CvDiplomacyAI::DoResearchAgreementOffer(PlayerTypes ePlayer, DiploStatement
 
 	if(eStatement == NO_DIPLO_STATEMENT_TYPE)
 	{
+		if(IsResearchAgreementQuestWithPlayer(ePlayer))
+		{
+			if(GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_RESEARCH_AGREEMENT_OFFER) >= 10)
+			{
+				if(GetPlayer()->GetDealAI()->IsMakeOfferForResearchAgreementForced(ePlayer, /*pDeal can be modified in this function*/ pDeal))
+					eStatement = DIPLO_STATEMENT_RESEARCH_AGREEMENT_OFFER;
+				else
+					pDeal->ClearItems();
+			}
+			else
+				pDeal->ClearItems();
+			return;
+		}
+
 		if(IsCanMakeResearchAgreementRightNow(ePlayer))
 		{
 			if(GetPlayer()->GetDealAI()->IsMakeOfferForResearchAgreement(ePlayer, /*pDeal can be modified in this function*/ pDeal))
@@ -21848,6 +21871,42 @@ void CvDiplomacyAI::ChangePlayerStopSpyingRequestCounter(PlayerTypes ePlayer, in
 
 
 
+/// Does this AI have a city-state Research Agreement quest with ePlayer?
+bool CvDiplomacyAI::IsResearchAgreementQuestWithPlayer(PlayerTypes ePlayer)
+{
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return false;
+
+	const int iTurn = GC.getGame().getGameTurn();
+	if(m_iResearchAgreementQuestCacheTurn != iTurn)
+	{
+		m_iResearchAgreementQuestCacheTurn = iTurn;
+		for(int iTarget = 0; iTarget < MAX_MAJOR_CIVS; iTarget++)
+			m_abResearchAgreementQuestTarget[iTarget] = false;
+
+		for(int iPlayerLoop = 0; iPlayerLoop < MAX_CIV_PLAYERS; iPlayerLoop++)
+		{
+			PlayerTypes eMinor = (PlayerTypes)iPlayerLoop;
+			if(eMinor == GetPlayer()->GetID())
+				continue;
+
+			CvPlayer& kMinor = GET_PLAYER(eMinor);
+			if(!kMinor.isAlive() || !kMinor.isMinorCiv())
+				continue;
+
+			CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+			if(!pMinorAI || !pMinorAI->IsActiveQuestForPlayer(GetPlayer()->GetID(), MINOR_CIV_QUEST_RESEARCH_AGREEMENT))
+				continue;
+
+			PlayerTypes eTarget = (PlayerTypes)pMinorAI->GetQuestData1(GetPlayer()->GetID(), MINOR_CIV_QUEST_RESEARCH_AGREEMENT);
+			if(eTarget >= 0 && eTarget < MAX_MAJOR_CIVS)
+				m_abResearchAgreementQuestTarget[eTarget] = true;
+		}
+	}
+
+	return m_abResearchAgreementQuestTarget[ePlayer];
+}
+
 /// Is this AI willing to work with ePlayer?
 bool CvDiplomacyAI::IsDoFAcceptable(PlayerTypes ePlayer)
 {
@@ -21856,6 +21915,10 @@ bool CvDiplomacyAI::IsDoFAcceptable(PlayerTypes ePlayer)
 	{
 		return false;
 	}
+
+	// A city-state Research Agreement quest forces the AI to accept the DoF with its partner
+	if(IsResearchAgreementQuestWithPlayer(ePlayer))
+		return true;
 
 	// Haven't known this guy for long enough
 	if(IsTooEarlyForDoF(ePlayer))

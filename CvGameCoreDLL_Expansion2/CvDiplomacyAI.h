@@ -752,6 +752,7 @@ public:
 
 	// Working With Player
 	bool IsDoFAcceptable(PlayerTypes ePlayer);
+	bool IsResearchAgreementQuestWithPlayer(PlayerTypes ePlayer);
 	bool IsTooEarlyForDoF(PlayerTypes ePlayer);
 	bool IsDoFMessageTooSoon(PlayerTypes ePlayer) const;
 
@@ -1495,6 +1496,8 @@ private:
 	// Quest AI runtime state (not serialized)
 	int m_iLastCityStateQuestTurn;
 	BuildingTypes m_eCityStateQuestBuildingTarget;
+	int m_iResearchAgreementQuestCacheTurn;
+	bool m_abResearchAgreementQuestTarget[MAX_MAJOR_CIVS];
 
 	// Economic Aid point AI runtime state (not serialized)
 	int m_iLastCityStateAidPointTurn;
