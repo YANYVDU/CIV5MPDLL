@@ -77,6 +77,7 @@ public:
 
 	bool IsCityConnectedToPlayer (CvCity* pCity, PlayerTypes eOtherPlayer, bool bOnlyOwnedByCityOwner);
 	bool IsPlayerConnectedToPlayer (PlayerTypes eFirstPlayer, PlayerTypes eSecondPlayer);
+	bool HasTradeRouteToCity (PlayerTypes ePlayer, CvCity* pCity);
 	int CountNumPlayerConnectionsToPlayer (PlayerTypes eFirstPlayer, PlayerTypes eSecondPlayer);
 	// International trade routes the player originates (World Bank resolution uses this count)
 	int GetNumInternationalTradeRoutes (PlayerTypes ePlayer);

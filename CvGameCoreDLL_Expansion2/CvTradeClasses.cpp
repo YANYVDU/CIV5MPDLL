@@ -644,6 +644,27 @@ int CvGameTrade::GetDomainModifierTimes100 (DomainTypes eDomain)
 }
 
 //	--------------------------------------------------------------------------------
+bool CvGameTrade::HasTradeRouteToCity (PlayerTypes ePlayer, CvCity* pCity)
+{
+	if(!pCity)
+		return false;
+
+	for(uint ui = 0; ui < m_aTradeConnections.size(); ui++)
+	{
+		if(IsTradeRouteIndexEmpty(ui))
+			continue;
+
+		const TradeConnection& kConnection = m_aTradeConnections[ui];
+		if(kConnection.m_eOriginOwner == ePlayer
+			&& kConnection.m_eDestOwner != ePlayer
+			&& kConnection.m_iDestX == pCity->getX()
+			&& kConnection.m_iDestY == pCity->getY())
+			return true;
+	}
+
+	return false;
+}
+
 bool CvGameTrade::IsPlayerConnectedToPlayer (PlayerTypes eFirstPlayer, PlayerTypes eSecondPlayer)
 {
 	for (uint ui = 0; ui < m_aTradeConnections.size(); ui++)

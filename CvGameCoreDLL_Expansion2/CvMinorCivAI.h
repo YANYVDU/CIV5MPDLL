@@ -94,6 +94,8 @@ enum MinorCivQuestTypes
 	MINOR_CIV_QUEST_CONTEST_CITIES_FOUNDED,
 	MINOR_CIV_QUEST_CONTEST_CITIES_CAPTURED,
 
+	MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY,
+
 	NUM_MINOR_CIV_QUEST_TYPES,
 };
 FDataStream& operator<<(FDataStream&, const MinorCivQuestTypes&);
@@ -389,6 +391,7 @@ public:
 	PlayerTypes GetBestWarTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestOriginalCapitalTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestResearchAgreementTargetForQuest(PlayerTypes ePlayer);
+	CvCity* GetBestTradeRouteToCityTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestCityStateTarget(PlayerTypes eForPlayer);
 	PlayerTypes GetMostRecentBullyForQuest() const;
 	bool IsWantsMinorDead(PlayerTypes eMinor);

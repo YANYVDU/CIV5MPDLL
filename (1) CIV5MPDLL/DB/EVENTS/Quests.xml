@@ -381,7 +381,7 @@
 			<Duration>30</Duration>
 			<Friendship>50</Friendship>
 			<Priority>24</Priority>
-			<Icon>[ICON_INFLUENCE]</Icon>
+			<Icon>[ICON_QUEST_BECOME_ALLY]</Icon>
 			<Tooltip>TXT_KEY_CITY_STATE_QUEST_BECOME_ALLY_FORMAL</Tooltip>
 		</Row>
 		<Row>
@@ -430,7 +430,7 @@
 			<Duration>30</Duration>
 			<Friendship>40</Friendship>
 			<Priority>9</Priority>
-			<Icon>[ICON_PEACE]</Icon>
+			<Icon>[ICON_QUEST_LEAGUE_PROTECT]</Icon>
 			<Tooltip>TXT_KEY_CITY_STATE_QUEST_LEAGUE_PROTECT_CITY_STATE_FORMAL</Tooltip>
 		</Row>
 		<Row>
@@ -453,7 +453,7 @@
 			<Duration>30</Duration>
 			<Friendship>40</Friendship>
 			<Priority>12</Priority>
-			<Icon>[ICON_INTERNATIONAL_TRADE]</Icon>
+			<Icon>[ICON_QUEST_LEAGUE_REPEAL_EMBARGO]</Icon>
 			<Tooltip>TXT_KEY_CITY_STATE_QUEST_LEAGUE_REPEAL_EMBARGO_FORMAL</Tooltip>
 		</Row>
 		<Row>
@@ -466,7 +466,7 @@
 			<BiasMaritime>300</BiasMaritime>
 			<BiasMercantile>350</BiasMercantile>
 			<Priority>14</Priority>
-			<Icon>[ICON_GOLD]</Icon>
+			<Icon>[ICON_QUEST_DONATE_GOLD]</Icon>
 			<Tooltip>TXT_KEY_CITY_STATE_QUEST_DONATE_GOLD_FORMAL</Tooltip>
 		</Row>
 		<Row>
@@ -477,7 +477,7 @@
 			<Duration>30</Duration>
 			<Friendship>40</Friendship>
 			<Priority>15</Priority>
-			<Icon>[ICON_DIPLOMAT]</Icon>
+			<Icon>[ICON_QUEST_RESEARCH_AGREEMENT]</Icon>
 			<Tooltip>TXT_KEY_CITY_STATE_QUEST_RESEARCH_AGREEMENT_FORMAL</Tooltip>
 		</Row>
 		<!-- SP contest quests -->
@@ -565,6 +565,23 @@
 			<Priority>20</Priority>
 			<Icon>[ICON_WAR]</Icon>
 			<Tooltip>TXT_KEY_CITY_STATE_QUEST_CONTEST_CITIES_CAPTURED_FORMAL</Tooltip>
+		</Row>
+		<Row>
+			<ID>37</ID>
+			<Type>MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY</Type>
+			<Internal>true</Internal>
+			<Enabled>false</Enabled>
+			<Duration>30</Duration>
+			<Friendship>25</Friendship>
+			<RewardGold>50</RewardGold>
+			<BiasMaritime>0</BiasMaritime>
+			<BiasMercantile>300</BiasMercantile>
+			<BiasCultured>0</BiasCultured>
+			<BiasMilitaristic>0</BiasMilitaristic>
+			<BiasReligious>0</BiasReligious>
+			<Priority>21</Priority>
+			<Icon>[ICON_QUEST_TRADE_ROUTE_TO_CITY]</Icon>
+			<Tooltip>TXT_KEY_CITY_STATE_QUEST_TRADE_ROUTE_TO_CITY_FORMAL</Tooltip>
 		</Row>
 	</Quests>
 

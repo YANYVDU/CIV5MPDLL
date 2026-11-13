@@ -734,6 +734,13 @@ bool CvMinorCivQuest::IsComplete()
 		if(GC.getGame().GetGameTrade()->IsPlayerConnectedToPlayer(m_eMinor,m_eAssignedPlayer))
 			return true;
 	}
+	else if(m_eType == MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY)
+	{
+		CvPlot* pPlot = GC.getMap().plot(m_iData1, m_iData2);
+		CvCity* pTargetCity = pPlot ? pPlot->getPlotCity() : NULL;
+		if(pTargetCity && GC.getGame().GetGameTrade()->HasTradeRouteToCity(m_eAssignedPlayer, pTargetCity))
+			return true;
+	}
 	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_TECH)
 	{
 		TechTypes eTech = (TechTypes) m_iData1;
@@ -1311,6 +1318,13 @@ bool CvMinorCivQuest::IsExpired()
 
 bool CvMinorCivQuest::IsObsolete()
 {
+	if(m_eType == MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY)
+	{
+		CvPlot* pPlot = GC.getMap().plot(m_iData1, m_iData2);
+		if(!pPlot || !pPlot->getPlotCity())
+			return true;
+	}
+
 	return (IsRevoked() || IsExpired());
 }
 
@@ -1676,6 +1690,25 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 	{
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_START_TRADE_ROUTE");
 		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_START_TRADE_ROUTE");
+	}
+	// Establish a trade route to a specified city
+	else if(m_eType == MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY)
+	{
+		CvCity* pTargetCity = pMinor->GetMinorCivAI()->GetBestTradeRouteToCityTargetForQuest(m_eAssignedPlayer);
+		FAssertMsg(pTargetCity != NULL, "MINOR CIV AI: No valid target city for a trade route quest.");
+
+		if(pTargetCity)
+		{
+			m_iData1 = pTargetCity->getX();
+			m_iData2 = pTargetCity->getY();
+
+			strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_TRADE_ROUTE_TO_CITY");
+			strMessage << pTargetCity->getName();
+			strMessage << pMinor->getName();
+			strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_TRADE_ROUTE_TO_CITY");
+			strSummary << pTargetCity->getName();
+			strSummary << pMinor->getName();
+		}
 	}
 	// Research a Tech
 	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_TECH)
@@ -2436,6 +2469,19 @@ bool CvMinorCivQuest::DoFinishQuest()
 	{
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_TRADE_ROUTE");
 		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_TRADE_ROUTE");
+	}
+	else if(m_eType == MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY)
+	{
+		CvPlot* pPlot = GC.getMap().plot(m_iData1, m_iData2);
+		CvCity* pTargetCity = pPlot ? pPlot->getPlotCity() : NULL;
+		const char* strCityName = pTargetCity ? pTargetCity->getName() : "";
+
+		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_TRADE_ROUTE_TO_CITY");
+		strMessage << strCityName;
+		strMessage << pMinor->getName();
+		strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_QUEST_COMPLETE_TRADE_ROUTE_TO_CITY");
+		strSummary << strCityName;
+		strSummary << pMinor->getName();
 	}
 	// Research a Tech
 	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_TECH)
@@ -5319,6 +5365,12 @@ bool CvMinorCivAI::IsEnabledQuest(MinorCivQuestTypes eQuest)
 		if(GC.getQUEST_DISABLED_TRADE_ROUTE() == 1)
 			return false;
 	}
+	// Trade Route to a specified city
+	else if(eQuest == MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY)
+	{
+		if(GetTrait() != MINOR_CIV_TRAIT_MERCANTILE)
+			return false;
+	}
 #if defined(MOD_EVENTS_QUESTS)
 	}
 #endif
@@ -5670,6 +5722,18 @@ bool CvMinorCivAI::IsValidQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes
 		// This player must be able to build a trade route either by land or sea
 		if(!GC.getGame().GetGameTrade()->CanCreateTradeRoute(ePlayer,GetPlayer()->GetID(), DOMAIN_LAND) &&
 			!GC.getGame().GetGameTrade()->CanCreateTradeRoute(ePlayer,GetPlayer()->GetID(), DOMAIN_SEA))
+			return false;
+	}
+	// Trade route to a specified city
+	else if(eQuest == MINOR_CIV_QUEST_TRADE_ROUTE_TO_CITY)
+	{
+		if(GetTrait() != MINOR_CIV_TRAIT_MERCANTILE)
+			return false;
+
+		if(IsRecentlyBulliedByMajor(ePlayer))
+			return false;
+
+		if(GetBestTradeRouteToCityTargetForQuest(ePlayer) == NULL)
 			return false;
 	}
 	// RESEARCH A TECH
@@ -7707,6 +7771,68 @@ PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePl
 
 	int iRandIndex = GC.getGame().getJonRandNum(veValidPlayers.size(), "Finding random player for Minor to give out a quest to sign a research agreement.");
 	return veValidPlayers[iRandIndex];
+}
+
+/// Choose a city that ePlayer can reach with an international trade route.
+CvCity* CvMinorCivAI::GetBestTradeRouteToCityTargetForQuest(PlayerTypes ePlayer)
+{
+	CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+	CvCity* pBestCity = NULL;
+	int iValidCount = 0;
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_CIV_PLAYERS; iPlayerLoop++)
+	{
+		PlayerTypes eTargetPlayer = (PlayerTypes)iPlayerLoop;
+		if(eTargetPlayer == ePlayer || eTargetPlayer == GetPlayer()->GetID())
+			continue;
+
+		CvPlayer& kTargetPlayer = GET_PLAYER(eTargetPlayer);
+		if(!kTargetPlayer.isAlive() || kTargetPlayer.isBarbarian())
+			continue;
+
+		if(kPlayer.getTeam() == kTargetPlayer.getTeam())
+			continue;
+
+		if(GET_TEAM(kPlayer.getTeam()).isAtWar(kTargetPlayer.getTeam()))
+			continue;
+
+		if(GET_TEAM(GetPlayer()->getTeam()).isAtWar(kTargetPlayer.getTeam()))
+			continue;
+
+		if(!GET_TEAM(kPlayer.getTeam()).isHasMet(kTargetPlayer.getTeam()))
+			continue;
+
+		if(!GET_TEAM(GetPlayer()->getTeam()).isHasMet(kTargetPlayer.getTeam()))
+			continue;
+
+		int iCityLoop;
+		for(CvCity* pTargetCity = kTargetPlayer.firstCity(&iCityLoop); pTargetCity != NULL; pTargetCity = kTargetPlayer.nextCity(&iCityLoop))
+		{
+			if(GC.getGame().GetGameTrade()->HasTradeRouteToCity(ePlayer, pTargetCity))
+				continue;
+
+			bool bCanRoute = false;
+			int iOriginLoop;
+			for(CvCity* pOriginCity = kPlayer.firstCity(&iOriginLoop); pOriginCity != NULL; pOriginCity = kPlayer.nextCity(&iOriginLoop))
+			{
+				if(kPlayer.GetTrade()->CanCreateTradeRoute(pOriginCity, pTargetCity, DOMAIN_LAND, TRADE_CONNECTION_INTERNATIONAL, false)
+					|| kPlayer.GetTrade()->CanCreateTradeRoute(pOriginCity, pTargetCity, DOMAIN_SEA, TRADE_CONNECTION_INTERNATIONAL, false))
+				{
+					bCanRoute = true;
+					break;
+				}
+			}
+
+			if(!bCanRoute)
+				continue;
+
+			iValidCount++;
+			if(GC.getGame().getJonRandNum(iValidCount, "Choosing target city for a trade route quest") == 0)
+				pBestCity = pTargetCity;
+		}
+	}
+
+	return pBestCity;
 }
 
 /// Find a Great Person that a Minor would want a major to spawn
