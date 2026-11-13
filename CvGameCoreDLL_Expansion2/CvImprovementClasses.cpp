@@ -1143,6 +1143,25 @@ bool CvImprovementEntry::CacheResults(Database::Results& kResults, CvDatabaseUti
 	}
 #endif
 
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+#if defined(MOD_API_VP_ADJACENT_YIELD_BOOST)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiAdjacentImprovementYieldChanges);
+#endif
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiAdjacentResourceYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiAdjacentTerrainYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiAdjacentFeatureYieldChanges);
+#if defined(MOD_ROG_CORE)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiFeatureYieldChanges);
+#endif
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTerrainYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTechYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTechNoFreshWaterYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTechFreshWaterYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiRouteYieldChanges);
+#if defined(MOD_IMPROVEMENT_TRADE_ROUTE_BONUSES)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTradeRouteYieldChanges);
+#endif
+
 	return true;
 }
 

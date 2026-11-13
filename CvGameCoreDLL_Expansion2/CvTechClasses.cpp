@@ -79,6 +79,9 @@ CvTechEntry::CvTechEntry(void):
 	m_piPrereqOrTechs(NULL),
 	m_piPrereqAndTechs(NULL),
 	m_pabFreePromotion(NULL)
+#if defined(MOD_ROG_CORE)
+	, m_ppiTechYieldChanges(NULL)
+#endif
 {
 }
 
@@ -91,6 +94,9 @@ CvTechEntry::~CvTechEntry(void)
 	SAFE_DELETE_ARRAY(m_piPrereqOrTechs);
 	SAFE_DELETE_ARRAY(m_piPrereqAndTechs);
 	SAFE_DELETE_ARRAY(m_pabFreePromotion);
+#if defined(MOD_ROG_CORE)
+	CvDatabaseUtility::SafeDelete2DArray(m_ppiTechYieldChanges);
+#endif
 }
 
 bool CvTechEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& kUtility)
@@ -251,6 +257,11 @@ bool CvTechEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& k
 			m_ppiTechYieldChanges[SpecialistID][YieldID] = yield;
 		}
 	}
+#endif
+
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+#if defined(MOD_ROG_CORE)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTechYieldChanges);
 #endif
 
 	return true;

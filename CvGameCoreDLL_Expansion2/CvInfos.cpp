@@ -5597,6 +5597,11 @@ bool CvFeatureInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	// Determine of this feature is clearable - set each time the game is started
 	m_bClearable = false;
 
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+#if defined(MOD_API_UNIFIED_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTechYieldChanges);
+#endif
+
 	return true;
 }
 
@@ -6000,6 +6005,11 @@ bool CvTerrainInfo::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 #endif
 
 	m_strEffectTypeTag = kResults.GetText("EffectTypeTag");
+
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+#if defined(MOD_API_UNIFIED_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTechYieldChanges);
+#endif
 
 	return true;
 }

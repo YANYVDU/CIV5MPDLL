@@ -2817,6 +2817,27 @@ bool CvTraitEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility& 
 	m_bWLKDCityNoResearchCost = kResults.GetBool("WLKDCityNoResearchCost");
 	m_bGoodyUnitUpgradeFirst = kResults.GetBool("GoodyUnitUpgradeFirst");
 
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiImprovementYieldChanges);
+#if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiPlotYieldChanges);
+#endif
+#if defined(MOD_API_UNIFIED_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiFeatureYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiResourceYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTerrainYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTradeRouteYieldChange);
+#endif
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiSpecialistYieldChanges);
+#if defined(MOD_API_UNIFIED_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiGreatPersonExpendedYield);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiCityYieldFromUnimprovedFeature);
+#endif
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiUnimprovedFeatureYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiCityYieldModifierFromAdjacentFeature);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiCityYieldPerAdjacentFeature);
+
 	return true;
 }
 

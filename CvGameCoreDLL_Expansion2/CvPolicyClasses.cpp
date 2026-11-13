@@ -1608,6 +1608,24 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	kUtility.PopulateArrayByValue(m_piBuildSpeedModifier, "Builds", "Policy_BuildSpeedModifier", "BuildType", "PolicyType", szPolicyType, "Modifier");
 #endif
 
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassYieldModifiers);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiImprovementYieldChanges);
+#if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiPlotYieldChanges);
+#endif
+#if defined(MOD_API_UNIFIED_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiFeatureYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiCityYieldFromUnimprovedFeature);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiUnimprovedFeatureYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiResourceYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTerrainYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTradeRouteYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiSpecialistYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiGreatPersonExpendedYield);
+#endif
+
 	return true;
 }
 

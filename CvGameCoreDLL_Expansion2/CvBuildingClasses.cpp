@@ -502,7 +502,6 @@ CvBuildingEntry::~CvBuildingEntry(void)
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiImprovementYieldChangeGlobal);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiFeatureYieldChangesGlobal);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppiTerrainYieldChangesGlobal);
-	CvDatabaseUtility::SafeDelete2DArray(m_ppaiImprovementYieldChangeGlobal);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiYieldPerXTerrain);
 	CvDatabaseUtility::SafeDelete2DArray(m_ppaiYieldPerXFeature);
 
@@ -2008,6 +2007,35 @@ bool CvBuildingEntry::CacheResults(Database::Results& kResults, CvDatabaseUtilit
 			}
 		}
 	}
+#endif
+
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiResourceYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiFeatureYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiTerrainYieldModifier);
+#if defined(MOD_ROG_CORE)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiSpecialistYieldChangeLocal);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiImprovementYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiImprovementYieldChangeGlobal);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiFeatureYieldChangesGlobal);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTerrainYieldChangesGlobal);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiYieldPerXTerrain);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiYieldPerXFeature);
+#endif
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiTerrainYieldChange);
+#if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiPlotYieldChange);
+#endif
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiSpecialistYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiImprovementYieldModifier);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiSpecialistYieldModifier);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiSpecialistYieldModifierGlobal);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiFeatureYieldModifier);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiResourceYieldModifier);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassYieldChanges);
+#if defined(MOD_ROG_CORE)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassYieldModifiers);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassLocalYieldChanges);
 #endif
 
 	return true;

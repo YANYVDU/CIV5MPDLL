@@ -1324,6 +1324,11 @@ bool CvCityStateUAEffectEntry::CacheResults(Database::Results& kResults, CvDatab
 		}
 	}
 
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiResourceYieldModifiers);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiImprovementYieldModifiers);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassYieldModifiers);
+
 	return true;
 }
 

@@ -1593,6 +1593,28 @@ bool CvBeliefEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	}
 #endif
 
+	// Empty tables share one read-only all-zero block (CvDatabaseUtility::Share2DArrayIfZero).
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiImprovementYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiImprovementAdjacentCityYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiBuildingClassYieldChanges);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiFeatureYieldChange);
+#if defined(MOD_API_UNIFIED_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiCityYieldFromUnimprovedFeature);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiUnimprovedFeatureYieldChanges);
+#endif
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiResourceYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiTerrainYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiTerrainYieldChangeAdditive);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppaiTerrainCityYieldChanges);
+#if defined(MOD_API_UNIFIED_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiTradeRouteYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiSpecialistYieldChange);
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiGreatPersonExpendedYield);
+#endif
+#if defined(MOD_RELIGION_PLOT_YIELDS)
+	CvDatabaseUtility::Share2DArrayIfZero(m_ppiPlotYieldChange);
+#endif
+
 	return true;
 }
 
