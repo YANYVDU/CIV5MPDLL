@@ -79,7 +79,8 @@ typedef wchar_t          wchar;
 #define MIN(a, b) std::min(a, b)
 
 // AI_PERF macros are always available; runtime control via GC.getAIPerfLogging()
-// (default off, enable via CustomModOption GLOBAL_AI_PERF_LOGGING=1 or Lua SetAIPerfLogging(true))
+// (default off). The engine turns it on from config.ini "AIPerfLog = 1"; a mod that defines
+// a GLOBAL_AI_PERF_LOGGING CustomModOptions row, or Lua SetAIPerfLogging(true), also enables it.
 #define AI_PERF_LOGGING
 #define AI_PERF(perfFileName, baseStringName) cvStopWatch kPerfTimer(baseStringName, perfFileName, FILogFile::kDontTimeStamp, !GC.getAIPerfLogging(), true)
 #define AI_PERF_FORMAT(perfFileName, FormatValue) CvString szPerfString; szPerfString.Format##FormatValue; cvStopWatch kPerfTimer(szPerfString, perfFileName, FILogFile::kDontTimeStamp, !GC.getAIPerfLogging(), true)

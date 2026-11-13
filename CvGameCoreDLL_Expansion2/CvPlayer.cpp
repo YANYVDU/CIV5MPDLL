@@ -20537,7 +20537,7 @@ void CvPlayer::RefreshCSAllUAEffects()
 		return;
 
 	// CSUA perf profiling: one CSV row per player per call, written to CSUA-perf.csv when AI perf
-	// logging is enabled (CustomModOption GLOBAL_AI_PERF_LOGGING=1 or Lua SetAIPerfLogging(true)).
+	// logging is enabled (config.ini "AIPerfLog = 1", GLOBAL_AI_PERF_LOGGING, or Lua SetAIPerfLogging).
 	// Only format the row when logging is on; the macro builds the CvString unconditionally.
 	if (GC.getAIPerfLogging())
 	{
