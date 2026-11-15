@@ -26337,7 +26337,7 @@ PlayerTypes CvDiplomacyAI::GetAidPointPaymentMinor(PlayerTypes eMajor, int iCost
 /// surcharge in the first place, so requiring the points here would defeat the reserve.
 int CvDiplomacyAI::GetAidPointAnnexReserve(PlayerTypes eMinor)
 {
-	const int iCost = GC.getGame().GetAidPointCostAnnexCityState();
+	const int iCost = m_pPlayer->GetAidPointCost(AID_POINT_ACTION_ANNEX_CITY_STATE);
 	if (iCost <= 0 || !m_pPlayer->IsAbleToAnnexCityStates())
 		return 0;
 
@@ -26400,7 +26400,7 @@ int CvDiplomacyAI::GetAidPointReservedForMinor(PlayerTypes eMinor)
 		}
 
 		if (bImpossible && !bWillDo)
-			iReserved += GC.getGame().GetAidPointCostRerollQuests();
+			iReserved += m_pPlayer->GetAidPointCost(AID_POINT_ACTION_REROLL_QUESTS);
 	}
 
 	// Unit gift: same static conditions as DoAidPointGiftUnitSpend, which covers the whole focus
@@ -26414,7 +26414,7 @@ int CvDiplomacyAI::GetAidPointReservedForMinor(PlayerTypes eMinor)
 	{
 		int iCounter = pMinorAI->GetUnitSpawnCounter(eMe);
 		if (iCounter >= 0 && iCounter <= 5)
-			iReserved += GC.getGame().GetAidPointCostPendingGiftUnit();
+			iReserved += m_pPlayer->GetAidPointCost(AID_POINT_ACTION_PENDING_GIFT_UNIT);
 	}
 
 	return iReserved;
@@ -26576,7 +26576,7 @@ void CvDiplomacyAI::DoAidPointGreatPersonSpend(PlayerTypes eMajor, bool* pabPool
 	if (!bHasAlly)
 		return;
 
-	const int iCost = GC.getGame().GetAidPointCostNextGreatPerson();
+	const int iCost = m_pPlayer->GetAidPointCost(AID_POINT_ACTION_NEXT_GREAT_PERSON);
 	const PlayerTypes ePay = GetAidPointPaymentMinor(eMajor, iCost, pabPoolUsed);
 	if (ePay == NO_PLAYER)
 		return;
@@ -26593,7 +26593,7 @@ void CvDiplomacyAI::DoAidPointGreatPersonSpend(PlayerTypes eMajor, bool* pabPool
 /// Requirement 2.2: reroll personal quests that this AI provably cannot finish.
 void CvDiplomacyAI::DoAidPointRerollSpend(PlayerTypes eMajor, bool* pabPoolUsed)
 {
-	const int iCost = GC.getGame().GetAidPointCostRerollQuests();
+	const int iCost = m_pPlayer->GetAidPointCost(AID_POINT_ACTION_REROLL_QUESTS);
 	if (iCost <= 0)
 		return;
 
@@ -26671,7 +26671,7 @@ void CvDiplomacyAI::DoAidPointRerollSpend(PlayerTypes eMajor, bool* pabPoolUsed)
 /// Requirement 2.3: preselect the next unit a militaristic friend or ally will gift us.
 void CvDiplomacyAI::DoAidPointGiftUnitSpend(PlayerTypes eMajor, bool* pabPoolUsed)
 {
-	const int iCost = GC.getGame().GetAidPointCostPendingGiftUnit();
+	const int iCost = m_pPlayer->GetAidPointCost(AID_POINT_ACTION_PENDING_GIFT_UNIT);
 	if (iCost <= 0)
 		return;
 
@@ -26822,7 +26822,7 @@ void CvDiplomacyAI::DoAidPointBullySpend(PlayerTypes eMajor, bool* pabPoolUsed)
 /// Requirement 2.5: pull the next World Congress session forward when we dominate it anyway.
 void CvDiplomacyAI::DoAidPointCongressSpend(PlayerTypes eMajor, bool* pabPoolUsed)
 {
-	const int iCost = GC.getGame().GetAidPointCostHastenCongress();
+	const int iCost = m_pPlayer->GetAidPointCost(AID_POINT_ACTION_HASTEN_CONGRESS);
 	const int iHastenTurns = GC.getGame().GetAidPointHastenCongressTurns();
 	if (iCost <= 0 || iHastenTurns <= 0)
 		return;
@@ -26894,7 +26894,7 @@ void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eTarget, bool* pabPoolUs
 	if (!m_pPlayer->GetDiplomacyAI()->IsDenouncedPlayer(eTarget))
 		return;
 
-	const int iCost = GC.getGame().GetAidPointCostDenounce();
+	const int iCost = m_pPlayer->GetAidPointCostDenounce();
 	if (iCost <= 0)
 		return;
 
@@ -26934,7 +26934,7 @@ void CvDiplomacyAI::DoAidPointPermanentVoteSpend(PlayerTypes eMajor, bool* pabPo
 	if (eStrategy != (AIGrandStrategyTypes)GC.getInfoTypeForString("AIGRANDSTRATEGY_UNITED_NATIONS"))
 		return;
 
-	const int iCost = GC.getGame().GetAidPointCostPermanentVote();
+	const int iCost = GET_PLAYER(eMajor).GetAidPointCostPermanentVote();
 	if (iCost <= 0)
 		return;
 
@@ -26977,7 +26977,7 @@ void CvDiplomacyAI::DoAidPointEmergencyProposalSpend(PlayerTypes eMajor, bool* p
 	if (pLeague->CanPropose(eMajor) || !pLeague->CanClaimEmergencyProposal(eMajor))
 		return;
 
-	const int iCost = GC.getGame().GetAidPointCostEmergencyProposal();
+	const int iCost = m_pPlayer->GetAidPointCost(AID_POINT_ACTION_EMERGENCY_PROPOSAL);
 	if (iCost <= 0)
 		return;
 

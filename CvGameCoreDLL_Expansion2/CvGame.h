@@ -627,6 +627,8 @@ public:
 	bool CanRequestEmergencyProposal(PlayerTypes eMajor);
 	bool HasAidPointPermanentVote(PlayerTypes eMajor, PlayerTypes eMinor);
 	// Aid point costs for the spending actions above (0 = disabled)
+	// Base aid-point costs (0 = disabled). These do NOT include player policy modifiers;
+	// use CvPlayer::GetAidPointCost(action) for the price a specific player pays.
 	int GetAidPointCostRerollQuests();
 	int GetAidPointCostNextGreatPerson();
 	int GetAidPointCostPendingGiftUnit();
@@ -640,6 +642,10 @@ public:
 	int GetAidPointCostPeace();
 	int GetAidPointCostPermanentVote();
 	int GetAidPointCostEmergencyProposal();
+	// Base cost of a fixed-cost aid-point action before any player policy modifier
+	int GetAidPointBaseCost(AidPointActionTypes eAction);
+	// Whether policies may apply a per-action cost modifier (AidPointActions.Discountable)
+	bool IsAidPointActionDiscountable(AidPointActionTypes eAction);
 	// Share of a city-state treasury seized when a major bullies gold (percent, 0 = disabled)
 	int GetBullyTreasurySharePercent();
 	// Every unit type a city-state may gift to ePlayer (same filter as GetCompetitiveSpawnUnitType,

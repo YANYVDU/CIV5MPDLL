@@ -7,6 +7,7 @@
 	------------------------------------------------------------------------------------------------------- */
 #include "CvGameCoreDLLPCH.h"
 #include "CvGameCoreDLLUtil.h"
+#include "CvAidPointActions.h"
 #include "CvPolicyAI.h"
 #include "CvFlavorManager.h"
 #include "CvPolicyClasses.h"
@@ -171,6 +172,9 @@ CvPolicyEntry::CvPolicyEntry(void):
 	m_bNoOccupiedUnhappinessGarrisonedCity(false),
 	m_iMilitaryUnitGiftExtraInfluence(0),
 	m_iProtectedMinorPerTurnInfluence(0),
+	m_piAidPointCostModifiers(NULL),
+	m_iAidPointQuestReward(0),
+	m_iAidPointContestReward(0),
 	m_iAfraidMinorPerTurnInfluence(0),
 	m_iMinorBullyScoreModifier(0),
 	m_iMinorLocalBullyScoreModifier(0),
@@ -302,6 +306,7 @@ CvPolicyEntry::CvPolicyEntry(void):
 /// Destructor
 CvPolicyEntry::~CvPolicyEntry(void)
 {
+	SAFE_DELETE_ARRAY(m_piAidPointCostModifiers);
 	SAFE_DELETE_ARRAY(m_piPrereqOrPolicies);
 	SAFE_DELETE_ARRAY(m_piPrereqAndPolicies);
 	SAFE_DELETE_ARRAY(m_piPolicyDisables);
@@ -538,6 +543,8 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	m_bNoOccupiedUnhappinessGarrisonedCity = kResults.GetBool("NoOccupiedUnhappinessGarrisonedCity");
 	m_iMilitaryUnitGiftExtraInfluence = kResults.GetInt("MilitaryUnitGiftExtraInfluence");
 	m_iProtectedMinorPerTurnInfluence = kResults.GetInt("ProtectedMinorPerTurnInfluence");
+	m_iAidPointQuestReward = kResults.GetInt("AidPointQuestReward");
+	m_iAidPointContestReward = kResults.GetInt("AidPointContestReward");
 	m_iAfraidMinorPerTurnInfluence = kResults.GetInt("AfraidMinorPerTurnInfluence");
 	m_iMinorBullyScoreModifier = kResults.GetInt("MinorBullyScoreModifier");
 	m_iMinorLocalBullyScoreModifier = kResults.GetInt("MinorLocalBullyScoreModifier");
@@ -658,6 +665,29 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 
 	kUtility.PopulateArrayByValue(m_paiTourismOnUnitCreation, "UnitClasses", "Policy_TourismOnUnitCreation", "UnitClassType", "PolicyType", szPolicyType, "Tourism");
 
+	//Policy_AidPointCostModifiers
+	{
+		kUtility.InitializeArray(m_piAidPointCostModifiers, NUM_AID_POINT_ACTION_TYPES);
+		std::string strKey("Policy_AidPointCostModifiers");
+		Database::Results* pResults = kUtility.GetResults(strKey);
+		if(pResults == NULL)
+		{
+			pResults = kUtility.PrepareResults(strKey, "select ActionType, Modifier from Policy_AidPointCostModifiers where PolicyType = ?");
+		}
+		if(pResults != NULL)
+		{
+			pResults->Bind(1, szPolicyType);
+			while(pResults->Step())
+			{
+				const char* szActionType = pResults->GetText(0);
+				const int iModifier = pResults->GetInt(1);
+				const AidPointActionTypes eAction = GetAidPointActionTypeFromString(szActionType);
+				if(eAction != NO_AID_POINT_ACTION)
+					m_piAidPointCostModifiers[eAction] = iModifier;
+			}
+			pResults->Reset();
+		}
+	}
 	//Policy Free Units
 	{
 		std::string strKey("Policy_FreeUnitClasses_MaxRow");
@@ -2447,6 +2477,26 @@ int CvPolicyEntry::GetMilitaryUnitGiftExtraInfluence() const
 int CvPolicyEntry::GetProtectedMinorPerTurnInfluence() const
 {
 	return m_iProtectedMinorPerTurnInfluence;
+}
+
+/// Percent modifier applied to one aid-point action's cost (e.g. -20 = 20% cheaper)
+int CvPolicyEntry::GetAidPointCostModifier(AidPointActionTypes eAction) const
+{
+	if(m_piAidPointCostModifiers == NULL || eAction < 0 || eAction >= NUM_AID_POINT_ACTION_TYPES)
+		return 0;
+	return m_piAidPointCostModifiers[eAction];
+}
+
+/// Aid points granted for completing any city-state quest
+int CvPolicyEntry::GetAidPointQuestReward() const
+{
+	return m_iAidPointQuestReward;
+}
+
+/// Aid points granted for winning a city-state contest
+int CvPolicyEntry::GetAidPointContestReward() const
+{
+	return m_iAidPointContestReward;
 }
 
 /// Influence boost with minor eligible for bullying

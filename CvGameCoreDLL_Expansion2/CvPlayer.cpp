@@ -15652,6 +15652,86 @@ void CvPlayer::SetAidPointPermanentVote(PlayerTypes eMinor, bool bValue)
 		m_uiAidPointPermanentVoteMask &= ~(1ULL << eMinor);
 }
 
+/// Sum of AidPointCostModifier for one action over this player's adopted policies
+int CvPlayer::GetAidPointCostModifier(AidPointActionTypes eAction) const
+{
+	if (!GC.getGame().IsAidPointActionDiscountable(eAction))
+		return 0;
+
+	int iModifier = 0;
+	const int iNumPolicies = GC.getNumPolicyInfos();
+	for (int iPolicy = 0; iPolicy < iNumPolicies; iPolicy++)
+	{
+		const PolicyTypes ePolicy = (PolicyTypes)iPolicy;
+		if (!HasPolicy(ePolicy))
+			continue;
+
+		CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
+		if (pPolicy != NULL)
+			iModifier += pPolicy->GetAidPointCostModifier(eAction);
+	}
+	return iModifier;
+}
+
+/// Cost of one aid-point action with this player's policy discount applied
+int CvPlayer::GetAidPointCost(AidPointActionTypes eAction) const
+{
+	const int iBaseCost = GC.getGame().GetAidPointBaseCost(eAction);
+	if (iBaseCost <= 0)
+		return iBaseCost;
+
+	int iCost = iBaseCost * (100 + GetAidPointCostModifier(eAction)) / 100;
+	return (iCost < 1) ? 1 : iCost;
+}
+
+/// City-state denounce cost with this player's policy discount applied
+int CvPlayer::GetAidPointCostDenounce() const
+{
+	return GetAidPointCost(AID_POINT_ACTION_DENOUNCE);
+}
+
+/// Permanent World Congress vote cost with this player's policy discount applied
+int CvPlayer::GetAidPointCostPermanentVote() const
+{
+	return GetAidPointCost(AID_POINT_ACTION_PERMANENT_VOTE);
+}
+
+/// Aid points granted when this player completes any city-state quest
+int CvPlayer::GetAidPointQuestReward() const
+{
+	int iReward = 0;
+	const int iNumPolicies = GC.getNumPolicyInfos();
+	for (int iPolicy = 0; iPolicy < iNumPolicies; iPolicy++)
+	{
+		const PolicyTypes ePolicy = (PolicyTypes)iPolicy;
+		if (!HasPolicy(ePolicy))
+			continue;
+
+		CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
+		if (pPolicy != NULL)
+			iReward += pPolicy->GetAidPointQuestReward();
+	}
+	return iReward;
+}
+
+/// Aid points granted when this player wins a city-state contest
+int CvPlayer::GetAidPointContestReward() const
+{
+	int iReward = 0;
+	const int iNumPolicies = GC.getNumPolicyInfos();
+	for (int iPolicy = 0; iPolicy < iNumPolicies; iPolicy++)
+	{
+		const PolicyTypes ePolicy = (PolicyTypes)iPolicy;
+		if (!HasPolicy(ePolicy))
+			continue;
+
+		CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
+		if (pPolicy != NULL)
+			iReward += pPolicy->GetAidPointContestReward();
+	}
+	return iReward;
+}
+
 //	--------------------------------------------------------------------------------
 /// How much weaker do Units get when wounded?
 int CvPlayer::GetWoundedUnitDamageMod() const

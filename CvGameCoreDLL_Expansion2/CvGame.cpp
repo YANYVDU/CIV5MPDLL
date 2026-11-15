@@ -28,6 +28,7 @@
 #include "CvGrandStrategyAI.h"
 #include "CvMinorCivAI.h"
 #include "CvDiplomacyAI.h"
+#include "CvAidPointActions.h"
 #include "CvNotifications.h"
 #include "CvAdvisorCounsel.h"
 #include "CvAdvisorRecommender.h"
@@ -11580,7 +11581,7 @@ bool CvGame::DoMinorRerollQuestsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor
 	if(pMinorAI == NULL)
 		return false;
 
-	int iCost = GetAidPointCostRerollQuests();
+	int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_REROLL_QUESTS);
 	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
@@ -11647,7 +11648,7 @@ bool CvGame::DoSetNextGreatPersonChoiceFromMajor(PlayerTypes eMajor, UnitTypes e
 	if(pMinorAI == NULL)
 		return false;
 
-	int iCost = GetAidPointCostNextGreatPerson();
+	int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_NEXT_GREAT_PERSON);
 	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
@@ -11699,7 +11700,7 @@ bool CvGame::DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMino
 			return false;
 	}
 
-	int iCost = GetAidPointCostPendingGiftUnit();
+	int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_PENDING_GIFT_UNIT);
 	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
@@ -11726,7 +11727,7 @@ bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 	if(eCostMinor < MAX_MAJOR_CIVS || eCostMinor >= MAX_CIV_PLAYERS)
 		return false;
 
-	const int iCost = GetAidPointCostHastenCongress();
+	const int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_HASTEN_CONGRESS);
 	const int iTurns = GetAidPointHastenCongressTurns();
 	if(iCost <= 0 || iTurns <= 0)
 		return false;
@@ -11785,7 +11786,7 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(pMinorAI == NULL)
 		return false;
 
-	const int iCost = GetAidPointCostDenounce();
+	const int iCost = GET_PLAYER(eMajor).GetAidPointCostDenounce();
 	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
@@ -11913,7 +11914,7 @@ bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor
 	if(pMinorAI == NULL)
 		return false;
 
-	const int iCost = GetAidPointCostPeace();
+	const int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_PEACE);
 	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
@@ -11951,7 +11952,7 @@ bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(GET_PLAYER(eMajor).HasAidPointPermanentVote(eMinor))
 		return false;
 
-	const int iCost = GetAidPointCostPermanentVote();
+	const int iCost = GET_PLAYER(eMajor).GetAidPointCostPermanentVote();
 	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
@@ -11989,7 +11990,7 @@ bool CvGame::DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerT
 	if(pLeague == NULL || !pLeague->CanClaimEmergencyProposal(eMajor))
 		return false;
 
-	const int iCost = GetAidPointCostEmergencyProposal();
+	const int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_EMERGENCY_PROPOSAL);
 	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
@@ -12034,22 +12035,22 @@ bool CvGame::HasAidPointPermanentVote(PlayerTypes eMajor, PlayerTypes eMinor)
 // Aid point costs for the spending actions above (0 = disabled)
 int CvGame::GetAidPointCostRerollQuests()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_REROLL_QUESTS", 20);
+	return GetAidPointBaseCost(AID_POINT_ACTION_REROLL_QUESTS);
 }
 
 int CvGame::GetAidPointCostNextGreatPerson()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_NEXT_GREAT_PERSON", 50);
+	return GetAidPointBaseCost(AID_POINT_ACTION_NEXT_GREAT_PERSON);
 }
 
 int CvGame::GetAidPointCostPendingGiftUnit()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_PENDING_GIFT_UNIT", 10);
+	return GetAidPointBaseCost(AID_POINT_ACTION_PENDING_GIFT_UNIT);
 }
 
 int CvGame::GetAidPointCostHastenCongress()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_HASTEN_CONGRESS", 20);
+	return GetAidPointBaseCost(AID_POINT_ACTION_HASTEN_CONGRESS);
 }
 
 int CvGame::GetAidPointHastenCongressTurns()
@@ -12059,27 +12060,102 @@ int CvGame::GetAidPointHastenCongressTurns()
 
 int CvGame::GetAidPointCostDenounce()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_DENOUNCE", 20);
+	return GetAidPointBaseCost(AID_POINT_ACTION_DENOUNCE);
 }
 
 int CvGame::GetAidPointCostPeace()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_PEACE", 40);
+	return GetAidPointBaseCost(AID_POINT_ACTION_PEACE);
 }
 
 int CvGame::GetAidPointCostPermanentVote()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_PERMANENT_VOTE", 60);
+	return GetAidPointBaseCost(AID_POINT_ACTION_PERMANENT_VOTE);
 }
 
 int CvGame::GetAidPointCostEmergencyProposal()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_EMERGENCY_PROPOSAL", 40);
+	return GetAidPointBaseCost(AID_POINT_ACTION_EMERGENCY_PROPOSAL);
+}
+
+namespace
+{
+	bool s_bAidPointActionsSeeded = false;
+	bool s_bAidPointActionsLoaded = false;
+	std::string s_aidPointCostOption[NUM_AID_POINT_ACTION_TYPES];
+	int s_aiAidPointDefaultCost[NUM_AID_POINT_ACTION_TYPES] = {0};
+	bool s_abAidPointDiscountable[NUM_AID_POINT_ACTION_TYPES] = {false};
+
+	void LoadAidPointActions()
+	{
+		if(!s_bAidPointActionsSeeded)
+		{
+			s_bAidPointActionsSeeded = true;
+
+			// Seed from the C++ fallback table so a missing/unreadable DB still works
+			int iCount = 0;
+			const AidPointActionDefaults* pActions = GetAidPointActionDefaults(iCount);
+			for(int i = 0; i < iCount; i++)
+			{
+				s_aidPointCostOption[pActions[i].eType] = pActions[i].szCostOption;
+				s_aiAidPointDefaultCost[pActions[i].eType] = pActions[i].iDefaultCost;
+				s_abAidPointDiscountable[pActions[i].eType] = pActions[i].bDiscountable;
+			}
+		}
+
+		// The AidPointActions table is authoritative when available.
+		// Retry on later calls if the DB was not ready yet.
+		if(!s_bAidPointActionsLoaded)
+		{
+			Database::Connection* pDB = GC.GetGameDatabase();
+			if(pDB != NULL)
+			{
+				Database::Results kResults;
+				if(pDB->Execute(kResults, "select Type, CostOption, DefaultCost, Discountable from AidPointActions"))
+				{
+					while(kResults.Step())
+					{
+						const AidPointActionTypes eType = GetAidPointActionTypeFromString(kResults.GetText(0));
+						if(eType != NO_AID_POINT_ACTION)
+						{
+							const char* szOption = kResults.GetText(1);
+							s_aidPointCostOption[eType] = (szOption != NULL) ? szOption : "";
+							s_aiAidPointDefaultCost[eType] = kResults.GetInt(2);
+							s_abAidPointDiscountable[eType] = (kResults.GetInt(3) != 0);
+						}
+					}
+					s_bAidPointActionsLoaded = true;
+				}
+			}
+		}
+	}
+}
+
+int CvGame::GetAidPointBaseCost(AidPointActionTypes eAction)
+{
+	if(eAction < 0 || eAction >= NUM_AID_POINT_ACTION_TYPES)
+		return 0;
+
+	LoadAidPointActions();
+
+	if(s_aidPointCostOption[eAction].empty())
+		return s_aiAidPointDefaultCost[eAction];
+
+	return gCustomMods.getOption(s_aidPointCostOption[eAction].c_str(), s_aiAidPointDefaultCost[eAction]);
+}
+
+bool CvGame::IsAidPointActionDiscountable(AidPointActionTypes eAction)
+{
+	if(eAction < 0 || eAction >= NUM_AID_POINT_ACTION_TYPES)
+		return false;
+
+	LoadAidPointActions();
+	return s_abAidPointDiscountable[eAction];
 }
 
 int CvGame::GetAidPointCostAnnexCityState()
 {
-	return gCustomMods.getOption("SP_AID_POINT_COST_ANNEX_CITY_STATE", 50);
+	return GetAidPointBaseCost(AID_POINT_ACTION_ANNEX_CITY_STATE);
 }
 
 int CvGame::GetBullyTreasurySharePercent()

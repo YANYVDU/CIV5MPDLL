@@ -2151,6 +2151,15 @@ bool CvMinorCivQuest::DoFinishQuest()
 			pMinor->GetMinorCivAI()->ChangeEconomicAidPoints(m_eAssignedPlayer, iRewardAidPoints);
 		}
 
+		// Policy-driven aid points for quest completion / contest victory
+		const int iQuestAidPoints = m_pQuestInfo->isContest()
+			? GET_PLAYER(m_eAssignedPlayer).GetAidPointContestReward()
+			: GET_PLAYER(m_eAssignedPlayer).GetAidPointQuestReward();
+		if (iQuestAidPoints > 0)
+		{
+			pMinor->GetMinorCivAI()->ChangeEconomicAidPoints(m_eAssignedPlayer, iQuestAidPoints);
+		}
+
 		// Faith scales with era and game speed, like gold and culture
 		int iRewardFaith = m_pQuestInfo->getRewardFaith();
 		if (iRewardFaith > 0)
@@ -11973,7 +11982,7 @@ bool CvMinorCivAI::CanMajorBuyout(PlayerTypes eMajor)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Super Power V11: the buyout also costs aid points (the Austria UA surcharge), charged from the
 	// pool this city-state has accumulated for eMajor. 0 disables the extra cost entirely.
-	const int iAidPointCost = MOD_SP_UNIQUE_CITYSTATE ? GC.getGame().GetAidPointCostAnnexCityState() : 0;
+	const int iAidPointCost = MOD_SP_UNIQUE_CITYSTATE ? GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_ANNEX_CITY_STATE) : 0;
 	if (iAidPointCost > 0 && GetEconomicAidPoints(eMajor) < iAidPointCost)
 		return false;
 #endif
@@ -12052,7 +12061,7 @@ void CvMinorCivAI::DoBuyout(PlayerTypes eMajor)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// Super Power V11 (Austria UA): the buyout also burns aid points banked with this city-state, and
 	// with the GainAnnexedCityStateUA trait it permanently keeps the city-state's ally-tier UA effect.
-	const int iAidPointCost = MOD_SP_UNIQUE_CITYSTATE ? GC.getGame().GetAidPointCostAnnexCityState() : 0;
+	const int iAidPointCost = MOD_SP_UNIQUE_CITYSTATE ? GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_ANNEX_CITY_STATE) : 0;
 	if (iAidPointCost > 0)
 	{
 		ChangeEconomicAidPoints(eMajor, -iAidPointCost);

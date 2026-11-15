@@ -1,5 +1,35 @@
 --******************** New Yield Bonus ********************--
 alter table Policies add ScienceModifierFromRANum integer default 0;
+-- Aid point action master data, keyed by Type like the other info tables.
+create table AidPointActions (
+    Type text primary key,
+    CostOption text,
+    DefaultCost integer default 0,
+    Discountable boolean default 0, -- 0 = policy cost modifiers are ignored for this action
+    TextTag text,
+    HelpTag text
+);
+insert into AidPointActions (Type,CostOption,DefaultCost,Discountable,TextTag,HelpTag) values
+('AID_POINT_ACTION_REROLL_QUESTS','SP_AID_POINT_COST_REROLL_QUESTS',20,1,'TXT_KEY_POP_CSTATE_AID_REROLL','TXT_KEY_POP_CSTATE_AID_REROLL_TT'),
+('AID_POINT_ACTION_NEXT_GREAT_PERSON','SP_AID_POINT_COST_NEXT_GREAT_PERSON',50,1,'TXT_KEY_POP_CSTATE_AID_NEXT_GP','TXT_KEY_POP_CSTATE_AID_NEXT_GP_TT'),
+('AID_POINT_ACTION_PENDING_GIFT_UNIT','SP_AID_POINT_COST_PENDING_GIFT_UNIT',10,1,'TXT_KEY_POP_CSTATE_AID_GIFT_UNIT','TXT_KEY_POP_CSTATE_AID_GIFT_UNIT_TT'),
+('AID_POINT_ACTION_HASTEN_CONGRESS','SP_AID_POINT_COST_HASTEN_CONGRESS',20,1,'TXT_KEY_POP_CSTATE_AID_HASTEN_CONGRESS','TXT_KEY_POP_CSTATE_AID_HASTEN_CONGRESS_TT'),
+('AID_POINT_ACTION_ANNEX_CITY_STATE','SP_AID_POINT_COST_ANNEX_CITY_STATE',50,1,'TXT_KEY_POP_CSTATE_BUYOUT','TXT_KEY_POP_CSTATE_BUYOUT_TT'),
+('AID_POINT_ACTION_DENOUNCE','SP_AID_POINT_COST_DENOUNCE',20,1,'TXT_KEY_POP_CSTATE_AID_DENOUNCE','TXT_KEY_POP_CSTATE_AID_DENOUNCE_TT'),
+('AID_POINT_ACTION_PEACE','SP_AID_POINT_COST_PEACE',40,1,'TXT_KEY_POP_CSTATE_AID_PEACE','TXT_KEY_POP_CSTATE_AID_PEACE_TT'),
+('AID_POINT_ACTION_PERMANENT_VOTE','SP_AID_POINT_COST_PERMANENT_VOTE',60,1,'TXT_KEY_POP_CSTATE_AID_PERMANENT_VOTE','TXT_KEY_POP_CSTATE_AID_PERMANENT_VOTE_TT'),
+('AID_POINT_ACTION_EMERGENCY_PROPOSAL','SP_AID_POINT_COST_EMERGENCY_PROPOSAL',40,1,'TXT_KEY_POP_CSTATE_AID_EMERGENCY_PROPOSAL','TXT_KEY_POP_CSTATE_AID_EMERGENCY_PROPOSAL_TT');
+
+-- Per-policy cost modifiers for individual aid point actions (negative = cheaper)
+create table Policy_AidPointCostModifiers (
+    PolicyType text not null references Policies(Type),
+    ActionType text not null references AidPointActions(Type),
+    Modifier integer default 0,
+    primary key (PolicyType, ActionType)
+);
+-- Aid points granted when completing a city-state quest / winning a city-state contest
+alter table Policies add AidPointQuestReward integer default 0;
+alter table Policies add AidPointContestReward integer default 0;
 create table Policy_CityNumberCityYieldModifier (
     PolicyType text references Policies(Type),
     YieldType text references Yields(Type),

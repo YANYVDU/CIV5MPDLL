@@ -907,6 +907,19 @@ int CvLuaEnums::pRegister(lua_State* L)
 	RegisterEnum(NUM_MINOR_CIV_QUEST_TYPES);
 	EnumEnd(L);
 
+	EnumStart(L, "AidPointActionTypes");
+	RegisterEnum(AID_POINT_ACTION_REROLL_QUESTS);
+	RegisterEnum(AID_POINT_ACTION_NEXT_GREAT_PERSON);
+	RegisterEnum(AID_POINT_ACTION_PENDING_GIFT_UNIT);
+	RegisterEnum(AID_POINT_ACTION_HASTEN_CONGRESS);
+	RegisterEnum(AID_POINT_ACTION_ANNEX_CITY_STATE);
+	RegisterEnum(AID_POINT_ACTION_DENOUNCE);
+	RegisterEnum(AID_POINT_ACTION_PEACE);
+	RegisterEnum(AID_POINT_ACTION_PERMANENT_VOTE);
+	RegisterEnum(AID_POINT_ACTION_EMERGENCY_PROPOSAL);
+	RegisterEnum(NUM_AID_POINT_ACTION_TYPES);
+	EnumEnd(L);
+
 
 	// Resource Usage
 	EnumStart(L, "ResourceUsageTypes");

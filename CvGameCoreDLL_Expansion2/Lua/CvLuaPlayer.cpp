@@ -804,6 +804,9 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(SetEconomicAidAutoRenew);
 	Method(GetEconomicAidPoints);
 	Method(ChangeEconomicAidPoints);
+	Method(GetAidPointCostDenounce);
+	Method(GetAidPointCostPermanentVote);
+	Method(GetAidPointCost);
 	Method(GetPendingGiftUnit);
 	Method(GetNextGreatPersonChoice);
 	Method(GetTurnLastPledgedProtectionByMajor);
@@ -8174,6 +8177,31 @@ int CvLuaPlayer::lChangeEconomicAidPoints(lua_State* L)
 
 	pkPlayer->GetMinorCivAI()->ChangeEconomicAidPoints((PlayerTypes)eMajor, iDelta);
 	return 0;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostDenounce();
+int CvLuaPlayer::lGetAidPointCostDenounce(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetAidPointCostDenounce());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostPermanentVote();
+int CvLuaPlayer::lGetAidPointCostPermanentVote(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushinteger(L, pkPlayer->GetAidPointCostPermanentVote());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCost(AidPointActionTypes eAction);
+int CvLuaPlayer::lGetAidPointCost(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	const int iAction = lua_tointeger(L, 2);
+	lua_pushinteger(L, pkPlayer->GetAidPointCost((AidPointActionTypes)iAction));
+	return 1;
 }
 //------------------------------------------------------------------------------
 //int GetPendingGiftUnit(PlayerTypes eMajor);

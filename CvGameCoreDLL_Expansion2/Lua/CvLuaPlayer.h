@@ -690,6 +690,9 @@ protected:
 	static int lGetLastVeniceBuyFoodTurn(lua_State* L);
 	static int lGetEconomicAidPoints(lua_State* L);
 	static int lChangeEconomicAidPoints(lua_State* L);
+	static int lGetAidPointCostDenounce(lua_State* L);
+	static int lGetAidPointCostPermanentVote(lua_State* L);
+	static int lGetAidPointCost(lua_State* L);
 	// Economic Aid point spending (Super Power V11) queries
 	static int lGetPendingGiftUnit(lua_State* L);
 	static int lGetNextGreatPersonChoice(lua_State* L);

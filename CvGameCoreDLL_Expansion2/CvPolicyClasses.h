@@ -194,6 +194,9 @@ public:
 	bool IsNoOccupiedUnhappinessGarrisonedCity() const;
 	int GetMilitaryUnitGiftExtraInfluence() const;
 	int GetProtectedMinorPerTurnInfluence() const;
+	int GetAidPointCostModifier(AidPointActionTypes eAction) const;
+	int GetAidPointQuestReward() const;
+	int GetAidPointContestReward() const;
 	int GetAfraidMinorPerTurnInfluence() const;
 	int GetMinorBullyScoreModifier() const;
 	int GetMinorLocalBullyScoreModifier() const;
@@ -552,6 +555,9 @@ private:
 	bool m_bNoOccupiedUnhappinessGarrisonedCity;
 	int m_iMilitaryUnitGiftExtraInfluence;
 	int m_iProtectedMinorPerTurnInfluence;
+	int* m_piAidPointCostModifiers;
+	int m_iAidPointQuestReward;
+	int m_iAidPointContestReward;
 	int m_iAfraidMinorPerTurnInfluence;
 	int m_iMinorBullyScoreModifier;
 	int m_iMinorLocalBullyScoreModifier;
