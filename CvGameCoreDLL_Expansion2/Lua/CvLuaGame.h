@@ -303,6 +303,7 @@ protected:
 	static int lCanRequestEmergencyProposal(lua_State* L);
 	static int lHasAidPointPermanentVote(lua_State* L);
 	static int lGetAidPointCostRerollQuests(lua_State* L);
+	static int lGetAidPointActions(lua_State* L);
 	static int lGetAidPointCostNextGreatPerson(lua_State* L);
 	static int lGetAidPointCostPendingGiftUnit(lua_State* L);
 	static int lGetAidPointCostHastenCongress(lua_State* L);

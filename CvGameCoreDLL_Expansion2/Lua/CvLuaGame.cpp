@@ -17,6 +17,7 @@
 #include "CvLuaSupport.h"
 #include "CvLuaCity.h"
 #include "CvLuaGame.h"
+#include "CvAidPointActions.h"
 #include "CvLuaPlot.h"
 #include "CvLuaUnit.h"
 #include "CvLuaLeague.h"
@@ -98,6 +99,7 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoBuyPermanentVoteWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoRequestEmergencyProposalWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostRerollQuests);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointActions);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostNextGreatPerson);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostPendingGiftUnit);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostHastenCongress);
@@ -138,6 +140,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	// The matching Do* entry points live in RegistStaticFunctions and are reached through
 	// SendAndExecuteLuaFunction so that they execute on every client in multiplayer.
 	Method(GetAidPointCostRerollQuests);
+	Method(GetAidPointActions);
 	Method(GetAidPointCostNextGreatPerson);
 	Method(GetAidPointCostPendingGiftUnit);
 	Method(GetAidPointCostHastenCongress);
@@ -2359,6 +2362,60 @@ int CvLuaGame::lGetAidPointHastenCongressTurns(lua_State* L)
 int CvLuaGame::lGetAidPointCostAnnexCityState(lua_State* L)
 {
 	lua_pushinteger(L, GC.getGame().GetAidPointCostAnnexCityState());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//table GetAidPointActions(int iPlayer);
+int CvLuaGame::lGetAidPointActions(lua_State* L)
+{
+	const int iPlayer = lua_tointeger(L, 1);
+
+	lua_newtable(L);
+	int iIndex = 1;
+
+	Database::Connection* pDB = GC.GetGameDatabase();
+	Database::Results kResults;
+	if(pDB != NULL && pDB->Execute(kResults, "select Type, TextTag, HelpTag, InSpendList from AidPointActions"))
+	{
+		while(kResults.Step())
+		{
+			const char* szType = kResults.GetText(0);
+			const AidPointActionTypes eAction = GetAidPointActionTypeFromString(szType);
+
+			lua_newtable(L);
+			lua_pushstring(L, "Type");
+			lua_pushstring(L, (szType != NULL) ? szType : "");
+			lua_settable(L, -3);
+
+			lua_pushstring(L, "TextTag");
+			lua_pushstring(L, kResults.GetText(1));
+			lua_settable(L, -3);
+
+			lua_pushstring(L, "HelpTag");
+			lua_pushstring(L, kResults.GetText(2));
+			lua_settable(L, -3);
+
+			lua_pushstring(L, "InSpendList");
+			lua_pushboolean(L, kResults.GetInt(3) != 0);
+			lua_settable(L, -3);
+
+			lua_pushstring(L, "ID");
+			lua_pushinteger(L, eAction);
+			lua_settable(L, -3);
+
+			int iCost = 0;
+			if(eAction != NO_AID_POINT_ACTION && iPlayer >= 0 && iPlayer < MAX_CIV_PLAYERS)
+			{
+				iCost = GET_PLAYER((PlayerTypes)iPlayer).GetAidPointCost(eAction);
+			}
+			lua_pushstring(L, "Cost");
+			lua_pushinteger(L, iCost);
+			lua_settable(L, -3);
+
+			lua_rawseti(L, -2, iIndex++);
+		}
+	}
+
 	return 1;
 }
 //------------------------------------------------------------------------------
