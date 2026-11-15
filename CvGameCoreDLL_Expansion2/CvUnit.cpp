@@ -8719,6 +8719,30 @@ void CvUnit::DoAttrition()
 }
 
 //	--------------------------------------------------------------------------------
+// Super Power V11: a unit may airlift from its own team's city, or from the city of
+// a city-state that is its ally (the unit can stand on/next to that city under open
+// borders). Kept separate so the relocation and non-relocation paths share the rule.
+static bool IsAirliftOriginFriendlyCity(const CvCity* pCity, PlayerTypes eUnitOwner, TeamTypes eUnitTeam)
+{
+	if (pCity == NULL)
+		return false;
+
+	if (pCity->getTeam() == eUnitTeam)
+		return true;
+
+	const PlayerTypes eCityOwner = pCity->getOwner();
+	if (eCityOwner == NO_PLAYER || eCityOwner == eUnitOwner)
+		return true;
+
+	CvPlayer& kCityOwner = GET_PLAYER(eCityOwner);
+	if (!kCityOwner.isMinorCiv())
+		return false;
+
+	CvMinorCivAI* pMinorAI = kCityOwner.GetMinorCivAI();
+	return pMinorAI != NULL && pMinorAI->IsAllies(eUnitOwner);
+}
+
+//	--------------------------------------------------------------------------------
 bool CvUnit::canAirlift(const CvPlot* pPlot) const
 #if defined(MOD_GLOBAL_RELOCATION)
 {
@@ -8865,7 +8889,7 @@ const CvPlot* CvUnit::getAirliftFromPlot(const CvPlot* pPlot) const
 #endif
 
 #if defined(MOD_GLOBAL_RELOCATION)
-	if(pCity->getTeam() != getTeam())
+	if(!IsAirliftOriginFriendlyCity(pCity, getOwner(), getTeam()))
 	{
 		return NULL;
 	}
@@ -8883,7 +8907,7 @@ const CvPlot* CvUnit::getAirliftFromPlot(const CvPlot* pPlot) const
 #if defined(MOD_GLOBAL_RELOCATION)
 	// Moved earlier on
 #else
-	if(pCity->getTeam() != getTeam())
+	if(!IsAirliftOriginFriendlyCity(pCity, getOwner(), getTeam()))
 	{
 		return false;
 	}
