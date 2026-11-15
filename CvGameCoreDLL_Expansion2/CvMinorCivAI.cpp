@@ -7747,6 +7747,24 @@ PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePl
 		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(pLoopPlayer->getTeam()))
 			continue;
 
+		// Do not pair up civilizations that are hostile to each other. The quest forces a
+		// Declaration of Friendship on both sides, which would skip the denouncement /
+		// unforgivable checks in CvDiplomacyAI::IsDoFAcceptable.
+		CvDiplomacyAI* pAskerDiploAI = GET_PLAYER(ePlayer).GetDiplomacyAI();
+		CvDiplomacyAI* pTargetDiploAI = GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
+		if(pAskerDiploAI->IsDenouncedPlayer(eLoopPlayer) || pTargetDiploAI->IsDenouncedPlayer(ePlayer))
+			continue;
+		const MajorCivOpinionTypes eAskerOpinion = pAskerDiploAI->GetMajorCivOpinion(eLoopPlayer);
+		const MajorCivOpinionTypes eTargetOpinion = pTargetDiploAI->GetMajorCivOpinion(ePlayer);
+		if(eAskerOpinion == MAJOR_CIV_OPINION_UNFORGIVABLE || eAskerOpinion == MAJOR_CIV_OPINION_ENEMY
+			|| eTargetOpinion == MAJOR_CIV_OPINION_UNFORGIVABLE || eTargetOpinion == MAJOR_CIV_OPINION_ENEMY)
+			continue;
+		const MajorCivApproachTypes eAskerApproach = pAskerDiploAI->GetMajorCivApproach(eLoopPlayer, /*bHideTrueFeelings*/ false);
+		const MajorCivApproachTypes eTargetApproach = pTargetDiploAI->GetMajorCivApproach(ePlayer, /*bHideTrueFeelings*/ false);
+		if(eAskerApproach == MAJOR_CIV_APPROACH_WAR || eAskerApproach == MAJOR_CIV_APPROACH_HOSTILE
+			|| eTargetApproach == MAJOR_CIV_APPROACH_WAR || eTargetApproach == MAJOR_CIV_APPROACH_HOSTILE)
+			continue;
+
 		// The player we ask must have met them
 		if(!GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isHasMet(pLoopPlayer->getTeam()))
 			continue;

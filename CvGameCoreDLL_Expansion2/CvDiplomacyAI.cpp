@@ -22001,6 +22001,10 @@ bool CvDiplomacyAI::IsDoFAcceptable(PlayerTypes ePlayer)
 /// AI won't agree to a DoF until they've known a player for at least a few turns
 bool CvDiplomacyAI::IsTooEarlyForDoF(PlayerTypes ePlayer)
 {
+	// A city-state Research Agreement quest forces the AI to accept the DoF right away
+	if(IsResearchAgreementQuestWithPlayer(ePlayer))
+		return false;
+
 	int iDoFBuffer = /*20*/ GC.getDOF_TURN_BUFFER();
 
 	if(GET_TEAM(GetTeam()).GetTurnsSinceMeetingTeam(GET_PLAYER(ePlayer).getTeam()) < iDoFBuffer)
@@ -22010,8 +22014,12 @@ bool CvDiplomacyAI::IsTooEarlyForDoF(PlayerTypes ePlayer)
 }
 
 /// Has ePlayer asked to work with us lately?
-bool CvDiplomacyAI::IsDoFMessageTooSoon(PlayerTypes ePlayer) const
+bool CvDiplomacyAI::IsDoFMessageTooSoon(PlayerTypes ePlayer)
 {
+	// A city-state Research Agreement quest overrides the "recently refused" cooldown
+	if(IsResearchAgreementQuestWithPlayer(ePlayer))
+		return false;
+
 	if(GetDoFCounter(ePlayer) >= 0 &&
 	        GetDoFCounter(ePlayer) < /*20*/ GC.getDOF_TURN_BUFFER())
 		return true;

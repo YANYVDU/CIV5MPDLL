@@ -754,7 +754,7 @@ public:
 	bool IsDoFAcceptable(PlayerTypes ePlayer);
 	bool IsResearchAgreementQuestWithPlayer(PlayerTypes ePlayer);
 	bool IsTooEarlyForDoF(PlayerTypes ePlayer);
-	bool IsDoFMessageTooSoon(PlayerTypes ePlayer) const;
+	bool IsDoFMessageTooSoon(PlayerTypes ePlayer);
 
 	bool IsDoFEverAsked(PlayerTypes ePlayer) const;
 
