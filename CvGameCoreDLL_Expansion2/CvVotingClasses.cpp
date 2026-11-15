@@ -2238,6 +2238,7 @@ CvLeague::CvLeague(void)
 	m_vActiveResolutions.clear();
 	m_vMembers.clear();
 	m_eHost = NO_PLAYER;
+	m_eEmergencyProposalPlayer = NO_PLAYER;
 	m_vProjects.clear();
 	m_iConsecutiveHostedSessions = 0;
 	m_eAssignedName = NO_LEAGUE_NAME;
@@ -2260,6 +2261,7 @@ CvLeague::CvLeague(LeagueTypes eID)
 	m_vActiveResolutions.clear();
 	m_vMembers.clear();
 	m_eHost = NO_PLAYER;
+	m_eEmergencyProposalPlayer = NO_PLAYER;
 	m_vProjects.clear();
 	m_iConsecutiveHostedSessions = 0;
 	m_eAssignedName = NO_LEAGUE_NAME;
@@ -2311,6 +2313,7 @@ void CvLeague::Init(LeagueSpecialSessionTypes eGoverningSpecialSession)
 	CvAssertMsg(m_eID != NO_LEAGUE, "Initializing a CvLeague without a proper ID. Please send Anton your save file and verison.");
 	CvAssert(eGoverningSpecialSession != NO_LEAGUE_SPECIAL_SESSION);
 	m_eLastSpecialSession = eGoverningSpecialSession; // Fake the last special session so we have data to inform the World Congress's status
+	m_eEmergencyProposalPlayer = NO_PLAYER;
 	AssignProposalPrivileges();
 	ResetTurnsUntilSession();
 }
@@ -4107,6 +4110,51 @@ bool CvLeague::CanPropose(PlayerTypes ePlayer)
 		}
 	}
 	return false;
+}
+
+bool CvLeague::CanClaimEmergencyProposal(PlayerTypes ePlayer)
+{
+	if (ePlayer < 0 || ePlayer >= MAX_CIV_PLAYERS)
+		return false;
+
+	if (!IsMember(ePlayer) || !CanEverPropose(ePlayer))
+		return false;
+
+	if (m_eEmergencyProposalPlayer != NO_PLAYER)
+		return false;
+
+	if (IsInSession())
+		return false;
+
+	const int iTurns = GetTurnsUntilSession();
+	if (iTurns <= 0 || iTurns > 3)
+		return false;
+
+	// The action is only for members without any proposal right this session.
+	const Member* pMember = GetMember(ePlayer);
+	if (pMember == NULL)
+		return false;
+
+	if (pMember->bMayPropose || pMember->iProposals > 0)
+		return false;
+
+	return true;
+}
+
+bool CvLeague::DoClaimEmergencyProposal(PlayerTypes ePlayer)
+{
+	if (!CanClaimEmergencyProposal(ePlayer))
+		return false;
+
+	Member* pMember = GetMember(ePlayer);
+	if (pMember == NULL)
+		return false;
+
+	pMember->bMayPropose = true;
+	pMember->iProposals = 1;
+	m_eEmergencyProposalPlayer = ePlayer;
+	GC.GetEngineUserInterface()->setDirty(LeagueScreen_DIRTY_BIT, true);
+	return true;
 }
 
 bool CvLeague::CanEverPropose(PlayerTypes ePlayer)
@@ -6457,6 +6505,7 @@ void CvLeague::AssignStartingVotes()
 
 void CvLeague::ClearProposalPrivileges()
 {
+	m_eEmergencyProposalPlayer = NO_PLAYER;
 	for (MemberList::iterator it = m_vMembers.begin(); it != m_vMembers.end(); it++)
 	{
 		it->bMayPropose = false;
@@ -7577,6 +7626,7 @@ FDataStream& operator>>(FDataStream& loadFrom, CvLeague& writeTo)
 		writeTo.m_vEnactProposalsOnHold.clear();
 		writeTo.m_vRepealProposalsOnHold.clear();
 	}
+	MOD_SERIALIZE_READ(168, loadFrom, writeTo.m_eEmergencyProposalPlayer, NO_PLAYER);
 
 	return loadFrom;
 }
@@ -7649,6 +7699,7 @@ FDataStream& operator<<(FDataStream& saveTo, const CvLeague& readFrom)
 	{
 		saveTo << *it;
 	}
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.m_eEmergencyProposalPlayer);
 
 	return saveTo;
 }

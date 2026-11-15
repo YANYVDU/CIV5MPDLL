@@ -619,9 +619,13 @@ public:
 	// Pull the next World Congress / United Nations session forward by a fixed number of turns.
 	// The League countdown is global (shared by every player), so this is a network-synced action.
 	bool DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eCostMinor);
-	// Super Power V11: two additional aid-point actions.
+	// Super Power V11: four additional aid-point actions.
 	bool DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget);
 	bool DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget);
+	bool DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor);
+	bool DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor);
+	bool CanRequestEmergencyProposal(PlayerTypes eMajor);
+	bool HasAidPointPermanentVote(PlayerTypes eMajor, PlayerTypes eMinor);
 	// Aid point costs for the spending actions above (0 = disabled)
 	int GetAidPointCostRerollQuests();
 	int GetAidPointCostNextGreatPerson();
@@ -634,6 +638,8 @@ public:
 	int GetAidPointHastenCongressTurns();
 	int GetAidPointCostDenounce();
 	int GetAidPointCostPeace();
+	int GetAidPointCostPermanentVote();
+	int GetAidPointCostEmergencyProposal();
 	// Share of a city-state treasury seized when a major bullies gold (percent, 0 = disabled)
 	int GetBullyTreasurySharePercent();
 	// Every unit type a city-state may gift to ePlayer (same filter as GetCompetitiveSpawnUnitType,

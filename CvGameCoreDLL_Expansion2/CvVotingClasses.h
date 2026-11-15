@@ -553,6 +553,10 @@ public:
 	int GetCoreVotesForMember(PlayerTypes ePlayer);
 	int CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUpdateSources = false);
 	bool CanPropose(PlayerTypes ePlayer);
+
+	// Super Power V11: emergency proposal slot (one per session, first claimant).
+	bool CanClaimEmergencyProposal(PlayerTypes ePlayer);
+	bool DoClaimEmergencyProposal(PlayerTypes ePlayer);
 	bool CanEverPropose(PlayerTypes ePlayer);
 	int GetRemainingProposalsForMember(PlayerTypes ePlayer);
 	int GetNumProposalsByMember(PlayerTypes ePlayer);
@@ -645,6 +649,7 @@ public:
 	ActiveResolutionList m_vActiveResolutions;
 	MemberList m_vMembers;
 	PlayerTypes m_eHost;
+	PlayerTypes m_eEmergencyProposalPlayer;
 	ProjectList m_vProjects;
 	int m_iConsecutiveHostedSessions;
 	LeagueNameTypes m_eAssignedName;

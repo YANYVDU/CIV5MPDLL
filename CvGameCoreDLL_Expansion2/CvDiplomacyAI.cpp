@@ -26915,7 +26915,86 @@ void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eTarget, bool* pabPoolUs
 	}
 }
 
+/// Aid-point permanent vote: only pursued by AIs whose grand strategy is the United Nations.
+void CvDiplomacyAI::DoAidPointPermanentVoteSpend(PlayerTypes eMajor, bool* pabPoolUsed)
+{
+	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
+	if (pLeague == NULL || !pLeague->IsMember(eMajor) || !pLeague->CanEverVote(eMajor))
+		return;
 
+	AIGrandStrategyTypes eStrategy = m_pPlayer->GetGrandStrategyAI()->GetActiveGrandStrategy();
+	if (eStrategy != (AIGrandStrategyTypes)GC.getInfoTypeForString("AIGRANDSTRATEGY_UNITED_NATIONS"))
+		return;
+
+	const int iCost = GC.getGame().GetAidPointCostPermanentVote();
+	if (iCost <= 0)
+		return;
+
+	for (int iLoop = MAX_MAJOR_CIVS; iLoop < MAX_CIV_PLAYERS; iLoop++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iLoop;
+
+		if (pabPoolUsed != NULL && pabPoolUsed[eMinor])
+			continue;
+		if (!GET_PLAYER(eMinor).isAlive())
+			continue;
+		if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
+			continue;
+		if (GET_PLAYER(eMajor).HasAidPointPermanentVote(eMinor))
+			continue;
+
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+		if (pMinorAI == NULL || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+			continue;
+
+		if (GC.getGame().DoBuyPermanentVoteWithAidPoints(eMajor, eMinor))
+		{
+			if (pabPoolUsed != NULL) pabPoolUsed[eMinor] = true;
+			return;
+		}
+	}
+}
+
+/// Aid-point emergency proposal: an AI with no proposal right always takes the single slot.
+void CvDiplomacyAI::DoAidPointEmergencyProposalSpend(PlayerTypes eMajor, bool* pabPoolUsed)
+{
+	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
+	if (pLeague == NULL || pLeague->IsInSession())
+		return;
+
+	const int iTurns = pLeague->GetTurnsUntilSession();
+	if (iTurns <= 0 || iTurns > 3)
+		return;
+
+	if (pLeague->CanPropose(eMajor) || !pLeague->CanClaimEmergencyProposal(eMajor))
+		return;
+
+	const int iCost = GC.getGame().GetAidPointCostEmergencyProposal();
+	if (iCost <= 0)
+		return;
+
+	for (int iLoop = MAX_MAJOR_CIVS; iLoop < MAX_CIV_PLAYERS; iLoop++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iLoop;
+
+		if (pabPoolUsed != NULL && pabPoolUsed[eMinor])
+			continue;
+		if (!GET_PLAYER(eMinor).isAlive())
+			continue;
+		if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
+			continue;
+
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+		if (pMinorAI == NULL || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+			continue;
+
+		if (GC.getGame().DoRequestEmergencyProposalWithAidPoints(eMajor, eMinor))
+		{
+			if (pabPoolUsed != NULL) pabPoolUsed[eMinor] = true;
+			return;
+		}
+	}
+}
 
 /// Every-turn pass: spend Economic Aid points, highest priority first. Runs before
 /// DoCityStateQuestAI so the bully takeover can pre-empt the ordinary bully branch.
@@ -26934,16 +27013,21 @@ void CvDiplomacyAI::DoCityStateAidPointAI()
 	if (m_pPlayer->isHuman())
 		return;
 
-	// Requirement 0: with no diplomatic prestige there is no focus list and no spending at all
-	if (GetCityStateQuestFocusCount() <= 0)
-		return;
-
 	PlayerTypes eMe = m_pPlayer->GetID();
 
 	// Requirement 2: a pool takes part in at most one purchase per turn
 	bool abPoolUsed[MAX_CIV_PLAYERS];
 	for (int iLoop = 0; iLoop < MAX_CIV_PLAYERS; iLoop++)
 		abPoolUsed[iLoop] = false;
+
+	// These two are not tied to the quest focus list: the emergency slot is time-critical and
+	// the permanent vote is a diplomatic-victory purchase.
+	DoAidPointEmergencyProposalSpend(eMe, abPoolUsed);
+	DoAidPointPermanentVoteSpend(eMe, abPoolUsed);
+
+	// Requirement 0: with no diplomatic prestige there is no focus list and no further spending
+	if (GetCityStateQuestFocusCount() <= 0)
+		return;
 
 	DoAidPointGreatPersonSpend(eMe, abPoolUsed);
 	DoAidPointRerollSpend(eMe, abPoolUsed);

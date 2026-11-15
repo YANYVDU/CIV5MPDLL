@@ -95,6 +95,8 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoHastenCongressWithAidPointsFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorCivDenounceWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorCivPeaceWithAidPoints);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoBuyPermanentVoteWithAidPoints);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoRequestEmergencyProposalWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostRerollQuests);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostNextGreatPerson);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostPendingGiftUnit);
@@ -143,6 +145,10 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetAidPointCostAnnexCityState);
 	Method(GetAidPointCostDenounce);
 	Method(GetAidPointCostPeace);
+	Method(GetAidPointCostPermanentVote);
+	Method(GetAidPointCostEmergencyProposal);
+	Method(CanRequestEmergencyProposal);
+	Method(HasAidPointPermanentVote);
 	Method(GetBullyTreasurySharePercent);
 	Method(GetBullyGoldAidPointCost);
 	Method(GetMinorGiftUnitChoices);
@@ -2251,7 +2257,23 @@ int CvLuaGame::lDoMinorCivPeaceWithAidPoints(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//bool DoBuyPermanentVoteWithAidPoints(int iMajorCivID, int iMinorCivID);
+int CvLuaGame::lDoBuyPermanentVoteWithAidPoints(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoBuyPermanentVoteWithAidPoints((PlayerTypes)iMajor, (PlayerTypes)iMinor));
+	return 1;
+}
 //------------------------------------------------------------------------------
+//bool DoRequestEmergencyProposalWithAidPoints(int iMajorCivID, int iMinorCivID);
+int CvLuaGame::lDoRequestEmergencyProposalWithAidPoints(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().DoRequestEmergencyProposalWithAidPoints((PlayerTypes)iMajor, (PlayerTypes)iMinor));
+	return 1;
+}
 //------------------------------------------------------------------------------
 //int GetAidPointCostDenounce();
 int CvLuaGame::lGetAidPointCostDenounce(lua_State* L)
@@ -2267,9 +2289,36 @@ int CvLuaGame::lGetAidPointCostPeace(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
+//int GetAidPointCostPermanentVote();
+int CvLuaGame::lGetAidPointCostPermanentVote(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostPermanentVote());
+	return 1;
+}
 //------------------------------------------------------------------------------
+//int GetAidPointCostEmergencyProposal();
+int CvLuaGame::lGetAidPointCostEmergencyProposal(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostEmergencyProposal());
+	return 1;
+}
 //------------------------------------------------------------------------------
+//bool CanRequestEmergencyProposal(int iMajorCivID);
+int CvLuaGame::lCanRequestEmergencyProposal(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	lua_pushboolean(L, GC.getGame().CanRequestEmergencyProposal((PlayerTypes)iMajor));
+	return 1;
+}
 //------------------------------------------------------------------------------
+//bool HasAidPointPermanentVote(int iMajorCivID, int iMinorCivID);
+int CvLuaGame::lHasAidPointPermanentVote(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().HasAidPointPermanentVote((PlayerTypes)iMajor, (PlayerTypes)iMinor));
+	return 1;
+}
 //------------------------------------------------------------------------------
 //int GetAidPointCostRerollQuests();
 int CvLuaGame::lGetAidPointCostRerollQuests(lua_State* L)

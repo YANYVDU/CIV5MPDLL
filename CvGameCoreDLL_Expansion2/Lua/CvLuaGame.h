@@ -294,8 +294,14 @@ protected:
 	static int lDoHastenCongressWithAidPointsFromMajor(lua_State* L);
 	static int lDoMinorCivDenounceWithAidPoints(lua_State* L);
 	static int lDoMinorCivPeaceWithAidPoints(lua_State* L);
+	static int lDoBuyPermanentVoteWithAidPoints(lua_State* L);
+	static int lDoRequestEmergencyProposalWithAidPoints(lua_State* L);
 	static int lGetAidPointCostDenounce(lua_State* L);
 	static int lGetAidPointCostPeace(lua_State* L);
+	static int lGetAidPointCostPermanentVote(lua_State* L);
+	static int lGetAidPointCostEmergencyProposal(lua_State* L);
+	static int lCanRequestEmergencyProposal(lua_State* L);
+	static int lHasAidPointPermanentVote(lua_State* L);
 	static int lGetAidPointCostRerollQuests(lua_State* L);
 	static int lGetAidPointCostNextGreatPerson(lua_State* L);
 	static int lGetAidPointCostPendingGiftUnit(lua_State* L);

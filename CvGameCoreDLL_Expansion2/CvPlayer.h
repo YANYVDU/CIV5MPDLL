@@ -632,6 +632,10 @@ public:
 	int GetExtraLeagueVotes() const;
 	void ChangeExtraLeagueVotes(int iChange);
 
+	// Super Power V11: one permanent World Congress vote purchase per city-state.
+	bool HasAidPointPermanentVote(PlayerTypes eMinor) const;
+	void SetAidPointPermanentVote(PlayerTypes eMinor, bool bValue);
+
 	int GetWoundedUnitDamageMod() const;
 	void SetWoundedUnitDamageMod(int iValue);
 	void ChangeWoundedUnitDamageMod(int iChange);
@@ -2737,6 +2741,7 @@ protected:
 	int m_iConversionModifier;
 #endif
 	int m_iExtraLeagueVotes;
+	unsigned long long m_uiAidPointPermanentVoteMask;
 	FAutoVariable<int, CvPlayer> m_iAdvancedStartPoints;
 	FAutoVariable<int, CvPlayer> m_iAttackBonusTurns;
 	int m_iCultureBonusTurns;

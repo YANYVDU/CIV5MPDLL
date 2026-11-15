@@ -1121,6 +1121,8 @@ public:
 	void DoAidPointBullySpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointCongressSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointDenounceSpend(PlayerTypes eTarget, bool* pabPoolUsed = NULL);
+	void DoAidPointPermanentVoteSpend(PlayerTypes eMajor, bool* pabPoolUsed);
+	void DoAidPointEmergencyProposalSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 #endif
 
 	bool IsPlayerValid(PlayerTypes eOtherPlayer, bool bMyTeamIsValid = false);

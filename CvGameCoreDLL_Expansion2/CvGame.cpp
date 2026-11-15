@@ -11872,12 +11872,103 @@ bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor
 }
 
 //	--------------------------------------------------------------------------------
+// Super Power V11: one permanent World Congress vote per city-state, never reset by resurrection.
+bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor)
+{
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
+	if(pLeague == NULL || !pLeague->IsMember(eMajor) || !pLeague->CanEverVote(eMajor))
+		return false;
+
+	if(GET_PLAYER(eMajor).HasAidPointPermanentVote(eMinor))
+		return false;
+
+	const int iCost = GetAidPointCostPermanentVote();
+	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	GET_PLAYER(eMajor).SetAidPointPermanentVote(eMinor, true);
+	GET_PLAYER(eMajor).ChangeExtraLeagueVotes(1);
+
+	CvNotifications* pNotifications = GET_PLAYER(eMajor).GetNotifications();
+	if(pNotifications != NULL)
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_PERMANENT_VOTE");
+		strText << GET_PLAYER(eMinor).getName();
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_CITY_STATE_PERMANENT_VOTE");
+		pNotifications->Add(NOTIFICATION_GENERIC, strText.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
 
 //	--------------------------------------------------------------------------------
+// Super Power V11: claim the single emergency proposal slot before a session.
+bool CvGame::DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor)
+{
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
+	if(pLeague == NULL || !pLeague->CanClaimEmergencyProposal(eMajor))
+		return false;
+
+	const int iCost = GetAidPointCostEmergencyProposal();
+	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	if(!pLeague->DoClaimEmergencyProposal(eMajor))
+	{
+		pMinorAI->ChangeEconomicAidPoints(eMajor, iCost);
+		return false;
+	}
+
+	CvNotifications* pNotifications = GET_PLAYER(eMajor).GetNotifications();
+	if(pNotifications != NULL)
+	{
+		Localization::String strText = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_EMERGENCY_PROPOSAL");
+		strText << GET_PLAYER(eMinor).getName();
+		Localization::String strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_CITY_STATE_EMERGENCY_PROPOSAL");
+		pNotifications->Add(NOTIFICATION_GENERIC, strText.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
 
 //	--------------------------------------------------------------------------------
+bool CvGame::CanRequestEmergencyProposal(PlayerTypes eMajor)
+{
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
+	return (pLeague != NULL && pLeague->CanClaimEmergencyProposal(eMajor));
+}
 
 //	--------------------------------------------------------------------------------
+bool CvGame::HasAidPointPermanentVote(PlayerTypes eMajor, PlayerTypes eMinor)
+{
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	return GET_PLAYER(eMajor).HasAidPointPermanentVote(eMinor);
+}
 
 //	--------------------------------------------------------------------------------
 // Aid point costs for the spending actions above (0 = disabled)
@@ -11916,7 +12007,15 @@ int CvGame::GetAidPointCostPeace()
 	return gCustomMods.getOption("SP_AID_POINT_COST_PEACE", 40);
 }
 
+int CvGame::GetAidPointCostPermanentVote()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_PERMANENT_VOTE", 60);
+}
 
+int CvGame::GetAidPointCostEmergencyProposal()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_EMERGENCY_PROPOSAL", 40);
+}
 
 int CvGame::GetAidPointCostAnnexCityState()
 {

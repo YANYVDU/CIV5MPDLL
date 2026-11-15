@@ -204,6 +204,7 @@ CvPlayer::CvPlayer() :
 	, m_iConversionModifier(0)
 #endif
 	, m_iExtraLeagueVotes(0)
+	, m_uiAidPointPermanentVoteMask(0)
 	, m_iSpecialPolicyBuildingHappiness("CvPlayer::m_iSpecialPolicyBuildingHappiness", m_syncArchive)
 	, m_iWoundedUnitDamageMod("CvPlayer::m_iWoundedUnitDamageMod", m_syncArchive)
 	, m_iUnitUpgradeCostMod("CvPlayer::m_iUnitUpgradeCostMod", m_syncArchive)
@@ -1063,6 +1064,7 @@ void CvPlayer::uninit()
 	m_iConversionModifier = 0;
 #endif
 	m_iExtraLeagueVotes = 0;
+	m_uiAidPointPermanentVoteMask = 0;
 	m_iSpecialPolicyBuildingHappiness = 0;
 	m_iWoundedUnitDamageMod = 0;
 	m_iUnitUpgradeCostMod = 0;
@@ -15629,6 +15631,25 @@ void CvPlayer::ChangeExtraLeagueVotes(int iChange)
 	{
 		m_iExtraLeagueVotes = 0;
 	}
+}
+
+bool CvPlayer::HasAidPointPermanentVote(PlayerTypes eMinor) const
+{
+	if (eMinor < 0 || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	return (m_uiAidPointPermanentVoteMask & (1ULL << eMinor)) != 0;
+}
+
+void CvPlayer::SetAidPointPermanentVote(PlayerTypes eMinor, bool bValue)
+{
+	if (eMinor < 0 || eMinor >= MAX_CIV_PLAYERS)
+		return;
+
+	if (bValue)
+		m_uiAidPointPermanentVoteMask |= (1ULL << eMinor);
+	else
+		m_uiAidPointPermanentVoteMask &= ~(1ULL << eMinor);
 }
 
 //	--------------------------------------------------------------------------------
@@ -30849,6 +30870,7 @@ void CvPlayer::Read(FDataStream& kStream)
 	{
 		m_iExtraLeagueVotes = 0;
 	}
+	MOD_SERIALIZE_READ(168, kStream, m_uiAidPointPermanentVoteMask, 0);
 	kStream >> m_iSpecialPolicyBuildingHappiness;
 	kStream >> m_iWoundedUnitDamageMod;
 	kStream >> m_iUnitUpgradeCostMod;
@@ -31827,6 +31849,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	MOD_SERIALIZE_WRITE(kStream, m_iConversionModifier);
 #endif
 	kStream << m_iExtraLeagueVotes;
+	MOD_SERIALIZE_WRITE(kStream, m_uiAidPointPermanentVoteMask);
 	kStream << m_iSpecialPolicyBuildingHappiness;
 	kStream << m_iWoundedUnitDamageMod;
 	kStream << m_iUnitUpgradeCostMod;
