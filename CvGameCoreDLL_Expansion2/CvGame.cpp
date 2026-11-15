@@ -11928,6 +11928,47 @@ bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor
 		return false;
 	}
 
+	// Allied city-states on both sides follow the ceasefire: stop their wars with the
+	// opposing major and with each other's allied city-states.
+	std::vector<TeamTypes> aeMajorAllies;
+	std::vector<TeamTypes> aeTargetAllies;
+
+	for(int iPlayer = MAX_MAJOR_CIVS; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+		if(!kPlayer.isAlive() || !kPlayer.isMinorCiv())
+			continue;
+
+		CvMinorCivAI* pAllyAI = kPlayer.GetMinorCivAI();
+		if(pAllyAI == NULL)
+			continue;
+
+		const TeamTypes eAllyTeam = kPlayer.getTeam();
+		if(pAllyAI->IsAllies(eMajor))
+		{
+			aeMajorAllies.push_back(eAllyTeam);
+			if(GET_TEAM(eAllyTeam).isAtWar(eTargetTeam))
+				GET_TEAM(eAllyTeam).makePeace(eTargetTeam, true, false, eMajor);
+		}
+		if(pAllyAI->IsAllies(eTarget))
+		{
+			aeTargetAllies.push_back(eAllyTeam);
+			if(GET_TEAM(eAllyTeam).isAtWar(eMajorTeam))
+				GET_TEAM(eAllyTeam).makePeace(eMajorTeam, true, false, eTarget);
+		}
+	}
+
+	for(size_t i = 0; i < aeMajorAllies.size(); i++)
+	{
+		for(size_t j = 0; j < aeTargetAllies.size(); j++)
+		{
+			if(aeMajorAllies[i] == aeTargetAllies[j])
+				continue;
+			if(GET_TEAM(aeMajorAllies[i]).isAtWar(aeTargetAllies[j]))
+				GET_TEAM(aeMajorAllies[i]).makePeace(aeTargetAllies[j], true, false, eMajor);
+		}
+	}
+
 	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
 	return true;
 }
