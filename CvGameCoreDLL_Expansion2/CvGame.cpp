@@ -8624,7 +8624,7 @@ int CvGame::GetPendingGiftUnitCountForClass(PlayerTypes eMajor, UnitClassTypes e
 //	--------------------------------------------------------------------------------
 // Super Power V11: every unit type the city-state may gift to ePlayer (same filter as
 // GetCompetitiveSpawnUnitType, but returns all valid candidates for the aid-point picker UI).
-void CvGame::GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>& veChoices)
+void CvGame::GetMinorGiftUnitChoices(PlayerTypes ePlayer, PlayerTypes eMinor, std::vector<UnitTypes>& veChoices)
 {
 	CvAssertMsg(ePlayer >= 0, "ePlayer is expected to be non-negative (invalid Index)");
 	CvAssertMsg(ePlayer < MAX_CIV_PLAYERS, "ePlayer is expected to be within maximum bounds (invalid Index)");
@@ -8704,6 +8704,57 @@ void CvGame::GetMinorGiftUnitChoices(PlayerTypes ePlayer, std::vector<UnitTypes>
 			continue;
 
 		veChoices.push_back(eLoopUnit);
+	}
+
+	// The natural gift path uses the city-state's unique unit when the recipient is its ally.
+	// Include that same unit in the aid-point picker, but only for an actual ally and after the
+	// same technology / obsolescence / unit-class checks used by DoSpawnUnit.
+	if(eMinor >= MAX_MAJOR_CIVS && eMinor < MAX_CIV_PLAYERS)
+	{
+		CvPlayer& kMinor = GET_PLAYER(eMinor);
+		if(kMinor.isAlive())
+		{
+			CvMinorCivAI* pMinorAI = kMinor.GetMinorCivAI();
+			if(pMinorAI != NULL && pMinorAI->IsAllies(ePlayer))
+			{
+				UnitTypes eUnique = pMinorAI->GetUniqueUnit();
+				CvUnitEntry* pkUniqueInfo = (eUnique != NO_UNIT) ? GC.getUnitInfo(eUnique) : NULL;
+				if(pkUniqueInfo != NULL)
+				{
+					// Match DoSpawnUnit's natural unique-unit path: only technology, obsolescence and
+					// unit-class capacity are checked there. In particular it does not require canTrain
+					// (resources) or a land domain for the city-state's own unique unit.
+					bool bValid = true;
+
+					TechTypes ePrereqTech = (TechTypes) pkUniqueInfo->GetPrereqAndTech();
+					if(bValid && ePrereqTech != NO_TECH && !GET_TEAM(GET_PLAYER(ePlayer).getTeam()).GetTeamTechs()->HasTech(ePrereqTech))
+						bValid = false;
+
+					TechTypes eObsoleteTech = (TechTypes) pkUniqueInfo->GetObsoleteTech();
+					if(bValid && eObsoleteTech != NO_TECH && GET_TEAM(GET_PLAYER(ePlayer).getTeam()).GetTeamTechs()->HasTech(eObsoleteTech))
+						bValid = false;
+
+					UnitClassTypes eUniqueClass = (UnitClassTypes) pkUniqueInfo->GetUnitClassType();
+					if(bValid && GET_PLAYER(ePlayer).isUnitClassMaxedOut(eUniqueClass, GetPendingGiftUnitCountForClass(ePlayer, eUniqueClass)))
+						bValid = false;
+
+					if(bValid)
+					{
+						bool bAlreadyListed = false;
+						for(size_t i = 0; i < veChoices.size(); i++)
+						{
+							if(veChoices[i] == eUnique)
+							{
+								bAlreadyListed = true;
+								break;
+							}
+						}
+						if(!bAlreadyListed)
+							veChoices.push_back(eUnique);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -11620,6 +11671,10 @@ bool CvGame::DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMino
 	if(eUnit != NO_UNIT && (eUnit < 0 || eUnit >= GC.getNumUnitInfos()))
 		return false;
 
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
 	// Super Power V11: a limited (national) unit class can only be delivered once, and pending
 	// picks at other city-states already reserve its slots. Refuse - charging nothing - rather
 	// than let this pick silently fail on delivery later and waste the aid points. NO_UNIT is a
@@ -11633,11 +11688,16 @@ bool CvGame::DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMino
 		const UnitClassTypes eUnitClass = (UnitClassTypes) pkUnitInfo->GetUnitClassType();
 		if(GET_PLAYER(eMajor).isUnitClassMaxedOut(eUnitClass, GetPendingGiftUnitCountForClass(eMajor, eUnitClass)))
 			return false;
-	}
 
-	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
-	if(pMinorAI == NULL)
-		return false;
+		// Only a default unit of its class, or this city-state's unique unit for its ally, may be
+		// preselected. Without this an old or crafted client could ask any unique unit from any civ.
+		CvUnitClassInfo* pkClassInfo = GC.getUnitClassInfo(eUnitClass);
+		bool bAllowed = (pkClassInfo != NULL && eUnit == pkClassInfo->getDefaultUnitIndex());
+		if(!bAllowed && pMinorAI->IsAllies(eMajor) && pMinorAI->GetUniqueUnit() == eUnit)
+			bAllowed = true;
+		if(!bAllowed)
+			return false;
+	}
 
 	int iCost = GetAidPointCostPendingGiftUnit();
 	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)

@@ -1114,7 +1114,7 @@ public:
 	int GetAidPointAnnexReserve(PlayerTypes eMinor);
 	int GetAidPointReservedForMinor(PlayerTypes eMinor);
 	UnitTypes GetAidPointGreatPersonChoice();
-	UnitTypes GetAidPointGiftUnitChoice(PlayerTypes eMajor);
+	UnitTypes GetAidPointGiftUnitChoice(PlayerTypes eMajor, PlayerTypes eMinor);
 	void DoAidPointGreatPersonSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointRerollSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointGiftUnitSpend(PlayerTypes eMajor, bool* pabPoolUsed);

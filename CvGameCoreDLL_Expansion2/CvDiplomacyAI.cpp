@@ -26446,10 +26446,10 @@ UnitTypes CvDiplomacyAI::GetAidPointGreatPersonChoice()
 }
 
 /// Land unit to preselect for a militaristic ally, from GetMinorGiftUnitChoices.
-UnitTypes CvDiplomacyAI::GetAidPointGiftUnitChoice(PlayerTypes eMajor)
+UnitTypes CvDiplomacyAI::GetAidPointGiftUnitChoice(PlayerTypes eMajor, PlayerTypes eMinor)
 {
 	std::vector<UnitTypes> veChoices;
-	GC.getGame().GetMinorGiftUnitChoices(eMajor, veChoices);
+	GC.getGame().GetMinorGiftUnitChoices(eMajor, eMinor, veChoices);
 
 	std::vector<UnitTypes> veLandChoices;
 	for (uint ui = 0; ui < veChoices.size(); ui++)
@@ -26710,7 +26710,7 @@ void CvDiplomacyAI::DoAidPointGiftUnitSpend(PlayerTypes eMajor, bool* pabPoolUse
 		if (pMinorAI->GetEconomicAidPoints(eMajor) < iCost + GetAidPointAnnexReserve(eMinor))
 			continue;
 
-		const UnitTypes eUnit = GetAidPointGiftUnitChoice(eMajor);
+		const UnitTypes eUnit = GetAidPointGiftUnitChoice(eMajor, eMinor);
 		if (eUnit == NO_UNIT)
 			continue;
 

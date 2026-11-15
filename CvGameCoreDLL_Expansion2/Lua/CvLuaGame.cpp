@@ -2386,12 +2386,13 @@ int CvLuaGame::lGetBullyGoldAidPointCost(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
-//table GetMinorGiftUnitChoices(int iMajorCivID);
+//table GetMinorGiftUnitChoices(int iMajorCivID, int iMinorCivID);
 int CvLuaGame::lGetMinorGiftUnitChoices(lua_State* L)
 {
 	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
 	std::vector<UnitTypes> veChoices;
-	GC.getGame().GetMinorGiftUnitChoices((PlayerTypes)iMajor, veChoices);
+	GC.getGame().GetMinorGiftUnitChoices((PlayerTypes)iMajor, (PlayerTypes)iMinor, veChoices);
 
 	lua_createtable(L, (int)veChoices.size(), 0);
 	for(size_t i = 0; i < veChoices.size(); i++)
