@@ -22388,6 +22388,9 @@ void CvDiplomacyAI::DoDenouncePlayer(PlayerTypes ePlayer)
 			pNotifications->Add(NOTIFICATION_DIPLOMACY_DECLARATION, strText.toUTF8(), strSummary.toUTF8(), -1, -1, GetPlayer()->GetID(), ePlayer);
 		}
 	}
+
+	if (!GetPlayer()->isHuman())
+		DoAidPointDenounceSpend(ePlayer, NULL);
 }
 
 // Does this player feel it's time to denounce ePlayer?
@@ -26873,6 +26876,46 @@ void CvDiplomacyAI::DoAidPointCongressSpend(PlayerTypes eMajor, bool* pabPoolUse
 	if (GC.getGame().DoHastenCongressWithAidPointsFromMajor(eMajor, ePay))
 		if (pabPoolUsed != NULL) pabPoolUsed[ePay] = true;
 }
+
+/// Aid-point denouncement: called right after this AI publicly denounces eTarget.
+void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eTarget, bool* pabPoolUsed)
+{
+	if (eTarget < 0 || eTarget >= MAX_MAJOR_CIVS || eTarget == m_pPlayer->GetID())
+		return;
+
+	if (!m_pPlayer->GetDiplomacyAI()->IsDenouncedPlayer(eTarget))
+		return;
+
+	const int iCost = GC.getGame().GetAidPointCostDenounce();
+	if (iCost <= 0)
+		return;
+
+	for (int iLoop = MAX_MAJOR_CIVS; iLoop < MAX_CIV_PLAYERS; iLoop++)
+	{
+		PlayerTypes eMinor = (PlayerTypes)iLoop;
+
+		if (pabPoolUsed != NULL && pabPoolUsed[eMinor])
+			continue;
+		if (!GET_PLAYER(eMinor).isAlive())
+			continue;
+		if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
+			continue;
+		if (GET_TEAM(GET_PLAYER(eMinor).getTeam()).isAtWar(GET_PLAYER(eTarget).getTeam()))
+			continue;
+
+		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+		if (pMinorAI == NULL || pMinorAI->GetEconomicAidPoints(m_pPlayer->GetID()) < iCost)
+			continue;
+
+		if (GC.getGame().DoMinorCivDenounceWithAidPoints(m_pPlayer->GetID(), eMinor, eTarget))
+		{
+			if (pabPoolUsed != NULL) pabPoolUsed[eMinor] = true;
+			return;
+		}
+	}
+}
+
+
 
 /// Every-turn pass: spend Economic Aid points, highest priority first. Runs before
 /// DoCityStateQuestAI so the bully takeover can pre-empt the ordinary bully branch.

@@ -1120,6 +1120,7 @@ public:
 	void DoAidPointGiftUnitSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointBullySpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointCongressSpend(PlayerTypes eMajor, bool* pabPoolUsed);
+	void DoAidPointDenounceSpend(PlayerTypes eTarget, bool* pabPoolUsed = NULL);
 #endif
 
 	bool IsPlayerValid(PlayerTypes eOtherPlayer, bool bMyTeamIsValid = false);

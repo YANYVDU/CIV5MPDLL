@@ -11705,6 +11705,181 @@ bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 }
 
 //	--------------------------------------------------------------------------------
+// Super Power V11: city-state denounces a civilization on the payer's behalf.
+bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget)
+{
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+	if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS || eTarget == eMajor)
+		return false;
+
+	if(!GET_PLAYER(eTarget).isAlive())
+		return false;
+
+	if(!GET_PLAYER(eMajor).GetDiplomacyAI()->IsDenouncedPlayer(eTarget))
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	const int iCost = GetAidPointCostDenounce();
+	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	// The city-state must know the target and not be at war with it.
+	if(!GET_TEAM(GET_PLAYER(eMinor).getTeam()).isHasMet(GET_PLAYER(eTarget).getTeam()))
+		return false;
+	if(GET_TEAM(GET_PLAYER(eMinor).getTeam()).isAtWar(GET_PLAYER(eTarget).getTeam()))
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+
+	// Lose 5% of the target's current influence with every city-state it has met.
+	for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		PlayerTypes eLoopMinor = (PlayerTypes)iMinorLoop;
+		if(!GET_PLAYER(eLoopMinor).isAlive())
+			continue;
+		if(!GET_TEAM(GET_PLAYER(eLoopMinor).getTeam()).isHasMet(GET_PLAYER(eTarget).getTeam()))
+			continue;
+
+		CvMinorCivAI* pLoopAI = GET_PLAYER(eLoopMinor).GetMinorCivAI();
+		if(pLoopAI == NULL)
+			continue;
+
+		const int iInfluence = pLoopAI->GetEffectiveFriendshipWithMajor(eTarget);
+		if(iInfluence > 0)
+		{
+			int iLoss = iInfluence * 5 / 100;
+			if(iLoss < 1)
+				iLoss = 1;
+			pLoopAI->ChangeFriendshipWithMajor(eTarget, -iLoss);
+		}
+	}
+
+	// Global notification, mirroring a normal denouncement: the actor, the target, and
+	// every major that has met either the city-state or the target are informed.
+	const TeamTypes eMinorTeam = GET_PLAYER(eMinor).getTeam();
+	const TeamTypes eTargetTeam = GET_PLAYER(eTarget).getTeam();
+
+	for(int iCurPlayer = 0; iCurPlayer < MAX_MAJOR_CIVS; iCurPlayer++)
+	{
+		PlayerTypes eCurPlayer = (PlayerTypes)iCurPlayer;
+		if(!GET_PLAYER(eCurPlayer).isAlive())
+			continue;
+
+		CvNotifications* pNotifications = GET_PLAYER(eCurPlayer).GetNotifications();
+		if(pNotifications == NULL)
+			continue;
+
+		const bool bFromMe = (eCurPlayer == eMajor);
+		const bool bAtMe = (eCurPlayer == eTarget);
+
+		if(!bFromMe && !bAtMe)
+		{
+			if(!GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eMinorTeam)
+				&& !GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eTargetTeam))
+				continue;
+		}
+
+		Localization::String strText;
+		Localization::String strSummary;
+
+		if(bFromMe)
+		{
+			strText = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_DENOUNCED_ACTOR");
+			strText << GET_PLAYER(eMinor).getName();
+			strText << GET_PLAYER(eTarget).getName();
+			strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_CITY_STATE_DENOUNCED_ACTOR");
+		}
+		else if(bAtMe)
+		{
+			strText = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_DENOUNCED");
+			strText << GET_PLAYER(eMinor).getName();
+
+			CvCity* pMinorCity = GET_PLAYER(eMinor).getCity(0);
+			if(pMinorCity != NULL && GET_PLAYER(eTarget).GetEspionage()->GetSpyIndexInCity(pMinorCity) != -1)
+			{
+				Localization::String strSpy = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_DENOUNCED_SPY");
+				strSpy << GET_PLAYER(eMajor).getName();
+				strText << strSpy;
+			}
+
+			strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_CITY_STATE_DENOUNCED");
+		}
+		else
+		{
+			strText = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_DENOUNCED_THIRD");
+			strText << GET_PLAYER(eMinor).getName();
+			strText << GET_PLAYER(eTarget).getName();
+			strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_CITY_STATE_DENOUNCED_THIRD");
+		}
+
+		pNotifications->Add(NOTIFICATION_GENERIC, strText.toUTF8(), strSummary.toUTF8(), -1, -1, -1);
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
+
+//	--------------------------------------------------------------------------------
+// Super Power V11: a neutral city-state brokers peace between two warring majors.
+bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget)
+{
+	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+	if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS || eTarget == eMajor)
+		return false;
+	if(!GET_PLAYER(eTarget).isAlive())
+		return false;
+
+	TeamTypes eMajorTeam = GET_PLAYER(eMajor).getTeam();
+	TeamTypes eTargetTeam = GET_PLAYER(eTarget).getTeam();
+	TeamTypes eMinorTeam = GET_PLAYER(eMinor).getTeam();
+
+	if(!GET_TEAM(eMajorTeam).isAtWar(eTargetTeam))
+		return false;
+
+	// The intermediary must be neutral towards both sides.
+	if(GET_TEAM(eMinorTeam).isAtWar(eMajorTeam) || GET_TEAM(eMinorTeam).isAtWar(eTargetTeam))
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if(pMinorAI == NULL)
+		return false;
+
+	const int iCost = GetAidPointCostPeace();
+	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
+		return false;
+
+	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	GET_TEAM(eMajorTeam).makePeace(eTargetTeam, true, false, eMajor);
+
+	// If the peace was refused, refund the points.
+	if(GET_TEAM(eMajorTeam).isAtWar(eTargetTeam))
+	{
+		pMinorAI->ChangeEconomicAidPoints(eMajor, iCost);
+		return false;
+	}
+
+	GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	return true;
+}
+
+//	--------------------------------------------------------------------------------
+
+//	--------------------------------------------------------------------------------
+
+//	--------------------------------------------------------------------------------
+
+//	--------------------------------------------------------------------------------
+
+//	--------------------------------------------------------------------------------
 // Aid point costs for the spending actions above (0 = disabled)
 int CvGame::GetAidPointCostRerollQuests()
 {
@@ -11730,6 +11905,18 @@ int CvGame::GetAidPointHastenCongressTurns()
 {
 	return gCustomMods.getOption("SP_AID_POINT_HASTEN_CONGRESS_TURNS", 3);
 }
+
+int CvGame::GetAidPointCostDenounce()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_DENOUNCE", 20);
+}
+
+int CvGame::GetAidPointCostPeace()
+{
+	return gCustomMods.getOption("SP_AID_POINT_COST_PEACE", 40);
+}
+
+
 
 int CvGame::GetAidPointCostAnnexCityState()
 {

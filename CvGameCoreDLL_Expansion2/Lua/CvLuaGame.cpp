@@ -93,6 +93,8 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetNextGreatPersonChoiceFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetPendingGiftUnitFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoHastenCongressWithAidPointsFromMajor);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorCivDenounceWithAidPoints);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorCivPeaceWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostRerollQuests);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostNextGreatPerson);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostPendingGiftUnit);
@@ -139,6 +141,8 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetAidPointCostHastenCongress);
 	Method(GetAidPointHastenCongressTurns);
 	Method(GetAidPointCostAnnexCityState);
+	Method(GetAidPointCostDenounce);
+	Method(GetAidPointCostPeace);
 	Method(GetBullyTreasurySharePercent);
 	Method(GetBullyGoldAidPointCost);
 	Method(GetMinorGiftUnitChoices);
@@ -2226,6 +2230,46 @@ int CvLuaGame::lDoHastenCongressWithAidPointsFromMajor(lua_State* L)
 	lua_pushboolean(L, GC.getGame().DoHastenCongressWithAidPointsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iCostMinor));
 	return 1;
 }
+//------------------------------------------------------------------------------
+//bool DoMinorCivDenounceWithAidPoints(int iMajorCivID, int iMinorCivID, int iTargetCivID);
+int CvLuaGame::lDoMinorCivDenounceWithAidPoints(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iTarget = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoMinorCivDenounceWithAidPoints((PlayerTypes)iMajor, (PlayerTypes)iMinor, (PlayerTypes)iTarget));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool DoMinorCivPeaceWithAidPoints(int iMajorCivID, int iMinorCivID, int iTargetCivID);
+int CvLuaGame::lDoMinorCivPeaceWithAidPoints(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iTarget = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().DoMinorCivPeaceWithAidPoints((PlayerTypes)iMajor, (PlayerTypes)iMinor, (PlayerTypes)iTarget));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//int GetAidPointCostDenounce();
+int CvLuaGame::lGetAidPointCostDenounce(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostDenounce());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetAidPointCostPeace();
+int CvLuaGame::lGetAidPointCostPeace(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetAidPointCostPeace());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //int GetAidPointCostRerollQuests();
 int CvLuaGame::lGetAidPointCostRerollQuests(lua_State* L)
