@@ -2334,6 +2334,16 @@ bool CvGameDeals::RemoveProposedDeal(PlayerTypes eFromPlayer, PlayerTypes eToPla
 
 	m_ProposedDeals.erase(pDeal);
 
+	// Super Power V11: refresh the score list / diplomacy lists. They rebuild their
+	// "proposal pending" icons from SerialEventGameDataDirty, which AddProposedDeal
+	// already marks; without this the icons keep showing a proposal that was just
+	// accepted/withdrawn until some unrelated dirty event happens.
+	PlayerTypes eActivePlayer = GC.getGame().getActivePlayer();
+	if(eFromPlayer == eActivePlayer || eToPlayer == eActivePlayer)
+	{
+		GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+	}
+
 	return true;
 }
 
@@ -2479,6 +2489,13 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 			}
 		}
 		// **** END HACK ****
+
+		// Super Power V11: make the UI drop the pending-proposal indicator right away.
+		PlayerTypes eActivePlayer = GC.getGame().getActivePlayer();
+		if(eFromPlayer == eActivePlayer || eToPlayer == eActivePlayer)
+		{
+			GC.GetEngineUserInterface()->setDirty(GameData_DIRTY_BIT, true);
+		}
 
 		if(bValid && bAccepted)
 		{
