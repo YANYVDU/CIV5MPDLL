@@ -293,6 +293,8 @@ protected:
 	static int lDoSetPendingGiftUnitFromMajor(lua_State* L);
 	static int lDoHastenCongressWithAidPointsFromMajor(lua_State* L);
 	static int lDoMinorCivDenounceWithAidPoints(lua_State* L);
+	static int lCanMinorCivDenounceWithAidPoints(lua_State* L);
+	static int lCanBuyPermanentVoteWithAidPoints(lua_State* L);
 	static int lDoMinorCivPeaceWithAidPoints(lua_State* L);
 	static int lDoBuyPermanentVoteWithAidPoints(lua_State* L);
 	static int lDoRequestEmergencyProposalWithAidPoints(lua_State* L);

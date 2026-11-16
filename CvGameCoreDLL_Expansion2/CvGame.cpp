@@ -11794,7 +11794,10 @@ bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 
 //	--------------------------------------------------------------------------------
 // Super Power V11: city-state denounces a civilization on the payer's behalf.
-bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget, bool bRequirePayerDenounce)
+/// Can this denouncement be bought at all? Same rules as the purchase below, minus the aid-point
+/// balance and the price: the UI uses this to hide the action when it is not applicable (cooldown,
+/// already at war, target not met, ...) and keeps the "can you afford it" check for greying out.
+bool CvGame::CanMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget, bool bRequirePayerDenounce)
 {
 	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
 		return false;
@@ -11823,10 +11826,6 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
 		return false;
 
-	const int iCost = GET_PLAYER(eMajor).GetAidPointCostDenounce();
-	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
-		return false;
-
 	// The city-state must know the target and not be at war with it.
 	if(!GET_TEAM(GET_PLAYER(eMinor).getTeam()).isHasMet(GET_PLAYER(eTarget).getTeam()))
 		return false;
@@ -11835,6 +11834,19 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 
 	// One denouncement per (target, city-state) pair per cooldown window, whoever pays for it
 	if(pMinorAI->IsAidPointDenounceOnCooldown(eTarget))
+		return false;
+
+	return true;
+}
+
+bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget, bool bRequirePayerDenounce)
+{
+	if(!CanMinorCivDenounceWithAidPoints(eMajor, eMinor, eTarget, bRequirePayerDenounce))
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	const int iCost = GET_PLAYER(eMajor).GetAidPointCostDenounce();
+	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
 
 	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
@@ -12058,7 +12070,9 @@ bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor
 
 //	--------------------------------------------------------------------------------
 // Super Power V11: one permanent World Congress vote per city-state, never reset by resurrection.
-bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor)
+/// Can a permanent vote be bought at all? Same rules as the purchase below, minus the aid-point
+/// balance and the price, so the UI can hide the row while the League is in session.
+bool CvGame::CanBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor)
 {
 	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
 		return false;
@@ -12069,8 +12083,7 @@ bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eMinor).isAlive())
 		return false;
 
-	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
-	if(pMinorAI == NULL)
+	if(GET_PLAYER(eMinor).GetMinorCivAI() == NULL)
 		return false;
 
 	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
@@ -12089,6 +12102,15 @@ bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
 		return false;
 
+	return true;
+}
+
+bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor)
+{
+	if(!CanBuyPermanentVoteWithAidPoints(eMajor, eMinor))
+		return false;
+
+	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
 	const int iCost = GET_PLAYER(eMajor).GetAidPointCostPermanentVote();
 	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;

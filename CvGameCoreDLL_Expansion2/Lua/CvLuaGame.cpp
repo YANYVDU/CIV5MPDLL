@@ -95,6 +95,8 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoSetPendingGiftUnitFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoHastenCongressWithAidPointsFromMajor);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorCivDenounceWithAidPoints);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lCanMinorCivDenounceWithAidPoints);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lCanBuyPermanentVoteWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoMinorCivPeaceWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoBuyPermanentVoteWithAidPoints);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lDoRequestEmergencyProposalWithAidPoints);
@@ -152,6 +154,8 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetAidPointCostPermanentVote);
 	Method(GetAidPointCostEmergencyProposal);
 	Method(CanRequestEmergencyProposal);
+	Method(CanMinorCivDenounceWithAidPoints);
+	Method(CanBuyPermanentVoteWithAidPoints);
 	Method(HasAidPointPermanentVote);
 	Method(GetBullyTreasurySharePercent);
 	Method(GetTradeAgreementRouteGoldPercent);
@@ -2239,6 +2243,25 @@ int CvLuaGame::lDoHastenCongressWithAidPointsFromMajor(lua_State* L)
 	const int iMajor = lua_tointeger(L, 1);
 	const int iCostMinor = lua_tointeger(L, 2);
 	lua_pushboolean(L, GC.getGame().DoHastenCongressWithAidPointsFromMajor((PlayerTypes)iMajor, (PlayerTypes)iCostMinor));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanMinorCivDenounceWithAidPoints(int iMajorCivID, int iMinorCivID, int iTargetCivID);
+int CvLuaGame::lCanMinorCivDenounceWithAidPoints(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	const int iTarget = lua_tointeger(L, 3);
+	lua_pushboolean(L, GC.getGame().CanMinorCivDenounceWithAidPoints((PlayerTypes)iMajor, (PlayerTypes)iMinor, (PlayerTypes)iTarget));
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool CanBuyPermanentVoteWithAidPoints(int iMajorCivID, int iMinorCivID);
+int CvLuaGame::lCanBuyPermanentVoteWithAidPoints(lua_State* L)
+{
+	const int iMajor = lua_tointeger(L, 1);
+	const int iMinor = lua_tointeger(L, 2);
+	lua_pushboolean(L, GC.getGame().CanBuyPermanentVoteWithAidPoints((PlayerTypes)iMajor, (PlayerTypes)iMinor));
 	return 1;
 }
 //------------------------------------------------------------------------------

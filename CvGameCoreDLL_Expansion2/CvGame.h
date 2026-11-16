@@ -624,6 +624,10 @@ public:
 	//! that the payer must already have denounced the target; the AI may buy one to block a rival
 	//! that is close to a diplomatic victory, before it denounces that rival itself.
 	bool DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget, bool bRequirePayerDenounce = true);
+	//! Rules-only check for the purchase above (ignores the aid-point balance and the price).
+	bool CanMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget, bool bRequirePayerDenounce = true);
+	//! Rules-only check for DoBuyPermanentVoteWithAidPoints (ignores the aid-point balance).
+	bool CanBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor);
 	bool DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget);
 	bool DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor);
 	bool DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor);
