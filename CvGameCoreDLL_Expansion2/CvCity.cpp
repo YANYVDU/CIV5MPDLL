@@ -12261,7 +12261,7 @@ void CvCity::doBeliefInstantYield(BeliefTypes eBelief)
 	}
 }
 #endif
-void CvCity::doBuildingInstantYield(int* iInstantYield)
+void CvCity::doBuildingInstantYield(const int* iInstantYield)
 {
 	VALIDATE_OBJECT
 	if(!iInstantYield) return;

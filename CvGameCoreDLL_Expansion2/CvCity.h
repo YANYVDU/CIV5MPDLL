@@ -693,7 +693,7 @@ public:
 	void doRelogionInstantYield(ReligionTypes eReligion);
 	void doBeliefInstantYield(BeliefTypes eBelief);
 #endif	
-	void doBuildingInstantYield(int* iInstantYieldArray);
+	void doBuildingInstantYield(const int* iInstantYieldArray);
 	void doInstantYield(YieldTypes iYield, int iValue);
 #endif
 

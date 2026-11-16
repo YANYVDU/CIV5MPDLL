@@ -1707,7 +1707,7 @@ int CvImprovementEntry::GetPrereqNatureYield(int i) const
 	return m_piPrereqNatureYield ? m_piPrereqNatureYield[i] : -1;
 }
 
-int* CvImprovementEntry::GetPrereqNatureYieldArray()
+const int* CvImprovementEntry::GetPrereqNatureYieldArray()
 {
 	return m_piPrereqNatureYield;
 }
@@ -1720,7 +1720,7 @@ int CvImprovementEntry::GetYieldChange(int i) const
 	return m_piYieldChange ? m_piYieldChange[i] : 0;
 }
 
-int* CvImprovementEntry::GetYieldChangeArray()
+const int* CvImprovementEntry::GetYieldChangeArray()
 {
 	return m_piYieldChange;
 }
@@ -1741,7 +1741,7 @@ int CvImprovementEntry::GetRiverSideYieldChange(int i) const
 	return m_piRiverSideYieldChange ? m_piRiverSideYieldChange[i] : 0;
 }
 
-int* CvImprovementEntry::GetRiverSideYieldChangeArray()
+const int* CvImprovementEntry::GetRiverSideYieldChangeArray()
 {
 	return m_piRiverSideYieldChange;
 }
@@ -1754,7 +1754,7 @@ int CvImprovementEntry::GetCoastalLandYieldChange(int i) const
 	return m_piCoastalLandYieldChange ? m_piCoastalLandYieldChange[i] : 0;
 }
 
-int* CvImprovementEntry::GetCoastalLandYieldChangeArray()
+const int* CvImprovementEntry::GetCoastalLandYieldChangeArray()
 {
 	return m_piCoastalLandYieldChange;
 }
@@ -1767,7 +1767,7 @@ int CvImprovementEntry::GetHillsYieldChange(int i) const
 	return m_piHillsYieldChange ? m_piHillsYieldChange[i] : 0;
 }
 
-int* CvImprovementEntry::GetHillsYieldChangeArray()
+const int* CvImprovementEntry::GetHillsYieldChangeArray()
 {
 	return m_piHillsYieldChange;
 }
@@ -1780,7 +1780,7 @@ int CvImprovementEntry::GetFreshWaterYieldChange(int i) const
 	return m_piFreshWaterChange ? m_piFreshWaterChange[i] : 0;
 }
 
-int* CvImprovementEntry::GetFreshWaterYieldChangeArray() // For Moose - CvWidgetData XXX
+const int* CvImprovementEntry::GetFreshWaterYieldChangeArray() // For Moose - CvWidgetData XXX
 {
 	return m_piFreshWaterChange;
 }
@@ -1793,7 +1793,7 @@ int CvImprovementEntry::GetAdjacentCityYieldChange(int i) const
 	return m_piAdjacentCityYieldChange ? m_piAdjacentCityYieldChange[i] : 0;
 }
 
-int* CvImprovementEntry::GetAdjacentCityYieldChangeArray()
+const int* CvImprovementEntry::GetAdjacentCityYieldChangeArray()
 {
 	return m_piAdjacentCityYieldChange;
 }
@@ -1928,7 +1928,7 @@ int CvImprovementEntry::GetTechYieldChanges(int i, int j) const
 	return m_ppiTechYieldChanges[i][j];
 }
 
-int* CvImprovementEntry::GetTechYieldChangesArray(int i)
+const int* CvImprovementEntry::GetTechYieldChangesArray(int i)
 {
 	return m_ppiTechYieldChanges[i];
 }
@@ -1943,7 +1943,7 @@ int CvImprovementEntry::GetTechNoFreshWaterYieldChanges(int i, int j) const
 	return m_ppiTechNoFreshWaterYieldChanges[i][j];
 }
 
-int* CvImprovementEntry::GetTechNoFreshWaterYieldChangesArray(int i)
+const int* CvImprovementEntry::GetTechNoFreshWaterYieldChangesArray(int i)
 {
 	return m_ppiTechNoFreshWaterYieldChanges[i];
 }
@@ -1958,7 +1958,7 @@ int CvImprovementEntry::GetTechFreshWaterYieldChanges(int i, int j) const
 	return m_ppiTechFreshWaterYieldChanges[i][j];
 }
 
-int* CvImprovementEntry::GetTechFreshWaterYieldChangesArray(int i)
+const int* CvImprovementEntry::GetTechFreshWaterYieldChangesArray(int i)
 {
 	return m_ppiTechFreshWaterYieldChanges[i];
 }
@@ -1973,7 +1973,7 @@ int CvImprovementEntry::GetRouteYieldChanges(int i, int j) const
 	return m_ppiRouteYieldChanges[i][j];
 }
 
-int* CvImprovementEntry::GetRouteYieldChangesArray(int i)				// For Moose - CvWidgetData XXX
+const int* CvImprovementEntry::GetRouteYieldChangesArray(int i)				// For Moose - CvWidgetData XXX
 {
 	return m_ppiRouteYieldChanges[i];
 }
@@ -1989,7 +1989,7 @@ int CvImprovementEntry::GetTradeRouteYieldChanges(int i, int j) const
 	return m_ppiTradeRouteYieldChanges[i][j];
 }
 
-int* CvImprovementEntry::GetTradeRouteYieldChangesArray(int i)				// For Moose - CvWidgetData XXX
+const int* CvImprovementEntry::GetTradeRouteYieldChangesArray(int i)				// For Moose - CvWidgetData XXX
 {
 	return m_ppiTradeRouteYieldChanges[i];
 }

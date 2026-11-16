@@ -3180,7 +3180,7 @@ int CvBuildingEntry::GetGreatWorkYieldChange(int i) const
 	return m_piGreatWorkYieldChange ? m_piGreatWorkYieldChange[i] : -1;
 }
 /// Array of yield changes to Great Works
-int* CvBuildingEntry::GetGreatWorkYieldChangeArray() const
+const int* CvBuildingEntry::GetGreatWorkYieldChangeArray() const
 {
 	return m_piGreatWorkYieldChange;
 }
@@ -3466,7 +3466,7 @@ int CvBuildingEntry::GetYieldChange(int i) const
 }
 
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldChangeArray() const
+const int* CvBuildingEntry::GetYieldChangeArray() const
 {
 	return m_piYieldChange;
 }
@@ -3480,7 +3480,7 @@ int CvBuildingEntry::GetYieldChangePerEra(int i) const
 }
 
 /// Array of yield changes per era
-int* CvBuildingEntry::GetYieldChangePerEraArray() const
+const int* CvBuildingEntry::GetYieldChangePerEraArray() const
 {
 	return m_piYieldChangePerEra;
 }
@@ -3493,7 +3493,7 @@ int CvBuildingEntry::GetYieldModifierChangePerEra(int i) const
 }
 
 /// Array of yieldModifier changes per era
-int* CvBuildingEntry::GetYieldModifierChangePerEraArray() const
+const int* CvBuildingEntry::GetYieldModifierChangePerEraArray() const
 {
 	return m_piYieldModifierChangePerEra;
 }
@@ -3522,7 +3522,7 @@ int CvBuildingEntry::GetYieldChangePerPop(int i) const
 }
 
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldChangePerPopArray() const
+const int* CvBuildingEntry::GetYieldChangePerPopArray() const
 {
 	return m_piYieldChangePerPop;
 }
@@ -3534,7 +3534,7 @@ int CvBuildingEntry::GetYieldFromInternal(int i) const
 	return m_piYieldFromInternal[i];
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromInternalArray() const
+const int* CvBuildingEntry::GetYieldFromInternalArray() const
 {
 	return m_piYieldFromInternal;
 }
@@ -3547,7 +3547,7 @@ int CvBuildingEntry::GetYieldFromProcessModifier(int i) const
 	return m_piYieldFromProcessModifier[i];
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromProcessModifierArray() const
+const int* CvBuildingEntry::GetYieldFromProcessModifierArray() const
 {
 	return m_piYieldFromProcessModifier;
 }
@@ -3559,7 +3559,7 @@ int CvBuildingEntry::GetYieldFromProcessModifierGlobal(int i) const
 	return m_piYieldFromProcessModifierGlobal[i];
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromProcessModifierArrayGlobal() const
+const int* CvBuildingEntry::GetYieldFromProcessModifierArrayGlobal() const
 {
 	return m_piYieldFromProcessModifierGlobal;
 }
@@ -3592,7 +3592,7 @@ int CvBuildingEntry::GetYieldChangePerReligion(int i) const
 }
 
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldChangePerReligionArray() const
+const int* CvBuildingEntry::GetYieldChangePerReligionArray() const
 {
 	return m_piYieldChangePerReligion;
 }
@@ -3606,7 +3606,7 @@ int CvBuildingEntry::GetYieldModifier(int i) const
 }
 
 /// Array of yield modifiers
-int* CvBuildingEntry::GetYieldModifierArray() const
+const int* CvBuildingEntry::GetYieldModifierArray() const
 {
 	return m_piYieldModifier;
 }
@@ -3620,7 +3620,7 @@ int CvBuildingEntry::GetYieldMultiplier(int i) const
 }
 
 /// Array of yield Multipliers
-int* CvBuildingEntry::GetYieldMultiplierArray() const
+const int* CvBuildingEntry::GetYieldMultiplierArray() const
 {
 	return m_piYieldMultiplier;
 }
@@ -3635,7 +3635,7 @@ int CvBuildingEntry::GetYieldFromConstruction(int i) const
 	return m_piYieldFromConstruction[i];
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromConstructionArray() const
+const int* CvBuildingEntry::GetYieldFromConstructionArray() const
 {
 	return m_piYieldFromConstruction;
 }
@@ -3647,7 +3647,7 @@ int CvBuildingEntry::GetYieldFromUnitProduction(int i) const
 	return m_piYieldFromUnitProduction[i];
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromUnitProductionArray() const
+const int* CvBuildingEntry::GetYieldFromUnitProductionArray() const
 {
 	return m_piYieldFromUnitProduction;
 }
@@ -3659,7 +3659,7 @@ int CvBuildingEntry::GetYieldFromBirth(int i) const
 	return m_piYieldFromBirth[i];
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromBirthArray() const
+const int* CvBuildingEntry::GetYieldFromBirthArray() const
 {
 	return m_piYieldFromBirth;
 }
@@ -3671,7 +3671,7 @@ int CvBuildingEntry::GetYieldFromBorderGrowth(int i) const
 	return m_piYieldFromBorderGrowth[i];
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromBorderGrowthArray() const
+const int* CvBuildingEntry::GetYieldFromBorderGrowthArray() const
 {
 	return m_piYieldFromBorderGrowth;
 }
@@ -3684,7 +3684,7 @@ int CvBuildingEntry::GetYieldFromPillage(int i) const
 	return m_piYieldFromPillage ? m_piYieldFromPillage[i] : -1;
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromPillageArray() const
+const int* CvBuildingEntry::GetYieldFromPillageArray() const
 {
 	return m_piYieldFromPillage;
 }
@@ -3697,7 +3697,7 @@ int CvBuildingEntry::GetYieldFromPillageGlobal(int i) const
 	return m_piYieldFromPillageGlobal ? m_piYieldFromPillageGlobal[i] : -1;
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromPillageGlobalArray() const
+const int* CvBuildingEntry::GetYieldFromPillageGlobalArray() const
 {
 	return m_piYieldFromPillageGlobal;
 }
@@ -3710,7 +3710,7 @@ int CvBuildingEntry::GetYieldFromPillageGlobalPlayer(int i) const
 	return m_piYieldFromPillageGlobalPlayer ? m_piYieldFromPillageGlobalPlayer[i] : -1;
 }
 /// Array of yield changes
-int* CvBuildingEntry::GetYieldFromPillageGlobalPlayerArray() const
+const int* CvBuildingEntry::GetYieldFromPillageGlobalPlayerArray() const
 {
 	return m_piYieldFromPillageGlobalPlayer;
 }
@@ -3723,7 +3723,7 @@ int CvBuildingEntry::GetYieldModifierFromWonder(int i) const
 }
 
 /// Array of yield modifiers
-int* CvBuildingEntry::GetYieldModifierFromWonderArray() const
+const int* CvBuildingEntry::GetYieldModifierFromWonderArray() const
 {
 	return m_piYieldModifierFromWonder;
 }
@@ -3740,7 +3740,7 @@ int CvBuildingEntry::GetAreaYieldModifier(int i) const
 }
 
 /// Array of yield modifiers in area
-int* CvBuildingEntry::GetAreaYieldModifierArray() const
+const int* CvBuildingEntry::GetAreaYieldModifierArray() const
 {
 	return m_piAreaYieldModifier;
 }
@@ -3754,7 +3754,7 @@ int CvBuildingEntry::GetGlobalYieldModifier(int i) const
 }
 
 /// Array of global yield modifiers
-int* CvBuildingEntry::GetGlobalYieldModifierArray() const
+const int* CvBuildingEntry::GetGlobalYieldModifierArray() const
 {
 	return m_piGlobalYieldModifier;
 }
@@ -3768,7 +3768,7 @@ int CvBuildingEntry::GetTechEnhancedYieldChange(int i) const
 }
 
 /// Array of yield changes based on earning a tech
-int* CvBuildingEntry::GetTechEnhancedYieldChangeArray() const
+const int* CvBuildingEntry::GetTechEnhancedYieldChangeArray() const
 {
 	return m_piTechEnhancedYieldChange;
 }
@@ -3782,7 +3782,7 @@ int CvBuildingEntry::GetSeaPlotYieldChange(int i) const
 }
 
 /// Array of sea plot yield changes
-int* CvBuildingEntry::GetSeaPlotYieldChangeArray() const
+const int* CvBuildingEntry::GetSeaPlotYieldChangeArray() const
 {
 	return m_piSeaPlotYieldChange;
 }
@@ -3796,7 +3796,7 @@ int CvBuildingEntry::GetRiverPlotYieldChange(int i) const
 }
 
 /// Array of river plot yield changes
-int* CvBuildingEntry::GetRiverPlotYieldChangeArray() const
+const int* CvBuildingEntry::GetRiverPlotYieldChangeArray() const
 {
 	return m_piRiverPlotYieldChange;
 }
@@ -3810,7 +3810,7 @@ int CvBuildingEntry::GetRiverPlotYieldChangeGlobal(int i) const
 }
 
 /// Array of Global river plot yield changes
-int* CvBuildingEntry::GetRiverPlotYieldChangeGlobalArray() const
+const int* CvBuildingEntry::GetRiverPlotYieldChangeGlobalArray() const
 {
 	return m_piRiverPlotYieldChangeGlobal;
 }
@@ -3824,7 +3824,7 @@ int CvBuildingEntry::GetLakePlotYieldChange(int i) const
 }
 
 /// Array of lake plot yield changes
-int* CvBuildingEntry::GetLakePlotYieldChangeArray() const
+const int* CvBuildingEntry::GetLakePlotYieldChangeArray() const
 {
 	return m_piLakePlotYieldChange;
 }
@@ -3838,7 +3838,7 @@ int CvBuildingEntry::GetSeaResourceYieldChange(int i) const
 }
 
 /// Array of sea resource yield changes
-int* CvBuildingEntry::GetSeaResourceYieldChangeArray() const
+const int* CvBuildingEntry::GetSeaResourceYieldChangeArray() const
 {
 	return m_piSeaResourceYieldChange;
 }
@@ -4123,7 +4123,7 @@ int CvBuildingEntry::GetInstantYield(int i) const
 }
 
 /// Array of instant yields
-int* CvBuildingEntry::GetInstantYieldArray() const
+const int* CvBuildingEntry::GetInstantYieldArray() const
 {
 	return m_piInstantYield;
 }
@@ -4188,7 +4188,7 @@ int CvBuildingEntry::GetImprovementYieldChange(int i, int j) const
 }
 
 /// Array of changes to Improvement yield
-int* CvBuildingEntry::GetImprovementYieldChangeArray(int i) const
+const int* CvBuildingEntry::GetImprovementYieldChangeArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4208,7 +4208,7 @@ int CvBuildingEntry::GetImprovementYieldChangeGlobal(int i, int j) const
 }
 
 /// Array of changes to Improvement yield
-int* CvBuildingEntry::GetImprovementYieldChangeGlobalArray(int i) const
+const int* CvBuildingEntry::GetImprovementYieldChangeGlobalArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumFeatureInfos(), "Index out of bounds");
 	//CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
@@ -4248,7 +4248,7 @@ int CvBuildingEntry::GetYieldPerXTerrain(int i, int j) const
 }
 
 /// Array of changes to Feature yield
-int* CvBuildingEntry::GetYieldPerXTerrainArray(int i) const
+const int* CvBuildingEntry::GetYieldPerXTerrainArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumTerrainInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4265,7 +4265,7 @@ int CvBuildingEntry::GetYieldPerXFeature(int i, int j) const
 }
 
 /// Array of changes to Feature yield
-int* CvBuildingEntry::GetYieldPerXFeatureArray(int i) const
+const int* CvBuildingEntry::GetYieldPerXFeatureArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumFeatureInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4283,7 +4283,7 @@ int CvBuildingEntry::GetSpecialistYieldChangeLocal(int i, int j) const
 	return m_ppaiSpecialistYieldChangeLocal ? m_ppaiSpecialistYieldChangeLocal[i][j] : -1;
 }
 /// Array of changes to specialist yield
-int* CvBuildingEntry::GetSpecialistYieldChangeLocalArray(int i) const
+const int* CvBuildingEntry::GetSpecialistYieldChangeLocalArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4481,7 +4481,7 @@ int CvBuildingEntry::GetResourceYieldChange(int i, int j) const
 }
 
 /// Array of changes to Resource yield
-int* CvBuildingEntry::GetResourceYieldChangeArray(int i) const
+const int* CvBuildingEntry::GetResourceYieldChangeArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4499,7 +4499,7 @@ int CvBuildingEntry::GetFeatureYieldChange(int i, int j) const
 }
 
 /// Array of changes to Feature yield
-int* CvBuildingEntry::GetFeatureYieldChangeArray(int i) const
+const int* CvBuildingEntry::GetFeatureYieldChangeArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumFeatureInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4518,7 +4518,7 @@ int CvBuildingEntry::GetTerrainYieldModifier(int i, int j) const
 }
 
 /// Array of changes to Feature yield
-int* CvBuildingEntry::GetTerrainYieldModifierArray(int i) const
+const int* CvBuildingEntry::GetTerrainYieldModifierArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumTerrainInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4537,7 +4537,7 @@ int CvBuildingEntry::GetSpecialistYieldChange(int i, int j) const
 }
 
 /// Array of changes to specialist yield
-int* CvBuildingEntry::GetSpecialistYieldChangeArray(int i) const
+const int* CvBuildingEntry::GetSpecialistYieldChangeArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4556,7 +4556,7 @@ int CvBuildingEntry::GetImprovementYieldModifier(int i, int j) const
 }
 
 /// Array of modifiers to Improvement yield
-int* CvBuildingEntry::GetImprovementYieldModifierArray(int i) const
+const int* CvBuildingEntry::GetImprovementYieldModifierArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumImprovementInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4574,7 +4574,7 @@ int CvBuildingEntry::GetSpecialistYieldModifier(int i, int j) const
 }
 
 /// Array of modifiers to Improvement yield
-int* CvBuildingEntry::GetSpecialistYieldModifierArray(int i) const
+const int* CvBuildingEntry::GetSpecialistYieldModifierArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4591,7 +4591,7 @@ int CvBuildingEntry::GetSpecialistYieldModifierGlobal(int i, int j) const
 }
 
 /// Array of modifiers to Improvement yield
-int* CvBuildingEntry::GetSpecialistYieldModifierGlobalArray(int i) const
+const int* CvBuildingEntry::GetSpecialistYieldModifierGlobalArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumSpecialistInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4610,7 +4610,7 @@ int CvBuildingEntry::GetFeatureYieldModifier(int i, int j) const
 }
 
 /// Array of modifiers to Feature yield
-int* CvBuildingEntry::GetFeatureYieldModifierArray(int i) const
+const int* CvBuildingEntry::GetFeatureYieldModifierArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumFeatureInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4628,7 +4628,7 @@ int CvBuildingEntry::GetResourceYieldModifier(int i, int j) const
 }
 
 /// Array of modifiers to resource yield
-int* CvBuildingEntry::GetResourceYieldModifierArray(int i) const
+const int* CvBuildingEntry::GetResourceYieldModifierArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumResourceInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4646,7 +4646,7 @@ int CvBuildingEntry::GetTerrainYieldChange(int i, int j) const
 }
 
 /// Array of changes to Feature yield
-int* CvBuildingEntry::GetTerrainYieldChangeArray(int i) const
+const int* CvBuildingEntry::GetTerrainYieldChangeArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumTerrainInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4669,7 +4669,7 @@ int CvBuildingEntry::GetPlotYieldChange(int i, int j) const
 }
 
 /// Array of changes to Plot yield
-int* CvBuildingEntry::GetPlotYieldChangeArray(int i) const
+const int* CvBuildingEntry::GetPlotYieldChangeArray(int i) const
 {
 	CvAssertMsg(i < GC.getNumPlotInfos(), "Index out of bounds");
 	CvAssertMsg(i > -1, "Index out of bounds");
@@ -4950,7 +4950,6 @@ void CvCityBuildings::Uninit()
 	SAFE_DELETE_ARRAY(m_paiNumFreeBuilding);
 }
 
-/// Reset status arrays to all false
 /// Building types this City currently owns, ascending by type
 const std::vector<BuildingTypes>& CvCityBuildings::GetOwnedBuildings() const
 {

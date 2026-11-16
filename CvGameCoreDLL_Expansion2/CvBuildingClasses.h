@@ -219,13 +219,13 @@ public:
 
 #if defined(MOD_GLOBAL_BUILDING_INSTANT_YIELD)
 	int GetInstantYield(int i) const;
-	int* GetInstantYieldArray() const;
+	const int* GetInstantYieldArray() const;
 	bool IsAllowInstantYield() const;
 #endif
 
 #if defined(MOD_ROG_CORE)
 	int GetGreatWorkYieldChange(int i) const;
-	int* GetGreatWorkYieldChangeArray() const;
+	const int* GetGreatWorkYieldChangeArray() const;
 
 	int GetYieldChangePerPopInEmpire(int i) const;
 #endif
@@ -274,17 +274,17 @@ public:
 	int GetYieldChangeWorldWonder(int i) const;
 	int GetYieldChangeWorldWonderGlobal(int i) const;
 	int GetYieldFromInternal(int i) const;
-	int* GetYieldFromInternalArray() const;
+	const int* GetYieldFromInternalArray() const;
 	int GetYieldFromProcessModifier(int i) const;
-	int* GetYieldFromProcessModifierArray() const;
+	const int* GetYieldFromProcessModifierArray() const;
 	int GetYieldFromProcessModifierGlobal(int i) const;
-	int* GetYieldFromProcessModifierArrayGlobal() const;
+	const int* GetYieldFromProcessModifierArrayGlobal() const;
 	int GetResourceYieldChangeGlobal(int iResource, int iYieldType) const;
 	int GetImprovementYieldChange(int i, int j) const;
-	int* GetImprovementYieldChangeArray(int i) const;
+	const int* GetImprovementYieldChangeArray(int i) const;
 
 	int GetImprovementYieldChangeGlobal(int i, int j) const;
-	int* GetImprovementYieldChangeGlobalArray(int i) const;
+	const int* GetImprovementYieldChangeGlobalArray(int i) const;
 
 	// AdjacentImprovementYieldChanges
 	struct AdjacentImprovementYieldChange {
@@ -300,13 +300,13 @@ public:
 	int GetTerrainYieldChangesGlobal(int i, int j) const;
 
 	int GetYieldPerXTerrain(int i, int j) const;
-	int* GetYieldPerXTerrainArray(int i) const;
+	const int* GetYieldPerXTerrainArray(int i) const;
 
 	int GetYieldPerXFeature(int i, int j) const;
-	int* GetYieldPerXFeatureArray(int i) const;
+	const int* GetYieldPerXFeatureArray(int i) const;
 
 	int GetSpecialistYieldChangeLocal(int i, int j) const;
-	int* GetSpecialistYieldChangeLocalArray(int i) const;
+	const int* GetSpecialistYieldChangeLocalArray(int i) const;
 
 	int GetBuildingClassYieldModifier(int i, int j) const;
 	int GetBuildingClassLocalYieldChange(int i, int j) const;
@@ -426,59 +426,59 @@ public:
 	// Accessor Functions (Arrays)
 
 	int GetYieldChange(int i) const;
-	int* GetYieldChangeArray() const;
+	const int* GetYieldChangeArray() const;
 	int GetYieldChangePerEra(int i) const;
-	int* GetYieldChangePerEraArray() const;
+	const int* GetYieldChangePerEraArray() const;
 	int GetYieldModifierChangePerEra(int i) const;
-	int* GetYieldModifierChangePerEraArray() const;
+	const int* GetYieldModifierChangePerEraArray() const;
 	int GetCityStateTradeRouteYieldModifier(int i) const;
 	int GetCityStateTradeRouteYieldModifierGlobal(int i) const;
 	int GetYieldChangePerPop(int i) const;
-	int* GetYieldChangePerPopArray() const;
+	const int* GetYieldChangePerPopArray() const;
 	int GetYieldChangePerReligion(int i) const;
-	int* GetYieldChangePerReligionArray() const;
+	const int* GetYieldChangePerReligionArray() const;
 	int GetYieldModifier(int i) const;;
-	int* GetYieldModifierArray() const;
+	const int* GetYieldModifierArray() const;
 	int GetYieldMultiplier(int i) const;;
-	int* GetYieldMultiplierArray() const;
+	const int* GetYieldMultiplierArray() const;
 
 #if defined(MOD_ROG_CORE)
 	int GetYieldFromConstruction(int i) const;
-	int* GetYieldFromConstructionArray() const;
+	const int* GetYieldFromConstructionArray() const;
 	int GetYieldFromUnitProduction(int i) const;
-	int* GetYieldFromUnitProductionArray() const;
+	const int* GetYieldFromUnitProductionArray() const;
 	int GetYieldFromBirth(int i) const;
-	int* GetYieldFromBirthArray() const;
+	const int* GetYieldFromBirthArray() const;
 	int GetYieldFromBorderGrowth(int i) const;
-	int* GetYieldFromBorderGrowthArray() const;
+	const int* GetYieldFromBorderGrowthArray() const;
 
 	int GetYieldFromPillage(int i) const;
-	int* GetYieldFromPillageArray() const;
+	const int* GetYieldFromPillageArray() const;
 	int GetYieldFromPillageGlobal(int i) const;
-	int* GetYieldFromPillageGlobalArray() const;
+	const int* GetYieldFromPillageGlobalArray() const;
 	int GetYieldFromPillageGlobalPlayer(int i) const;
-	int* GetYieldFromPillageGlobalPlayerArray() const;
+	const int* GetYieldFromPillageGlobalPlayerArray() const;
 
 	int GetYieldModifierFromWonder(int i) const;;
-	int* GetYieldModifierFromWonderArray() const;
+	const int* GetYieldModifierFromWonderArray() const;
 #endif
 
 	int GetAreaYieldModifier(int i) const;
-	int* GetAreaYieldModifierArray() const;
+	const int* GetAreaYieldModifierArray() const;
 	int GetGlobalYieldModifier(int i) const;
-	int* GetGlobalYieldModifierArray() const;
+	const int* GetGlobalYieldModifierArray() const;
 	int GetTechEnhancedYieldChange(int i) const;
-	int* GetTechEnhancedYieldChangeArray() const;
+	const int* GetTechEnhancedYieldChangeArray() const;
 	int GetSeaPlotYieldChange(int i) const;
-	int* GetSeaPlotYieldChangeArray() const;
+	const int* GetSeaPlotYieldChangeArray() const;
 	int GetRiverPlotYieldChange(int i) const;
-	int* GetRiverPlotYieldChangeArray() const;
+	const int* GetRiverPlotYieldChangeArray() const;
 	int GetRiverPlotYieldChangeGlobal(int i) const;
-	int* GetRiverPlotYieldChangeGlobalArray() const;
+	const int* GetRiverPlotYieldChangeGlobalArray() const;
 	int GetLakePlotYieldChange(int i) const;
-	int* GetLakePlotYieldChangeArray() const;
+	const int* GetLakePlotYieldChangeArray() const;
 	int GetSeaResourceYieldChange(int i) const;
-	int* GetSeaResourceYieldChangeArray() const;
+	const int* GetSeaResourceYieldChangeArray() const;
 	int GetSpecialistCount(int i) const;
 	int GetUnitCombatFreeExperience(int i) const;
 	int GetUnitCombatProductionModifier(int i) const;
@@ -559,31 +559,31 @@ public:
 
 	int GetYieldFromYieldGlobal(int i, int j) const;
 	int GetResourceYieldChange(int i, int j) const;
-	int* GetResourceYieldChangeArray(int i) const;
+	const int* GetResourceYieldChangeArray(int i) const;
 	int GetFeatureYieldChange(int i, int j) const;
-	int* GetFeatureYieldChangeArray(int i) const;
+	const int* GetFeatureYieldChangeArray(int i) const;
 
 
 	int GetTerrainYieldModifier(int i, int j) const;
-	int* GetTerrainYieldModifierArray(int i) const;
+	const int* GetTerrainYieldModifierArray(int i) const;
 
 	int GetSpecialistYieldChange(int i, int j) const;
-	int* GetSpecialistYieldChangeArray(int i) const;
+	const int* GetSpecialistYieldChangeArray(int i) const;
 	int GetImprovementYieldModifier(int i, int j) const;
-	int* GetImprovementYieldModifierArray(int i) const;
+	const int* GetImprovementYieldModifierArray(int i) const;
 	int GetSpecialistYieldModifier(int i, int j) const;
-	int* GetSpecialistYieldModifierArray(int i) const;
+	const int* GetSpecialistYieldModifierArray(int i) const;
 	int GetSpecialistYieldModifierGlobal(int i, int j) const;
-	int* GetSpecialistYieldModifierGlobalArray(int i) const;
+	const int* GetSpecialistYieldModifierGlobalArray(int i) const;
 	int GetFeatureYieldModifier(int i, int j) const;
-	int* GetFeatureYieldModifierArray(int i) const;
+	const int* GetFeatureYieldModifierArray(int i) const;
 	int GetResourceYieldModifier(int i, int j) const;
-	int* GetResourceYieldModifierArray(int i) const;
+	const int* GetResourceYieldModifierArray(int i) const;
 	int GetTerrainYieldChange(int i, int j) const;
-	int* GetTerrainYieldChangeArray(int i) const;
+	const int* GetTerrainYieldChangeArray(int i) const;
 #if defined(MOD_API_UNIFIED_YIELDS) && defined(MOD_API_PLOT_YIELDS)
 	int GetPlotYieldChange(int i, int j) const;
-	int* GetPlotYieldChangeArray(int i) const;
+	const int* GetPlotYieldChangeArray(int i) const;
 #endif
 	int GetBuildingClassYieldChange(int i, int j) const;
 	int GetBuildingClassHappiness(int i) const;

@@ -177,22 +177,22 @@ public:
 	int GetResourceQuantityRequirement(int i) const;
 
 	int GetPrereqNatureYield(int i) const;
-	int* GetPrereqNatureYieldArray();
+	const int* GetPrereqNatureYieldArray();
 	int GetYieldChange(int i) const;
-	int* GetYieldChangeArray();
+	const int* GetYieldChangeArray();
 	int GetYieldChangePerEra(int i) const;
 	int GetRiverSideYieldChange(int i) const;
-	int* GetRiverSideYieldChangeArray();
+	const int* GetRiverSideYieldChangeArray();
 	int GetCoastalLandYieldChange(int i) const;
-	int* GetCoastalLandYieldChangeArray();
+	const int* GetCoastalLandYieldChangeArray();
 	int GetHillsYieldChange(int i) const;
-	int* GetHillsYieldChangeArray();
+	const int* GetHillsYieldChangeArray();
 	int GetNoFreshWaterYieldChange(int i) const;
-	int* GetNoFreshWaterYieldChangeArray();				// For Moose - CvWidgetData XXX
+	const int* GetNoFreshWaterYieldChangeArray();				// For Moose - CvWidgetData XXX
 	int GetFreshWaterYieldChange(int i) const;
-	int* GetFreshWaterYieldChangeArray();				// For Moose - CvWidgetData XXX
+	const int* GetFreshWaterYieldChangeArray();				// For Moose - CvWidgetData XXX
 	int GetAdjacentCityYieldChange(int i) const;
-	int* GetAdjacentCityYieldChangeArray();
+	const int* GetAdjacentCityYieldChangeArray();
 
 	bool GetTerrainMakesValid(int i) const;
 	bool GetFeatureMakesValid(int i) const;
@@ -223,17 +223,17 @@ public:
 #endif
 	int GetTerrainYieldChanges(int i, int j) const;
 	int GetTechYieldChanges(int i, int j) const;
-	int* GetTechYieldChangesArray(int i);
+	const int* GetTechYieldChangesArray(int i);
 	int GetTechNoFreshWaterYieldChanges(int i, int j) const;
-	int* GetTechNoFreshWaterYieldChangesArray(int i);
+	const int* GetTechNoFreshWaterYieldChangesArray(int i);
 	int GetTechFreshWaterYieldChanges(int i, int j) const;
-	int* GetTechFreshWaterYieldChangesArray(int i);
+	const int* GetTechFreshWaterYieldChangesArray(int i);
 	int GetRouteYieldChanges(int i, int j) const;
-	int* GetRouteYieldChangesArray(int i);				// For Moose - CvWidgetData XXX
+	const int* GetRouteYieldChangesArray(int i);				// For Moose - CvWidgetData XXX
 
 #if defined(MOD_IMPROVEMENT_TRADE_ROUTE_BONUSES)
 	int GetTradeRouteYieldChanges(int i, int j) const;
-	int* GetTradeRouteYieldChangesArray(int i);				// For Moose - CvWidgetData XXX
+	const int* GetTradeRouteYieldChangesArray(int i);				// For Moose - CvWidgetData XXX
 #endif
 
 	int  GetImprovementResourceYield(int i, int j) const;
