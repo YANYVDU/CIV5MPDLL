@@ -2,10 +2,9 @@
 alter table Policies add ScienceModifierFromRANum integer default 0;
 -- Aid point action master data, keyed by Type like the other info tables.
 -- This table is the single source of truth: an action with no row here is not available at all,
--- and DefaultCost is the only price (CvGame::GetAidPointBaseCost). CostOption is legacy and ignored.
+-- and DefaultCost is its price (CvGame::GetAidPointBaseCost).
 create table AidPointActions (
     Type text primary key,
-    CostOption text,                   -- deprecated, no longer read
     DefaultCost integer default 0,
     Discountable boolean default 0, -- 0 = policy cost modifiers are ignored for this action
     InSpendList boolean default 1,  -- 1 = shown in the city-state aid-point spend list
