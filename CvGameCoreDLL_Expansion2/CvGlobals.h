@@ -5716,6 +5716,12 @@ public:
 	{
 		return m_iSP_AID_POINT_DENOUNCE_COOLDOWN;
 	}
+
+	// SP: how many city-states the AI may pay to denounce one target in a turn (0 = no limit)
+	inline int getSP_AID_POINT_DENOUNCE_MAX_POOLS_PER_TURN()
+	{
+		return m_iSP_AID_POINT_DENOUNCE_MAX_POOLS_PER_TURN;
+	}
 	inline int getMIN_UNIT_GOLDEN_AGE_TURNS()
 	{
 		return m_iMIN_UNIT_GOLDEN_AGE_TURNS;
@@ -9441,6 +9447,7 @@ protected:
 	int m_iORIGINAL_CAPITAL_MODMAX;
 	int m_iTRADE_AGREEMENT_ROUTE_GOLD_PERCENT;
 	int m_iSP_AID_POINT_DENOUNCE_COOLDOWN;
+	int m_iSP_AID_POINT_DENOUNCE_MAX_POOLS_PER_TURN;
 #endif
 	int m_iGOLDEN_AGE_GREAT_PEOPLE_MODIFIER;
 	int m_iMIN_UNIT_GOLDEN_AGE_TURNS;

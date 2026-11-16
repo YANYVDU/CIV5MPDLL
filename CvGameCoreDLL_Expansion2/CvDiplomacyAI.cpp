@@ -26944,6 +26944,12 @@ void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eMajor, bool* pabPoolUse
 		if (!bBlockVictory && GC.getGame().getJonRandNum(100, "AI considering an aid-point city-state denounce") >= 30)
 			continue;
 
+		// Buying at several city-states in the same turn is the point of this action: each purchase
+		// costs a full pool's worth of aid points and takes 5% of the target's influence there, so
+		// a burst is short-lived pressure at a high price. A Define can cap the number of pools.
+		const int iMaxPools = GC.getSP_AID_POINT_DENOUNCE_MAX_POOLS_PER_TURN();
+		int iPurchases = 0;
+
 		for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
 		{
 			const PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
@@ -26971,9 +26977,16 @@ void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eMajor, bool* pabPoolUse
 			if (GC.getGame().DoMinorCivDenounceWithAidPoints(eMajor, eMinor, eTarget, /*bRequirePayerDenounce*/ false))
 			{
 				if (pabPoolUsed != NULL) pabPoolUsed[eMinor] = true;
-				return;
+
+				iPurchases++;
+				if (iMaxPools > 0 && iPurchases >= iMaxPools)
+					return;
 			}
 		}
+
+		// One target per turn: once this rival has been pressed, do not also press the next one
+		if (iPurchases > 0)
+			return;
 	}
 }
 
