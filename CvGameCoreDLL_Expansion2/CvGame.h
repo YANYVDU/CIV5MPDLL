@@ -644,10 +644,14 @@ public:
 	int GetAidPointCostEmergencyProposal();
 	// Base cost of a fixed-cost aid-point action before any player policy modifier
 	int GetAidPointBaseCost(AidPointActionTypes eAction);
+	//! Drop the cached AidPointActions data so the table is read again.
+	void ResetAidPointActions();
 	// Whether policies may apply a per-action cost modifier (AidPointActions.Discountable)
 	bool IsAidPointActionDiscountable(AidPointActionTypes eAction);
 	// Share of a city-state treasury seized when a major bullies gold (percent, 0 = disabled)
 	int GetBullyTreasurySharePercent();
+	// Extra gold (percent) international trade routes earn between Trade Agreement partners
+	int GetTradeAgreementRouteGoldPercent() const;
 	// Every unit type a city-state may gift to ePlayer (same filter as GetCompetitiveSpawnUnitType,
 	// but returns all valid candidates for the aid-point unit picker UI)
 	void GetMinorGiftUnitChoices(PlayerTypes ePlayer, PlayerTypes eMinor, std::vector<UnitTypes>& veChoices);

@@ -187,6 +187,9 @@ void CvGame::init(HandicapTypes eHandicap)
 	int iEstimateEndTurn;
 	int iI;
 	InvokeRecorder::clear();
+
+	// The aid-point action table is a process-wide cache; a new game must not reuse the old one
+	ResetAidPointActions();
 	//--------------------------------
 	// Init saved data
 	reset(eHandicap);
@@ -12182,55 +12185,58 @@ int CvGame::GetAidPointCostEmergencyProposal()
 
 namespace
 {
-	bool s_bAidPointActionsSeeded = false;
+	// The AidPointActions table is the single source of truth: an action without a row there is not
+	// available (cost 0, never discounted). CvAidPointActions.h only maps the Type strings.
 	bool s_bAidPointActionsLoaded = false;
-	std::string s_aidPointCostOption[NUM_AID_POINT_ACTION_TYPES];
-	int s_aiAidPointDefaultCost[NUM_AID_POINT_ACTION_TYPES] = {0};
+	bool s_abAidPointInTable[NUM_AID_POINT_ACTION_TYPES] = {false};
+	int s_aiAidPointCost[NUM_AID_POINT_ACTION_TYPES] = {0};
 	bool s_abAidPointDiscountable[NUM_AID_POINT_ACTION_TYPES] = {false};
+
+	void ClearAidPointActions()
+	{
+		for(int i = 0; i < NUM_AID_POINT_ACTION_TYPES; i++)
+		{
+			s_abAidPointInTable[i] = false;
+			s_aiAidPointCost[i] = 0;
+			s_abAidPointDiscountable[i] = false;
+		}
+	}
 
 	void LoadAidPointActions()
 	{
-		if(!s_bAidPointActionsSeeded)
-		{
-			s_bAidPointActionsSeeded = true;
+		if(s_bAidPointActionsLoaded)
+			return;
 
-			// Seed from the C++ fallback table so a missing/unreadable DB still works
-			int iCount = 0;
-			const AidPointActionDefaults* pActions = GetAidPointActionDefaults(iCount);
-			for(int i = 0; i < iCount; i++)
-			{
-				s_aidPointCostOption[pActions[i].eType] = pActions[i].szCostOption;
-				s_aiAidPointDefaultCost[pActions[i].eType] = pActions[i].iDefaultCost;
-				s_abAidPointDiscountable[pActions[i].eType] = pActions[i].bDiscountable;
-			}
+		Database::Connection* pDB = GC.GetGameDatabase();
+		if(pDB == NULL)
+			return;
+
+		Database::Results kResults;
+		if(!pDB->Execute(kResults, "select Type, DefaultCost, Discountable from AidPointActions"))
+			return;
+
+		ClearAidPointActions();
+
+		while(kResults.Step())
+		{
+			const AidPointActionTypes eType = GetAidPointActionTypeFromString(kResults.GetText(0));
+			if(eType == NO_AID_POINT_ACTION)
+				continue;
+
+			s_abAidPointInTable[eType] = true;
+			s_aiAidPointCost[eType] = kResults.GetInt(1);
+			s_abAidPointDiscountable[eType] = (kResults.GetInt(2) != 0);
 		}
 
-		// The AidPointActions table is authoritative when available.
-		// Retry on later calls if the DB was not ready yet.
-		if(!s_bAidPointActionsLoaded)
-		{
-			Database::Connection* pDB = GC.GetGameDatabase();
-			if(pDB != NULL)
-			{
-				Database::Results kResults;
-				if(pDB->Execute(kResults, "select Type, CostOption, DefaultCost, Discountable from AidPointActions"))
-				{
-					while(kResults.Step())
-					{
-						const AidPointActionTypes eType = GetAidPointActionTypeFromString(kResults.GetText(0));
-						if(eType != NO_AID_POINT_ACTION)
-						{
-							const char* szOption = kResults.GetText(1);
-							s_aidPointCostOption[eType] = (szOption != NULL) ? szOption : "";
-							s_aiAidPointDefaultCost[eType] = kResults.GetInt(2);
-							s_abAidPointDiscountable[eType] = (kResults.GetInt(3) != 0);
-						}
-					}
-					s_bAidPointActionsLoaded = true;
-				}
-			}
-		}
+		s_bAidPointActionsLoaded = true;
 	}
+}
+
+/// Drop the cached AidPointActions data so the table is read again (new game, database reload).
+void CvGame::ResetAidPointActions()
+{
+	s_bAidPointActionsLoaded = false;
+	ClearAidPointActions();
 }
 
 int CvGame::GetAidPointBaseCost(AidPointActionTypes eAction)
@@ -12240,10 +12246,11 @@ int CvGame::GetAidPointBaseCost(AidPointActionTypes eAction)
 
 	LoadAidPointActions();
 
-	if(s_aidPointCostOption[eAction].empty())
-		return s_aiAidPointDefaultCost[eAction];
+	// No row in the table means the content module does not offer this action at all
+	if(!s_abAidPointInTable[eAction])
+		return 0;
 
-	return gCustomMods.getOption(s_aidPointCostOption[eAction].c_str(), s_aiAidPointDefaultCost[eAction]);
+	return s_aiAidPointCost[eAction];
 }
 
 bool CvGame::IsAidPointActionDiscountable(AidPointActionTypes eAction)
@@ -12252,6 +12259,10 @@ bool CvGame::IsAidPointActionDiscountable(AidPointActionTypes eAction)
 		return false;
 
 	LoadAidPointActions();
+
+	if(!s_abAidPointInTable[eAction])
+		return false;
+
 	return s_abAidPointDiscountable[eAction];
 }
 
