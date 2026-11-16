@@ -210,9 +210,13 @@ bool CvDatabaseUtility::ReleaseShared2DArray(const int* const* ppArray)
 		if(kShared.ppArray != ppArray)
 			continue;
 
-		CvAssertMsg(kShared.iRefs > 0, "Shared 2D array released more often than shared.");
+		// A shared block is released exactly once per share; anything else is a contract violation
 		if(kShared.iRefs == 0)
-			return true; // already released; leave the registry alone instead of underflowing the counter
+		{
+			CvAssertMsg(false, "Shared 2D array released more often than shared.");
+			return true;
+		}
+
 		if(--kShared.iRefs == 0)
 		{
 			VirtualFree(kShared.ppArray, 0, MEM_RELEASE);
