@@ -1212,6 +1212,38 @@ SpecialistTypes CvCityCitizens::GetAIBestSpecialist(int& iSpecialistValue)
 	return eBestSpecialist;
 }
 
+/// Slot count of the building that offers the most slots of this Specialist type, or 0 when no
+/// owned building offers it. Mirrors the per-building ranking of GetAIBestSpecialistBuilding(),
+/// which is what the classical citizen search uses when SP_SPECIALIST_AI_BY_TYPE is off.
+int CvCityCitizens::GetMaxSpecialistSlotsInBuildingsForType(SpecialistTypes eSpecialist)
+{
+	int iBestSlots = 0;
+
+	const std::vector<BuildingTypes>& aOwnedBuildings = GetCity()->GetCityBuildings()->GetOwnedBuildings();
+	for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
+	{
+		const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+		if(pkBuildingInfo == NULL)
+		{
+			continue;
+		}
+
+		if((SpecialistTypes) pkBuildingInfo->GetSpecialistType() != eSpecialist)
+		{
+			continue;
+		}
+
+		const int iSlots = GetNumSpecialistsAllowedByBuilding(*pkBuildingInfo);
+		if(iSlots > iBestSlots)
+		{
+			iBestSlots = iSlots;
+		}
+	}
+
+	return iBestSlots;
+}
+
 /// How valuable is eSpecialist?
 int CvCityCitizens::GetSpecialistValue(SpecialistTypes eSpecialist)
 {
@@ -1832,12 +1864,14 @@ void CvCityCitizens::DoReallocateCitizensPlanned()
 	}
 	iNumForced += GetNumForcedDefaultSpecialists();
 
-	// Citizens this pass has to place (the forced ones stay assigned)
-	const int iCitizensToPlace = iPopulation - iNumForced;
+	// Citizens this pass has to place (the forced ones stay assigned). Reduced below when the
+	// existing specialists have to be kept.
+	int iCitizensToPlace = iPopulation - iNumForced;
 
 	// ---- 1. Value every candidate once ----
-	// GetPlotValue() and GetSpecialistValue() read the per-turn static yield cache, which does not
-	// change while citizens are moved around, so one evaluation per candidate is enough.
+	// The values are computed before anything moves. GetPlotValue() and GetSpecialistValue() read
+	// the city's live food rate, which does change as citizens are reassigned, so this plan can
+	// differ slightly from the classical search, which re-values after every assignment.
 #if defined(MOD_GLOBAL_CITY_WORKING)
 	const int iNumPlotIndices = pCity->GetNumWorkablePlots();
 #else
@@ -1890,6 +1924,34 @@ void CvCityCitizens::DoReallocateCitizensPlanned()
 	std::vector<char> abSpecialistUsable(iNumSpecialistTypes, 0);
 	std::vector<int> aiSpecialistPlanned(iNumSpecialistTypes, 0);
 
+	// With specialist auto-assignment off the classical path never sheds a specialist: it only
+	// stops looking for new ones. Keep every non-forced specialist the city already has and hand
+	// out the remaining citizens, otherwise a city with every plot taken would drop its whole
+	// specialist staff on each such turn.
+	if(IsNoAutoAssignSpecialists())
+	{
+		for(int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistTypes; iSpecialistLoop++)
+		{
+			if(iSpecialistLoop == (int) eDefaultSpecialist)
+			{
+				continue;
+			}
+
+			const SpecialistTypes eSpecialist = (SpecialistTypes) iSpecialistLoop;
+			const int iKept = GetSpecialistCount(eSpecialist) - aiForcedSpecialists[iSpecialistLoop];
+			if(iKept > 0)
+			{
+				aiSpecialistPlanned[iSpecialistLoop] = iKept;
+				iCitizensToPlace -= iKept;
+			}
+		}
+
+		if(iCitizensToPlace < 0)
+		{
+			iCitizensToPlace = 0;
+		}
+	}
+
 	if(!IsNoAutoAssignSpecialists())
 	{
 		for(int iSpecialistLoop = 0; iSpecialistLoop < iNumSpecialistTypes; iSpecialistLoop++)
@@ -1907,8 +1969,26 @@ void CvCityCitizens::DoReallocateCitizensPlanned()
 			}
 
 			const int iValue = GetSpecialistValue(eSpecialist);
-			// Same bias GetAIBestSpecialist() applies when it ranks the types
-			const int iBias = ((iSlots - 1) * iValue * 10) / 100;
+
+			// Same bias the classical search applies. SP_SPECIALIST_AI_BY_TYPE ranks the TYPES from
+			// the City slot inventory; otherwise the ranking follows GetAIBestSpecialistBuilding()
+			// and reads the slot count of the best building that offers this type.
+			int iBias = 0;
+			if(MOD_SP_SPECIALIST_AI_BY_TYPE)
+			{
+				iBias = ((iSlots - 1) * iValue * 10) / 100;
+			}
+			else
+			{
+				const int iBuildingSlots = GetMaxSpecialistSlotsInBuildingsForType(eSpecialist);
+				if(iBuildingSlots <= 0)
+				{
+					// The classical ranking only sees slots that come from buildings
+					continue;
+				}
+
+				iBias = ((iBuildingSlots - 1) * iValue * 10) / 100;
+			}
 
 			aiSpecialistRawValue[iSpecialistLoop] = iValue;
 			aiSpecialistValue[iSpecialistLoop] = iValue + iBias;
@@ -1919,8 +1999,6 @@ void CvCityCitizens::DoReallocateCitizensPlanned()
 	const bool bMayAssignSpecialist =
 		!GET_PLAYER(GetOwner()).isHuman() || !IsNoAutoAssignSpecialists();
 
-	int iNumPlannedPlots = 0;
-	int iNumPlannedSpecialists = 0;
 	int iNumPlannedSlackers = 0;
 
 	// ---- 2. Greedy plan, decision order identical to DoAddBestCitizenFromUnassigned() ----
@@ -1977,19 +2055,16 @@ void CvCityCitizens::DoReallocateCitizensPlanned()
 		if(bSpecialistBetterThanPlot && bBetterThanSlacker)
 		{
 			aiSpecialistPlanned[eBestSpecialist]++;
-			iNumPlannedSpecialists++;
 		}
 		else if(!bSpecialistBetterThanPlot && iBestPlotIndex >= 0)
 		{
 			abPlotPlanned[iBestPlotIndex] = 1;
-			iNumPlannedPlots++;
 		}
 		else if(bMayAssignSpecialist && bBetterThanSlacker)
 		{
 			// Parity with the fallback branch of DoAddBestCitizenFromUnassigned(): a Specialist that
 			// beats the remaining Plots is taken here; one that loses to a slacker is not.
 			aiSpecialistPlanned[eBestSpecialist]++;
-			iNumPlannedSpecialists++;
 		}
 		else
 		{
@@ -2098,6 +2173,14 @@ void CvCityCitizens::DoReallocateCitizensPlanned()
 	}
 
 	CvAssertMsg(GetNumUnassignedCitizens() == 0, "Planned reallocation left citizens without a job");
+
+	// Release builds drop the assert above, so the same check is repeated behind a switch: a plan
+	// that cannot be applied leaves citizens unassigned, which silently loses yields.
+	if(MOD_SP_CITIZEN_REALLOC_AUDIT && GetNumUnassignedCitizens() != 0)
+	{
+		CUSTOMLOG("Planned citizen reallocation left %d unassigned citizens in city %d (player %d)",
+			GetNumUnassignedCitizens(), pCity->GetID(), GetOwner());
+	}
 
 	// do a single update, but treat player happiness as constant
 	m_pCity->UpdateAllNonPlotYields();
@@ -3030,12 +3113,12 @@ BuildingTypes CvCityCitizens::GetSpecialistProviderBuilding(SpecialistTypes eSpe
 
 		const int iNumAssigned = m_aiNumSpecialistsInBuilding[eBuilding];
 
-		// With the type-based search the City-owned slot inventory decides whether a Specialist can
-		// be added, so only hand out a building that can really take the citizen (the same two limits
-		// DoAddSpecialistInternal() enforces). Without the option this keeps the old behaviour.
-		if (MOD_SP_SPECIALIST_AI_BY_TYPE &&
-		        (iNumAssigned >= pkBuildingInfo->GetSpecialistCount() ||
-		         iNumAssigned >= GC.getMAX_SPECIALISTS_FROM_BUILDING()))
+		// The building only supplies the seat: both searches hand the citizen to the building with
+		// the most free slots, so the limits below are the same either way. They mirror the two
+		// checks DoAddSpecialistInternal() makes, so a building that cannot take the citizen is not
+		// offered in the first place.
+		if(iNumAssigned >= pkBuildingInfo->GetSpecialistCount() ||
+		        iNumAssigned >= GC.getMAX_SPECIALISTS_FROM_BUILDING())
 		{
 			continue;
 		}

@@ -993,6 +993,9 @@
 #define MOD_SP_SPECIALIST_AI_BY_TYPE gCustomMods.isSP_SPECIALIST_AI_BY_TYPE()
 // Citizen reallocation plans the whole assignment first and applies only the changes.
 #define MOD_SP_CITIZEN_REALLOC_PLANNED gCustomMods.isSP_CITIZEN_REALLOC_PLANNED()
+// Logs a warning when the planned citizen reallocation leaves citizens without a job. Off by
+// default: the check only exists to catch a divergence in the planned path during testing.
+#define MOD_SP_CITIZEN_REALLOC_AUDIT gCustomMods.isSP_CITIZEN_REALLOC_AUDIT()
 // Policy/belief building-class bonuses count every (non-obsolete) building of the class
 // the city owns, instead of only the civilization's own building for that class.
 #define MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES gCustomMods.isSP_BUILDING_CLASS_COUNT_ALL_TYPES()
@@ -1851,6 +1854,7 @@ public:
 	MOD_OPT_DECL(SP_CITYSTATE_BASIC);
 	MOD_OPT_DECL(SP_SPECIALIST_AI_BY_TYPE);
 	MOD_OPT_DECL(SP_CITIZEN_REALLOC_PLANNED);
+	MOD_OPT_DECL(SP_CITIZEN_REALLOC_AUDIT);
 	MOD_OPT_DECL(SP_BUILDING_CLASS_COUNT_ALL_TYPES);
 	MOD_OPT_DECL(LUXURY_ERA_DECAY);
 

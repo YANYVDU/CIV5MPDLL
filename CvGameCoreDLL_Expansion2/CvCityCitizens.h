@@ -58,6 +58,8 @@ public:
 	// SP_SPECIALIST_AI_BY_TYPE: pick the best Specialist TYPE from the City-owned slot pool
 	// instead of walking every building that offers a slot.
 	SpecialistTypes GetAIBestSpecialist(int& iSpecialistValue);
+	// Slot count of the best building offering this Specialist type (0 if none)
+	int GetMaxSpecialistSlotsInBuildingsForType(SpecialistTypes eSpecialist);
 	int GetSpecialistValue(SpecialistTypes eSpecialist);
 	bool IsBetterThanDefaultSpecialist(SpecialistTypes eSpecialist);
 

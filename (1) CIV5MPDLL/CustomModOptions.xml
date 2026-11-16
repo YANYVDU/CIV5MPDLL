@@ -1206,6 +1206,7 @@
     <Row Class="6" Name="SP_SPECIALIST_AI_BY_TYPE" Value="0"/>
     <!-- Citizen reallocation plans the whole assignment and applies only the differences -->
     <Row Class="6" Name="SP_CITIZEN_REALLOC_PLANNED" Value="0"/>
+    <Row Class="6" Name="SP_CITIZEN_REALLOC_AUDIT" Value="0"/>
     <Row Class="6" Name="LUXURY_ERA_DECAY" Value="0"/>
 
     <!-- Wittenberg: base faith cost of the CSUA self-chosen belief purchase, scaled by the game speed FaithPercent -->
