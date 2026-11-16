@@ -11581,6 +11581,10 @@ bool CvGame::DoMinorRerollQuestsFromMajor(PlayerTypes eMajor, PlayerTypes eMinor
 	if(pMinorAI == NULL)
 		return false;
 
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
+		return false;
+
 	int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_REROLL_QUESTS);
 	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
@@ -11606,6 +11610,10 @@ void CvGame::DoMinorBullyGoldWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
 	if(pMinorAI == NULL)
+		return;
+
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
 		return;
 
 	int iCost = pMinorAI->GetBullyGoldAidPointCost(eMajor);
@@ -11646,6 +11654,10 @@ bool CvGame::DoSetNextGreatPersonChoiceFromMajor(PlayerTypes eMajor, UnitTypes e
 
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eCostMinor).GetMinorCivAI();
 	if(pMinorAI == NULL)
+		return false;
+
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eCostMinor).getTeam()))
 		return false;
 
 	int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_NEXT_GREAT_PERSON);
@@ -11700,6 +11712,10 @@ bool CvGame::DoSetPendingGiftUnitFromMajor(PlayerTypes eMajor, PlayerTypes eMino
 			return false;
 	}
 
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
+		return false;
+
 	int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_PENDING_GIFT_UNIT);
 	if(pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
@@ -11725,6 +11741,10 @@ bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
 		return false;
 	if(eCostMinor < MAX_MAJOR_CIVS || eCostMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eCostMinor).getTeam()))
 		return false;
 
 	const int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_HASTEN_CONGRESS);
@@ -11784,6 +11804,10 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
 	if(pMinorAI == NULL)
+		return false;
+
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
 		return false;
 
 	const int iCost = GET_PLAYER(eMajor).GetAidPointCostDenounce();
@@ -11914,6 +11938,10 @@ bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor
 	if(pMinorAI == NULL)
 		return false;
 
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
+		return false;
+
 	const int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_PEACE);
 	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
@@ -11993,6 +12021,10 @@ bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(GET_PLAYER(eMajor).HasAidPointPermanentVote(eMinor))
 		return false;
 
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
+		return false;
+
 	const int iCost = GET_PLAYER(eMajor).GetAidPointCostPermanentVote();
 	if(iCost <= 0 || pMinorAI->GetEconomicAidPoints(eMajor) < iCost)
 		return false;
@@ -12029,6 +12061,10 @@ bool CvGame::DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerT
 
 	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
 	if(pLeague == NULL || !pLeague->CanClaimEmergencyProposal(eMajor))
+		return false;
+
+	// Aid points are suspended while the major is at war with this city-state.
+	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eMinor).getTeam()))
 		return false;
 
 	const int iCost = GET_PLAYER(eMajor).GetAidPointCost(AID_POINT_ACTION_EMERGENCY_PROPOSAL);
