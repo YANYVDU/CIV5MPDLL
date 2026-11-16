@@ -1346,7 +1346,7 @@ void CvMinorCivQuest::SetHandled(bool bValue)
 // Initializes data to track quest progress and sends notification to player.
 // NOTE: Some types initialize data using randomness here. So two otherwise equivalent quests may be initialized with different data.
 // NOTE: Should only be called once.
-void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
+bool CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 {
 	m_iStartTurn = iStartTurn;
 
@@ -1386,7 +1386,8 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 				GAMEEVENTINVOKE_HOOK(GAMEEVENT_QuestSendNotification, m_eAssignedPlayer, m_eMinor, m_eType, GetStartTurn(), GetEndTurn(), m_iData1, m_iData2, true, false, "");
 			}
 
-			return;
+			// The quest script builds and sends the notification itself
+			return true;
 		}
 	} else {
 #endif
@@ -1402,6 +1403,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		CvPlot* pPlot = pMinor->GetMinorCivAI()->GetBestNearbyCampToKill();
 
 		FAssertMsg(pPlot != NULL, "MINOR CIV AI: Somehow we're starting a quest to kill a barb camp but we can't find one nearby. Please send Jon this with your last 5 autosaves and what changelist # you're playing. Oh, and you're about to crash.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(pPlot == NULL)
+			return false;
 
 		m_iData1 = pPlot->getX();
 		m_iData2 = pPlot->getY();
@@ -1420,6 +1425,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		ResourceTypes eResource = pMinor->GetMinorCivAI()->GetNearbyResourceForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eResource != NO_RESOURCE, "MINOR CIV AI: For some reason we got NO_RESOURCE when starting a quest for a major to find a Resource. Please send Jon this with your last 5 autosaves and what changelist # you're playing. Bad things are probably going to happen.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eResource == NO_RESOURCE)
+			return false;
 
 		m_iData1 = eResource;
 
@@ -1436,6 +1445,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		BuildingTypes eWonder = pMinor->GetMinorCivAI()->GetBestWonderForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eWonder != NO_BUILDING, "MINOR CIV AI: For some reason we got NO_BUILDING when starting a quest for a major to find a Wonder. Please send Jon this with your last 5 autosaves and what changelist # you're playing. Bad things are probably going to happen.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eWonder == NO_BUILDING)
+			return false;
 
 		m_iData1 = eWonder;
 
@@ -1452,6 +1465,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		UnitTypes eUnit = pMinor->GetMinorCivAI()->GetBestGreatPersonForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eUnit != NO_UNIT, "MINOR CIV AI: For some reason we got NO_UNIT when starting a quest for a major to find a Great Person. Please send Jon this with your last 5 autosaves and what changelist # you're playing. Bad things are probably going to happen.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eUnit == NO_UNIT)
+			return false;
 
 		m_iData1 = eUnit;
 
@@ -1468,6 +1485,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		PlayerTypes eTargetCityState = pMinor->GetMinorCivAI()->GetBestCityStateTarget(m_eAssignedPlayer);
 
 		FAssertMsg(eTargetCityState != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to kill a City State. Please send Jon this with your last 5 autosaves and what changelist # you're playing. Bad things are probably going to happen.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eTargetCityState == NO_PLAYER)
+			return false;
 
 		m_iData1 = eTargetCityState;
 
@@ -1484,6 +1505,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		PlayerTypes ePlayerToFind = pMinor->GetMinorCivAI()->GetBestPlayerToFind(m_eAssignedPlayer);
 
 		FAssertMsg(ePlayerToFind != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to find a player. Please send Jon this with your last 5 autosaves and what changelist # you're playing. Bad things are probably going to happen.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(ePlayerToFind == NO_PLAYER)
+			return false;
 
 		m_iData1 = ePlayerToFind;
 
@@ -1700,6 +1725,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 	{
 		CvCity* pTargetCity = pMinor->GetMinorCivAI()->GetBestTradeRouteToCityTargetForQuest(m_eAssignedPlayer);
 		FAssertMsg(pTargetCity != NULL, "MINOR CIV AI: No valid target city for a trade route quest.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(pTargetCity == NULL)
+			return false;
 
 		if(pTargetCity)
 		{
@@ -1720,6 +1749,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		TechTypes eTech = pMinor->GetMinorCivAI()->GetBestTechForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eTech != NO_TECH, "MINOR CIV AI: For some reason we got NO_TECH when starting a quest for a major to research a Tech. Bad things are probably going to happen.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eTech == NO_TECH)
+			return false;
 
 		m_iData1 = eTech;
 
@@ -1736,6 +1769,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		BuildingTypes eWonder = pMinor->GetMinorCivAI()->GetBestNationalWonderForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eWonder != NO_BUILDING, "MINOR CIV AI: For some reason we got NO_BUILDING when starting a quest for a major to construct a National Wonder.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eWonder == NO_BUILDING)
+			return false;
 
 		m_iData1 = eWonder;
 
@@ -1753,6 +1790,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		int iTargetCities = MINOR_CIV_QUEST_SPREAD_BUILDING_CITIES;
 
 		FAssertMsg(eBuilding != NO_BUILDING, "MINOR CIV AI: For some reason we got NO_BUILDING when starting a quest for a major to spread a Building.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eBuilding == NO_BUILDING)
+			return false;
 
 		m_iData1 = eBuilding;
 		m_iData2 = iTargetCities;
@@ -1772,6 +1813,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		PlayerTypes eCityState = pMinor->GetMinorCivAI()->GetBestCityStateToFind(m_eAssignedPlayer);
 
 		FAssertMsg(eCityState != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to find a City-State.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eCityState == NO_PLAYER)
+			return false;
 
 		m_iData1 = eCityState;
 
@@ -1788,6 +1833,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestTradeRouteTargetForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to disconnect a trade route.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eTarget == NO_PLAYER)
+			return false;
 
 		m_iData1 = eTarget;
 
@@ -1827,6 +1876,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		}
 
 		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to declare war.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eTarget == NO_PLAYER)
+			return false;
 
 		m_iData1 = eTarget;
 
@@ -1863,6 +1916,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestOriginalCapitalTargetForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to capture an original capital.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eTarget == NO_PLAYER)
+			return false;
 
 		m_iData1 = eTarget;
 
@@ -1885,6 +1942,10 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		PlayerTypes eTarget = pMinor->GetMinorCivAI()->GetBestWarTargetForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to sanction a civilization.");
+		// Release builds do not stop at the assert above: drop the quest instead of
+		// reading the target through a NULL / NO_* handle below.
+		if(eTarget == NO_PLAYER)
+			return false;
 
 		m_iData1 = eTarget;
 
@@ -1915,7 +1976,7 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		// Release builds do not stop at the assert above, and a script can force this quest type
 		// when no valid target exists, so bail out instead of indexing with NO_PLAYER.
 		if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS)
-			return;
+			return false;
 
 		m_iData1 = eTarget;
 
@@ -2007,6 +2068,8 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 #if defined(MOD_EVENTS_QUESTS)
 	}
 #endif
+
+	return true;
 }
 
 // Begins the quest, but with client-provided data rather than initializing data internally.
@@ -4986,7 +5049,12 @@ void CvMinorCivAI::AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eTy
 	if(IsActiveQuestForPlayer(ePlayer, eType)) return;
 
 	CvMinorCivQuest newQuest(GetPlayer()->GetID(), ePlayer, eType);
-	newQuest.DoStartQuest(iStartTurn, eForcedTarget);
+
+	// The target may have become unresolvable since the validity test (a camp cleared, a wonder
+	// taken, a partner filled its slot): drop the quest instead of keeping a dead one in the slot.
+	if(!newQuest.DoStartQuest(iStartTurn, eForcedTarget))
+		return;
+
 	m_QuestsGiven[ePlayer].push_back(newQuest);
 
 	// The AI caches "which players it holds a research-agreement quest against" for the turn

@@ -163,7 +163,9 @@ public:
 	void SetHandled(bool bValue);
 
 	// Starting and finishing
-	void DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget = NO_PLAYER);
+	//! Initialises the quest's target data and sends the start notification. Returns false when the
+	//! target cannot be resolved any more (the caller must not keep the quest in that case).
+	bool DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget = NO_PLAYER);
 	void DoStartQuestUsingExistingData(CvMinorCivQuest* pExistingQuest);
 	bool DoFinishQuest();
 	bool DoCancelQuest();
