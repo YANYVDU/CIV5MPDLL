@@ -12901,6 +12901,56 @@ int CvCity::GetLocalHappiness() const
 		aBuildingsHere.push_back(std::make_pair(eBuilding, pkCityBuildings->GetNumBuilding(eBuilding)));
 	}
 
+	// With SP_BUILDING_CLASS_COUNT_ALL_TYPES the count is per class, not per owned building type:
+	// collect each class the city still uses once, so a class holding several building types
+	// (a unique building and its replacement, say) is not summed several times.
+	bool bCountAllClassTypes = false;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+	bCountAllClassTypes = MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES;
+#endif
+	std::vector<BuildingClassTypes> aActiveClassesHere;
+	aActiveClassesHere.reserve(32);
+	if(bCountAllClassTypes)
+	{
+		for(size_t iBuildingLoop = 0; iBuildingLoop < aOwnedBuildings.size(); iBuildingLoop++)
+		{
+			const BuildingTypes eBuilding = aOwnedBuildings[iBuildingLoop];
+
+			// Obsolete buildings are no longer counted by the class-based effects
+			if(GET_TEAM(getTeam()).isObsoleteBuilding(eBuilding))
+			{
+				continue;
+			}
+
+			CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+			if(!pkBuildingInfo)
+			{
+				continue;
+			}
+
+			const BuildingClassTypes eBuildingClass = (BuildingClassTypes)pkBuildingInfo->GetBuildingClassType();
+			if(!GC.getBuildingClassInfo(eBuildingClass))
+			{
+				continue;
+			}
+
+			bool bAlreadyListed = false;
+			for(size_t iClassLoop = 0; iClassLoop < aActiveClassesHere.size(); iClassLoop++)
+			{
+				if(aActiveClassesHere[iClassLoop] == eBuildingClass)
+				{
+					bAlreadyListed = true;
+					break;
+				}
+			}
+
+			if(!bAlreadyListed)
+			{
+				aActiveClassesHere.push_back(eBuildingClass);
+			}
+		}
+	}
+
 	if(!aBuildingsHere.empty())
 	{
 		for(int iPolicyLoop = 0; iPolicyLoop < GC.getNumPolicyInfos(); iPolicyLoop++)
@@ -12914,6 +12964,25 @@ int CvCity::GetLocalHappiness() const
 
 			if(!kPlayer.GetPlayerPolicies()->HasPolicy(ePolicy) || kPlayer.GetPlayerPolicies()->IsPolicyBlocked(ePolicy))
 			{
+				continue;
+			}
+
+			if(bCountAllClassTypes)
+			{
+				// One lookup per (policy, class) pair, using the non-obsolete class counter
+				for(size_t iClassLoop = 0; iClassLoop < aActiveClassesHere.size(); iClassLoop++)
+				{
+					const BuildingClassTypes eBuildingClass = aActiveClassesHere[iClassLoop];
+
+					int iHappiness = pkPolicyInfo->GetBuildingClassHappiness(eBuildingClass);
+					if(iHappiness == 0)
+					{
+						continue;
+					}
+
+					iSpecialPolicyBuildingHappiness += iHappiness * GetNumBuildingClassActive(eBuildingClass);
+				}
+
 				continue;
 			}
 
@@ -12932,12 +13001,9 @@ int CvCity::GetLocalHappiness() const
 					continue;
 				}
 
-				// Unless SP_BUILDING_CLASS_COUNT_ALL_TYPES is enabled, only the civilization's
-				// building for the class counts (the ConquestDLX scenario has civ specific
-				// wonders whose class building is different or missing).
-#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
-				if(!MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
-#endif
+				// Without SP_BUILDING_CLASS_COUNT_ALL_TYPES only the civilization's building for
+				// the class counts (the ConquestDLX scenario has civ specific wonders whose class
+				// building is different or missing).
 				{
 					CvCivilizationInfo& playerCivilizationInfo = kPlayer.getCivilizationInfo();
 					if((BuildingTypes)playerCivilizationInfo.getCivilizationBuildings(eBuildingClass) != eBuilding)
@@ -12994,7 +13060,19 @@ int CvCity::GetLocalHappiness() const
 			int iBCHappy = pCityStateUA->GetBuildingClassHappiness((BuildingClassTypes)iBC);
 			if (iBCHappy != 0)
 			{
-				iLocalHappiness += iBCHappy * GetNumBuildingClassActive((BuildingClassTypes)iBC);
+				int iNumClass = 0;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+				if (MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+				{
+					iNumClass = GetNumBuildingClassActive((BuildingClassTypes)iBC);
+				}
+				else
+#endif
+				{
+					iNumClass = GetNumBuildingClass((BuildingClassTypes)iBC);
+				}
+
+				iLocalHappiness += iBCHappy * iNumClass;
 			}
 		}
 	}
@@ -13754,7 +13832,18 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 		iTempMod = 0;
 		for (int iBC = 0; iBC < GC.getNumBuildingClassInfos(); iBC++)
 		{
-			int iCount = GetNumBuildingClassActive((BuildingClassTypes)iBC);
+			int iCount = 0;
+#if defined(MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+			if (MOD_SP_BUILDING_CLASS_COUNT_ALL_TYPES)
+			{
+				iCount = GetNumBuildingClassActive((BuildingClassTypes)iBC);
+			}
+			else
+#endif
+			{
+				iCount = GetNumBuildingClass((BuildingClassTypes)iBC);
+			}
+
 			if (iCount > 0)
 				iTempMod += pCityStateUA->GetBuildingClassYieldModifier((BuildingClassTypes)iBC, eIndex) * iCount;
 		}
@@ -23787,15 +23876,29 @@ void CvCity::ChangeNumBuildingClass(BuildingClassTypes iBuildingClassType, int i
 /// Like GetNumBuildingClass, but only counts buildings that are not obsolete for the owning team.
 int CvCity::GetNumBuildingClassActive(BuildingClassTypes iBuildingClassType) const
 {
+	if (iBuildingClassType < 0)
+		return 0;
+
 	if (!m_bActiveBuildingClassCountsValid)
 	{
 		const_cast<CvCity*>(this)->RebuildActiveBuildingClassCounts();
 	}
+
+	// Also guards the call out of Lua, which can pass any index
+	if (iBuildingClassType >= (int)m_paiNumActiveBuildingClasses.size())
+		return 0;
+
 	return m_paiNumActiveBuildingClasses[iBuildingClassType];
 }
 
 void CvCity::ChangeNumBuildingClassActive(BuildingClassTypes iBuildingClassType, int iValue)
 {
+	if (iBuildingClassType < 0 || iBuildingClassType >= (int)m_paiNumActiveBuildingClasses.size())
+	{
+		CvAssertMsg(false, "Building class index out of range for the active class counter");
+		return;
+	}
+
 	m_paiNumActiveBuildingClasses[iBuildingClassType] += iValue;
 }
 
@@ -23810,7 +23913,11 @@ void CvCity::RebuildActiveBuildingClassCounts()
 	for (int i = 0; i < GC.getNumBuildingInfos(); i++)
 	{
 		const BuildingTypes eBuilding = (BuildingTypes)i;
-		const int iNumHere = pCityBuildings->GetNumBuilding(eBuilding);
+
+		// Count the real and the free copies separately: CvCity::processBuilding is called once for
+		// each of them, so the incremental counter adds them both. Using GetNumBuilding here would
+		// return max(real, free) and make the counter jump after a load.
+		const int iNumHere = pCityBuildings->GetNumRealBuilding(eBuilding) + pCityBuildings->GetNumFreeBuilding(eBuilding);
 		if (iNumHere <= 0)
 		{
 			continue;
