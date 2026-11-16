@@ -11746,6 +11746,10 @@ bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 	if(eCostMinor < MAX_MAJOR_CIVS || eCostMinor >= MAX_CIV_PLAYERS)
 		return false;
 
+	// Neither a dead payer nor a dead city-state can pull a session forward; this is a Lua entry too
+	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eCostMinor).isAlive())
+		return false;
+
 	// Aid points are suspended while the major is at war with this city-state.
 	if(GET_TEAM(GET_PLAYER(eMajor).getTeam()).isAtWar(GET_PLAYER(eCostMinor).getTeam()))
 		return false;
