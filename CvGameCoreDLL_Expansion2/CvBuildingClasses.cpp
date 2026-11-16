@@ -4997,6 +4997,7 @@ void CvCityBuildings::UpdateOwnedBuilding(BuildingTypes eIndex)
 	}
 }
 
+/// Reset status arrays to all false
 void CvCityBuildings::Reset()
 {
 	int iI;
