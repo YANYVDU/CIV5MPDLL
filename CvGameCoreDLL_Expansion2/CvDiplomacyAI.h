@@ -753,6 +753,8 @@ public:
 	// Working With Player
 	bool IsDoFAcceptable(PlayerTypes ePlayer);
 	bool IsResearchAgreementQuestWithPlayer(PlayerTypes ePlayer);
+	//! Drops the per-turn cache of "this player holds a research-agreement quest against X".
+	void InvalidateResearchAgreementQuestCache();
 	bool IsTooEarlyForDoF(PlayerTypes ePlayer);
 	bool IsDoFMessageTooSoon(PlayerTypes ePlayer);
 
@@ -1120,7 +1122,9 @@ public:
 	void DoAidPointGiftUnitSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointBullySpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointCongressSpend(PlayerTypes eMajor, bool* pabPoolUsed);
-	void DoAidPointDenounceSpend(PlayerTypes eTarget, bool* pabPoolUsed = NULL);
+	//! Picks a hostile rival and a city-state pool, then buys a denouncement. Called from the
+	//! per-turn aid-point budget, not the moment this player denounces someone.
+	void DoAidPointDenounceSpend(PlayerTypes eMajor, bool* pabPoolUsed = NULL);
 	void DoAidPointPermanentVoteSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 	void DoAidPointEmergencyProposalSpend(PlayerTypes eMajor, bool* pabPoolUsed);
 #endif

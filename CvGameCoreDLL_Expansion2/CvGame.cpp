@@ -11790,7 +11790,7 @@ bool CvGame::DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTy
 
 //	--------------------------------------------------------------------------------
 // Super Power V11: city-state denounces a civilization on the payer's behalf.
-bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget)
+bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget, bool bRequirePayerDenounce)
 {
 	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
 		return false;
@@ -11802,7 +11802,13 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(!GET_PLAYER(eTarget).isAlive())
 		return false;
 
-	if(!GET_PLAYER(eMajor).GetDiplomacyAI()->IsDenouncedPlayer(eTarget))
+	// A dead city-state cannot denounce anyone: this entry point is also reachable from Lua
+	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eMinor).isAlive())
+		return false;
+
+	// The player normally buys support for its own denouncement. The AI also buys one to block a
+	// rival that is about to win a diplomatic victory, before denouncing that rival itself.
+	if(bRequirePayerDenounce && !GET_PLAYER(eMajor).GetDiplomacyAI()->IsDenouncedPlayer(eTarget))
 		return false;
 
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
@@ -11823,7 +11829,12 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(GET_TEAM(GET_PLAYER(eMinor).getTeam()).isAtWar(GET_PLAYER(eTarget).getTeam()))
 		return false;
 
+	// One denouncement per (target, city-state) pair per cooldown window, whoever pays for it
+	if(pMinorAI->IsAidPointDenounceOnCooldown(eTarget))
+		return false;
+
 	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
+	pMinorAI->SetTurnLastAidPointDenounce(eTarget, GC.getGame().getGameTurn());
 
 	// Lose 5% of the target's current influence with every city-state it has met.
 	for(int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
@@ -11868,8 +11879,10 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 
 		if(!bFromMe && !bAtMe)
 		{
-			if(!GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eMinorTeam)
-				&& !GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eTargetTeam))
+			const bool bKnowsMinor = GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eMinorTeam);
+			const bool bKnowsTarget = GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eTargetTeam);
+
+			if(!bKnowsMinor && !bKnowsTarget)
 				continue;
 		}
 
@@ -11901,8 +11914,18 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 		else
 		{
 			strText = Localization::Lookup("TXT_KEY_NOTIFICATION_CITY_STATE_DENOUNCED_THIRD");
-			strText << GET_PLAYER(eMinor).getName();
-			strText << GET_PLAYER(eTarget).getName();
+
+			// Do not name a city-state or a civilization this player has not met yet
+			if(GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eMinorTeam))
+				strText << GET_PLAYER(eMinor).getName();
+			else
+				strText << Localization::Lookup("TXT_KEY_UNMET_PLAYER").toUTF8();
+
+			if(GET_TEAM(GET_PLAYER(eCurPlayer).getTeam()).isHasMet(eTargetTeam))
+				strText << GET_PLAYER(eTarget).getName();
+			else
+				strText << Localization::Lookup("TXT_KEY_UNMET_PLAYER").toUTF8();
+
 			strSummary = Localization::Lookup("TXT_KEY_NOTIFICATION_SUMMARY_CITY_STATE_DENOUNCED_THIRD");
 		}
 

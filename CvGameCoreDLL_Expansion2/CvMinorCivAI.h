@@ -641,6 +641,9 @@ public:
 	// SP extended quests: turn on which this major last staged a coup against us (-1 = never)
 	int GetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer) const;
 	void SetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer, int iTurn);
+	//! Cooldown of the aid-point denounce action for this (target major, this city-state) pair.
+	void SetTurnLastAidPointDenounce(PlayerTypes eTarget, int iTurn);
+	bool IsAidPointDenounceOnCooldown(PlayerTypes eTarget) const;
 
 	// ****************
 	// *** Election ***
@@ -746,6 +749,13 @@ private:
 	int m_aiNumGoldGifted[MAX_MAJOR_CIVS];
 	int m_aiTurnLastBullied[MAX_MAJOR_CIVS];
 	int m_aiTurnLastRiggedElection[MAX_MAJOR_CIVS]; // SP extended quests: last turn a major staged a coup here
+	// SP: last turn this city-state was paid to denounce a major (indexed by the target major),
+	// used as the cooldown of the aid-point denounce action for that (target, city-state) pair.
+	int m_aiTurnLastAidPointDenounce[MAX_MAJOR_CIVS];
+	// SP extended quests: memoised answer to "can this major reach any city with an international
+	// trade route", valid for m_aiTradeRouteQuestTargetTurn only. Derived state, not serialised.
+	int m_aiTradeRouteQuestTargetTurn[MAX_MAJOR_CIVS];
+	bool m_abTradeRouteQuestTarget[MAX_MAJOR_CIVS];
 	int m_aiTurnLastPledged[MAX_MAJOR_CIVS];
 	int m_aiTurnLastBrokePledge[MAX_MAJOR_CIVS];
 	bool m_abUnitSpawningDisabled[MAX_MAJOR_CIVS];

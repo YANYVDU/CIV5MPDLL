@@ -620,13 +620,15 @@ public:
 	// The League countdown is global (shared by every player), so this is a network-synced action.
 	bool DoHastenCongressWithAidPointsFromMajor(PlayerTypes eMajor, PlayerTypes eCostMinor);
 	// Super Power V11: four additional aid-point actions.
-	bool DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget);
+	//! Buy a denouncement of eTarget at city-state eMinor. bRequirePayerDenounce keeps the human rule
+	//! that the payer must already have denounced the target; the AI may buy one to block a rival
+	//! that is close to a diplomatic victory, before it denounces that rival itself.
+	bool DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget, bool bRequirePayerDenounce = true);
 	bool DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget);
 	bool DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor);
 	bool DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor);
 	bool CanRequestEmergencyProposal(PlayerTypes eMajor);
 	bool HasAidPointPermanentVote(PlayerTypes eMajor, PlayerTypes eMinor);
-	// Aid point costs for the spending actions above (0 = disabled)
 	// Base aid-point costs (0 = disabled). These do NOT include player policy modifiers;
 	// use CvPlayer::GetAidPointCost(action) for the price a specific player pays.
 	int GetAidPointCostRerollQuests();

@@ -93,3 +93,8 @@ create table Building_AutoUpgrade (
 -- Human players are unaffected by this column.
 alter table HandicapInfos add AIAutoBuildingUpgrade boolean default 0;
 
+-- Turns before the same (target major, city-state) pair can be denounced again with aid points.
+INSERT INTO Defines(Name, Value) VALUES('SP_AID_POINT_DENOUNCE_COOLDOWN', 20);
+-- Extra gold (percent) both sides' international trade routes earn while a Trade Agreement runs.
+INSERT INTO Defines(Name, Value) VALUES('TRADE_AGREEMENT_ROUTE_GOLD_PERCENT', 20);
+

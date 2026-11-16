@@ -2116,6 +2116,12 @@ bool CvMinorCivQuest::DoFinishQuest()
 
 	SetHandled(true); // We are handling the end of the quest, and this should only happen once
 
+	// The quest is over: drop the cached "holds a research-agreement quest" state
+	if(m_eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		GET_PLAYER(m_eAssignedPlayer).GetDiplomacyAI()->InvalidateResearchAgreementQuestCache();
+	}
+
 	CvPlayer* pMinor = &GET_PLAYER(m_eMinor);
 
 	bool bWasFriends = pMinor->GetMinorCivAI()->IsFriends(m_eAssignedPlayer);
@@ -2726,6 +2732,12 @@ bool CvMinorCivQuest::DoCancelQuest()
 
 	SetHandled(true); // We are handling the end of the quest, and this should only happen once
 
+	// The quest is over: drop the cached "holds a research-agreement quest" state
+	if(m_eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		GET_PLAYER(m_eAssignedPlayer).GetDiplomacyAI()->InvalidateResearchAgreementQuestCache();
+	}
+
 	CvPlayer* pMinor = &GET_PLAYER(m_eMinor);
 
 	// Why is the quest cancelled?  Will affect which notification message we send
@@ -3048,6 +3060,9 @@ void CvMinorCivAI::Reset()
 		m_aiNumGoldGifted[iI] = 0;
 		m_aiTurnLastBullied[iI] = -1;
 		m_aiTurnLastRiggedElection[iI] = -1;
+		m_aiTurnLastAidPointDenounce[iI] = -1;
+		m_aiTradeRouteQuestTargetTurn[iI] = -1;
+		m_abTradeRouteQuestTarget[iI] = false;
 		m_aiTurnLastPledged[iI] = -1;
 		m_aiTurnLastBrokePledge[iI] = -1;
 		m_abUnitSpawningDisabled[iI] = false;
@@ -3159,6 +3174,8 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// SP extended quests - version 164 gated for old save compatibility
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_aiTurnLastRiggedElection, int, MAX_MAJOR_CIVS, -1);
+	// SP: aid-point denounce cooldown, new in the 168 build
+	MOD_SERIALIZE_READ_ARRAY(168, kStream, m_aiTurnLastAidPointDenounce, int, MAX_MAJOR_CIVS, -1);
 #endif
 
 	kStream >> m_aiTurnLastPledged;
@@ -3262,6 +3279,7 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 #if defined(MOD_SP_UNIQUE_CITYSTATE)
 	// SP extended quests
 	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiTurnLastRiggedElection, int, MAX_MAJOR_CIVS);
+	kStream << m_aiTurnLastAidPointDenounce;
 #endif
 	kStream << m_aiTurnLastPledged;
 	kStream << m_aiTurnLastBrokePledge;
@@ -4970,6 +4988,12 @@ void CvMinorCivAI::AddQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes eTy
 	CvMinorCivQuest newQuest(GetPlayer()->GetID(), ePlayer, eType);
 	newQuest.DoStartQuest(iStartTurn, eForcedTarget);
 	m_QuestsGiven[ePlayer].push_back(newQuest);
+
+	// The AI caches "which players it holds a research-agreement quest against" for the turn
+	if(eType == MINOR_CIV_QUEST_RESEARCH_AGREEMENT)
+	{
+		GET_PLAYER(ePlayer).GetDiplomacyAI()->InvalidateResearchAgreementQuestCache();
+	}
 
 	// Log quest received
 	GET_PLAYER(ePlayer).GetDiplomacyAI()->LogMinorCivQuestReceived(GetPlayer()->GetID(), GetEffectiveFriendshipWithMajorTimes100(ePlayer), GetEffectiveFriendshipWithMajorTimes100(ePlayer), eType);
@@ -10195,6 +10219,9 @@ bool CvMinorCivAI::DoRerollPersonalQuestsForPlayer(PlayerTypes eMajor)
 	for(uint iKeepLoop = 0; iKeepLoop < kKeep.size(); iKeepLoop++)
 		m_QuestsGiven[eMajor].push_back(kKeep[iKeepLoop]);
 
+	// The reroll may have dropped a research-agreement quest
+	GET_PLAYER(eMajor).GetDiplomacyAI()->InvalidateResearchAgreementQuestCache();
+
 	// Draw one value per slot up front. This runs on every client through a broadcast, so the
 	// shared random stream must advance by the same fixed amount everywhere - drawing inside the
 	// loop would consume a different number of values whenever a client bails out of a draw
@@ -13144,6 +13171,33 @@ void CvMinorCivAI::SetTurnLastRiggedElectionByMajor(PlayerTypes ePlayer, int iTu
 	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS) return;
 
 	m_aiTurnLastRiggedElection[ePlayer] = iTurn;
+}
+
+/// Last turn this city-state was paid to denounce eTarget (indexed by the target major, so the
+/// cooldown is shared by every major that wants to buy the same denouncement).
+void CvMinorCivAI::SetTurnLastAidPointDenounce(PlayerTypes eTarget, int iTurn)
+{
+	if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS) return;
+
+	m_aiTurnLastAidPointDenounce[eTarget] = iTurn;
+}
+
+/// Has this city-state been made to denounce eTarget too recently to do it again?
+bool CvMinorCivAI::IsAidPointDenounceOnCooldown(PlayerTypes eTarget) const
+{
+	if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS)
+		return false;
+
+	const int iLastTurn = m_aiTurnLastAidPointDenounce[eTarget];
+	if(iLastTurn < 0)
+		return false;
+
+	// The cooldown is a Define so both the AI and the Lua-facing check share it
+	int iCooldown = GC.getSP_AID_POINT_DENOUNCE_COOLDOWN();
+	if(iCooldown <= 0)
+		iCooldown = 20;
+
+	return (GC.getGame().getGameTurn() - iLastTurn) < iCooldown;
 }
 
 // ****************

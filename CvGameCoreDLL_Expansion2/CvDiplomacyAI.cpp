@@ -21871,6 +21871,13 @@ void CvDiplomacyAI::ChangePlayerStopSpyingRequestCounter(PlayerTypes ePlayer, in
 
 
 
+/// Drop the cached "this player holds a research-agreement quest against X" state. Called when a
+/// quest starts or ends, so a purchase inside the same turn sees the new state.
+void CvDiplomacyAI::InvalidateResearchAgreementQuestCache()
+{
+	m_iResearchAgreementQuestCacheTurn = -1;
+}
+
 /// Does this AI have a city-state Research Agreement quest with ePlayer?
 bool CvDiplomacyAI::IsResearchAgreementQuestWithPlayer(PlayerTypes ePlayer)
 {
@@ -22396,9 +22403,6 @@ void CvDiplomacyAI::DoDenouncePlayer(PlayerTypes ePlayer)
 			pNotifications->Add(NOTIFICATION_DIPLOMACY_DECLARATION, strText.toUTF8(), strSummary.toUTF8(), -1, -1, GetPlayer()->GetID(), ePlayer);
 		}
 	}
-
-	if (!GetPlayer()->isHuman())
-		DoAidPointDenounceSpend(ePlayer, NULL);
 }
 
 // Does this player feel it's time to denounce ePlayer?
@@ -26885,40 +26889,90 @@ void CvDiplomacyAI::DoAidPointCongressSpend(PlayerTypes eMajor, bool* pabPoolUse
 		if (pabPoolUsed != NULL) pabPoolUsed[ePay] = true;
 }
 
-/// Aid-point denouncement: called right after this AI publicly denounces eTarget.
-void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eTarget, bool* pabPoolUsed)
+/// Is ePlayer within reach of a diplomatic victory? A denouncement bought at a city-state shrinks
+/// that player's influence with every city-state it has met, so it is worth the aid points then.
+static bool IsPlayerNearDiploVictory(PlayerTypes ePlayer)
 {
-	if (eTarget < 0 || eTarget >= MAX_MAJOR_CIVS || eTarget == m_pPlayer->GetID())
-		return;
+	const int iNeeded = GC.getGame().GetVotesNeededForDiploVictory();
+	if (iNeeded <= 0)
+		return false;
 
-	if (!m_pPlayer->GetDiplomacyAI()->IsDenouncedPlayer(eTarget))
-		return;
+	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetActiveLeague();
+	if (pLeague == NULL || !pLeague->IsMember(ePlayer) || !pLeague->CanEverVote(ePlayer))
+		return false;
 
+	// Before the first special session there is no vote threshold worth comparing against
+	if (pLeague->GetCurrentSpecialSession() == NO_LEAGUE_SPECIAL_SESSION
+		&& pLeague->GetLastSpecialSession() == NO_LEAGUE_SPECIAL_SESSION)
+		return false;
+
+	// Votes that player would get in the next session, from the league's own calculation
+	const int iVotes = pLeague->CalculateStartingVotesForMember(ePlayer);
+	return (iVotes * 100 >= iNeeded * 80);
+}
+
+/// Spend aid points to have a city-state denounce a rival. Called from the per-turn aid-point
+/// budget (DoCityStateAidPointAI), so the purchase competes with the other aid-point actions
+/// instead of firing the moment this AI denounces someone.
+void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eMajor, bool* pabPoolUsed)
+{
 	const int iCost = m_pPlayer->GetAidPointCostDenounce();
 	if (iCost <= 0)
 		return;
 
-	for (int iLoop = MAX_MAJOR_CIVS; iLoop < MAX_CIV_PLAYERS; iLoop++)
+	for (int iTargetLoop = 0; iTargetLoop < MAX_MAJOR_CIVS; iTargetLoop++)
 	{
-		PlayerTypes eMinor = (PlayerTypes)iLoop;
-
-		if (pabPoolUsed != NULL && pabPoolUsed[eMinor])
+		const PlayerTypes eTarget = (PlayerTypes)iTargetLoop;
+		if (eTarget == eMajor || eTarget == m_pPlayer->GetID())
 			continue;
-		if (!GET_PLAYER(eMinor).isAlive())
+		if (!GET_PLAYER(eTarget).isAlive())
 			continue;
-		if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
-			continue;
-		if (GET_TEAM(GET_PLAYER(eMinor).getTeam()).isAtWar(GET_PLAYER(eTarget).getTeam()))
+		if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eTarget).getTeam()))
 			continue;
 
-		CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
-		if (pMinorAI == NULL || pMinorAI->GetEconomicAidPoints(m_pPlayer->GetID()) < iCost)
+		const MajorCivApproachTypes eApproach = GetMajorCivApproach(eTarget, /*bHideTrueFeelings*/ false);
+		const bool bHostile = IsDenouncedPlayer(eTarget)
+			|| eApproach == MAJOR_CIV_APPROACH_WAR || eApproach == MAJOR_CIV_APPROACH_HOSTILE;
+
+		// A rival that is about to win a diplomatic victory is worth blocking even when this AI is
+		// not hostile to it yet, and gets every denouncement it can pay for.
+		const bool bBlockVictory = IsPlayerNearDiploVictory(eTarget);
+		if (!bHostile && !bBlockVictory)
 			continue;
 
-		if (GC.getGame().DoMinorCivDenounceWithAidPoints(m_pPlayer->GetID(), eMinor, eTarget))
+		// Otherwise only sometimes: a denouncement is a diplomatic tool, not a reflex.
+		if (!bBlockVictory && GC.getGame().getJonRandNum(100, "AI considering an aid-point city-state denounce") >= 30)
+			continue;
+
+		for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
 		{
-			if (pabPoolUsed != NULL) pabPoolUsed[eMinor] = true;
-			return;
+			const PlayerTypes eMinor = (PlayerTypes)iMinorLoop;
+
+			if (pabPoolUsed != NULL && pabPoolUsed[eMinor])
+				continue;
+			if (!GET_PLAYER(eMinor).isAlive())
+				continue;
+			if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eMinor).getTeam()))
+				continue;
+
+			CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
+			if (pMinorAI == NULL)
+				continue;
+
+			// Same cooldown the purchase itself enforces, checked first to save the call
+			if (pMinorAI->IsAidPointDenounceOnCooldown(eTarget))
+				continue;
+
+			// Annexation outranks every other purchase, so its reserve stays untouched
+			const int iReserved = GetAidPointAnnexReserve(eMinor);
+			if (pMinorAI->GetEconomicAidPoints(eMajor) < iCost + iReserved)
+				continue;
+
+			if (GC.getGame().DoMinorCivDenounceWithAidPoints(eMajor, eMinor, eTarget, /*bRequirePayerDenounce*/ false))
+			{
+				if (pabPoolUsed != NULL) pabPoolUsed[eMinor] = true;
+				return;
+			}
 		}
 	}
 }
@@ -27032,6 +27086,7 @@ void CvDiplomacyAI::DoCityStateAidPointAI()
 	// the permanent vote is a diplomatic-victory purchase.
 	DoAidPointEmergencyProposalSpend(eMe, abPoolUsed);
 	DoAidPointPermanentVoteSpend(eMe, abPoolUsed);
+	DoAidPointDenounceSpend(eMe, abPoolUsed);
 
 	// Requirement 0: with no diplomatic prestige there is no focus list and no further spending
 	if (GetCityStateQuestFocusCount() <= 0)
