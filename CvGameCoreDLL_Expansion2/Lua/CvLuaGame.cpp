@@ -2390,11 +2390,18 @@ int CvLuaGame::lGetAidPointActions(lua_State* L)
 			lua_settable(L, -3);
 
 			lua_pushstring(L, "TextTag");
-			lua_pushstring(L, kResults.GetText(1));
+			{
+				// A NULL column would push nil, and the UI concatenates this straight into a string
+				const char* szTextTag = kResults.GetText(1);
+				lua_pushstring(L, (szTextTag != NULL) ? szTextTag : "");
+			}
 			lua_settable(L, -3);
 
 			lua_pushstring(L, "HelpTag");
-			lua_pushstring(L, kResults.GetText(2));
+			{
+				const char* szHelpTag = kResults.GetText(2);
+				lua_pushstring(L, (szHelpTag != NULL) ? szHelpTag : "");
+			}
 			lua_settable(L, -3);
 
 			lua_pushstring(L, "InSpendList");
