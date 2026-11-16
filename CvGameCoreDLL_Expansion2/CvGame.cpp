@@ -12061,12 +12061,21 @@ bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
 		return false;
 
+	// A dead city-state cannot hand out a proposal slot: this entry point is also reachable from Lua
+	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eMinor).isAlive())
+		return false;
+
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();
 	if(pMinorAI == NULL)
 		return false;
 
 	CvLeague* pLeague = GetGameLeagues()->GetActiveLeague();
 	if(pLeague == NULL || !pLeague->IsMember(eMajor) || !pLeague->CanEverVote(eMajor))
+		return false;
+
+	// The vote count of the running session is already fixed, so a purchase now would only take
+	// effect next session while the notification promises it immediately. Refuse it instead.
+	if(pLeague->IsInSession())
 		return false;
 
 	if(GET_PLAYER(eMajor).HasAidPointPermanentVote(eMinor))
@@ -12104,6 +12113,10 @@ bool CvGame::DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerT
 	if(eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
 		return false;
 	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
+		return false;
+
+	// A dead city-state has no seat to sell: this entry point is also reachable from Lua
+	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eMinor).isAlive())
 		return false;
 
 	CvMinorCivAI* pMinorAI = GET_PLAYER(eMinor).GetMinorCivAI();

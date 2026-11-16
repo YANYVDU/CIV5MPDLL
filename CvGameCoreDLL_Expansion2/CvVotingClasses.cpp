@@ -4004,9 +4004,21 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 		}
 		iVotes += iDiplomatVotes;
 
+		// Aid-point permanent votes come out of the extra votes: show them under their own source
+		// line instead of crediting them to World Wonders.
+		int iPermanentVotes = 0;
+		for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+		{
+			if (GET_PLAYER(ePlayer).HasAidPointPermanentVote((PlayerTypes)iMinorLoop))
+				iPermanentVotes++;
+		}
+
 		// Wonders
-		int iWonderVotes = GET_PLAYER(ePlayer).GetExtraLeagueVotes();
+		int iWonderVotes = GET_PLAYER(ePlayer).GetExtraLeagueVotes() - iPermanentVotes;
+		if (iWonderVotes < 0)
+			iWonderVotes = 0;
 		iVotes += iWonderVotes;
+		iVotes += iPermanentVotes;
 
 		// World Religion
 		int iWorldReligionVotes = GetExtraVotesForFollowingReligion(ePlayer);
@@ -4066,6 +4078,14 @@ int CvLeague::CalculateStartingVotesForMember(PlayerTypes ePlayer, bool bForceUp
 			{
 				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_WONDER_VOTES");
 				sTemp << iWonderVotes;
+				pMember->sVoteSources += sTemp.toUTF8();
+			}
+
+			// Aid-point votes bought at a city-state seat
+			if (iPermanentVotes > 0)
+			{
+				Localization::String sTemp = Localization::Lookup("TXT_KEY_LEAGUE_OVERVIEW_MEMBER_DETAILS_PERMANENT_VOTE");
+				sTemp << iPermanentVotes;
 				pMember->sVoteSources += sTemp.toUTF8();
 			}
 			
