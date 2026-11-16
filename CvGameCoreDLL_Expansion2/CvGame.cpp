@@ -11911,6 +11911,27 @@ bool CvGame::DoMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 }
 
 //	--------------------------------------------------------------------------------
+// Super Power V11: is this city-state allied with any living major of eTeam? The allied city-states
+// of a team follow a ceasefire, not only those allied with the two players who made peace.
+static bool IsMinorAllyOfTeam(CvMinorCivAI* pMinorAI, TeamTypes eTeam)
+{
+	if(pMinorAI == NULL || eTeam == NO_TEAM)
+		return false;
+
+	for(int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+	{
+		CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+		if(!kPlayer.isAlive() || kPlayer.getTeam() != eTeam)
+			continue;
+
+		if(pMinorAI->IsAllies((PlayerTypes)iPlayer))
+			return true;
+	}
+
+	return false;
+}
+
+//	--------------------------------------------------------------------------------
 // Super Power V11: a neutral city-state brokers peace between two warring majors.
 bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor, PlayerTypes eTarget)
 {
@@ -11921,6 +11942,10 @@ bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor
 	if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS || eTarget == eMajor)
 		return false;
 	if(!GET_PLAYER(eTarget).isAlive())
+		return false;
+
+	// A dead city-state cannot broker peace: this entry point is also reachable from Lua
+	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eMinor).isAlive())
 		return false;
 
 	TeamTypes eMajorTeam = GET_PLAYER(eMajor).getTeam();
@@ -11972,13 +11997,13 @@ bool CvGame::DoMinorCivPeaceWithAidPoints(PlayerTypes eMajor, PlayerTypes eMinor
 			continue;
 
 		const TeamTypes eAllyTeam = kPlayer.getTeam();
-		if(pAllyAI->IsAllies(eMajor))
+		if(IsMinorAllyOfTeam(pAllyAI, eMajorTeam))
 		{
 			aeMajorAllies.push_back(eAllyTeam);
 			if(GET_TEAM(eAllyTeam).isAtWar(eTargetTeam))
 				GET_TEAM(eAllyTeam).makePeace(eTargetTeam, true, false, eMajor);
 		}
-		if(pAllyAI->IsAllies(eTarget))
+		if(IsMinorAllyOfTeam(pAllyAI, eTargetTeam))
 		{
 			aeTargetAllies.push_back(eAllyTeam);
 			if(GET_TEAM(eAllyTeam).isAtWar(eMajorTeam))
