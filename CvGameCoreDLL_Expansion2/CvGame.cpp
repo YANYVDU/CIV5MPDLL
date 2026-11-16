@@ -12090,7 +12090,7 @@ bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 		return false;
 
 	pMinorAI->ChangeEconomicAidPoints(eMajor, -iCost);
-	GET_PLAYER(eMajor).SetAidPointPermanentVote(eMinor, true);
+	GET_PLAYER(eMajor).SetAidPointPermanentVote(eMinor);
 	GET_PLAYER(eMajor).ChangeExtraLeagueVotes(1);
 
 	CvNotifications* pNotifications = GET_PLAYER(eMajor).GetNotifications();

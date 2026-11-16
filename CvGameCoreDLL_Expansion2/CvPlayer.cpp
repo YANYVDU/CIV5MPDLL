@@ -15646,36 +15646,61 @@ bool CvPlayer::HasAidPointPermanentVote(PlayerTypes eMinor) const
 	return (m_uiAidPointPermanentVoteMask & (1ULL << eMinor)) != 0;
 }
 
-void CvPlayer::SetAidPointPermanentVote(PlayerTypes eMinor, bool bValue)
+/// Aid-point permanent votes are never taken back (see CvGame::DoBuyPermanentVoteWithAidPoints):
+/// the city-state may be conquered or resurrected, the seat stays.
+void CvPlayer::SetAidPointPermanentVote(PlayerTypes eMinor)
 {
 	if (eMinor < 0 || eMinor >= MAX_CIV_PLAYERS)
 		return;
 
-	if (bValue)
-		m_uiAidPointPermanentVoteMask |= (1ULL << eMinor);
-	else
-		m_uiAidPointPermanentVoteMask &= ~(1ULL << eMinor);
+	m_uiAidPointPermanentVoteMask |= (1ULL << eMinor);
 }
 
-/// Sum of AidPointCostModifier for one action over this player's adopted policies
+/// Sum every per-policy aid-point field once. Called lazily by the getters below, which sit in the
+/// city-state AI spending path and used to walk the whole policy table on every single query.
+void CvPlayer::BuildAidPointPolicyCache() const
+{
+	for(int iAction = 0; iAction < NUM_AID_POINT_ACTION_TYPES; iAction++)
+	{
+		m_aiAidPointCostModifierCache[iAction] = 0;
+	}
+	m_iAidPointQuestRewardCache = 0;
+	m_iAidPointContestRewardCache = 0;
+
+	const int iNumPolicies = GC.getNumPolicyInfos();
+	for(int iPolicy = 0; iPolicy < iNumPolicies; iPolicy++)
+	{
+		const PolicyTypes ePolicy = (PolicyTypes)iPolicy;
+		if(!HasPolicy(ePolicy))
+			continue;
+
+		CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
+		if(pPolicy == NULL)
+			continue;
+
+		for(int iAction = 0; iAction < NUM_AID_POINT_ACTION_TYPES; iAction++)
+		{
+			m_aiAidPointCostModifierCache[iAction] += pPolicy->GetAidPointCostModifier((AidPointActionTypes)iAction);
+		}
+		m_iAidPointQuestRewardCache += pPolicy->GetAidPointQuestReward();
+		m_iAidPointContestRewardCache += pPolicy->GetAidPointContestReward();
+	}
+
+	m_bAidPointPolicyCacheValid = true;
+}
+
 int CvPlayer::GetAidPointCostModifier(AidPointActionTypes eAction) const
 {
 	if (!GC.getGame().IsAidPointActionDiscountable(eAction))
 		return 0;
 
-	int iModifier = 0;
-	const int iNumPolicies = GC.getNumPolicyInfos();
-	for (int iPolicy = 0; iPolicy < iNumPolicies; iPolicy++)
-	{
-		const PolicyTypes ePolicy = (PolicyTypes)iPolicy;
-		if (!HasPolicy(ePolicy))
-			continue;
+	if (!m_bAidPointPolicyCacheValid)
+		BuildAidPointPolicyCache();
 
-		CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
-		if (pPolicy != NULL)
-			iModifier += pPolicy->GetAidPointCostModifier(eAction);
-	}
-	return iModifier;
+	if (eAction < 0 || eAction >= NUM_AID_POINT_ACTION_TYPES)
+		return 0;
+
+	return m_aiAidPointCostModifierCache[eAction];
 }
 
 /// Cost of one aid-point action with this player's policy discount applied

@@ -634,7 +634,7 @@ public:
 
 	// Super Power V11: one permanent World Congress vote purchase per city-state.
 	bool HasAidPointPermanentVote(PlayerTypes eMinor) const;
-	void SetAidPointPermanentVote(PlayerTypes eMinor, bool bValue);
+	void SetAidPointPermanentVote(PlayerTypes eMinor);
 	// Percent modifier from adopted policies applied to one aid-point action (negative = cheaper)
 	int GetAidPointCostModifier(AidPointActionTypes eAction) const;
 	// Cost of one aid-point action with this player's policy discount applied
