@@ -921,6 +921,10 @@ bool CvMinorCivQuest::IsComplete()
 	{
 		PlayerTypes eTarget = (PlayerTypes) m_iData1;
 
+		// A quest that was forced without a resolvable target has no target: it can never complete
+		if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS)
+			return false;
+
 		// Has the player signed a research agreement with the target?
 		if(GET_TEAM(pAssignedPlayer->getTeam()).IsHasResearchAgreement(GET_PLAYER(eTarget).getTeam()))
 		{
@@ -1907,6 +1911,11 @@ void CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 			eTarget = pMinor->GetMinorCivAI()->GetBestResearchAgreementTargetForQuest(m_eAssignedPlayer);
 
 		FAssertMsg(eTarget != NO_PLAYER, "MINOR CIV AI: For some reason we got NO_PLAYER when starting a quest for a major to sign a research agreement.");
+
+		// Release builds do not stop at the assert above, and a script can force this quest type
+		// when no valid target exists, so bail out instead of indexing with NO_PLAYER.
+		if(eTarget < 0 || eTarget >= MAX_MAJOR_CIVS)
+			return;
 
 		m_iData1 = eTarget;
 
@@ -5742,7 +5751,8 @@ bool CvMinorCivAI::IsValidQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes
 		if(IsRecentlyBulliedByMajor(ePlayer))
 			return false;
 
-		if(GetBestTradeRouteToCityTargetForQuest(ePlayer) == NULL)
+		// Only check that a target exists: the city is drawn once, when the quest starts
+		if(!HasTradeRouteToCityTargetForQuest(ePlayer))
 			return false;
 	}
 	// RESEARCH A TECH
@@ -5972,9 +5982,8 @@ bool CvMinorCivAI::IsValidQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes
 		if(IsRecentlyBulliedByMajor(ePlayer))
 			return false;
 
-		PlayerTypes eTarget = GetBestResearchAgreementTargetForQuest(ePlayer);
-
-		if(eTarget == NO_PLAYER)
+		// Only check that a partner exists: the target is drawn once, when the quest starts
+		if(!HasResearchAgreementTargetForQuest(ePlayer))
 			return false;
 	}
 #if defined(MOD_EVENTS_QUESTS)
@@ -7720,14 +7729,99 @@ PlayerTypes CvMinorCivAI::GetBestOriginalCapitalTargetForQuest(PlayerTypes ePlay
 }
 
 /// Find a civilization a major could sign a research agreement with for us
+/// Hard preconditions for pairing ePlayer and eOther for the research-agreement quest.
+/// Shared by the candidate enumeration, the quest validity test and the quest start path, so a
+/// quest can only be issued when a Research Agreement can actually be signed. This does not draw
+/// random numbers, so it is safe to call while enumerating quests.
+bool CvMinorCivAI::CanPairForResearchAgreementQuest(PlayerTypes ePlayer, PlayerTypes eOther)
+{
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return false;
+	if(eOther < 0 || eOther >= MAX_MAJOR_CIVS)
+		return false;
+
+	// Skip the player we are asking
+	if(ePlayer == eOther)
+		return false;
+
+	CvPlayer& kAsker = GET_PLAYER(ePlayer);
+	CvPlayer& kOther = GET_PLAYER(eOther);
+
+	if(!kAsker.isAlive() || !kOther.isAlive())
+		return false;
+
+	// Both sides must have enough influence with us
+	if(GetEffectiveFriendshipWithMajor(ePlayer) <= 30)
+		return false;
+	if(GetEffectiveFriendshipWithMajor(eOther) <= 30)
+		return false;
+
+	// Both sides must have a free personal quest slot; the quest is mirrored onto eOther
+	if(GetNumActivePersonalQuestsForPlayer(ePlayer) >= GetMaxActivePersonalQuestsForPlayer())
+		return false;
+	if(GetNumActivePersonalQuestsForPlayer(eOther) >= GetMaxActivePersonalQuestsForPlayer())
+		return false;
+
+	// Skip teammates: a Research Agreement cannot be signed within the same team
+	const TeamTypes eAskerTeam = kAsker.getTeam();
+	const TeamTypes eOtherTeam = kOther.getTeam();
+	if(eAskerTeam == eOtherTeam)
+		return false;
+
+	// Neither side may be at war with us
+	if(GET_TEAM(GetPlayer()->getTeam()).isAtWar(eOtherTeam))
+		return false;
+
+	// The two sides must not be at war with each other
+	if(GET_TEAM(eAskerTeam).isAtWar(eOtherTeam))
+		return false;
+
+	// The two sides must have met
+	if(!GET_TEAM(eAskerTeam).isHasMet(eOtherTeam))
+		return false;
+
+	// Do not pair up civilizations that are hostile to each other. The quest forces a
+	// Declaration of Friendship on both sides, which would skip the denouncement /
+	// unforgivable checks in CvDiplomacyAI::IsDoFAcceptable.
+	CvDiplomacyAI* pAskerDiploAI = kAsker.GetDiplomacyAI();
+	CvDiplomacyAI* pOtherDiploAI = kOther.GetDiplomacyAI();
+	if(pAskerDiploAI->IsDenouncedPlayer(eOther) || pOtherDiploAI->IsDenouncedPlayer(ePlayer))
+		return false;
+	const MajorCivOpinionTypes eAskerOpinion = pAskerDiploAI->GetMajorCivOpinion(eOther);
+	const MajorCivOpinionTypes eOtherOpinion = pOtherDiploAI->GetMajorCivOpinion(ePlayer);
+	if(eAskerOpinion == MAJOR_CIV_OPINION_UNFORGIVABLE || eAskerOpinion == MAJOR_CIV_OPINION_ENEMY
+		|| eOtherOpinion == MAJOR_CIV_OPINION_UNFORGIVABLE || eOtherOpinion == MAJOR_CIV_OPINION_ENEMY)
+		return false;
+	const MajorCivApproachTypes eAskerApproach = pAskerDiploAI->GetMajorCivApproach(eOther, /*bHideTrueFeelings*/ false);
+	const MajorCivApproachTypes eOtherApproach = pOtherDiploAI->GetMajorCivApproach(ePlayer, /*bHideTrueFeelings*/ false);
+	if(eAskerApproach == MAJOR_CIV_APPROACH_WAR || eAskerApproach == MAJOR_CIV_APPROACH_HOSTILE
+		|| eOtherApproach == MAJOR_CIV_APPROACH_WAR || eOtherApproach == MAJOR_CIV_APPROACH_HOSTILE)
+		return false;
+
+	// They must not already share a research agreement
+	CvTeam& kAskerTeam = GET_TEAM(eAskerTeam);
+	CvTeam& kOtherTeam = GET_TEAM(eOtherTeam);
+	if(kAskerTeam.IsHasResearchAgreement(eOtherTeam))
+		return false;
+
+	// The quest can only be completed if a Research Agreement is actually tradeable: at least one
+	// side must have unlocked it, and neither side may have finished the tech tree.
+	if(!kAskerTeam.IsResearchAgreementTradingAllowed() && !kOtherTeam.IsResearchAgreementTradingAllowed())
+		return false;
+	if(kAskerTeam.GetTeamTechs()->HasResearchedAllTechs() || kOtherTeam.GetTeamTechs()->HasResearchedAllTechs())
+		return false;
+
+	// The mirrored copy must be able to land on the other side
+	if(IsActiveQuestForPlayer(eOther, MINOR_CIV_QUEST_RESEARCH_AGREEMENT))
+		return false;
+
+	return true;
+}
+
+/// Choose a player to pair ePlayer with for the research-agreement quest.
 PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePlayer)
 {
-	// The player we ask must have enough influence with us
-	if(GetEffectiveFriendshipWithMajor(ePlayer) <= 30)
-		return NO_PLAYER;
-
-	// The player we ask must have a free personal quest slot
-	if(GetNumActivePersonalQuestsForPlayer(ePlayer) >= GetMaxActivePersonalQuestsForPlayer())
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
 		return NO_PLAYER;
 
 	FStaticVector<PlayerTypes, MAX_CIV_PLAYERS, true, c_eCiv5GameplayDLL, 0> veValidPlayers;
@@ -7735,59 +7829,8 @@ PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePl
 	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 	{
 		const PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
-		CvPlayer* pLoopPlayer = &GET_PLAYER(eLoopPlayer);
 
-		if(!pLoopPlayer->isAlive())
-			continue;
-
-		// Skip the player we are asking
-		if(eLoopPlayer == ePlayer)
-			continue;
-
-		// Skip teammates: a Research Agreement cannot be signed within the same team
-		if(GET_PLAYER(ePlayer).getTeam() == pLoopPlayer->getTeam())
-			continue;
-
-		// The target must not be at war with us
-		if(GET_TEAM(GetPlayer()->getTeam()).isAtWar(pLoopPlayer->getTeam()))
-			continue;
-
-		// The target must not be at war with the player we ask
-		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(pLoopPlayer->getTeam()))
-			continue;
-
-		// Do not pair up civilizations that are hostile to each other. The quest forces a
-		// Declaration of Friendship on both sides, which would skip the denouncement /
-		// unforgivable checks in CvDiplomacyAI::IsDoFAcceptable.
-		CvDiplomacyAI* pAskerDiploAI = GET_PLAYER(ePlayer).GetDiplomacyAI();
-		CvDiplomacyAI* pTargetDiploAI = GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
-		if(pAskerDiploAI->IsDenouncedPlayer(eLoopPlayer) || pTargetDiploAI->IsDenouncedPlayer(ePlayer))
-			continue;
-		const MajorCivOpinionTypes eAskerOpinion = pAskerDiploAI->GetMajorCivOpinion(eLoopPlayer);
-		const MajorCivOpinionTypes eTargetOpinion = pTargetDiploAI->GetMajorCivOpinion(ePlayer);
-		if(eAskerOpinion == MAJOR_CIV_OPINION_UNFORGIVABLE || eAskerOpinion == MAJOR_CIV_OPINION_ENEMY
-			|| eTargetOpinion == MAJOR_CIV_OPINION_UNFORGIVABLE || eTargetOpinion == MAJOR_CIV_OPINION_ENEMY)
-			continue;
-		const MajorCivApproachTypes eAskerApproach = pAskerDiploAI->GetMajorCivApproach(eLoopPlayer, /*bHideTrueFeelings*/ false);
-		const MajorCivApproachTypes eTargetApproach = pTargetDiploAI->GetMajorCivApproach(ePlayer, /*bHideTrueFeelings*/ false);
-		if(eAskerApproach == MAJOR_CIV_APPROACH_WAR || eAskerApproach == MAJOR_CIV_APPROACH_HOSTILE
-			|| eTargetApproach == MAJOR_CIV_APPROACH_WAR || eTargetApproach == MAJOR_CIV_APPROACH_HOSTILE)
-			continue;
-
-		// The player we ask must have met them
-		if(!GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isHasMet(pLoopPlayer->getTeam()))
-			continue;
-
-		// The target must also have enough influence with us
-		if(GetEffectiveFriendshipWithMajor(eLoopPlayer) <= 30)
-			continue;
-
-		// The target must also have a free personal quest slot
-		if(GetNumActivePersonalQuestsForPlayer(eLoopPlayer) >= GetMaxActivePersonalQuestsForPlayer())
-			continue;
-
-		// They must not already share a research agreement
-		if(GET_TEAM(GET_PLAYER(ePlayer).getTeam()).IsHasResearchAgreement(pLoopPlayer->getTeam()))
+		if(!CanPairForResearchAgreementQuest(ePlayer, eLoopPlayer))
 			continue;
 
 		veValidPlayers.push_back(eLoopPlayer);
@@ -7800,59 +7843,99 @@ PlayerTypes CvMinorCivAI::GetBestResearchAgreementTargetForQuest(PlayerTypes ePl
 	return veValidPlayers[iRandIndex];
 }
 
+/// Is there any player ePlayer could be paired with for the research-agreement quest?
+/// Does not draw random numbers, so the random draw happens once, when the quest starts.
+bool CvMinorCivAI::HasResearchAgreementTargetForQuest(PlayerTypes ePlayer)
+{
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		if(CanPairForResearchAgreementQuest(ePlayer, (PlayerTypes) iPlayerLoop))
+			return true;
+	}
+
+	return false;
+}
+
+namespace
+{
+/// Player-level filters for the trade-route-to-city quest target: can ePlayer trade with
+/// eTargetPlayer at all? Cheap, and free of random draws and pathfinding.
+bool IsValidTradeRouteToCityQuestTargetPlayer(CvPlayer& kMinor, CvPlayer& kPlayer, PlayerTypes ePlayer, PlayerTypes eTargetPlayer)
+{
+	if(eTargetPlayer == ePlayer || eTargetPlayer == kMinor.GetID())
+		return false;
+
+	CvPlayer& kTargetPlayer = GET_PLAYER(eTargetPlayer);
+	if(!kTargetPlayer.isAlive() || kTargetPlayer.isBarbarian())
+		return false;
+
+	if(kPlayer.getTeam() == kTargetPlayer.getTeam())
+		return false;
+
+	if(GET_TEAM(kPlayer.getTeam()).isAtWar(kTargetPlayer.getTeam()))
+		return false;
+
+	if(GET_TEAM(kMinor.getTeam()).isAtWar(kTargetPlayer.getTeam()))
+		return false;
+
+	if(!GET_TEAM(kPlayer.getTeam()).isHasMet(kTargetPlayer.getTeam()))
+		return false;
+
+	if(!GET_TEAM(kMinor.getTeam()).isHasMet(kTargetPlayer.getTeam()))
+		return false;
+
+	return true;
+}
+
+/// Can kPlayer open an international trade route from one of its cities to pTargetCity?
+bool CanQuestPlayerReachCity(CvPlayer& kPlayer, CvCity* pTargetCity)
+{
+	if(pTargetCity == NULL)
+		return false;
+
+	// A city this player already trades with is not a new quest target
+	if(GC.getGame().GetGameTrade()->HasTradeRouteToCity(kPlayer.GetID(), pTargetCity))
+		return false;
+
+	int iOriginLoop;
+	for(CvCity* pOriginCity = kPlayer.firstCity(&iOriginLoop); pOriginCity != NULL; pOriginCity = kPlayer.nextCity(&iOriginLoop))
+	{
+		if(kPlayer.GetTrade()->CanCreateTradeRoute(pOriginCity, pTargetCity, DOMAIN_LAND, TRADE_CONNECTION_INTERNATIONAL, false)
+			|| kPlayer.GetTrade()->CanCreateTradeRoute(pOriginCity, pTargetCity, DOMAIN_SEA, TRADE_CONNECTION_INTERNATIONAL, false))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+}
+
 /// Choose a city that ePlayer can reach with an international trade route.
 CvCity* CvMinorCivAI::GetBestTradeRouteToCityTargetForQuest(PlayerTypes ePlayer)
 {
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return NULL;
+
+	CvPlayer& kMinor = *GetPlayer();
 	CvPlayer& kPlayer = GET_PLAYER(ePlayer);
 	CvCity* pBestCity = NULL;
 	int iValidCount = 0;
 
 	for(int iPlayerLoop = 0; iPlayerLoop < MAX_CIV_PLAYERS; iPlayerLoop++)
 	{
-		PlayerTypes eTargetPlayer = (PlayerTypes)iPlayerLoop;
-		if(eTargetPlayer == ePlayer || eTargetPlayer == GetPlayer()->GetID())
+		const PlayerTypes eTargetPlayer = (PlayerTypes) iPlayerLoop;
+		if(!IsValidTradeRouteToCityQuestTargetPlayer(kMinor, kPlayer, ePlayer, eTargetPlayer))
 			continue;
 
 		CvPlayer& kTargetPlayer = GET_PLAYER(eTargetPlayer);
-		if(!kTargetPlayer.isAlive() || kTargetPlayer.isBarbarian())
-			continue;
-
-		if(kPlayer.getTeam() == kTargetPlayer.getTeam())
-			continue;
-
-		if(GET_TEAM(kPlayer.getTeam()).isAtWar(kTargetPlayer.getTeam()))
-			continue;
-
-		if(GET_TEAM(GetPlayer()->getTeam()).isAtWar(kTargetPlayer.getTeam()))
-			continue;
-
-		if(!GET_TEAM(kPlayer.getTeam()).isHasMet(kTargetPlayer.getTeam()))
-			continue;
-
-		if(!GET_TEAM(GetPlayer()->getTeam()).isHasMet(kTargetPlayer.getTeam()))
-			continue;
-
 		int iCityLoop;
 		for(CvCity* pTargetCity = kTargetPlayer.firstCity(&iCityLoop); pTargetCity != NULL; pTargetCity = kTargetPlayer.nextCity(&iCityLoop))
 		{
-			if(GC.getGame().GetGameTrade()->HasTradeRouteToCity(ePlayer, pTargetCity))
+			if(!CanQuestPlayerReachCity(kPlayer, pTargetCity))
 				continue;
 
-			bool bCanRoute = false;
-			int iOriginLoop;
-			for(CvCity* pOriginCity = kPlayer.firstCity(&iOriginLoop); pOriginCity != NULL; pOriginCity = kPlayer.nextCity(&iOriginLoop))
-			{
-				if(kPlayer.GetTrade()->CanCreateTradeRoute(pOriginCity, pTargetCity, DOMAIN_LAND, TRADE_CONNECTION_INTERNATIONAL, false)
-					|| kPlayer.GetTrade()->CanCreateTradeRoute(pOriginCity, pTargetCity, DOMAIN_SEA, TRADE_CONNECTION_INTERNATIONAL, false))
-				{
-					bCanRoute = true;
-					break;
-				}
-			}
-
-			if(!bCanRoute)
-				continue;
-
+			// Reservoir sample, so the target does not depend on the player iteration order
 			iValidCount++;
 			if(GC.getGame().getJonRandNum(iValidCount, "Choosing target city for a trade route quest") == 0)
 				pBestCity = pTargetCity;
@@ -7860,6 +7943,45 @@ CvCity* CvMinorCivAI::GetBestTradeRouteToCityTargetForQuest(PlayerTypes ePlayer)
 	}
 
 	return pBestCity;
+}
+
+/// Does ePlayer have any city it could reach with an international trade route for this quest?
+/// Memoised for the current turn and free of random draws, so enumerating quests stays cheap.
+bool CvMinorCivAI::HasTradeRouteToCityTargetForQuest(PlayerTypes ePlayer)
+{
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return false;
+
+	const int iTurn = GC.getGame().getGameTurn();
+	if(m_aiTradeRouteQuestTargetTurn[ePlayer] == iTurn)
+		return m_abTradeRouteQuestTarget[ePlayer];
+
+	bool bFound = false;
+	CvPlayer& kMinor = *GetPlayer();
+	CvPlayer& kPlayer = GET_PLAYER(ePlayer);
+
+	for(int iPlayerLoop = 0; iPlayerLoop < MAX_CIV_PLAYERS && !bFound; iPlayerLoop++)
+	{
+		const PlayerTypes eTargetPlayer = (PlayerTypes) iPlayerLoop;
+		if(!IsValidTradeRouteToCityQuestTargetPlayer(kMinor, kPlayer, ePlayer, eTargetPlayer))
+			continue;
+
+		CvPlayer& kTargetPlayer = GET_PLAYER(eTargetPlayer);
+		int iCityLoop;
+		for(CvCity* pTargetCity = kTargetPlayer.firstCity(&iCityLoop); pTargetCity != NULL; pTargetCity = kTargetPlayer.nextCity(&iCityLoop))
+		{
+			if(CanQuestPlayerReachCity(kPlayer, pTargetCity))
+			{
+				bFound = true;
+				break;
+			}
+		}
+	}
+
+	m_aiTradeRouteQuestTargetTurn[ePlayer] = iTurn;
+	m_abTradeRouteQuestTarget[ePlayer] = bFound;
+
+	return bFound;
 }
 
 /// Find a Great Person that a Minor would want a major to spawn

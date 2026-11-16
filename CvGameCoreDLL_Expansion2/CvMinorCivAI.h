@@ -391,7 +391,10 @@ public:
 	PlayerTypes GetBestWarTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestOriginalCapitalTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestResearchAgreementTargetForQuest(PlayerTypes ePlayer);
+	bool CanPairForResearchAgreementQuest(PlayerTypes ePlayer, PlayerTypes eOther);
+	bool HasResearchAgreementTargetForQuest(PlayerTypes ePlayer);
 	CvCity* GetBestTradeRouteToCityTargetForQuest(PlayerTypes ePlayer);
+	bool HasTradeRouteToCityTargetForQuest(PlayerTypes ePlayer);
 	PlayerTypes GetBestCityStateTarget(PlayerTypes eForPlayer);
 	PlayerTypes GetMostRecentBullyForQuest() const;
 	bool IsWantsMinorDead(PlayerTypes eMinor);

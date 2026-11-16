@@ -7737,7 +7737,16 @@ int CvLuaPlayer::lDoMinorCivStartQuestForPlayer(lua_State* L)
 	const PlayerTypes ePlayer = (PlayerTypes) lua_tointeger(L, 2);
 	const MinorCivQuestTypes eType = (MinorCivQuestTypes) lua_tointeger(L, 3);
 
-	pkPlayer->GetMinorCivAI()->AddQuestForPlayer(ePlayer, eType, GC.getGame().getGameTurn());
+	// A script can pass any index and any quest type: only issue quests this city-state could
+	// issue itself, otherwise a quest without a resolvable target gets created.
+	if(ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || eType < 0 || eType >= NUM_MINOR_CIV_QUEST_TYPES)
+		return 0;
+
+	CvMinorCivAI* pkMinorAI = pkPlayer->GetMinorCivAI();
+	if(pkMinorAI == NULL || !pkMinorAI->IsValidQuestForPlayer(ePlayer, eType))
+		return 0;
+
+	pkMinorAI->AddQuestForPlayer(ePlayer, eType, GC.getGame().getGameTurn());
 	return 0;
 }
 //------------------------------------------------------------------------------
