@@ -12312,6 +12312,16 @@ int CvGame::GetBullyTreasurySharePercent()
 	return gCustomMods.getOption("SP_BULLY_TREASURY_SHARE_PERCENT", 25);
 }
 
+/// Extra gold (percent) both sides' international trade routes earn between Trade Agreement
+/// partners. Lives in a Define so the DLL and the trade-route tooltip read the same number.
+int CvGame::GetTradeAgreementRouteGoldPercent() const
+{
+	const int iPercent = GC.getTRADE_AGREEMENT_ROUTE_GOLD_PERCENT();
+
+	// Missing define (DLL loaded without its SQL): keep the shipped value
+	return (iPercent > 0) ? iPercent : 20;
+}
+
 //	--------------------------------------------------------------------------------
 // Wittenberg CS UA: faith-purchase a belief for the active player into this city-state's religion.
 // Executed locally for the active player (single-player focused; intentionally no network message).

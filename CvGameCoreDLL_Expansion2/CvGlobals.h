@@ -5704,6 +5704,18 @@ public:
 	{
 		return m_iGOLDEN_AGE_GREAT_PEOPLE_MODIFIER;
 	}
+
+	// SP: extra gold (percent) international trade routes earn between Trade Agreement partners
+	inline int getTRADE_AGREEMENT_ROUTE_GOLD_PERCENT()
+	{
+		return m_iTRADE_AGREEMENT_ROUTE_GOLD_PERCENT;
+	}
+
+	// SP: turns before the same (target, city-state) pair may be denounced again with aid points
+	inline int getSP_AID_POINT_DENOUNCE_COOLDOWN()
+	{
+		return m_iSP_AID_POINT_DENOUNCE_COOLDOWN;
+	}
 	inline int getMIN_UNIT_GOLDEN_AGE_TURNS()
 	{
 		return m_iMIN_UNIT_GOLDEN_AGE_TURNS;
@@ -9427,6 +9439,8 @@ protected:
 
 #if defined(MOD_ROG_CORE)
 	int m_iORIGINAL_CAPITAL_MODMAX;
+	int m_iTRADE_AGREEMENT_ROUTE_GOLD_PERCENT;
+	int m_iSP_AID_POINT_DENOUNCE_COOLDOWN;
 #endif
 	int m_iGOLDEN_AGE_GREAT_PEOPLE_MODIFIER;
 	int m_iMIN_UNIT_GOLDEN_AGE_TURNS;

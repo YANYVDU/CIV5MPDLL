@@ -106,6 +106,7 @@ void CvLuaGame::RegistStaticFunctions() {
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointHastenCongressTurns);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetAidPointCostAnnexCityState);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyTreasurySharePercent);
+	REGIST_STATIC_FUNCTION(CvLuaGame::lGetTradeAgreementRouteGoldPercent);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetBullyGoldAidPointCost);
 	REGIST_STATIC_FUNCTION(CvLuaGame::lGetMinorGiftUnitChoices);
 
@@ -153,6 +154,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(CanRequestEmergencyProposal);
 	Method(HasAidPointPermanentVote);
 	Method(GetBullyTreasurySharePercent);
+	Method(GetTradeAgreementRouteGoldPercent);
 	Method(GetBullyGoldAidPointCost);
 	Method(GetMinorGiftUnitChoices);
 
@@ -2423,6 +2425,13 @@ int CvLuaGame::lGetAidPointActions(lua_State* L)
 int CvLuaGame::lGetBullyTreasurySharePercent(lua_State* L)
 {
 	lua_pushinteger(L, GC.getGame().GetBullyTreasurySharePercent());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//int GetTradeAgreementRouteGoldPercent();
+int CvLuaGame::lGetTradeAgreementRouteGoldPercent(lua_State* L)
+{
+	lua_pushinteger(L, GC.getGame().GetTradeAgreementRouteGoldPercent());
 	return 1;
 }
 //------------------------------------------------------------------------------

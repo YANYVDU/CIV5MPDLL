@@ -310,6 +310,7 @@ protected:
 	static int lGetAidPointHastenCongressTurns(lua_State* L);
 	static int lGetAidPointCostAnnexCityState(lua_State* L);
 	static int lGetBullyTreasurySharePercent(lua_State* L);
+	static int lGetTradeAgreementRouteGoldPercent(lua_State* L);
 	static int lGetBullyGoldAidPointCost(lua_State* L);
 	static int lGetMinorGiftUnitChoices(lua_State* L);
 	static int lGetCityStateFaithBeliefPurchaseCost(lua_State* L);
