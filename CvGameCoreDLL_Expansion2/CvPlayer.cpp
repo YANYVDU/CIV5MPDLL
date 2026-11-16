@@ -882,6 +882,11 @@ void CvPlayer::init(PlayerTypes eID)
 //	--------------------------------------------------------------------------------
 void CvPlayer::uninit()
 {
+	// Derived policy cache, rebuilt on first use
+	m_bLocalHappinessFromFaithPercentValid = false;
+	m_iLocalHappinessFromFaithPercentCache = 0;
+	m_bAidPointPolicyCacheValid = false;
+
 	m_paiNumResourceUsed.clear();
 	m_paiNumResourceAvailableCache.clear();
 	m_paiNumResourceTotal.clear();
@@ -15699,37 +15704,19 @@ int CvPlayer::GetAidPointCostPermanentVote() const
 /// Aid points granted when this player completes any city-state quest
 int CvPlayer::GetAidPointQuestReward() const
 {
-	int iReward = 0;
-	const int iNumPolicies = GC.getNumPolicyInfos();
-	for (int iPolicy = 0; iPolicy < iNumPolicies; iPolicy++)
-	{
-		const PolicyTypes ePolicy = (PolicyTypes)iPolicy;
-		if (!HasPolicy(ePolicy))
-			continue;
+	if (!m_bAidPointPolicyCacheValid)
+		BuildAidPointPolicyCache();
 
-		CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
-		if (pPolicy != NULL)
-			iReward += pPolicy->GetAidPointQuestReward();
-	}
-	return iReward;
+	return m_iAidPointQuestRewardCache;
 }
 
 /// Aid points granted when this player wins a city-state contest
 int CvPlayer::GetAidPointContestReward() const
 {
-	int iReward = 0;
-	const int iNumPolicies = GC.getNumPolicyInfos();
-	for (int iPolicy = 0; iPolicy < iNumPolicies; iPolicy++)
-	{
-		const PolicyTypes ePolicy = (PolicyTypes)iPolicy;
-		if (!HasPolicy(ePolicy))
-			continue;
+	if (!m_bAidPointPolicyCacheValid)
+		BuildAidPointPolicyCache();
 
-		CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
-		if (pPolicy != NULL)
-			iReward += pPolicy->GetAidPointContestReward();
-	}
-	return iReward;
+	return m_iAidPointContestRewardCache;
 }
 
 //	--------------------------------------------------------------------------------
@@ -29533,6 +29520,11 @@ void CvPlayer::processPolicies(PolicyTypes ePolicy, int iChange)
 {
 	int iI, iJ;
 
+	// Policies just changed: the derived sums read by GetLocalHappinessFromFaithPercent() and by the
+	// aid-point getters are stale from here on, whatever this call ends up doing.
+	m_bLocalHappinessFromFaithPercentValid = false;
+	m_bAidPointPolicyCacheValid = false;
+
 	CvPolicyEntry* pPolicy = GC.getPolicyInfo(ePolicy);
 	if(pPolicy == NULL)
 		return;
@@ -37426,9 +37418,15 @@ int CvPlayer::GetHappinessFromFaith() const
 	return std::max(0, m_iGlobalHappinessFromFaithPercent * GetCachedTotalFaithPerTurn() / 100);
 }
 
-// Cached-local-happiness percent from every adopted policy. Kept dynamic so it needs no save field.
+// Sum of the LocalHappinessFromFaithPercent policy field over the adopted policies. Cached, and
+// invalidated whenever a policy is (de)activated, because this sits in the local-happiness path.
 int CvPlayer::GetLocalHappinessFromFaithPercent() const
 {
+	if(m_bLocalHappinessFromFaithPercentValid)
+	{
+		return m_iLocalHappinessFromFaithPercentCache;
+	}
+
 	int iPercent = 0;
 	CvPlayerPolicies* pPolicies = GetPlayerPolicies();
 	for(int iPolicyLoop = 0; iPolicyLoop < GC.getNumPolicyInfos(); iPolicyLoop++)
@@ -37444,6 +37442,10 @@ int CvPlayer::GetLocalHappinessFromFaithPercent() const
 			iPercent += pPolicyInfo->GetLocalHappinessFromFaithPercent();
 		}
 	}
+
+	m_iLocalHappinessFromFaithPercentCache = iPercent;
+	m_bLocalHappinessFromFaithPercentValid = true;
+
 	return iPercent;
 }
 

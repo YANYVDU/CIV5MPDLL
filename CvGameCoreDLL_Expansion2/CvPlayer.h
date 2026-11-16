@@ -3235,6 +3235,17 @@ protected:
 
 	std::vector<PolicyResourceInfo> m_vCityResourcesFromPolicy;
 	int m_iGlobalHappinessFromFaithPercent = 0;
+	// Derived sum of Policy.LocalHappinessFromFaithPercent, recomputed on the first query after
+	// processPolicies() runs. Not serialised: an unset cache just costs one policy scan.
+	mutable int m_iLocalHappinessFromFaithPercentCache = 0;
+	mutable bool m_bLocalHappinessFromFaithPercentValid = false;
+	// Derived per-policy aid-point sums (cost discount per action, quest and contest rewards).
+	// Not serialised; rebuilt on the first query after processPolicies() runs.
+	mutable int m_aiAidPointCostModifierCache[NUM_AID_POINT_ACTION_TYPES];
+	mutable int m_iAidPointQuestRewardCache = 0;
+	mutable int m_iAidPointContestRewardCache = 0;
+	mutable bool m_bAidPointPolicyCacheValid = false;
+	void BuildAidPointPolicyCache() const;
 	int m_iHappinessInWLTKDCities = 0;
 
 	// Obsolete: only used to read old saves
