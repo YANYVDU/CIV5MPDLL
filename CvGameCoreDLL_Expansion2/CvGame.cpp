@@ -12065,7 +12065,7 @@ bool CvGame::DoBuyPermanentVoteWithAidPoints(PlayerTypes eMajor, PlayerTypes eMi
 	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
 		return false;
 
-	// A dead city-state cannot hand out a proposal slot: this entry point is also reachable from Lua
+	// A dead city-state has no seat to sell: this entry point is also reachable from Lua
 	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eMinor).isAlive())
 		return false;
 
@@ -12119,7 +12119,7 @@ bool CvGame::DoRequestEmergencyProposalWithAidPoints(PlayerTypes eMajor, PlayerT
 	if(eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS)
 		return false;
 
-	// A dead city-state has no seat to sell: this entry point is also reachable from Lua
+	// A dead city-state cannot hand out a proposal slot: this entry point is also reachable from Lua
 	if(!GET_PLAYER(eMajor).isAlive() || !GET_PLAYER(eMinor).isAlive())
 		return false;
 
