@@ -125,6 +125,9 @@
 // Push various hard-coded values controlling the AI out into XML - see DB/CONFIG/AiInXml.sql for specific values
 #define MOD_CONFIG_AI_IN_XML                        gCustomMods.isCONFIG_AI_IN_XML()
 
+// Exe interop framework: resolves addresses in the running game EXE
+#define MOD_BIN_HOOKS                               gCustomMods.isBIN_HOOKS()
+
 #define MOD_GLOBAL_INTERNAL_TRADE_ROUTE_BONUS_FROM_ORIGIN_CITY gCustomMods.isGLOBAL_INTERNAL_TRADE_ROUTE_BONUS_FROM_ORIGIN_CITY()
 
 // If A declares war on B that preempts a co-op war, A is locked into the war for the same number of turns as if they had agreed to the co-op war (v86) 
@@ -1730,6 +1733,7 @@ public:
 
 	MOD_OPT_DECL(CONFIG_GAME_IN_XML);
 	MOD_OPT_DECL(CONFIG_AI_IN_XML);
+	MOD_OPT_DECL(BIN_HOOKS);
 
 	MOD_OPT_DECL(BUGFIX_DUMMY_POLICIES);
 	MOD_OPT_DECL(BUGFIX_RADARING);

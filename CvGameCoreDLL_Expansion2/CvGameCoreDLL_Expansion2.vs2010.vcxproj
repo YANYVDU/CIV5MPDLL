@@ -348,11 +348,16 @@
     <ClCompile Include="CvDllVictoryInfo.cpp" />
     <ClCompile Include="CvDllWorldBuilderMapLoader.cpp" />
     <ClCompile Include="CvDllWorldInfo.cpp" />
+    <ClCompile Include="Exe\CvExe.cpp" />
+    <ClCompile Include="Exe\CvExeApi.cpp" />
+    <ClCompile Include="Exe\CvExeBuild.cpp" />
+    <ClCompile Include="Exe\CvExeSymbols.cpp" />
     <ClCompile Include="Lua\CvLuaArea.cpp" />
     <ClCompile Include="Lua\CvLuaArgsHandle.cpp" />
     <ClCompile Include="Lua\CvLuaCity.cpp" />
     <ClCompile Include="Lua\CvLuaDeal.cpp" />
     <ClCompile Include="Lua\CvLuaEnums.cpp" />
+    <ClCompile Include="Lua\CvLuaExe.cpp" />
     <ClCompile Include="Lua\CvLuaFractal.cpp" />
     <ClCompile Include="Lua\CvLuaGame.cpp" />
     <ClCompile Include="Lua\CvLuaGameInfo.cpp" />
@@ -366,6 +371,11 @@
     <ClCompile Include="Lua\CvLuaUnit.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Exe\CvExe.h" />
+    <ClInclude Include="Exe\CvExeAddresses.h" />
+    <ClInclude Include="Exe\CvExeApi.h" />
+    <ClInclude Include="Exe\CvExeBuild.h" />
+    <ClInclude Include="Exe\CvExeSymbols.h" />
     <ClInclude Include="..\CvGameCoreDLLUtil\include\CustomModsGlobal.h" />
     <ClInclude Include="..\CvGameCoreDLLUtil\include\CvAssert.h" />
     <ClInclude Include="..\CvGameCoreDLLUtil\include\CvDllInterfaces.h" />
@@ -630,6 +640,7 @@
     <ClInclude Include="Lua\CvLuaCity.h" />
     <ClInclude Include="Lua\CvLuaDeal.h" />
     <ClInclude Include="Lua\CvLuaEnums.h" />
+    <ClInclude Include="Lua\CvLuaExe.h" />
     <ClInclude Include="Lua\CvLuaFractal.h" />
     <ClInclude Include="Lua\CvLuaGame.h" />
     <ClInclude Include="Lua\CvLuaGameInfo.h" />

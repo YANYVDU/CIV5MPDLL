@@ -21,6 +21,7 @@
 #include "CvLuaGame.h"
 #include "CvLuaPlayer.h"
 #include "CvLuaTeam.h"
+#include "CvLuaExe.h"
 
 //------------------------------------------------------------------------------
 // Utility methods
@@ -47,6 +48,7 @@ void LuaSupport::RegisterScriptData(lua_State* L)
 	CvLuaGame::Register(L);
 	CvLuaPlayer::Register(L);
 	CvLuaTeam::Register(L);
+	CvLuaExe::RegisterGlobals(L);
 }
 
 //------------------------------------------------------------------------------

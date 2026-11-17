@@ -30,6 +30,9 @@
 
     <Row Class="5" Name="GLOBAL_EARLY_COOP_WAR_LOCK" Value="0"/>
 
+    <!-- Exe interop framework (YieldIconManager culling, etc) -->
+    <Row Class="5" Name="BIN_HOOKS" Value="1"/>
+
     <!-- Changes the stacking limits based on what the tile is (city, fort, plain, etc) (v19) -->
     <!-- See also: "Global - 2 Units Per Fort" -->
     <!-- See also: "Global - 3 Units Per City" -->
