@@ -1771,6 +1771,50 @@ void CvGameTrade::HideTemporaryPopupTradeRoute(int iPlotX, int iPlotY, TradeConn
 }
 
 //	----------------------------------------------------------------------------
+/// Send a route to the EXE's trade route overlay, but only if the active player owns it.
+/// The EXE keeps at most 256 route visuals for the whole game and draws only the active player's,
+/// so the other players' routes would fill its table and the active player's new routes would not be drawn.
+void CvGameTrade::SendTradeRouteVisual(int iIndex) const
+{
+	if (iIndex < 0 || iIndex >= (int)m_aTradeConnections.size())
+		return;
+
+	const TradeConnection& kConnection = m_aTradeConnections[iIndex];
+	if (kConnection.m_eOriginOwner != GC.getGame().getActivePlayer())
+		return;
+
+	int nPlots = std::min(MAX_PLOTS_TO_DISPLAY, (int)kConnection.m_aPlotList.size());
+	if (nPlots <= 0)
+		return;
+
+	int plotsX[MAX_PLOTS_TO_DISPLAY];
+	int plotsY[MAX_PLOTS_TO_DISPLAY];
+	for (int i = 0; i < nPlots; i++)
+	{
+		plotsX[i] = kConnection.m_aPlotList[i].m_iX;
+		plotsY[i] = kConnection.m_aPlotList[i].m_iY;
+	}
+
+	gDLL->TradeVisuals_NewRoute(iIndex, kConnection.m_eOriginOwner, kConnection.m_eConnectionType, nPlots, plotsX, plotsY);
+	gDLL->TradeVisuals_UpdateRouteDirection(iIndex, kConnection.m_bTradeUnitMovingForward);
+}
+
+//	----------------------------------------------------------------------------
+/// After the active player changed (hotseat, observer): drop the old route visuals and send the new active player's
+void CvGameTrade::RefreshTradeRouteVisuals() const
+{
+	for (int i = 0; i < (int)m_aTradeConnections.size(); i++)
+	{
+		if (m_aTradeConnections[i].m_aPlotList.size() > 0)
+		{
+			// a route that was never sent is not in the EXE's table, and destroying it there does nothing
+			gDLL->TradeVisuals_DestroyRoute(i, m_aTradeConnections[i].m_eOriginOwner);
+			SendTradeRouteVisual(i);
+		}
+	}
+}
+
+//	----------------------------------------------------------------------------
 CvString CvGameTrade::GetLogFileName() const
 {
 	CvString strLogName;
@@ -1800,10 +1844,6 @@ void CvGameTrade::LogTradeMsg(CvString& strMsg)
 /// Serialization read
 FDataStream& operator>>(FDataStream& loadFrom, CvGameTrade& writeTo)
 {
-	int plotsX[MAX_PLOTS_TO_DISPLAY];
-	int plotsY[MAX_PLOTS_TO_DISPLAY];
-	int nPlots;
-
 	uint uiVersion;
 	loadFrom >> uiVersion;
 	MOD_SERIALIZE_INIT_READ(loadFrom);
@@ -1866,21 +1906,10 @@ FDataStream& operator>>(FDataStream& loadFrom, CvGameTrade& writeTo)
 			writeTo.m_aTradeConnections[i].m_aPlotList.push_back(kTradeConnectionPlot);
 			loadFrom >> writeTo.m_aTradeConnections[i].m_aPlotList[i2].m_iX;
 			loadFrom >> writeTo.m_aTradeConnections[i].m_aPlotList[i2].m_iY;
-			
-			if (i2 < MAX_PLOTS_TO_DISPLAY) {
-				plotsX[i2] = writeTo.m_aTradeConnections[i].m_aPlotList[i2].m_iX;
-				plotsY[i2] = writeTo.m_aTradeConnections[i].m_aPlotList[i2].m_iY;
-			}
 		}
 
-		nPlots = iNum2;
-		if (nPlots > 0)
-		{
-			if (nPlots > MAX_PLOTS_TO_DISPLAY)
-				nPlots = MAX_PLOTS_TO_DISPLAY;
-			gDLL->TradeVisuals_NewRoute(i,writeTo.m_aTradeConnections[i].m_eOriginOwner,writeTo.m_aTradeConnections[i].m_eConnectionType,nPlots,plotsX,plotsY);
-			gDLL->TradeVisuals_UpdateRouteDirection(i, writeTo.m_aTradeConnections[i].m_bTradeUnitMovingForward);
-		}
+		// The EXE only draws the active player's routes; send only those (EXE table holds at most 256).
+		writeTo.SendTradeRouteVisual(i);
 
 		for (uint ui = 0; ui < NUM_YIELD_TYPES; ui++)
 		{
@@ -3423,8 +3452,8 @@ bool CvPlayerTrade::CreateTradeRoute(CvCity* pOriginCity, CvCity* pDestCity, Dom
 #endif
 
 			}
-			gDLL->TradeVisuals_NewRoute(iRouteIndex, m_pPlayer->GetID(),pTrade->m_aTradeConnections[iRouteIndex].m_eConnectionType, nPlots, plotsX, plotsY);
-			gDLL->TradeVisuals_UpdateRouteDirection(iRouteIndex, pTrade->m_aTradeConnections[iRouteIndex].m_bTradeUnitMovingForward);
+			// The EXE only draws the active player's routes; SendTradeRouteVisual gates on that.
+			pTrade->SendTradeRouteVisual(iRouteIndex);
 
 			pOriginCity->UpdateAllNonPlotYields();
 			pDestCity->UpdateAllNonPlotYields();

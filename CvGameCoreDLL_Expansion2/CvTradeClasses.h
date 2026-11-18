@@ -137,6 +137,8 @@ public:
 
 	void DisplayTemporaryPopupTradeRoute(int iPlotX, int iPlotY, TradeConnectionType type, DomainTypes eDomain);
 	void HideTemporaryPopupTradeRoute(int iPlotX, int iPlotY, TradeConnectionType type);
+	void SendTradeRouteVisual(int iIndex) const;
+	void RefreshTradeRouteVisuals() const;
 
 	CvString GetLogFileName() const;
 	void LogTradeMsg(CvString& strMsg);
