@@ -6729,6 +6729,35 @@ void CvEspionageAI::EvaluateDiplomatSpies(void)
 	}
 }
 
+// Read one of the per-major-civ counters into the slots Reset() has already filled. CvPlayer::Read
+// resets the player before reading, so CvEspionageAI::Reset() has already put MAX_MAJOR_CIVS defaults
+// in place when the loader runs; appending the saved values after them left every indexed reader on
+// the defaults (after a load the AI forgot the spies it caught, killed and lost) and made each save
+// written after a load one MAX_MAJOR_CIVS longer. A save that has already grown holds the live values
+// first and stale copies after them, so keep the first MAX_MAJOR_CIVS and skip the tail; such saves
+// shrink back to the normal size on the next save. The save format is unchanged.
+static void ReadEspionageAIVector(FDataStream& loadFrom, FStaticVector<int, MAX_MAJOR_CIVS, false, c_eCiv5GameplayDLL>& aiValues, int iDefault)
+{
+	aiValues.clear();
+	for(uint ui = 0; ui < MAX_MAJOR_CIVS; ui++)
+	{
+		aiValues.push_back(iDefault);
+	}
+
+	uint uiCount = 0;
+	loadFrom >> uiCount;
+	for(uint ui = 0; ui < uiCount; ui++)
+	{
+		int iValue = 0;
+		loadFrom >> iValue;
+
+		if(ui < aiValues.size())
+		{
+			aiValues[(int)ui] = iValue;
+		}
+	}
+}
+
 // serialization read
 FDataStream& operator>>(FDataStream& loadFrom, CvEspionageAI& writeTo)
 {
@@ -6736,56 +6765,13 @@ FDataStream& operator>>(FDataStream& loadFrom, CvEspionageAI& writeTo)
 	loadFrom >> uiVersion;
 	MOD_SERIALIZE_INIT_READ(loadFrom);
 
-	uint uiCount;
-	loadFrom >> uiCount;
-	int iValue;
-	for(uint ui = 0; ui < uiCount; ui++)
-	{
-		loadFrom >> iValue;
-		writeTo.m_aiCivOutOfTechTurn.push_back(iValue);
-	}
-
-	loadFrom >> uiCount;
-	for(uint ui = 0; ui < uiCount; ui++)
-	{
-		loadFrom >> iValue;
-		writeTo.m_aiNumSpiesCaught.push_back(iValue);
-	}
-
-	loadFrom >> uiCount;
-	for(uint ui = 0; ui < uiCount; ui++)
-	{
-		loadFrom >> iValue;
-		writeTo.m_aiNumSpiesKilled.push_back(iValue);
-	}
-
-	loadFrom >> uiCount;
-	for(uint ui = 0; ui < uiCount; ui++)
-	{
-		loadFrom >> iValue;
-		writeTo.m_aiNumSpiesDied.push_back(iValue);
-	}
-
-	loadFrom >> uiCount;
-	for(uint ui = 0; ui < uiCount; ui++)
-	{
-		loadFrom >> iValue;
-		writeTo.m_aiTurnLastSpyCaught.push_back(iValue);
-	}
-
-	loadFrom >> uiCount;
-	for(uint ui = 0; ui < uiCount; ui++)
-	{
-		loadFrom >> iValue;
-		writeTo.m_aiTurnLastSpyKilled.push_back(iValue);
-	}
-
-	loadFrom >> uiCount;
-	for(uint ui = 0; ui < uiCount; ui++)
-	{
-		loadFrom >> iValue;
-		writeTo.m_aiTurnLastSpyDied.push_back(iValue);
-	}
+	ReadEspionageAIVector(loadFrom, writeTo.m_aiCivOutOfTechTurn, -1);
+	ReadEspionageAIVector(loadFrom, writeTo.m_aiNumSpiesCaught, 0);
+	ReadEspionageAIVector(loadFrom, writeTo.m_aiNumSpiesKilled, 0);
+	ReadEspionageAIVector(loadFrom, writeTo.m_aiNumSpiesDied, 0);
+	ReadEspionageAIVector(loadFrom, writeTo.m_aiTurnLastSpyCaught, -1);
+	ReadEspionageAIVector(loadFrom, writeTo.m_aiTurnLastSpyKilled, -1);
+	ReadEspionageAIVector(loadFrom, writeTo.m_aiTurnLastSpyDied, -1);
 
 	loadFrom >> writeTo.m_bUNCountdownStarted;
 	loadFrom >> writeTo.m_iTurnEspionageStarted;
