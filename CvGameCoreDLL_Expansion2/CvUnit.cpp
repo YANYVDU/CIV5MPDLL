@@ -14391,10 +14391,10 @@ int CvUnit::upgradePrice(UnitTypes eUnit) const
 	CvTechEntry* pkTechInfo = GC.getTechInfo(eTech);
 	if(pkTechInfo)
 	{
-		const EraTypes eUpgradeEra = (EraTypes) pkTechInfo->GetEra();
+		const int iUpgradeEra = pkTechInfo->GetEra();
 
 		double fMultiplier = 1.0f;
-		fMultiplier += (eUpgradeEra* /*0.3*/ GC.getUNIT_UPGRADE_COST_MULTIPLIER_PER_ERA());
+		fMultiplier += (iUpgradeEra* /*0.3*/ GC.getUNIT_UPGRADE_COST_MULTIPLIER_PER_ERA());
 
 		iPrice = int(iPrice * fMultiplier);
 	}
