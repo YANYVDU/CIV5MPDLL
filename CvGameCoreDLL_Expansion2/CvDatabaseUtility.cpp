@@ -56,6 +56,296 @@ Database::Results* CvDatabaseUtility::GetResults(const std::string& strKey)
 	return NULL;
 }
 //------------------------------------------------------------------------------
+#if defined(_WIN32)
+namespace
+{
+// The EXE registers every *.Civ5Pkg below its Assets folder (its package finder searches the folder
+// recursively) without checking its version. A registered package's folder joins the file catalog, so
+// an XML file there with the name of a base game database file replaces that file at every start,
+// whatever the Mods menu says; that is also how a modpack brings its own database. An old modpack or
+// an old copy of another mod left below Assets\DLC therefore sets up its own version of the tables
+// this DLL reads, and verifying the game files does not remove it.
+const char* const s_aszFiraxisPackageIDs[] =
+{
+	"293C1EE3-1176-44f6-AC1F-59663826DE74", // DLC_01
+	"B685D5DE-7CCA-4e75-81B4-2F60754E6330", // DLC_02
+	"ECF7C605-BA11-4CAC-8D80-D71306AAC471", // DLC_03
+	"B3030D39-C0D8-4bc7-91B1-7AD1CAF585AB", // DLC_04
+	"112C22B2-5308-42b6-B734-171CCAB3037B", // DLC_05
+	"BBB0D085-A0B1-4475-B007-3E549CF3ADC3", // DLC_06
+	"EA67AED5-5859-4875-BF3A-360FE9E55D1B", // DLC_07
+	"7459BA32-5764-44ae-8E95-01AD0E0EFD48", // DLC_Deluxe
+	"3F49DF54-68B6-44d1-A930-A168628FAA59", // DLC_SP_Maps
+	"46EAEFFC-7B1D-443d-BFC8-F825DFEFB094", // DLC_SP_Maps_2
+	"4255F5F7-D3AB-4e55-ACEE-4670082040ED", // DLC_SP_Maps_3
+	"0E3751A1-F840-4e1b-9706-519BF484E59D", // Expansion
+	"6DA07636-4123-4018-B643-6575B4EC336B", // Expansion2
+	"8871E748-29A4-4910-8C57-8C99E32D0167", // Shared
+	"CBE91AF6-0683-4326-BC77-58BB489E509F", // Tablet
+};
+
+struct CvContentPackage
+{
+	std::string strFile;         // relative to the game folder
+	std::string strName;
+	std::string strGameplayFile; // first database file in the package folder, empty if there is none
+};
+
+std::string WideToUtf8(const wchar_t* wszText)
+{
+	if(wszText == NULL)
+	{
+		return std::string();
+	}
+
+	const int iLength = WideCharToMultiByte(CP_UTF8, 0, wszText, -1, NULL, 0, NULL, NULL);
+	if(iLength <= 1)
+	{
+		return std::string();
+	}
+
+	std::string strResult(iLength - 1, '\0');
+	WideCharToMultiByte(CP_UTF8, 0, wszText, -1, &strResult[0], iLength, NULL, NULL);
+	return strResult;
+}
+
+bool IsFiraxisPackageID(const std::string& strID)
+{
+	for(size_t i = 0; i < _countof(s_aszFiraxisPackageIDs); i++)
+	{
+		if(_stricmp(strID.c_str(), s_aszFiraxisPackageIDs[i]) == 0)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+// Read a small text file whole; empty on failure or if larger than cchMax.
+std::string ReadWholeFile(const std::wstring& strPath, size_t cchMax)
+{
+	std::string strContents;
+
+	FILE* pFile = NULL;
+	if(_wfopen_s(&pFile, strPath.c_str(), L"rb") != 0 || pFile == NULL)
+	{
+		return strContents;
+	}
+
+	strContents.resize(cchMax);
+	const size_t cbRead = fread(&strContents[0], 1, cchMax, pFile);
+	fclose(pFile);
+	strContents.resize(cbRead);
+
+	return strContents;
+}
+
+// Text between the first "<szTag>" and the matching "</szTag>" at or after uiFrom.
+std::string GetTagText(const std::string& strXml, const char* szTag, std::string::size_type uiFrom = 0)
+{
+	std::string strOpen = "<";
+	strOpen += szTag;
+	strOpen += ">";
+
+	std::string::size_type uiStart = strXml.find(strOpen, uiFrom);
+	if(uiStart == std::string::npos)
+	{
+		return std::string();
+	}
+	uiStart += strOpen.size();
+
+	std::string strClose = "</";
+	strClose += szTag;
+	strClose += ">";
+
+	std::string::size_type uiEnd = strXml.find(strClose, uiStart);
+	if(uiEnd == std::string::npos)
+	{
+		return std::string();
+	}
+
+	return strXml.substr(uiStart, uiEnd - uiStart);
+}
+
+// First XML file below strDir that defines game data, relative to strDir; empty if there is none.
+std::wstring FindDatabaseXml(const std::wstring& strDir, int iDepth)
+{
+	if(iDepth > 8)
+	{
+		return std::wstring();
+	}
+
+	WIN32_FIND_DATAW kFindData;
+	HANDLE hFind = FindFirstFileW((strDir + L"\\*").c_str(), &kFindData);
+	if(hFind == INVALID_HANDLE_VALUE)
+	{
+		return std::wstring();
+	}
+
+	std::wstring strFound;
+
+	do
+	{
+		if(wcscmp(kFindData.cFileName, L".") == 0 || wcscmp(kFindData.cFileName, L"..") == 0)
+		{
+			continue;
+		}
+
+		const std::wstring strEntry = strDir + L"\\" + kFindData.cFileName;
+
+		if((kFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+		{
+			strFound = FindDatabaseXml(strEntry, iDepth + 1);
+		}
+		else
+		{
+			const size_t cchName = wcslen(kFindData.cFileName);
+			if(cchName > 4 && _wcsicmp(kFindData.cFileName + cchName - 4, L".xml") == 0)
+			{
+				const std::string strXml = ReadWholeFile(strEntry, 512 * 1024);
+				if(strXml.find("<GameData") != std::string::npos)
+				{
+					strFound = kFindData.cFileName;
+				}
+			}
+		}
+
+		if(!strFound.empty())
+		{
+			break;
+		}
+	}
+	while(FindNextFileW(hFind, &kFindData));
+
+	FindClose(hFind);
+	return strFound;
+}
+
+void FindContentPackages(const std::wstring& strDir, const std::string& strRelative, int iDepth, std::vector<CvContentPackage>& vPackages)
+{
+	if(iDepth > 8)
+	{
+		return;
+	}
+
+	WIN32_FIND_DATAW kFindData;
+	HANDLE hFind = FindFirstFileW((strDir + L"\\*").c_str(), &kFindData);
+	if(hFind == INVALID_HANDLE_VALUE)
+	{
+		return;
+	}
+
+	do
+	{
+		if(wcscmp(kFindData.cFileName, L".") == 0 || wcscmp(kFindData.cFileName, L"..") == 0)
+		{
+			continue;
+		}
+
+		const std::wstring strEntry = strDir + L"\\" + kFindData.cFileName;
+		const std::string strEntryRelative = strRelative.empty() ? WideToUtf8(kFindData.cFileName) : strRelative + "\\" + WideToUtf8(kFindData.cFileName);
+
+		if((kFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+		{
+			FindContentPackages(strEntry, strEntryRelative, iDepth + 1, vPackages);
+		}
+		else
+		{
+			const size_t cchName = wcslen(kFindData.cFileName);
+			if(cchName <= 8 || _wcsicmp(kFindData.cFileName + cchName - 8, L".Civ5Pkg") != 0)
+			{
+				continue;
+			}
+
+			const std::string strXml = ReadWholeFile(strEntry, 512 * 1024);
+			if(strXml.empty())
+			{
+				continue;
+			}
+
+			std::string strID = GetTagText(strXml, "PackageID");
+			if(strID.empty())
+			{
+				strID = GetTagText(strXml, "ID");
+			}
+
+			// Firaxis packages are the reference data: they are what the game is supposed to read.
+			if(IsFiraxisPackageID(strID))
+			{
+				continue;
+			}
+
+			CvContentPackage kPackage;
+			kPackage.strFile = strEntryRelative;
+			kPackage.strName = GetTagText(strXml, "Name");
+			if(kPackage.strName.empty())
+			{
+				kPackage.strName = GetTagText(strXml, "Value");
+			}
+
+			kPackage.strGameplayFile = WideToUtf8(FindDatabaseXml(strDir, 0).c_str());
+
+			vPackages.push_back(kPackage);
+		}
+	}
+	while(FindNextFileW(hFind, &kFindData));
+
+	FindClose(hFind);
+}
+
+// Every package below the game's Assets folder that Firaxis did not ship, scanned once per DLL load.
+const std::vector<CvContentPackage>& GetContentPackages()
+{
+	static std::vector<CvContentPackage> s_vPackages;
+	static bool s_bScanned = false;
+
+	if(!s_bScanned)
+	{
+		s_bScanned = true;
+
+		wchar_t wszExePath[MAX_PATH];
+		if(GetModuleFileNameW(NULL, wszExePath, _countof(wszExePath)) > 0)
+		{
+			std::wstring strAssets = wszExePath;
+			const std::wstring::size_type uiSlash = strAssets.find_last_of(L'\\');
+			if(uiSlash != std::wstring::npos)
+			{
+				strAssets = strAssets.substr(0, uiSlash) + L"\\Assets";
+				FindContentPackages(strAssets, std::string(), 0, s_vPackages);
+			}
+		}
+	}
+
+	return s_vPackages;
+}
+
+// One line per package that can stand in for the game's database, for the failure log.
+std::string DescribeSuspiciousPackages()
+{
+	std::string strSummary;
+
+	const std::vector<CvContentPackage>& vPackages = GetContentPackages();
+	for(std::vector<CvContentPackage>::const_iterator it = vPackages.begin(); it != vPackages.end(); ++it)
+	{
+		strSummary += "\n  ";
+		strSummary += it->strFile;
+		if(!it->strName.empty())
+		{
+			strSummary += " (";
+			strSummary += it->strName;
+			strSummary += ")";
+		}
+		if(!it->strGameplayFile.empty())
+		{
+			strSummary += " replaces game database files with ";
+			strSummary += it->strGameplayFile;
+		}
+	}
+	return strSummary;
+}
+}
+#endif
+//------------------------------------------------------------------------------
 Database::Results* CvDatabaseUtility::PrepareResults(const std::string& strKey, const char* szStmt)
 {
 	Database::Results* pResults = new Database::Results();
@@ -72,6 +362,20 @@ Database::Results* CvDatabaseUtility::PrepareResults(const std::string& strKey, 
 	else
 	{
 		delete pResults;
+
+		// A failed prepare here means the gameplay database is missing tables or columns (corrupted
+		// install, broken mod, or a package below Assets that sets up an older version of the tables).
+		// Most callers dereference the NULL we return unchecked, so record why it failed before that
+		// turns into an unexplained NULL dereference somewhere else.
+#if defined(_WIN32)
+		const std::string strPackages = DescribeSuspiciousPackages();
+		CUSTOMLOG("Failed to prepare database query '%s': %s%s\nQuery: %s",
+			strKey.c_str(), GetErrorMessage(),
+			strPackages.empty() ? " (no package by another author below Assets)" : strPackages.c_str(),
+			szStmt);
+#else
+		CUSTOMLOG("Failed to prepare database query '%s': %s\nQuery: %s", strKey.c_str(), GetErrorMessage(), szStmt);
+#endif
 	}
 
 	return NULL;
