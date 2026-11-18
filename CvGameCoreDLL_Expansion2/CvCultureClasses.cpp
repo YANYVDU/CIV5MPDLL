@@ -878,7 +878,15 @@ void CvPlayerCulture::Init(CvPlayer* pPlayer)
 	ResetDigCompletePlots();
 
 	m_iLastTurnLifetimeCulture = 0;
+
+	// The public opinion values are only set by DoPublicOpinion, which returns early without an
+	// ideology; start them at the values it resets them to so nothing reads an uninitialized member.
+	m_eOpinion = NO_PUBLIC_OPINION;
+	m_ePreferredIdeology = NO_POLICY_BRANCH_TYPE;
 	m_iOpinionUnhappiness = 0;
+	m_strOpinionTooltip = "";
+	m_strOpinionUnhappinessTooltip = "";
+	m_eOpinionBiggestInfluence = NO_PLAYER;
 
 	for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
 	{
