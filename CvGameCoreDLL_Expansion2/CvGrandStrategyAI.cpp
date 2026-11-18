@@ -1292,15 +1292,8 @@ void CvGrandStrategyAI::LogGuessOtherPlayerGrandStrategy(const FStaticVector< in
 			CvAIGrandStrategyXMLEntry* pEntry = GC.getAIGrandStrategyInfo(eGrandStrategy);
 			const char* szGrandStrategyType = (pEntry != NULL)? pEntry->GetType() : "Unknown Strategy";
 
-			// GrandStrategy Info
-			if(GetActiveGrandStrategy() == eGrandStrategy)
-			{
-				strTemp.Format("*** %s, %d", szGrandStrategyType, iPriority);
-			}
-			else
-			{
-				strTemp.Format("%s, %d", szGrandStrategyType, iPriority);
-			}
+			// This is the guess for another player: our own active strategy has nothing to highlight here.
+			strTemp.Format("%s, %d", szGrandStrategyType, iPriority);
 			otherPlayerName = GET_PLAYER(ePlayer).getCivilizationShortDescription();
 			strOutBuf = strBaseString + otherPlayerName + ", " + strTemp;
 
