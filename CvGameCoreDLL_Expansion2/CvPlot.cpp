@@ -12001,7 +12001,13 @@ CvString CvPlot::getScriptData() const
 void CvPlot::setScriptData(const char* szNewValue)
 {
 	SAFE_FREE(&m_szScriptData);
-	m_szScriptData = _strdup(szNewValue);
+
+	// Lua's Plot:SetScriptData(nil) arrives here as NULL, and _strdup(NULL) would trip the CRT's
+	// invalid parameter handler; clearing the data is the sensible reading anyway.
+	if(szNewValue != NULL)
+	{
+		m_szScriptData = _strdup(szNewValue);
+	}
 }
 
 #if defined(SHOW_PLOT_POPUP)

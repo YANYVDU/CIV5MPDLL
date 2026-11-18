@@ -104,8 +104,9 @@ std::string WideToUtf8(const wchar_t* wszText)
 		return std::string();
 	}
 
-	std::string strResult(iLength - 1, '\0');
+	std::string strResult(iLength, '\0');
 	WideCharToMultiByte(CP_UTF8, 0, wszText, -1, &strResult[0], iLength, NULL, NULL);
+	strResult.resize(iLength - 1);	// drop the terminator WideCharToMultiByte wrote
 	return strResult;
 }
 
@@ -140,35 +141,79 @@ std::string ReadWholeFile(const std::wstring& strPath, size_t cchMax)
 	return strContents;
 }
 
-// Text between the first "<szTag>" and the matching "</szTag>" at or after uiFrom.
-std::string GetTagText(const std::string& strXml, const char* szTag, std::string::size_type uiFrom = 0)
+// Text between the first opening tag named szTag (attributes allowed) and its closing tag.
+std::string GetElementText(const std::string& strXml, const char* szTag, std::string::size_type uiFrom = 0)
 {
 	std::string strOpen = "<";
 	strOpen += szTag;
-	strOpen += ">";
 
 	std::string::size_type uiStart = strXml.find(strOpen, uiFrom);
 	if(uiStart == std::string::npos)
 	{
 		return std::string();
 	}
-	uiStart += strOpen.size();
+
+	// Reject a longer tag that merely starts with this one, such as <NameX> for <Name>.
+	const std::string::size_type uiAfter = uiStart + strOpen.size();
+	if(uiAfter < strXml.size())
+	{
+		const char cNext = strXml[uiAfter];
+		if(cNext != '>' && cNext != ' ' && cNext != '\t' && cNext != '\r' && cNext != '\n')
+		{
+			return std::string();
+		}
+	}
+
+	const std::string::size_type uiOpenEnd = strXml.find('>', uiAfter);
+	if(uiOpenEnd == std::string::npos)
+	{
+		return std::string();
+	}
 
 	std::string strClose = "</";
 	strClose += szTag;
 	strClose += ">";
 
-	std::string::size_type uiEnd = strXml.find(strClose, uiStart);
+	const std::string::size_type uiEnd = strXml.find(strClose, uiOpenEnd + 1);
 	if(uiEnd == std::string::npos)
 	{
 		return std::string();
 	}
 
-	return strXml.substr(uiStart, uiEnd - uiStart);
+	return strXml.substr(uiOpenEnd + 1, uiEnd - uiOpenEnd - 1);
+}
+
+std::string TrimWhitespace(const std::string& strText)
+{
+	const std::string::size_type uiStart = strText.find_first_not_of(" \t\r\n");
+	if(uiStart == std::string::npos)
+	{
+		return std::string();
+	}
+
+	const std::string::size_type uiEnd = strText.find_last_not_of(" \t\r\n");
+	return strText.substr(uiStart, uiEnd - uiStart + 1);
+}
+
+// Package GUIDs are written as {XXXXXXXX-....-XXXXXXXXXXXX}; compare without the braces.
+std::string TrimBraces(const std::string& strText)
+{
+	std::string strResult = TrimWhitespace(strText);
+
+	if(!strResult.empty() && strResult[0] == '{')
+	{
+		strResult.erase(0, 1);
+	}
+	if(!strResult.empty() && strResult[strResult.size() - 1] == '}')
+	{
+		strResult.erase(strResult.size() - 1);
+	}
+
+	return strResult;
 }
 
 // First XML file below strDir that defines game data, relative to strDir; empty if there is none.
-std::wstring FindDatabaseXml(const std::wstring& strDir, int iDepth)
+std::wstring FindDatabaseXml(const std::wstring& strDir, const std::wstring& strRelative, int iDepth)
 {
 	if(iDepth > 8)
 	{
@@ -191,21 +236,31 @@ std::wstring FindDatabaseXml(const std::wstring& strDir, int iDepth)
 			continue;
 		}
 
+		// A junction or symbolic link can point back up the tree, and the depth limit alone would
+		// then rescan the same files; skip them.
+		if((kFindData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+		{
+			continue;
+		}
+
 		const std::wstring strEntry = strDir + L"\\" + kFindData.cFileName;
+		const std::wstring strEntryRelative = strRelative.empty() ? std::wstring(kFindData.cFileName) : strRelative + L"\\" + kFindData.cFileName;
 
 		if((kFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
 		{
-			strFound = FindDatabaseXml(strEntry, iDepth + 1);
+			strFound = FindDatabaseXml(strEntry, strEntryRelative, iDepth + 1);
 		}
 		else
 		{
 			const size_t cchName = wcslen(kFindData.cFileName);
 			if(cchName > 4 && _wcsicmp(kFindData.cFileName + cchName - 4, L".xml") == 0)
 			{
-				const std::string strXml = ReadWholeFile(strEntry, 512 * 1024);
+				// The root element is at the top of the file; a game data file can be tens of
+				// megabytes, so only its head is read.
+				const std::string strXml = ReadWholeFile(strEntry, 4 * 1024);
 				if(strXml.find("<GameData") != std::string::npos)
 				{
-					strFound = kFindData.cFileName;
+					strFound = strEntryRelative;
 				}
 			}
 		}
@@ -257,19 +312,24 @@ void FindContentPackages(const std::wstring& strDir, const std::string& strRelat
 				continue;
 			}
 
-			const std::string strXml = ReadWholeFile(strEntry, 512 * 1024);
+			const std::string strXml = ReadWholeFile(strEntry, 64 * 1024);
 			if(strXml.empty())
 			{
 				continue;
 			}
 
-			std::string strID = GetTagText(strXml, "PackageID");
+			std::string strID = TrimBraces(GetElementText(strXml, "GUID"));
 			if(strID.empty())
 			{
-				strID = GetTagText(strXml, "ID");
+				strID = TrimBraces(GetElementText(strXml, "PackageID"));
+			}
+			if(strID.empty())
+			{
+				strID = TrimBraces(GetElementText(strXml, "ID"));
 			}
 
 			// Firaxis packages are the reference data: they are what the game is supposed to read.
+			// A package without a readable ID is not skipped: it is worth naming too.
 			if(IsFiraxisPackageID(strID))
 			{
 				continue;
@@ -277,13 +337,16 @@ void FindContentPackages(const std::wstring& strDir, const std::string& strRelat
 
 			CvContentPackage kPackage;
 			kPackage.strFile = strEntryRelative;
-			kPackage.strName = GetTagText(strXml, "Name");
+
+			// The name sits in a <Name><Value language="..."> block.
+			const std::string strNameBlock = GetElementText(strXml, "Name");
+			kPackage.strName = TrimWhitespace(GetElementText(strNameBlock, "Value"));
 			if(kPackage.strName.empty())
 			{
-				kPackage.strName = GetTagText(strXml, "Value");
+				kPackage.strName = TrimWhitespace(strNameBlock);
 			}
 
-			kPackage.strGameplayFile = WideToUtf8(FindDatabaseXml(strDir, 0).c_str());
+			kPackage.strGameplayFile = WideToUtf8(FindDatabaseXml(strDir, std::wstring(), 0).c_str());
 
 			vPackages.push_back(kPackage);
 		}
@@ -301,8 +364,6 @@ const std::vector<CvContentPackage>& GetContentPackages()
 
 	if(!s_bScanned)
 	{
-		s_bScanned = true;
-
 		wchar_t wszExePath[MAX_PATH];
 		if(GetModuleFileNameW(NULL, wszExePath, _countof(wszExePath)) > 0)
 		{
@@ -314,6 +375,9 @@ const std::vector<CvContentPackage>& GetContentPackages()
 				FindContentPackages(strAssets, std::string(), 0, s_vPackages);
 			}
 		}
+
+		// Set last: until the list is complete, another caller must not read it.
+		s_bScanned = true;
 	}
 
 	return s_vPackages;
@@ -361,21 +425,39 @@ Database::Results* CvDatabaseUtility::PrepareResults(const std::string& strKey, 
 	}
 	else
 	{
+		// Read the reason before discarding the result: its destructor goes through the database
+		// layer, which may reset the connection's last error.
+		const std::string strError = GetErrorMessage();
+
 		delete pResults;
 
 		// A failed prepare here means the gameplay database is missing tables or columns (corrupted
 		// install, broken mod, or a package below Assets that sets up an older version of the tables).
 		// Most callers dereference the NULL we return unchecked, so record why it failed before that
 		// turns into an unexplained NULL dereference somewhere else.
+		//
+		// A broken database fails hundreds of queries in a row, so the package list is spelled out
+		// once and merely referred to afterwards.
+		static bool s_bPackagesLogged = false;
+
+		if(s_bPackagesLogged)
+		{
+			CUSTOMLOG("Failed to prepare database query '%s': %s (see the first failure for the package list)\nQuery: %s",
+				strKey.c_str(), strError.c_str(), szStmt);
+		}
+		else
+		{
+			s_bPackagesLogged = true;
 #if defined(_WIN32)
-		const std::string strPackages = DescribeSuspiciousPackages();
-		CUSTOMLOG("Failed to prepare database query '%s': %s%s\nQuery: %s",
-			strKey.c_str(), GetErrorMessage(),
-			strPackages.empty() ? " (no package by another author below Assets)" : strPackages.c_str(),
-			szStmt);
+			const std::string strPackages = DescribeSuspiciousPackages();
+			CUSTOMLOG("Failed to prepare database query '%s': %s%s\nQuery: %s",
+				strKey.c_str(), strError.c_str(),
+				strPackages.empty() ? " (no package by another author below Assets)" : strPackages.c_str(),
+				szStmt);
 #else
-		CUSTOMLOG("Failed to prepare database query '%s': %s\nQuery: %s", strKey.c_str(), GetErrorMessage(), szStmt);
+			CUSTOMLOG("Failed to prepare database query '%s': %s\nQuery: %s", strKey.c_str(), strError.c_str(), szStmt);
 #endif
+		}
 	}
 
 	return NULL;

@@ -1031,9 +1031,17 @@ public:
     __forceinline T*
     deleteNode( T* tData )
     {
+        //  Checked before the pointer arithmetic: mVec[ 0 ] asserts on an empty list, and a stale
+        //  pointer into an emptied list would otherwise underflow the size below to 0xFFFFFFFF
+        if( mVec.size() == 0 )
+        {
+            FAssert( false );
+            return NULL;
+        }
+
         UINT uDeletePos = tData - &mVec[ 0 ];
 
-        //  Not a node of this list (e.g. a stale pointer into an emptied list): shrinking would underflow the size
+        //  Not a node of this list
         if( uDeletePos >= mVec.size() )
         {
             FAssert( false );

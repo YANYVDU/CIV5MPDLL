@@ -18805,6 +18805,11 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 		pOrderNode = getOrderFromQueue(iNum);	// appending can move the queue's storage
 	}
 
+	if(pOrderNode == NULL)
+	{
+		return;
+	}
+
 	// Remember which order this is: finishing it runs code that can change the queue, so the node
 	// pointer cannot be trusted across the switch below.
 	const OrderData order = *pOrderNode;
@@ -18818,11 +18823,11 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 	eCreateProject = NO_PROJECT;
 	eSpecialist = NO_SPECIALIST;
 
-	switch(pOrderNode->eOrderType)
+	switch(order.eOrderType)
 	{
 	case ORDER_TRAIN:
-		eTrainUnit = ((UnitTypes)(pOrderNode->iData1));
-		eTrainAIUnit = ((UnitAITypes)(pOrderNode->iData2));
+		eTrainUnit = ((UnitTypes)(order.iData1));
+		eTrainAIUnit = ((UnitAITypes)(order.iData2));
 		CvAssertMsg(eTrainUnit != NO_UNIT, "eTrainUnit is expected to be assigned a valid unit type");
 		CvAssertMsg(eTrainAIUnit != NO_UNITAI, "eTrainAIUnit is expected to be assigned a valid unit AI type");
 
@@ -18895,7 +18900,7 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 
 	case ORDER_CONSTRUCT:
 	{
-		eConstructBuilding = ((BuildingTypes)(pOrderNode->iData1));
+		eConstructBuilding = ((BuildingTypes)(order.iData1));
 
 		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eConstructBuilding);
 
@@ -19045,7 +19050,7 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 	}
 
 	case ORDER_CREATE:
-		eCreateProject = ((ProjectTypes)(pOrderNode->iData1));
+		eCreateProject = ((ProjectTypes)(order.iData1));
 
 		GET_TEAM(getTeam()).changeProjectMaking(eCreateProject, -1);
 		kOwner.changeProjectMaking(eCreateProject, -1);
@@ -19102,7 +19107,7 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 
 		if(bFinish)
 		{
-			eSpecialist = ((SpecialistTypes)(pOrderNode->iData1));
+			eSpecialist = ((SpecialistTypes)(order.iData1));
 
 #if defined(MOD_EVENTS_CITY)
 			if (MOD_EVENTS_CITY) {
@@ -19129,9 +19134,9 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 	case ORDER_MAINTAIN:
 
 #if defined(MOD_ROG_CORE)
-		if ((ProcessTypes)pOrderNode->iData1 != NO_PROCESS)
+		if ((ProcessTypes)order.iData1 != NO_PROCESS)
 		{
-			CvProcessInfo* pkProcessInfo = GC.getProcessInfo((ProcessTypes)pOrderNode->iData1);
+			CvProcessInfo* pkProcessInfo = GC.getProcessInfo((ProcessTypes)order.iData1);
 			if (pkProcessInfo && pkProcessInfo->getDefenseValue() != 0)
 			{
 				bUpdateStrength = true;
@@ -19152,13 +19157,36 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 		m_unitBeingBuiltForOperation.Invalidate();
 	}
 
-	// Finishing the order runs code (instant yields, AI policy choice, Lua hooks) that can change this queue.
-	// If the order is no longer where it was, something else already removed it: deleting the old node would
-	// remove another order or underflow the queue.
+	// Finishing the order runs code (instant yields, AI policy choice, Lua hooks) that can change this
+	// queue. The re-push above appends, and a hook can insert at the front, which shifts every index.
+	// So look the order up by content instead of trusting its old index, and delete only a match:
+	// deleting a stale node would remove another order or underflow the queue, while not deleting this
+	// one would leave it to be completed a second time.
 	pOrderNode = getOrderFromQueue(iNum);
-	const bool bStillQueued = pOrderNode != NULL && pOrderNode->eOrderType == order.eOrderType && pOrderNode->iData1 == order.iData1 && pOrderNode->iData2 == order.iData2;
-	CvAssertMsg(bStillQueued, "The order was removed from the queue while it was being finished");
-	if(bStillQueued)
+	if(pOrderNode == NULL
+		|| pOrderNode->eOrderType != order.eOrderType
+		|| pOrderNode->iData1 != order.iData1
+		|| pOrderNode->iData2 != order.iData2
+		|| pOrderNode->bSave != order.bSave)
+	{
+		pOrderNode = NULL;
+		for(int i = 0; i < getOrderQueueLength(); i++)
+		{
+			OrderData* pCandidate = getOrderFromQueue(i);
+			if(pCandidate != NULL
+				&& pCandidate->eOrderType == order.eOrderType
+				&& pCandidate->iData1 == order.iData1
+				&& pCandidate->iData2 == order.iData2
+				&& pCandidate->bSave == order.bSave)
+			{
+				pOrderNode = pCandidate;
+				break;
+			}
+		}
+	}
+
+	CvAssertMsg(pOrderNode != NULL, "The order was removed from the queue while it was being finished");
+	if(pOrderNode != NULL)
 	{
 		if(pOrderNode == headOrderQueueNode())
 		{

@@ -1374,8 +1374,9 @@ int CvCitySpecializationAI::AdjustValueBasedOnBuildings(CvCity* pCity, YieldType
 		{
 			iMaxFoodKeptPercent = 99;
 		}
-		// Multiply and divide separately: "100 / (100 - kept)" truncates to an int first,
-		// which turns this into a multiplier of 1 for any kept percent above 50.
+		// Multiply and divide separately: "100 / (100 - kept)" divides in integers first, so the
+		// multiplier is rounded down instead of scaled (a city keeping 40% gets 1 instead of 1.67,
+		// one keeping 60% gets 2 instead of 2.5).
 		iRtnValue *= 100;
 		iRtnValue /= (100 - iMaxFoodKeptPercent);
 	}

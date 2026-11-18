@@ -241,6 +241,10 @@ bool CvAStar::GeneratePath(int iXstart, int iYstart, int iXdest, int iYdest, int
 		}
 		m_vOpenHeap.clear();
 
+		// Every node takes a fresh serial below, so restarting the counter is safe and keeps the
+		// tie-breaking order from depending on how many insertions the process has done so far.
+		m_uiOpenSerialGenerator = 0;
+
 		if(m_pClosed)
 		{
 			while(m_pClosed)
@@ -579,6 +583,8 @@ void CvAStar::OpenHeapSiftDown(int iIndex)
 //	--------------------------------------------------------------------------------
 void CvAStar::AddToOpen(CvAStarNode* addnode)
 {
+	FAssert(addnode->m_iOpenIndex < 0);	// a node already in the heap would corrupt the indices
+
 	addnode->m_eCvAStarListType = CVASTARLIST_OPEN;
 
 	const bool bWasEmpty = m_vOpenHeap.empty();

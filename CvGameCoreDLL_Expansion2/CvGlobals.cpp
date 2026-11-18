@@ -2055,6 +2055,8 @@ static char s_szCrashLogDir[MAX_PATH] = "";
 static bool s_bMiniDumpDisabledByUser = false;
 static bool s_bCrashOptOutsRead = false;
 
+static bool IsMiniDumpDisabledByUser();
+
 static const char* GetCrashLogDir()
 {
 	if(s_szCrashLogDir[0] == '\0')
@@ -2117,7 +2119,7 @@ static void GetModuleAndOffset(DWORD_PTR dwAddress, char* szOut, size_t cchOut)
 	CloseHandle(hSnapshot);
 }
 
-static void AppendToCrashesLog(const EXCEPTION_POINTERS* pep, const char* szDumpPath, bool bDumpWritten)
+static void AppendToCrashesLog(const EXCEPTION_POINTERS* pep)
 {
 	const char* szDir = GetCrashLogDir();
 	CreateDirectoryA(szDir, NULL);
@@ -2148,7 +2150,7 @@ static void AppendToCrashesLog(const EXCEPTION_POINTERS* pep, const char* szDump
 		char szModule[MAX_PATH];
 		GetModuleAndOffset((DWORD_PTR)pRecord->ExceptionAddress, szModule, _countof(szModule));
 
-		fprintf(pLog, "Exception: 0x%08X (%s) at 0x%08X", pRecord->ExceptionCode, ExceptionCodeName(pRecord->ExceptionCode), pRecord->ExceptionAddress);
+		fprintf(pLog, "Exception: 0x%08X (%s) at 0x%08IX", pRecord->ExceptionCode, ExceptionCodeName(pRecord->ExceptionCode), (DWORD_PTR)pRecord->ExceptionAddress);
 		if(szModule[0] != '\0')
 		{
 			fprintf(pLog, " (%s)", szModule);
@@ -2179,18 +2181,42 @@ static void AppendToCrashesLog(const EXCEPTION_POINTERS* pep, const char* szDump
 	kMemory.dwLength = sizeof(kMemory);
 	if(GlobalMemoryStatusEx(&kMemory))
 	{
-		fprintf(pLog, "Memory: %llu MB free of %llu MB physical, %llu MB free of %llu MB virtual\n",
+		fprintf(pLog, "Memory: %I64u MB free of %I64u MB physical, %I64u MB free of %I64u MB virtual\n",
 			kMemory.ullAvailPhys / (1024ULL * 1024ULL), kMemory.ullTotalPhys / (1024ULL * 1024ULL),
 			kMemory.ullAvailVirtual / (1024ULL * 1024ULL), kMemory.ullTotalVirtual / (1024ULL * 1024ULL));
 	}
 
-	if(bDumpWritten && szDumpPath != NULL && szDumpPath[0] != '\0')
+	fflush(pLog);
+	fclose(pLog);
+}
+
+// Appended after the dump attempt: writes the readable part first, so a dump that faults again
+// cannot take the whole report with it.
+static void AppendMinidumpResult(const char* szDumpPath, bool bWritten, DWORD dwError)
+{
+	char szPath[MAX_PATH];
+	if(_snprintf_s(szPath, _countof(szPath), _TRUNCATE, "%s\\crashes.log", GetCrashLogDir()) < 0)
+	{
+		return;
+	}
+
+	FILE* pLog = NULL;
+	if(fopen_s(&pLog, szPath, "a") != 0 || pLog == NULL)
+	{
+		return;
+	}
+
+	if(bWritten && szDumpPath != NULL && szDumpPath[0] != '\0')
 	{
 		fprintf(pLog, "Minidump: %s\n", szDumpPath);
 	}
+	else if(IsMiniDumpDisabledByUser())
+	{
+		fprintf(pLog, "Minidump: disabled by the user\n");
+	}
 	else
 	{
-		fprintf(pLog, "Minidump: not written (disabled by the user or creation failed)\n");
+		fprintf(pLog, "Minidump: not written (error %u)\n", dwError);
 	}
 
 	fflush(pLog);
@@ -2227,23 +2253,27 @@ static void ReadCrashOptOuts()
 	const char* szCacheFolder = (gDLL != NULL) ? gDLL->GetCacheFolderPath() : NULL;
 	if(szCacheFolder != NULL && szCacheFolder[0] != '\0')
 	{
-		char szCachePath[MAX_PATH * 2];
-		if(_snprintf_s(szCachePath, _countof(szCachePath), _TRUNCATE, "%s", szCacheFolder) >= 0)
+		const int iWideLength = MultiByteToWideChar(CP_UTF8, 0, szCacheFolder, -1, NULL, 0);
+		if(iWideLength > 1)
 		{
-			// config.ini sits next to the cache folder, not inside it.
-			char* pSeparator = strrchr(szCachePath, '\\');
-			if(pSeparator == NULL)
+			std::wstring strGameFolder(iWideLength - 1, L'\0');
+			MultiByteToWideChar(CP_UTF8, 0, szCacheFolder, -1, &strGameFolder[0], iWideLength);
+
+			// The path is "...\My Games\Sid Meier's Civilization 5\cache\" — the EXE appends a
+			// separator. Drop the trailing separators, then the "cache" component itself;
+			// config.ini sits next to that folder, not inside it.
+			while(!strGameFolder.empty() && (strGameFolder[strGameFolder.size() - 1] == L'\\' || strGameFolder[strGameFolder.size() - 1] == L'/'))
 			{
-				pSeparator = strrchr(szCachePath, '/');
+				strGameFolder.erase(strGameFolder.size() - 1);
 			}
-
-			if(pSeparator != NULL)
+			const std::wstring::size_type uiSlash = strGameFolder.find_last_of(L"\\/");
+			if(uiSlash != std::wstring::npos)
 			{
-				*pSeparator = '\0';
+				strGameFolder.erase(uiSlash);
+				strGameFolder += L"\\config.ini";
 
-				char szIniPath[MAX_PATH * 2];
-				if(_snprintf_s(szIniPath, _countof(szIniPath), _TRUNCATE, "%s\\config.ini", szCachePath) >= 0 &&
-					GetPrivateProfileIntA("CIV5MPDLL", "CrashMiniDumps", 1, szIniPath) == 0)
+				if(GetFileAttributesW(strGameFolder.c_str()) != INVALID_FILE_ATTRIBUTES &&
+					GetPrivateProfileIntW(L"CIV5MPDLL", L"CrashMiniDumps", 1, strGameFolder.c_str()) == 0)
 				{
 					s_bMiniDumpDisabledByUser = true;
 				}
@@ -2313,21 +2343,37 @@ bool CreateMiniDump(EXCEPTION_POINTERS *pep, char* szDumpPath, size_t cchDumpPat
 	BOOL bDumpWritten = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, mdt, (pep != NULL) ? &mdei : NULL, &userStreams, NULL);
 
 	CloseHandle(hFile);
+
+	// A failed dump must not leave a zero-byte file behind that looks like a usable report.
+	if(bDumpWritten != TRUE)
+	{
+		DeleteFileA(szDumpPath);
+		szDumpPath[0] = '\0';
+	}
+
 	return bDumpWritten == TRUE;
 }
 
 LONG WINAPI CustomFilter(EXCEPTION_POINTERS *ExceptionInfo)
 {
+	// Write the readable report first. MiniDumpWithFullMemory is the step most likely to fault
+	// again (dbghelp walks a stack that is already damaged), and it must not take the only
+	// readable artefact with it.
+	AppendToCrashesLog(ExceptionInfo);
+
 	char szDumpPath[MAX_PATH];
 	szDumpPath[0] = '\0';
 
-	bool bDumpWritten = false;
 	if(!IsMiniDumpDisabledByUser())
 	{
-		bDumpWritten = CreateMiniDump(ExceptionInfo, szDumpPath, _countof(szDumpPath));
+		const bool bDumpWritten = CreateMiniDump(ExceptionInfo, szDumpPath, _countof(szDumpPath));
+		AppendMinidumpResult(szDumpPath, bDumpWritten, bDumpWritten ? 0 : GetLastError());
+	}
+	else
+	{
+		AppendMinidumpResult(NULL, false, 0);
 	}
 
-	AppendToCrashesLog(ExceptionInfo, szDumpPath, bDumpWritten);
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 #endif

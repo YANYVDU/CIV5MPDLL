@@ -18,6 +18,7 @@
 #pragma		once
 
 #include	"CvAStarNode.h"
+#include	<vector>
 
 class CvAStar;
 
