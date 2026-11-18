@@ -220,7 +220,7 @@ void CvPlot::init(int iX, int iY)
 //	--------------------------------------------------------------------------------
 void CvPlot::uninit()
 {
-	SAFE_DELETE_ARRAY(m_szScriptData);
+	SAFE_FREE(&m_szScriptData);	// allocated with _strdup, so it must be freed with free()
 
 #if defined(SHOW_PLOT_POPUP)
 	m_fPopupDelay = 0.5;
@@ -12000,7 +12000,7 @@ CvString CvPlot::getScriptData() const
 //	--------------------------------------------------------------------------------
 void CvPlot::setScriptData(const char* szNewValue)
 {
-	SAFE_DELETE_ARRAY(m_szScriptData);
+	SAFE_FREE(&m_szScriptData);
 	m_szScriptData = _strdup(szNewValue);
 }
 
