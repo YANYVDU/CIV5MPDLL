@@ -10361,10 +10361,11 @@ void CvCity::changeAutomatons(int iChange, bool bReassignPop)
 
 
 //	--------------------------------------------------------------------------------
-long CvCity::getRealPopulation() const
+long long CvCity::getRealPopulation() const
 {
 	VALIDATE_OBJECT
-	return (((long)(pow((double)getPopulation(), 2.8))) * 1000);
+	// 64 bits: from population 183 on, pop^2.8 * 1000 is more than INT_MAX
+	return static_cast<long long>(pow(static_cast<double>(getPopulation()), 2.8)) * 1000;
 }
 
 //	--------------------------------------------------------------------------------

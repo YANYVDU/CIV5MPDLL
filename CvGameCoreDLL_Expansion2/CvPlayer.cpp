@@ -12014,10 +12014,10 @@ void CvPlayer::changeTotalPopulation(int iChange)
 
 
 //	--------------------------------------------------------------------------------
-long CvPlayer::getRealPopulation() const
+long long CvPlayer::getRealPopulation() const
 {
 	const CvCity* pLoopCity;
-	__int64 iTotalPopulation = 0;
+	long long iTotalPopulation = 0;
 	int iLoop = 0;
 
 	for(pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
@@ -12025,12 +12025,7 @@ long CvPlayer::getRealPopulation() const
 		iTotalPopulation += pLoopCity->getRealPopulation();
 	}
 
-	if(iTotalPopulation > INT_MAX)
-	{
-		iTotalPopulation = INT_MAX;
-	}
-
-	return ((long)(iTotalPopulation));
+	return iTotalPopulation;
 }
 
 //	--------------------------------------------------------------------------------

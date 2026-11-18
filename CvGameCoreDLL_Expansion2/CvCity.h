@@ -500,7 +500,7 @@ public:
 	void changeAutomatons(int iChange, bool bReassignPop = true);
 #endif
 
-	long getRealPopulation() const;
+	long long getRealPopulation() const;
 
 	int getHighestPopulation() const;
 	void setHighestPopulation(int iNewValue);

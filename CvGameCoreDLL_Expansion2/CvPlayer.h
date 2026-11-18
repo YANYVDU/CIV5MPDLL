@@ -367,7 +367,7 @@ public:
 	int getTotalPopulation() const;
 	int getAveragePopulation() const;
 	void changeTotalPopulation(int iChange);
-	long getRealPopulation() const;
+	long long getRealPopulation() const;
 
 	int GetNewCityExtraPopulation() const;
 	void ChangeNewCityExtraPopulation(int iChange);
