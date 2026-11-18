@@ -18760,7 +18760,7 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 	UnitTypes eTrainUnit;
 	UnitAITypes eTrainAIUnit;
 	bool bWasFoodProduction;
-	bool bStart;
+	bool bStart = false;
 	bool bMessage;
 	int iCount;
 	int iProductionNeeded;
@@ -18801,7 +18801,12 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 	if(bFinish && pOrderNode->bSave)
 	{
 		pushOrder(pOrderNode->eOrderType, pOrderNode->iData1, pOrderNode->iData2, true, false, true);
+		pOrderNode = getOrderFromQueue(iNum);	// appending can move the queue's storage
 	}
+
+	// Remember which order this is: finishing it runs code that can change the queue, so the node
+	// pointer cannot be trusted across the switch below.
+	const OrderData order = *pOrderNode;
 
 #if defined(MOD_ROG_CORE)
 	bool bUpdateStrength = false;
@@ -19146,17 +19151,22 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 		m_unitBeingBuiltForOperation.Invalidate();
 	}
 
-	if(pOrderNode == headOrderQueueNode())
+	// Finishing the order runs code (instant yields, AI policy choice, Lua hooks) that can change this queue.
+	// If the order is no longer where it was, something else already removed it: deleting the old node would
+	// remove another order or underflow the queue.
+	pOrderNode = getOrderFromQueue(iNum);
+	const bool bStillQueued = pOrderNode != NULL && pOrderNode->eOrderType == order.eOrderType && pOrderNode->iData1 == order.iData1 && pOrderNode->iData2 == order.iData2;
+	CvAssertMsg(bStillQueued, "The order was removed from the queue while it was being finished");
+	if(bStillQueued)
 	{
-		bStart = true;
-		stopHeadOrder();
-	}
-	else
-	{
-		bStart = false;
-	}
+		if(pOrderNode == headOrderQueueNode())
+		{
+			bStart = true;
+			stopHeadOrder();
+		}
 
-	m_orderQueue.deleteNode(pOrderNode);
+		m_orderQueue.deleteNode(pOrderNode);
+	}
 	pOrderNode = NULL;
 	if(bFinish)
 	{
