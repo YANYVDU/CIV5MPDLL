@@ -1510,6 +1510,10 @@ private:
 	int m_iLastCityStateAidPointTurn;
 	int m_aiAidPointBullyTurn[MAX_CIV_PLAYERS];
 
+	// Last turn a city-state denounce was bought for this target; serialized since DLL version
+	// 168 so the throttle survives a reload (older saves start with -1 = no throttle).
+	short m_aiAidPointDenounceTurn[MAX_MAJOR_CIVS];
+
 	char* m_paeWarFace;
 	char* m_paeWarState;
 	char* m_paeWarProjection;

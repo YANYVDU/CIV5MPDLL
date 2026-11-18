@@ -383,6 +383,10 @@ CvDiplomacyAI::CvDiplomacyAI():
 	{
 		m_aiAidPointBullyTurn[iI] = -1;
 	}
+	for(int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+	{
+		m_aiAidPointDenounceTurn[iI] = -1;
+	}
 }
 
 /// Destructor
@@ -1004,6 +1008,10 @@ void CvDiplomacyAI::Reset()
 	for(iI = 0; iI < MAX_CIV_PLAYERS; iI++)
 	{
 		m_aiAidPointBullyTurn[iI] = -1;
+	}
+	for(iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+	{
+		m_aiAidPointDenounceTurn[iI] = -1;
 	}
 
 	for(iI = 0; iI < MAX_CIV_PLAYERS; iI++)
@@ -1630,6 +1638,10 @@ void CvDiplomacyAI::Read(FDataStream& kStream)
 
 	// Almaty CSUA: opinion weight from neutral trade-route plundering (appended so older saves skip it)
 	MOD_SERIALIZE_READ_ARRAY(164, kStream, m_paiCSUAPlunderedNeutralTradeRoute, short, MAX_MAJOR_CIVS, 0);
+
+	// Per-target throttle for city-state denouncements bought while we have not denounced the
+	// target ourselves (appended so pre-168 saves skip it and start with no throttle).
+	MOD_SERIALIZE_READ_ARRAY(168, kStream, m_aiAidPointDenounceTurn, short, MAX_MAJOR_CIVS, -1);
 }
 
 /// Serialization write
@@ -1866,6 +1878,10 @@ void CvDiplomacyAI::Write(FDataStream& kStream) const
 
 	// Almaty CSUA: opinion weight from neutral trade-route plundering (mirrors the read appended above)
 	MOD_SERIALIZE_WRITE_ARRAY(kStream, m_paiCSUAPlunderedNeutralTradeRoute, short, MAX_MAJOR_CIVS);
+
+	// Per-target throttle for city-state denouncements bought while we have not denounced the
+	// target ourselves (mirrors the read appended above; needs MOD_DLL_VERSION_NUMBER >= 168).
+	MOD_SERIALIZE_WRITE_CONSTARRAY(kStream, m_aiAidPointDenounceTurn, short, MAX_MAJOR_CIVS);
 }
 
 //	-----------------------------------------------------------------------------------------------
@@ -26914,11 +26930,23 @@ static bool IsPlayerNearDiploVictory(PlayerTypes ePlayer)
 /// Spend aid points to have a city-state denounce a rival. Called from the per-turn aid-point
 /// budget (DoCityStateAidPointAI), so the purchase competes with the other aid-point actions
 /// instead of firing the moment this AI denounces someone.
+///
+/// Chance table (per target):
+///   - AI already denounced the target: diplomatic-victory threat 100% (hostile) / 50%,
+///     otherwise 30% (hostile) / 10%; no per-target throttle.
+///   - AI has not denounced the target: diplomatic-victory threat 100% (hostile) / 30%,
+///     otherwise 5% (hostile) / 0%; at most one purchase per target every 5 turns.
 void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eMajor, bool* pabPoolUsed)
 {
 	const int iCost = m_pPlayer->GetAidPointCostDenounce();
 	if (iCost <= 0)
 		return;
+
+	const int iTurn = GC.getGame().getGameTurn();
+
+	// A rival this AI has not denounced may be pressed through city-states at most once per
+	// this many turns. Denouncing the rival ourselves removes the throttle.
+	const int iUndeclaredCooldownTurns = 5;
 
 	for (int iTargetLoop = 0; iTargetLoop < MAX_MAJOR_CIVS; iTargetLoop++)
 	{
@@ -26931,17 +26959,37 @@ void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eMajor, bool* pabPoolUse
 			continue;
 
 		const MajorCivApproachTypes eApproach = GetMajorCivApproach(eTarget, /*bHideTrueFeelings*/ false);
-		const bool bHostile = IsDenouncedPlayer(eTarget)
-			|| eApproach == MAJOR_CIV_APPROACH_WAR || eApproach == MAJOR_CIV_APPROACH_HOSTILE;
-
-		// A rival that is about to win a diplomatic victory is worth blocking even when this AI is
-		// not hostile to it yet, and gets every denouncement it can pay for.
+		const bool bHostile = eApproach == MAJOR_CIV_APPROACH_WAR || eApproach == MAJOR_CIV_APPROACH_HOSTILE;
 		const bool bBlockVictory = IsPlayerNearDiploVictory(eTarget);
-		if (!bHostile && !bBlockVictory)
+		const bool bDenounced = IsDenouncedPlayer(eTarget);
+
+		int iChance = 0;
+		if (bDenounced)
+		{
+			if (bBlockVictory)
+				iChance = bHostile ? 100 : 50;
+			else
+				iChance = bHostile ? 30 : 10;
+		}
+		else
+		{
+			if (bBlockVictory)
+				iChance = bHostile ? 100 : 30;
+			else
+				iChance = bHostile ? 5 : 0;
+
+			if (iChance > 0)
+			{
+				const int iLastTurn = m_aiAidPointDenounceTurn[eTarget];
+				if (iLastTurn >= 0 && (iTurn - iLastTurn) < iUndeclaredCooldownTurns)
+					continue;
+			}
+		}
+
+		if (iChance <= 0)
 			continue;
 
-		// Otherwise only sometimes: a denouncement is a diplomatic tool, not a reflex.
-		if (!bBlockVictory && GC.getGame().getJonRandNum(100, "AI considering an aid-point city-state denounce") >= 30)
+		if (GC.getGame().getJonRandNum(100, "AI considering an aid-point city-state denounce") >= iChance)
 			continue;
 
 		// Buying at several city-states in the same turn is the point of this action: each purchase
@@ -26977,6 +27025,7 @@ void CvDiplomacyAI::DoAidPointDenounceSpend(PlayerTypes eMajor, bool* pabPoolUse
 			if (GC.getGame().DoMinorCivDenounceWithAidPoints(eMajor, eMinor, eTarget, /*bRequirePayerDenounce*/ false))
 			{
 				if (pabPoolUsed != NULL) pabPoolUsed[eMinor] = true;
+				m_aiAidPointDenounceTurn[eTarget] = iTurn;
 
 				iPurchases++;
 				if (iMaxPools > 0 && iPurchases >= iMaxPools)

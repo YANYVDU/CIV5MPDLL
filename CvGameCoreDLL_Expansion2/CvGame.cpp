@@ -11836,6 +11836,17 @@ bool CvGame::CanMinorCivDenounceWithAidPoints(PlayerTypes eMajor, PlayerTypes eM
 	if(GET_TEAM(GET_PLAYER(eMinor).getTeam()).isAtWar(GET_PLAYER(eTarget).getTeam()))
 		return false;
 
+	// A city-state never denounces its own ally, whoever pays for it.
+	if(pMinorAI->IsAllies(eTarget))
+		return false;
+
+	// Jerusalem CS UA: the ally of a denounce-immune city-state cannot be denounced by any route,
+	// including a purchased city-state denouncement.
+#if defined(MOD_SP_UNIQUE_CITYSTATE)
+	if(MOD_SP_UNIQUE_CITYSTATE && GET_PLAYER(eTarget).IsDenounceImmunity())
+		return false;
+#endif
+
 	// One denouncement per (target, city-state) pair per cooldown window, whoever pays for it
 	if(pMinorAI->IsAidPointDenounceOnCooldown(eTarget))
 		return false;
