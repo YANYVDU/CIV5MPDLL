@@ -289,6 +289,11 @@ protected:
 	void UpdateOpenNode(CvAStarNode* node);
 	void UpdateParents(CvAStarNode* node);
 
+	// Open-heap helpers
+	bool OpenNodeLess(const CvAStarNode* a, const CvAStarNode* b) const;
+	void OpenHeapSiftUp(int iIndex);
+	void OpenHeapSiftDown(int iIndex);
+
 	void Push(CvAStarNode* node);
 	CvAStarNode* Pop();
 
@@ -329,11 +334,15 @@ protected:
 	bool m_bIsMPCacheSafe;
 	bool m_bDataChangeInvalidatesCache;
 
-	CvAStarNode* m_pOpen;            // The open list
-	CvAStarNode* m_pOpenTail;        // The open list tail pointer (to speed up inserts)
 	CvAStarNode* m_pClosed;          // The closed list
 	CvAStarNode* m_pBest;            // The best node
 	CvAStarNode* m_pStackHead;		// The Push/Pop stack head
+
+	// Open list: an indexed binary min-heap ordered by (m_iTotalCost, m_uiOpenSerial).
+	// Replaces the old sorted doubly-linked list; insert/pop/update are O(log n) instead of O(n).
+	// Ties on total cost pop in insertion order (FIFO), so results are MP-deterministic across machines.
+	std::vector<CvAStarNode*> m_vOpenHeap;
+	unsigned int m_uiOpenSerialGenerator;
 
 	CvAStarNode** m_ppaaNodes;
 

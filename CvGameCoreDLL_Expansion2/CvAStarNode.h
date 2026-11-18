@@ -104,6 +104,9 @@ public:
 		m_pNext = NULL;
 		m_pPrev = NULL;
 		m_pStack = NULL;
+
+		m_iOpenIndex = -1;
+		m_uiOpenSerial = 0;
 	}
 
 	void clear()
@@ -116,6 +119,8 @@ public:
 		m_iData2 = 0;
 
 		m_bOnStack = false;
+
+		m_iOpenIndex = -1;
 
 		m_eCvAStarListType = NO_CVASTARLIST;
 
@@ -136,9 +141,12 @@ public:
 	CvAStarListType m_eCvAStarListType;
 
 	CvAStarNode* m_pParent;
-	CvAStarNode* m_pNext;					// For Open and Closed lists
-	CvAStarNode* m_pPrev;					// For Open and Closed lists
+	CvAStarNode* m_pNext;					// For Closed list (open list uses the finder's heap)
+	CvAStarNode* m_pPrev;					// For Closed list
 	CvAStarNode* m_pStack;					// For Push/Pop Stack
+
+	int m_iOpenIndex;						// Index in the finder's open heap, -1 when not in the heap
+	unsigned int m_uiOpenSerial;			// Heap insertion serial: ties on total cost pop in insertion order (deterministic)
 
 	FStaticVector<CvAStarNode*, 6, true, c_eCiv5GameplayDLL, 0> m_apChildren;
 

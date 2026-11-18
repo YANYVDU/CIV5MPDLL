@@ -99,11 +99,11 @@ CvAStar::CvAStar()
 
 	m_pData = NULL;
 
-	m_pOpen = NULL;
-	m_pOpenTail = NULL;
 	m_pClosed = NULL;
 	m_pBest = NULL;
 	m_pStackHead = NULL;
+
+	m_uiOpenSerialGenerator = 0;
 
 	m_ppaaNodes = NULL;
 
@@ -122,10 +122,19 @@ CvAStar::~CvAStar()
 /// Frees allocated memory
 void CvAStar::DeInit()
 {
+	// The heap holds no ownership; the nodes are destroyed below.
+	m_vOpenHeap.clear();
+
 	if(m_ppaaNodes != NULL)
 	{
 		for(int iI = 0; iI < m_iColumns; iI++)
 		{
+			// Nodes were placement-newed onto aligned memory; run their destructors
+			// (FStaticVector frees its overflow allocation only in the destructor).
+			for(int iJ = 0; iJ < m_iRows; iJ++)
+			{
+				m_ppaaNodes[iI][iJ].~CvAStarNode();
+			}
 			FFREEALIGNED(m_ppaaNodes[iI]);
 		}
 
@@ -169,8 +178,10 @@ void CvAStar::Initialize(int iColumns, int iRows, bool bWrapX, bool bWrapY, CvAP
 	m_bWrapY = bWrapY;
 	m_bForceReset = false;
 
-	m_pOpen = NULL;
-	m_pOpenTail = NULL;
+	m_vOpenHeap.clear();
+	m_vOpenHeap.reserve(128);	// avoid the first few reallocations of a per-turn hot structure
+	m_uiOpenSerialGenerator = 0;
+
 	m_pClosed = NULL;
 	m_pBest = NULL;
 	m_pStackHead = NULL;
@@ -222,16 +233,13 @@ bool CvAStar::GeneratePath(int iXstart, int iYstart, int iXdest, int iYdest, int
 
 	if(!bReuse)
 	{
-		// XXX should we just be doing a memset here?
-		if(m_pOpen)
+		// Clear the open heap. It can hold shadow nodes from the two-layer path finder,
+		// so clear the nodes themselves, not just the container.
+		for(uint i = 0; i < m_vOpenHeap.size(); i++)
 		{
-			while(m_pOpen)
-			{
-				temp = m_pOpen->m_pNext;
-				m_pOpen->clear();
-				m_pOpen = temp;
-			}
+			m_vOpenHeap[i]->clear();
 		}
+		m_vOpenHeap.clear();
 
 		if(m_pClosed)
 		{
@@ -263,10 +271,8 @@ bool CvAStar::GeneratePath(int iXstart, int iYstart, int iXdest, int iYdest, int
 		}
 		temp->m_iTotalCost = temp->m_iKnownCost + temp->m_iHeuristicCost;
 
-		m_pOpen = temp;
-		m_pOpenTail = temp;
+		AddToOpen(temp);	// Heap is empty here, so this fires ASNL_STARTOPEN
 
-		udFunc(udNotifyList, NULL, m_pOpen, ASNL_STARTOPEN, m_pData);
 		udFunc(udValid, NULL, temp, 0, m_pData);
 		udFunc(udNotifyChild, NULL, temp, ASNC_INITIALADD, m_pData);
 	}
@@ -342,22 +348,22 @@ CvAStarNode* CvAStar::GetBest()
 {
 	CvAStarNode* temp;
 
-	if(!m_pOpen)
+	if(m_vOpenHeap.empty())
 	{
 		return NULL;
 	}
 
-	temp = m_pOpen;
+	// Pop the heap root: move the last element to the root and sift it down.
+	temp = m_vOpenHeap[0];
 
-	m_pOpen = temp->m_pNext;
-	if(m_pOpen != NULL)
+	CvAStarNode* last = m_vOpenHeap.back();
+	m_vOpenHeap.pop_back();
+	if(!m_vOpenHeap.empty())
 	{
-		m_pOpen->m_pPrev = NULL;
+		m_vOpenHeap[0] = last;
+		OpenHeapSiftDown(0);
 	}
-	else
-	{
-		m_pOpenTail = NULL;
-	}
+	temp->m_iOpenIndex = -1;
 
 	udFunc(udNotifyList, NULL, temp, ASNL_DELETEOPEN, m_pData);
 
@@ -495,186 +501,117 @@ void CvAStar::LinkChild(CvAStarNode* node, CvAStarNode* check)
 }
 
 //	--------------------------------------------------------------------------------
-/// Add node to open list
+/// Open-heap ordering: by total cost, ties by insertion serial (FIFO, deterministic).
+//	--------------------------------------------------------------------------------
+bool CvAStar::OpenNodeLess(const CvAStarNode* a, const CvAStarNode* b) const
+{
+	if(a->m_iTotalCost != b->m_iTotalCost)
+	{
+		return a->m_iTotalCost < b->m_iTotalCost;
+	}
+	return a->m_uiOpenSerial < b->m_uiOpenSerial;
+}
+
+//	--------------------------------------------------------------------------------
+/// Sift the element at iIndex up towards the heap root.
+//	--------------------------------------------------------------------------------
+void CvAStar::OpenHeapSiftUp(int iIndex)
+{
+	CvAStarNode* node = m_vOpenHeap[iIndex];
+
+	while(iIndex > 0)
+	{
+		const int iParent = (iIndex - 1) >> 1;
+		CvAStarNode* parent = m_vOpenHeap[iParent];
+
+		if(!OpenNodeLess(node, parent))
+		{
+			break;
+		}
+
+		m_vOpenHeap[iIndex] = parent;
+		parent->m_iOpenIndex = iIndex;
+		iIndex = iParent;
+	}
+
+	m_vOpenHeap[iIndex] = node;
+	node->m_iOpenIndex = iIndex;
+}
+
+//	--------------------------------------------------------------------------------
+/// Sift the element at iIndex down towards the heap leaves.
+//	--------------------------------------------------------------------------------
+void CvAStar::OpenHeapSiftDown(int iIndex)
+{
+	CvAStarNode* node = m_vOpenHeap[iIndex];
+	const int iSize = (int)m_vOpenHeap.size();
+
+	for(;;)
+	{
+		int iChild = (iIndex << 1) + 1;
+		if(iChild >= iSize)
+		{
+			break;
+		}
+		// pick the smaller of the two children
+		if(iChild + 1 < iSize && OpenNodeLess(m_vOpenHeap[iChild + 1], m_vOpenHeap[iChild]))
+		{
+			iChild++;
+		}
+
+		CvAStarNode* child = m_vOpenHeap[iChild];
+		if(!OpenNodeLess(child, node))
+		{
+			break;
+		}
+
+		m_vOpenHeap[iIndex] = child;
+		child->m_iOpenIndex = iIndex;
+		iIndex = iChild;
+	}
+
+	m_vOpenHeap[iIndex] = node;
+	node->m_iOpenIndex = iIndex;
+}
+
+//	--------------------------------------------------------------------------------
+/// Add node to open heap. The node must not already be in the heap.
+//	--------------------------------------------------------------------------------
 void CvAStar::AddToOpen(CvAStarNode* addnode)
 {
-	CvAStarNode* node;
-
 	addnode->m_eCvAStarListType = CVASTARLIST_OPEN;
 
-	if(!m_pOpen)
-	{
-		m_pOpen = addnode;
-		m_pOpenTail = addnode;
-		m_pOpen->m_pNext = NULL;
-		m_pOpen->m_pPrev = NULL;
+	const bool bWasEmpty = m_vOpenHeap.empty();
+	addnode->m_uiOpenSerial = m_uiOpenSerialGenerator++;
+	addnode->m_iOpenIndex = (int)m_vOpenHeap.size();
+	m_vOpenHeap.push_back(addnode);
+	OpenHeapSiftUp(addnode->m_iOpenIndex);
 
+	// Notify after the node is fully in the heap: the callback may reenter AddToOpen
+	// (two-layer path finder adds its partial-move shadow node from PathNodeAdd).
+	// Note: ASNL_STARTOPEN now only means "first node in the heap"; the old list version
+	// also fired it for head insertions. Registered callbacks treat both ops alike.
+	if(bWasEmpty)
+	{
 		udFunc(udNotifyList, NULL, addnode, ASNL_STARTOPEN, m_pData);
-
-		return;
 	}
-
-	if(addnode->m_iTotalCost <= m_pOpen->m_iTotalCost)
+	else
 	{
-		addnode->m_pNext = m_pOpen;
-		m_pOpen->m_pPrev = addnode;
-		m_pOpen = addnode;
-
-		udFunc(udNotifyList, m_pOpen->m_pNext, m_pOpen, ASNL_STARTOPEN, m_pData);
-	}
-	else if(addnode->m_iTotalCost >= m_pOpenTail->m_iTotalCost)
-	{
-		addnode->m_pPrev = m_pOpenTail;
-		m_pOpenTail->m_pNext = addnode;
-		m_pOpenTail = addnode;
-
-		udFunc(udNotifyList, addnode->m_pPrev, addnode, ASNL_ADDOPEN, m_pData);
-	}
-	else if(abs(addnode->m_iTotalCost-m_pOpenTail->m_iTotalCost) < abs(addnode->m_iTotalCost-m_pOpen->m_iTotalCost))  //(addnode->m_iTotalCost > m_iOpenListAverage) // let's start at the end and work forwards
-	{
-		CvAStarNode* next;
-		node = m_pOpenTail;
-		next = NULL;
-
-		while(node)
-		{
-			if(addnode->m_iTotalCost < node->m_iTotalCost)
-			{
-				next = node;
-				node = node->m_pPrev;
-			}
-			else
-			{
-				if(next)
-				{
-					next->m_pPrev = addnode;
-					addnode->m_pNext = next;
-					addnode->m_pPrev = node;
-					node->m_pNext = addnode;
-					if(node->m_pNext == NULL)
-					{
-						m_pOpenTail = node;
-					}
-
-					udFunc(udNotifyList, addnode->m_pPrev, addnode, ASNL_ADDOPEN, m_pData);
-				}
-				else // we should just add it to the end of the list
-				{
-					addnode->m_pPrev = m_pOpenTail;
-					m_pOpenTail->m_pNext = addnode;
-					m_pOpenTail = addnode;
-
-					udFunc(udNotifyList, addnode->m_pPrev, addnode, ASNL_ADDOPEN, m_pData);
-				}
-
-				return;
-			}
-		}
-
-		// we made it to the start of this list - insert it at the beginning - we shouldn't ever get here, but...
-		next->m_pPrev = addnode;
-		addnode->m_pNext = next;
-		m_pOpen = addnode;
-
-		udFunc(udNotifyList, m_pOpen->m_pNext, m_pOpen, ASNL_STARTOPEN, m_pData);
-	}
-	else // let's start at the beginning as it should be closer
-	{
-		CvAStarNode* prev;
-		node = m_pOpen;
-		prev = NULL;
-
-		while(node)
-		{
-			if(addnode->m_iTotalCost > node->m_iTotalCost)
-			{
-				prev = node;
-				node = node->m_pNext;
-			}
-			else
-			{
-				if(prev)
-				{
-					prev->m_pNext = addnode;
-					addnode->m_pPrev = prev;
-					addnode->m_pNext = node;
-					node->m_pPrev = addnode;
-					if(node->m_pNext == NULL)
-					{
-						m_pOpenTail = node;
-					}
-
-					udFunc(udNotifyList, prev, addnode, ASNL_ADDOPEN, m_pData);
-				}
-				else
-				{
-					addnode->m_pNext = m_pOpen;
-					m_pOpen->m_pPrev = addnode;
-					m_pOpen = addnode;
-
-					udFunc(udNotifyList, m_pOpen->m_pNext, m_pOpen, ASNL_STARTOPEN, m_pData);
-				}
-
-				return;
-			}
-		}
-
-		// we made it to the end of this list - insert it at the end - we shouldn't ever get here, but...
-		prev->m_pNext = addnode;
-		addnode->m_pPrev = prev;
-		m_pOpenTail = addnode;
-
-		udFunc(udNotifyList, prev, addnode, ASNL_ADDOPEN, m_pData);
+		udFunc(udNotifyList, NULL, addnode, ASNL_ADDOPEN, m_pData);
 	}
 }
 
 //	--------------------------------------------------------------------------------
-/// Connect in a node
+/// Re-order a node whose total cost just decreased (sift up; serial unchanged).
+//	--------------------------------------------------------------------------------
 void CvAStar::UpdateOpenNode(CvAStarNode* node)
 {
-	CvAStarNode* temp;
-
 	FAssert(node->m_eCvAStarListType == CVASTARLIST_OPEN);
+	FAssert(node->m_iOpenIndex >= 0);	// an OPEN node must always be in the heap
 
-	if((node->m_pPrev != NULL) && (node->m_iTotalCost < node->m_pPrev->m_iTotalCost))
+	if(node->m_iOpenIndex >= 0)
 	{
-		// have node free float for now
-		node->m_pPrev->m_pNext = node->m_pNext;
-		if(node->m_pNext)
-		{
-			node->m_pNext->m_pPrev = node->m_pPrev;
-		}
-		else
-		{
-			m_pOpenTail = node->m_pPrev;
-		}
-		// scoot down the list till we find where node goes (without connecting up as we go)
-		temp = node->m_pPrev;
-		while((temp != NULL) && (node->m_iTotalCost < temp->m_iTotalCost))
-		{
-			temp = temp->m_pPrev;
-		}
-		// connect node up
-		if(temp != NULL)
-		{
-			node->m_pNext = temp->m_pNext;
-			node->m_pPrev = temp;
-			if(temp->m_pNext)
-			{
-				temp->m_pNext->m_pPrev = node;
-			}
-			temp->m_pNext = node;
-		}
-		else
-		{
-			node->m_pNext = m_pOpen;
-			node->m_pPrev = NULL;
-			if(node->m_pNext)
-			{
-				node->m_pNext->m_pPrev = node;
-			}
-			m_pOpen = node;
-		}
+		OpenHeapSiftUp(node->m_iOpenIndex);
 	}
 }
 
