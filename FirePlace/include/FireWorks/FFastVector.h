@@ -1033,6 +1033,13 @@ public:
     {
         UINT uDeletePos = tData - &mVec[ 0 ];
 
+        //  Not a node of this list (e.g. a stale pointer into an emptied list): shrinking would underflow the size
+        if( uDeletePos >= mVec.size() )
+        {
+            FAssert( false );
+            return NULL;
+        }
+
         for( UINT uIdx = uDeletePos; uIdx + 1 < mVec.size(); ++uIdx )
         {
             mVec[ uIdx ] = mVec[ uIdx + 1 ];
