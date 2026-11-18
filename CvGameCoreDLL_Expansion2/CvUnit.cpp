@@ -700,7 +700,7 @@ void CvUnit::initWithNameOffset(int iID, UnitTypes eUnit, int iNameOffset, UnitA
 	{
 		if(iNameOffset == -1)
 		{
-			iNameOffset = GC.getGame().getJonRandNum(iNumNames, "Unit name selection");
+			iNameOffset = GC.getGame().randRangeExclusive(0, iNumNames, CvSeeder::fromRaw(0x1a5c9e20).mix(iID).mix(eOwner));
 		}
 	
 		for(iI = 0; iI < iNumNames; iI++)
@@ -1002,7 +1002,7 @@ void CvUnit::initWithNameOffset(int iID, UnitTypes eUnit, int iNameOffset, UnitA
 			CvCityReligions *pCityReligions = pPlotCity->GetCityReligions();
 
 			int totalFollowers = pPlotCity->getPopulation();
-			int randFollower = GC.getGame().getJonRandNum(totalFollowers, "Religious Settlers: Picking a random religion for the settler") + 1;
+			int randFollower = GC.getGame().randRangeExclusive(0, totalFollowers, CvSeeder::fromRaw(0x1a5c9e21).mix(GetID()).mix(pPlotCity->GetID())) + 1;
 
 			for (int i = RELIGION_PANTHEON; i < GC.getNumReligionInfos(); i++)
 			{
@@ -2699,11 +2699,11 @@ CvUnit *CvUnit::createCaptureUnit(const CvUnitCaptureDefinition &kCaptureDef)
 #ifdef MOD_BATTLE_CAPTURE_NEW_RULE
 		if (MOD_BATTLE_CAPTURE_NEW_RULE)
 		{
-			int iMoveRandPercent = GC.getGame().getJonRandNum(25, "Capture Move Rand") + 1 + 25; // 26 - 50%
+			int iMoveRandPercent = GC.getGame().randRangeExclusive(0, 25, CvSeeder::fromRaw(0x1a5c9e19).mix(pkCapturedUnit->GetID()).mix(pkCapturedUnit->plot()->GetPseudoRandomSeed())) + 1 + 25; // 26 - 50%
 			pkCapturedUnit->setMoves(pkCapturedUnit->maxMoves() * iMoveRandPercent / 100);
 			if(pkCapturedUnit->IsCombatUnit())
 			{
-				int iDamagePecent = 100 - (GC.getGame().getJonRandNum(25, "Capture Damage Rand") + 1 + 25); // 51 - 75%
+				int iDamagePecent = 100 - (GC.getGame().randRangeExclusive(0, 25, CvSeeder::fromRaw(0x1a5c9e1a).mix(pkCapturedUnit->GetID()).mix(pkCapturedUnit->plot()->GetPseudoRandomSeed())) + 1 + 25); // 51 - 75%
 				pkCapturedUnit->setDamage(pkCapturedUnit->GetMaxHitPoints() * iDamagePecent / 100);
 			}
 		}
@@ -4445,7 +4445,7 @@ int CvUnit::getCombatDamage(int iStrength, int iOpponentStrength, int iCurrentDa
 	int iRoll = 0;
 	if(bIncludeRand)
 	{
-		iRoll = /*400*/ GC.getGame().getJonRandNum(GC.getATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "Unit Combat Damage");
+		iRoll = /*400*/ GC.getGame().randRangeExclusive(0, GC.getATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), CvSeeder::fromRaw(0x4b1d2c01).mix(GetID()).mix(iStrength).mix(iOpponentStrength).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 		iRoll *= iDamageRatio;
 #if defined(MOD_UNITS_MAX_HP)
 		iRoll /= GetMaxHitPoints();
@@ -8567,7 +8567,7 @@ void CvUnit::DoAttrition()
 	{
 		if(isEnemy(pPlot->getTeam(), pPlot) && getEnemyDamageChance() > 0 && getEnemyDamage() > 0)
 		{
-			if(GC.getGame().getJonRandNum(100, "Enemy Territory Damage Chance") < getEnemyDamageChance())
+			if(GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e22).mix(GetID()).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn())) < getEnemyDamageChance())
 			{
 				strAppendText =  GetLocalizedText("TXT_KEY_MISC_YOU_UNIT_WAS_DAMAGED_ATTRITION");
 #if defined(MOD_API_UNIT_STATS)
@@ -8579,7 +8579,7 @@ void CvUnit::DoAttrition()
 		}
 		else if(getNeutralDamageChance() > 0 && getNeutralDamage() > 0)
 		{
-			if(GC.getGame().getJonRandNum(100, "Neutral Territory Damage Chance") < getNeutralDamageChance())
+			if(GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e23).mix(GetID()).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn())) < getNeutralDamageChance())
 			{
 				strAppendText =  GetLocalizedText("TXT_KEY_MISC_YOU_UNIT_WAS_DAMAGED_ATTRITION");
 #if defined(MOD_API_UNIT_STATS)
@@ -10704,8 +10704,8 @@ bool CvUnit::pillage()
 				int iPillageGold = 0;
 
 				// TODO: add scripting support for "doPillageGold"
-				iPillageGold = GC.getGame().getJonRandNum(pkImprovement->GetPillageGold(), "Pillage Gold 1");
-				iPillageGold += GC.getGame().getJonRandNum(pkImprovement->GetPillageGold(), "Pillage Gold 2");
+				iPillageGold = GC.getGame().randRangeExclusive(0, pkImprovement->GetPillageGold(), CvSeeder::fromRaw(0x1a5c9e24).mix(GetID()).mix(plot()->GetPseudoRandomSeed()));
+				iPillageGold += GC.getGame().randRangeExclusive(0, pkImprovement->GetPillageGold(), CvSeeder::fromRaw(0x1a5c9e25).mix(GetID()).mix(plot()->GetPseudoRandomSeed()));
 
 #if defined(MOD_EVENTS_UNIT_ACTIONS)
 				if (MOD_EVENTS_UNIT_ACTIONS) {
@@ -17594,7 +17594,7 @@ int CvUnit::GetAirCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bInc
 	int iAttackerRoll = 0;
 	if(bIncludeRand)
 	{
-		iAttackerRoll = /*300*/ GC.getGame().getJonRandNum(GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "Unit Ranged Combat Damage");
+		iAttackerRoll = /*300*/ GC.getGame().randRangeExclusive(0, GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), CvSeeder::fromRaw(0x4b1d2c02).mix(GetID()).mix(pDefender ? pDefender->GetID() : 0).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 		iAttackerRoll *= iAttackerDamageRatio;
 #if defined(MOD_UNITS_MAX_HP)
 		iAttackerRoll /= GetMaxHitPoints();
@@ -17737,7 +17737,7 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 	int iAttackerRoll = 0;
 	if(bIncludeRand)
 	{
-		iAttackerRoll = /*300*/ GC.getGame().getJonRandNum(GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "Unit Ranged Combat Damage");
+		iAttackerRoll = /*300*/ GC.getGame().randRangeExclusive(0, GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), CvSeeder::fromRaw(0x4b1d2c03).mix(GetID()).mix(pDefender ? pDefender->GetID() : 0).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 		iAttackerRoll *= iAttackerDamageRatio;
 #if defined(MOD_UNITS_MAX_HP)
 		iAttackerRoll /= GetMaxHitPoints();
@@ -17824,7 +17824,7 @@ int CvUnit::GetAirStrikeDefenseDamage(const CvUnit* pAttacker, bool bIncludeRand
 	int iDefenderRoll = 0;
 	if(bIncludeRand)
 	{
-		iDefenderRoll = /*200*/ GC.getGame().getJonRandNum(GC.getAIR_STRIKE_SAME_STRENGTH_POSSIBLE_EXTRA_DEFENSE_DAMAGE(), "Unit Air Strike Combat Damage");
+		iDefenderRoll = /*200*/ GC.getGame().randRangeExclusive(0, GC.getAIR_STRIKE_SAME_STRENGTH_POSSIBLE_EXTRA_DEFENSE_DAMAGE(), CvSeeder::fromRaw(0x4b1d2c04).mix(GetID()).mix(pAttacker ? pAttacker->GetID() : 0).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 		iDefenderRoll *= iDefenderDamageRatio;
 #if defined(MOD_UNITS_MAX_HP)
 		iDefenderRoll /= GetMaxHitPoints();
@@ -18200,7 +18200,7 @@ int CvUnit::GetInterceptionDamage(const CvUnit* pAttacker, bool bIncludeRand, bo
 	int iInterceptorRoll = 0;
 	if(bIncludeRand)
 	{
-		iInterceptorRoll = /*300*/ GC.getGame().getJonRandNum(GC.getINTERCEPTION_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "Interception Combat Damage");
+		iInterceptorRoll = /*300*/ GC.getGame().randRangeExclusive(0, GC.getINTERCEPTION_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), CvSeeder::fromRaw(0x4b1d2c05).mix(GetID()).mix(pAttacker ? pAttacker->GetID() : 0).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 		iInterceptorRoll *= iInterceptorDamageRatio;
 #if defined(MOD_UNITS_MAX_HP)
 		iInterceptorRoll /= GetMaxHitPoints();
@@ -18332,7 +18332,7 @@ int CvUnit::GetParadropInterceptionDamage(const CvUnit* pAttacker, bool bInclude
 	int iInterceptorRoll = 0;
 	if(bIncludeRand)
 	{
-		iInterceptorRoll = /*300*/ GC.getGame().getJonRandNum(GC.getINTERCEPTION_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "Interception Combat Damage");
+		iInterceptorRoll = /*300*/ GC.getGame().randRangeExclusive(0, GC.getINTERCEPTION_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), CvSeeder::fromRaw(0x4b1d2c06).mix(GetID()).mix(pAttacker ? pAttacker->GetID() : 0).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 		iInterceptorRoll *= iInterceptorDamageRatio;
 #if defined(MOD_UNITS_MAX_HP)
 		iInterceptorRoll /= GetMaxHitPoints();
@@ -32131,7 +32131,7 @@ int CvUnit::AI_promotionValue(PromotionTypes ePromotion)
 		// Unknown promotion? Always give at least a random priority with some flavor
 		if (iValue == 0)
 		{
-			iTemp = lowPriority + GC.getGame().getJonRandNum(20, "AI Promote Unknown");
+			iTemp = lowPriority + GC.getGame().randRangeExclusive(0, 20, CvSeeder::fromRaw(0x1a5c9e26).mix(GetID()).mix(ePromotion).mix(GC.getGame().getGameTurn()));
 			iValue = GetPromotionValue(1, 0, iFlavorOffDef, iTemp);
 
 			// Logging to keep track on promotions not handled on the script.
@@ -32144,7 +32144,7 @@ int CvUnit::AI_promotionValue(PromotionTypes ePromotion)
 		}
 
 		//AMS: Higher random from original 15 to 25
-		iValue += GC.getGame().getJonRandNum(25, "AI Promote");
+		iValue += GC.getGame().randRangeExclusive(0, 25, CvSeeder::fromRaw(0x1a5c9e27).mix(GetID()).mix(ePromotion).mix(GC.getGame().getGameTurn()));
 	}
 	else
 	{
@@ -32858,7 +32858,7 @@ int CvUnit::AI_promotionValue(PromotionTypes ePromotion)
 
 	if(iValue > 0)
 	{
-		iValue += GC.getGame().getJonRandNum(15, "AI Promote");
+		iValue += GC.getGame().randRangeExclusive(0, 15, CvSeeder::fromRaw(0x1a5c9e28).mix(GetID()).mix(ePromotion).mix(GC.getGame().getGameTurn()));
 	}
 #if defined(MOD_AI_SMART_V3)
 	}

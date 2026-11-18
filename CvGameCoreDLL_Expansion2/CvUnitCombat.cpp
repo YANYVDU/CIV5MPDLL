@@ -146,7 +146,7 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 
 		if (kAttacker.GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e01).mix(kAttacker.GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= kAttacker.GetIgnoreDamageChance())
 			{
 				iDefenderDamageInflicted = 0;
@@ -259,7 +259,7 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 
 		if (kAttacker.GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e02).mix(kAttacker.GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= kAttacker.GetIgnoreDamageChance())
 			{
 				iDefenderDamageInflicted = 0;
@@ -268,7 +268,7 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 
 		if (pkDefender->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e03).mix(pkDefender->GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= pkDefender->GetIgnoreDamageChance())
 			{
 				iAttackerDamageInflicted = 0;
@@ -394,7 +394,7 @@ void CvUnitCombat::GenerateMeleeCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender
 		else if (iAttackerTotalDamageInflicted >= iMaxHP && kAttacker.IsCaptureDefeatedEnemy() && kAttacker.AreUnitsOfSameType(*pkDefender) && !GET_PLAYER(kAttacker.getOwner()).IsLackingTroops())
 #endif
 		{
-			int iCaptureRoll = GC.getGame().getJonRandNum(100, "Capture Enemy Roll");
+			int iCaptureRoll = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x3b80ed93).mix(pkDefender->GetID()).mix(plot.GetPseudoRandomSeed()));
 
 			if (iCaptureRoll < kAttacker.GetCaptureChance(pkDefender))
 			{
@@ -805,7 +805,7 @@ void CvUnitCombat::GenerateRangedCombatInfo(CvUnit& kAttacker, CvUnit* pkDefende
 
 		if (pkDefender->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e04).mix(pkDefender->GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= pkDefender->GetIgnoreDamageChance())
 			{
 				iDamage = 0;
@@ -997,7 +997,7 @@ void CvUnitCombat::GenerateRangedCombatInfo(CvCity& kAttacker, CvUnit* pkDefende
 
 		if (pkDefender->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e05).mix(pkDefender->GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= pkDefender->GetIgnoreDamageChance())
 			{
 				iDamage = 0;
@@ -1064,7 +1064,7 @@ void CvUnitCombat::GenerateRangedCombatInfo(CvCity& kAttacker, CvUnit* pkDefende
 
 							if (loopUnit->GetIgnoreDamageChance() > 0)
 							{
-								int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+								int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e06).mix(loopUnit->GetID()).mix(plot.GetPseudoRandomSeed()));
 								if (iRand <= loopUnit->GetIgnoreDamageChance())
 								{
 									CityDamage = 0;
@@ -1097,7 +1097,7 @@ void CvUnitCombat::GenerateRangedCombatInfo(CvCity& kAttacker, CvUnit* pkDefende
 
 							if (loopUnit->GetIgnoreDamageChance() > 0)
 							{
-								int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+								int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e07).mix(loopUnit->GetID()).mix(plot.GetPseudoRandomSeed()));
 								if (iRand <= loopUnit->GetIgnoreDamageChance())
 								{
 									CityDamage = 0;
@@ -1802,10 +1802,10 @@ void CvUnitCombat::GenerateAirCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender, 
 	{
 		pkCombatInfo->setUnit(BATTLE_UNIT_INTERCEPTOR, pInterceptor);
 		// Does the attacker evade?
-		if(GC.getGame().getJonRandNum(100, "Evasion Rand") >= kAttacker.evasionProbability())
+		if(GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e08).mix(kAttacker.GetID()).mix(plot.GetPseudoRandomSeed())) >= kAttacker.evasionProbability())
 		{
 			// Is the interception successful?
-			if(GC.getGame().getJonRandNum(100, "Intercept Rand (Air)") < pInterceptor->currInterceptionProbability())
+			if(GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e09).mix(pInterceptor->GetID()).mix(plot.GetPseudoRandomSeed())) < pInterceptor->currInterceptionProbability())
 			{
 				iInterceptionDamage = pInterceptor->GetInterceptionDamage(&kAttacker);
 			}
@@ -1863,7 +1863,7 @@ void CvUnitCombat::GenerateAirCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender, 
 
 		if (kAttacker.GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e0a).mix(kAttacker.GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= kAttacker.GetIgnoreDamageChance())
 			{
 				iDefenderDamageInflicted = 0;
@@ -1872,7 +1872,7 @@ void CvUnitCombat::GenerateAirCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender, 
 
 		if (pkDefender->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e0b).mix(pkDefender->GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= pkDefender->GetIgnoreDamageChance())
 			{
 				iAttackerDamageInflicted = 0;
@@ -1960,7 +1960,7 @@ void CvUnitCombat::GenerateAirCombatInfo(CvUnit& kAttacker, CvUnit* pkDefender, 
 
 		if (kAttacker.GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e0c).mix(kAttacker.GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= kAttacker.GetIgnoreDamageChance())
 			{
 				iDefenderDamageInflicted = 0;
@@ -2460,7 +2460,7 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 #if defined(MOD_ROG_CORE)
 		if (pkDefender->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e0d).mix(pkDefender->GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= pkDefender->GetIgnoreDamageChance())
 			{
 				iInterceptionDamage = 0;
@@ -2532,7 +2532,7 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 #if defined(MOD_ROG_CORE)
 		if (kAttacker.GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e0e).mix(kAttacker.GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= kAttacker.GetIgnoreDamageChance())
 			{
 				iDefenderDamageInflicted = 0;
@@ -2541,7 +2541,7 @@ void CvUnitCombat::GenerateAirSweepCombatInfo(CvUnit& kAttacker, CvUnit* pkDefen
 
 		if (pkDefender->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e0f).mix(pkDefender->GetID()).mix(plot.GetPseudoRandomSeed()));
 			if (iRand <= pkDefender->GetIgnoreDamageChance())
 			{
 				iAttackerDamageInflicted = 0;
@@ -3439,7 +3439,7 @@ void CvUnitCombat::GenerateNuclearExplosionDamage(CvPlot* pkTargetPlot, int iDam
 									// How much destruction is unleashed on nearby Units?
 									if (iDamageLevel == 1 && pLoopPlot != pkTargetPlot)	// Nuke level 1, but NOT the plot that got hit directly (units there are killed)
 									{
-										iNukeDamage = (/*3*/ GC.getNUKE_UNIT_DAMAGE_BASE() + /*4*/ GC.getGame().getJonRandNum(GC.getNUKE_UNIT_DAMAGE_RAND_1(), "Nuke Damage 1") + /*4*/ GC.getGame().getJonRandNum(GC.getNUKE_UNIT_DAMAGE_RAND_2(), "Nuke Damage 2"));
+										iNukeDamage = (/*3*/ GC.getNUKE_UNIT_DAMAGE_BASE() + /*4*/ GC.getGame().randRangeExclusive(0, GC.getNUKE_UNIT_DAMAGE_RAND_1(), CvSeeder::fromRaw(0x1a5c9e10).mix(pLoopUnit->GetID()).mix(pLoopPlot->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn())) + /*4*/ GC.getGame().randRangeExclusive(0, GC.getNUKE_UNIT_DAMAGE_RAND_2(), CvSeeder::fromRaw(0x1a5c9e11).mix(pLoopUnit->GetID()).mix(pLoopPlot->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn())));
 									}
 									// Wipe everything out
 									else
@@ -3615,7 +3615,7 @@ bool CvUnitCombat::ParadropIntercept(CvUnit& pParaUnit, CvPlot& pDropPlot) {
 		int iInterceptionDamage = 0;
 
 		// Is the interception successful?
-		if(GC.getGame().getJonRandNum(100, "Intercept Rand (Paradrop)") < pInterceptor->currInterceptionProbability())
+		if(GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e12).mix(pInterceptor->GetID()).mix(pDropPlot.GetPseudoRandomSeed())) < pInterceptor->currInterceptionProbability())
 		{
 			iInterceptionDamage = pInterceptor->GetParadropInterceptionDamage(&pParaUnit);
 		}
@@ -5321,7 +5321,7 @@ void CvUnitCombat::DoNukeDamage(const CvCombatInfo& kCombatInfo)
 								int iNukeDamage;
 								// How much destruction is unleashed on nearby Units?
 
-								iNukeDamage = (/*3*/ GC.getNUKE_UNIT_DAMAGE_BASE() + /*4*/ GC.getGame().getJonRandNum(GC.getNUKE_UNIT_DAMAGE_RAND_1(), "Nuke Damage 1") + /*4*/ GC.getGame().getJonRandNum(GC.getNUKE_UNIT_DAMAGE_RAND_2(), "Nuke Damage 2"));
+								iNukeDamage = (/*3*/ GC.getNUKE_UNIT_DAMAGE_BASE() + /*4*/ GC.getGame().randRangeExclusive(0, GC.getNUKE_UNIT_DAMAGE_RAND_1(), CvSeeder::fromRaw(0x1a5c9e13).mix(pLoopUnit->GetID()).mix(pLoopPlot->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn())) + /*4*/ GC.getGame().randRangeExclusive(0, GC.getNUKE_UNIT_DAMAGE_RAND_2(), CvSeeder::fromRaw(0x1a5c9e14).mix(pLoopUnit->GetID()).mix(pLoopPlot->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn())));
 
 								if (pLoopCity != NULL)
 								{
@@ -5331,7 +5331,7 @@ void CvUnitCombat::DoNukeDamage(const CvCombatInfo& kCombatInfo)
 
 								if (pLoopUnit->GetIgnoreDamageChance() > 0)
 								{
-									int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+									int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e15).mix(pLoopUnit->GetID()).mix(pLoopPlot->GetPseudoRandomSeed()));
 									if (iRand <= pLoopUnit->GetIgnoreDamageChance())
 									{
 										iNukeDamage = 0;
@@ -5485,7 +5485,7 @@ void CvUnitCombat::DoSplashDamage(const CvCombatInfo& kCombatInfo)
 
 		if (pAOEUnit->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e16).mix(pAOEUnit->GetID()).mix(pAOEUnit->plot()->GetPseudoRandomSeed()));
 			if (iRand <= pAOEUnit->GetIgnoreDamageChance())
 			{
 				iAOEDamage = 0;
@@ -5631,7 +5631,7 @@ void CvUnitCombat::DoCollateralDamage(const CvCombatInfo& kCombatInfo)
 
 		if (pAffectedUnit->GetIgnoreDamageChance() > 0)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e17).mix(pAffectedUnit->GetID()).mix(pAffectedUnit->plot()->GetPseudoRandomSeed()));
 			if (iRand <= pAffectedUnit->GetIgnoreDamageChance())
 			{
 				iDamage = 0;
@@ -5800,7 +5800,9 @@ void CvUnitCombat::DoDestroyBuildings(const CvCombatInfo& kInfo)
 	{
 		for (int i = 0; i < iter->second.m_iDestroyBuildingNumLimit; i++)
 		{
-			int iRand = GC.getGame().getJonRandNum(100, "destroy chance");
+			// The loop index is part of the seed: without it every attempt would repeat the same roll
+			// and the city would lose either none or all of its buildings.
+			int iRand = GC.getGame().randRangeExclusive(0, 100, CvSeeder::fromRaw(0x1a5c9e18).mix(pDefenderCity->GetID()).mix(kAttackPlayer.GetID()).mix(i));
 			if (iRand >= iter->second.m_iDestroyBuildingProbability) continue;
 
 			auto* collection = GC.GetBuildingClassCollection(iter->second.m_iDestroyBuildingCollection);

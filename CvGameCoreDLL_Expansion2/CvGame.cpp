@@ -10151,6 +10151,12 @@ uint CvGame::urandLimitInclusive(uint limit, const CvSeeder& extraSeed) const
 uint CvGame::urandRangeExclusive(uint min, uint max, const CvSeeder& extraSeed) const
 {
 	ASSERT(min < max);
+	if(max <= min)
+	{
+		// An empty range used to be harmless (the old global generator returned 0 for a limit of 0);
+		// do not divide by zero here, wherever a define was set to 0.
+		return min;
+	}
 	return urandLimitExclusive(max - min, extraSeed) + min;
 }
 
@@ -10163,6 +10169,11 @@ uint CvGame::urandRangeInclusive(uint min, uint max, const CvSeeder& extraSeed) 
 int CvGame::randRangeExclusive(int min, int max, const CvSeeder& extraSeed) const
 {
 	ASSERT(min < max);
+	if(max <= min)
+	{
+		// See urandRangeExclusive: an empty range must not reach the modulo.
+		return min;
+	}
 	return static_cast<int>(urandLimitExclusive(static_cast<uint>(max) - static_cast<uint>(min), extraSeed) + static_cast<uint>(min));
 }
 

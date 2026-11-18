@@ -4616,7 +4616,7 @@ void CvCity::DoPickResourceDemanded(bool bCurrentResourceInvalid)
 
 	do
 	{
-		iVectorIndex = GC.getGame().getJonRandNum(veValidLuxuryResources.size(), "Picking random Luxury for City to demand.");
+		iVectorIndex = GC.getGame().randRangeExclusive(0, (int)veValidLuxuryResources.size(), CvSeeder::fromRaw(0x1a5c9e2a).mix(GetID()).mix(GC.getGame().getGameTurn()).mix(iNumAttempts));
 		eResource = (ResourceTypes) veValidLuxuryResources[iVectorIndex];
 		bResourceValid = true;
 
@@ -4736,7 +4736,7 @@ void CvCity::DoSeedResourceDemandedCountdown()
 	}
 
 	int iRand = /*10*/ GC.getRESOURCE_DEMAND_COUNTDOWN_RAND();
-	iNumTurns += GC.getGame().getJonRandNum(iRand, "City Resource demanded rand.");
+	iNumTurns += GC.getGame().randRangeExclusive(0, iRand, CvSeeder::fromRaw(0x1a5c9e2b).mix(GetID()).mix(GC.getGame().getGameTurn()));
 
 	SetResourceDemandedCountdown(iNumTurns);
 }
@@ -17824,7 +17824,7 @@ CvPlot* CvCity::GetNextBuyablePlot(void)
 	CvPlot* pPickedPlot = NULL;
 	if(iListLength > 0)
 	{
-		int iPickedIndex = GC.getGame().getJonRandNum(iListLength, "GetNextBuyablePlot picker");
+		int iPickedIndex = GC.getGame().randRangeExclusive(0, iListLength, CvSeeder::fromRaw(0x1a5c9e2c).mix(GetID()).mix(iListLength).mix(GC.getGame().getGameTurn()));
 		pPickedPlot = GC.getMap().plotByIndex(aiPlotList[iPickedIndex]);
 	}
 
@@ -23046,7 +23046,10 @@ int CvCity::rangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bIncl
 	int iAttackerRoll = 0;
 	if(bIncludeRand)
 	{
-		iAttackerRoll = GC.getGame().getJonRandNum(/*300*/ GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(), "City Ranged Attack Damage");
+		// Seeded from the participants rather than drawn from the shared random stream, so the value
+		// does not depend on how many rolls came before it on this machine (see CvUnit::GetRangeCombatDamage).
+		iAttackerRoll = GC.getGame().randRangeExclusive(0, /*300*/ GC.getRANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE(),
+			CvSeeder::fromRaw(0x4b1d2c07).mix(GetID()).mix(pDefender != NULL ? pDefender->GetID() : 0).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 	}
 	else
 	{
@@ -23108,7 +23111,9 @@ int CvCity::GetAirStrikeDefenseDamage(const CvUnit* pAttacker, bool bIncludeRand
 	int iDefenderRoll = 0;
 	if(bIncludeRand)
 	{
-		iDefenderRoll = /*200*/ GC.getGame().getJonRandNum(GC.getAIR_STRIKE_SAME_STRENGTH_POSSIBLE_EXTRA_DEFENSE_DAMAGE(), "Unit Air Strike Combat Damage");
+		// Seeded from the participants; see the note on the ranged roll above.
+		iDefenderRoll = /*200*/ GC.getGame().randRangeExclusive(0, GC.getAIR_STRIKE_SAME_STRENGTH_POSSIBLE_EXTRA_DEFENSE_DAMAGE(),
+			CvSeeder::fromRaw(0x4b1d2c08).mix(GetID()).mix(pAttacker != NULL ? pAttacker->GetID() : 0).mix(plot()->GetPseudoRandomSeed()).mix(GC.getGame().getGameTurn()));
 		iDefenderRoll *= iDefenderDamageRatio;
 		iDefenderRoll /= GetMaxHitPoints();
 	}
