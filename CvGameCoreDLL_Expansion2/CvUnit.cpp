@@ -17794,6 +17794,13 @@ int CvUnit::GetRangeCombatDamage(const CvUnit* pDefender, CvCity* pCity, bool bI
 //	--------------------------------------------------------------------------------
 int CvUnit::GetAirStrikeDefenseDamage(const CvUnit* pAttacker, bool bIncludeRand) const
 {
+	// Lua's Unit:GetAirStrikeDefenseDamage can be called with a nil attacker; without one there is
+	// no attacker strength to compare the unit against, so there is no damage to report.
+	if(pAttacker == NULL)
+	{
+		return 0;
+	}
+
 	int iAttackerStrength = pAttacker->GetMaxRangedCombatStrength(this, /*pCity*/ NULL, true, /*bForRangedAttack*/ false);
 	int iDefenderStrength = 0;
 
