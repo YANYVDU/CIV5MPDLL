@@ -23392,6 +23392,11 @@ void CvUnit::DoAdjacentPlotDamage(CvPlot* pWhere, int iValue)
 			{
 				CvUnit* pEnemyUnit = pLoopPlot->getUnitByIndex(iUnitIndex);
 
+				// Delayed casualties stay on the plot until cleanup; they must not be damaged or
+				// credited as kills again, or a second splash would pay the kill rewards twice.
+				if (pEnemyUnit != NULL && pEnemyUnit->isDelayedDeath())
+					continue;
+
 				if (pEnemyUnit != NULL && pEnemyUnit->isEnemy(getTeam()))
 				{
 
