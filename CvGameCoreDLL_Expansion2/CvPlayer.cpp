@@ -32501,7 +32501,7 @@ void CvPlayer::Write(FDataStream& kStream) const
 	{
 		// trying to cut down how big saves are
 		int iSize = -1;
-		for(int i = m_aiPlots.size() - 1; i >= 0; i--)
+		for(int i = static_cast<int>(m_aiPlots.size()) - 1; i >= 0; i--)
 		{
 			if(m_aiPlots[i] != -1)
 			{
