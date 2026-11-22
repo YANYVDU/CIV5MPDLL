@@ -22,6 +22,75 @@
 #include "FAutoVariableBase.h"
 #include "FAutoArchiveClassContainer.h"
 
+#include <sstream>
+
+//---------------------------------------------------------------------------------------
+
+// Desync reporting. The logging itself lives in the game core (CvSerialize.cpp): this header
+// cannot see gDLL, and the engine layer should not depend on the DLL interface.
+namespace FAutoVariableDesync
+{
+	void Report(const std::string& varName, const std::string& localValue, const std::string& remoteValue);
+
+	// ostringstream rather than FSerialization::toString, which falls back to "UNKNOWN" for
+	// enums -- and enums are exactly what several of these variables hold.
+	template<bool bIsClass, typename T>
+	struct ToStringSelector;
+
+	template<typename T>
+	struct ToStringSelector<false, T>
+	{
+		// Non-class values: integers, bools and enums all stream directly
+		static std::string Get(const T& value)
+		{
+			std::ostringstream stream;
+			stream << value;
+			return stream.str();
+		}
+	};
+
+	template<typename T>
+	struct ToStringSelector<true, T>
+	{
+		// Class values (CvWorldInfo and friends) have no operator<<; use the generic overload
+		static std::string Get(const T& value)
+		{
+			return FSerialization::toString(value);
+		}
+	};
+
+	template<typename T>
+	inline std::string ToString(const T& value)
+	{
+		return ToStringSelector<(__is_class(T) != 0), T>::Get(value);
+	}
+
+	// Vectors cannot be streamed; the size plus the first few elements is enough to locate one.
+	// Elements go through FSerialization::toString, which has a fallback for pair / Firaxis::Array.
+	template<typename T>
+	inline std::string DescribeVector(const std::vector<T>& values)
+	{
+		const size_t iMax = (values.size() < 12) ? values.size() : 12;
+
+		std::ostringstream stream;
+		stream << "size=" << values.size() << " [";
+		for (size_t i = 0; i < iMax; ++i)
+		{
+			if (i > 0)
+			{
+				stream << ", ";
+			}
+			stream << FSerialization::toString(values[i]);
+		}
+		if (values.size() > iMax)
+		{
+			stream << ", ...";
+		}
+		stream << "]";
+		return stream.str();
+	}
+}
+
 //---------------------------------------------------------------------------------------
 
 // Track baselines and deltas. Currently used to track out of sync bugs
@@ -339,7 +408,16 @@ bool FAutoVariable<ObjectType, ContainerType>::compare(FDataStream& otherValue) 
 	m_remoteValue = compareWith;
 #endif
 
-	return m_value == compareWith;
+	const bool result = (m_value == compareWith);
+
+	// Report both sides when they disagree. Release builds have no m_remoteValue and debugDump
+	// cannot reach the local value, so this used to leave nothing but a bool to debug from.
+	if (!result)
+	{
+		FAutoVariableDesync::Report(name(), FAutoVariableDesync::ToString(m_value), FAutoVariableDesync::ToString(compareWith));
+	}
+
+	return result;
 }
 
 //---------------------------------------------------------------------------------------

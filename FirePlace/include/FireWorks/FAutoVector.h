@@ -303,7 +303,14 @@ bool FAutoVariable<std::vector<ElementType>, ClassContainer>::compare(FDataStrea
 {
 	std::vector< ElementType > otherValueVec;
 	otherValue >> otherValueVec;
-	bool result = m_value == otherValueVec;
+	const bool result = (m_value == otherValueVec);
+
+	// Same reporting as the scalar variables: record what this machine had and what arrived
+	if (!result)
+	{
+		FAutoVariableDesync::Report(name(), FAutoVariableDesync::DescribeVector(m_value), FAutoVariableDesync::DescribeVector(otherValueVec));
+	}
+
 	m_commands.clear();
 	return result;
 }
