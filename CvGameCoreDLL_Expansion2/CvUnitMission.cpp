@@ -189,8 +189,13 @@ void CvUnitMission::PushMission(UnitHandle hUnit, MissionTypes eMission, int iDa
 											} else if (pTechs->HasTech(ePrereqTech)) {
 												if (pRemoveBuild == NULL) {
 													pRemoveBuild = pRemoveBuildInfo;
-												} else if (GC.getTechInfo(ePrereqTech)->GetGridX() > GC.getTechInfo((TechTypes) pRemoveBuild->getFeatureTech(eFeature))->GetGridX()) {
-													pRemoveBuild = pRemoveBuildInfo;
+												} else {
+													// The candidate may have been chosen above without a feature tech
+													// (NO_TECH), which would index past the tech table here.
+													const TechTypes eCurrentTech = (TechTypes) pRemoveBuild->getFeatureTech(eFeature);
+													if (eCurrentTech == NO_TECH || GC.getTechInfo(ePrereqTech)->GetGridX() > GC.getTechInfo(eCurrentTech)->GetGridX()) {
+														pRemoveBuild = pRemoveBuildInfo;
+													}
 												}
 											}
 										}

@@ -1,4 +1,4 @@
-/*	-------------------------------------------------------------------------------------------------------
+﻿/*	-------------------------------------------------------------------------------------------------------
 	© 1991-2012 Take-Two Interactive Software and its subsidiaries.  Developed by Firaxis Games.  
 	Sid Meier's Civilization V, Civ, Civilization, 2K Games, Firaxis Games, Take-Two Interactive Software 
 	and their respective logos are all trademarks of Take-Two interactive Software, Inc.  
@@ -1377,7 +1377,8 @@ int CvMilitaryAI::ScoreTarget(CvMilitaryTarget& target, AIOperationTypes eAIOper
 	uliRtnValue /= 1000;
 
 	// Economic value of target
-	unsigned long int iEconomicValue = 1 + (target.m_pTargetCity->getPopulation() / 3);
+	// Signed: a negative yield term must not wrap into a huge unsigned value below
+	int iEconomicValue = 1 + (target.m_pTargetCity->getPopulation() / 3);
 	// TODO: unhardcode this
 	// filter out all but the most productive
 	iEconomicValue += target.m_pTargetCity->getYieldRateTimes100(YIELD_FOOD, false) / 10;
@@ -1388,7 +1389,8 @@ int CvMilitaryAI::ScoreTarget(CvMilitaryTarget& target, AIOperationTypes eAIOper
 	iEconomicValue += target.m_pTargetCity->getYieldRateTimes100(YIELD_FAITH, false) / 10;
 	iEconomicValue += target.m_pTargetCity->getYieldRateTimes100(YIELD_TOURISM, false) / 10;
 	iEconomicValue += target.m_pTargetCity->getYieldRateTimes100(YIELD_GOLDEN_AGE_POINTS, false) / 10;
-	uliRtnValue *= iEconomicValue;
+	iEconomicValue = max(1, iEconomicValue);
+	uliRtnValue *= (unsigned long long)iEconomicValue;
 
 	uliRtnValue /= 10;
 

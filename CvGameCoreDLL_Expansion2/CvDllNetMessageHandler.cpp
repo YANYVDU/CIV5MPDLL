@@ -259,10 +259,16 @@ void CvDllNetMessageHandler::ResponseDoCommand(PlayerTypes ePlayer, int iUnitID,
 	if(pkUnit != NULL)
 	{
 		// getCommandInfo returns NULL for an id this machine has no entry for (a client with a
-		// different build or database can send one).
+		// different build or database can send one); refuse the command rather than fall through
+		// to the single-unit path with an unknown id.
 		CvCommandInfo* pkCommandInfo = GC.getCommandInfo(eCommand);
+		if(pkCommandInfo == NULL)
+		{
+			CUSTOMLOG("ResponseDoCommand: ignoring command id %d from player %d", (int)eCommand, (int)ePlayer);
+			return;
+		}
 
-		if(bAlt && pkCommandInfo != NULL && pkCommandInfo->getAll())
+		if(bAlt && pkCommandInfo->getAll())
 		{
 			const UnitTypes eUnitType = pkUnit->getUnitType();
 
@@ -294,6 +300,15 @@ void CvDllNetMessageHandler::ResponseFoundPantheon(PlayerTypes ePlayer, BeliefTy
 	CvGame& kGame(GC.getGame());
 	CvGameReligions* pkGameReligions(kGame.GetGameReligions());
 	CvBeliefXMLEntries* pkBeliefs = GC.GetGameBeliefs();
+
+	// GetEntry indexes its vector unchecked, so the id has to be valid before it is looked up
+	// (the NULL check below it was reached only after the read had already happened).
+	if(eBelief < 0 || eBelief >= GC.getNumBeliefInfos())
+	{
+		CUSTOMLOG("ResponseFoundPantheon: ignoring belief id %d from player %d", (int)eBelief, (int)ePlayer);
+		return;
+	}
+
 	CvBeliefEntry* pEntry = pkBeliefs->GetEntry((int)eBelief);
 
 	// Pantheon belief, or adding one through Reformation?
@@ -466,6 +481,14 @@ void CvDllNetMessageHandler::ResponseLeagueVoteEnact(LeagueTypes eLeague, int iR
 	CvAssertMsg(eVoter != NO_PLAYER, "eVoter invalid");
 
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetLeague(eLeague);
+
+	// GetLeague returns NULL for an id this machine has no league for, and the asserts above are
+	// compiled out (a client with a different build or database can send one).
+	if(pLeague == NULL)
+	{
+		CUSTOMLOG("ResponseLeague: ignoring league id %d", (int)eLeague);
+		return;
+	}
 	CvAssertMsg(pLeague->CanVote(eVoter), "eVoter not allowed to vote. Please send Anton your save file and version.");
 	pLeague->DoVoteEnact(iResolutionID, eVoter, iNumVotes, iChoice);
 }
@@ -476,6 +499,14 @@ void CvDllNetMessageHandler::ResponseLeagueVoteRepeal(LeagueTypes eLeague, int i
 	CvAssertMsg(eVoter != NO_PLAYER, "eVoter invalid");
 
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetLeague(eLeague);
+
+	// GetLeague returns NULL for an id this machine has no league for, and the asserts above are
+	// compiled out (a client with a different build or database can send one).
+	if(pLeague == NULL)
+	{
+		CUSTOMLOG("ResponseLeague: ignoring league id %d", (int)eLeague);
+		return;
+	}
 	CvAssertMsg(pLeague->CanVote(eVoter), "eVoter not allowed to vote. Please send Anton your save file and version.");
 	pLeague->DoVoteRepeal(iResolutionID, eVoter, iNumVotes, iChoice);
 }
@@ -486,6 +517,14 @@ void CvDllNetMessageHandler::ResponseLeagueVoteAbstain(LeagueTypes eLeague, Play
 	CvAssertMsg(eVoter != NO_PLAYER, "eVoter invalid");
 
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetLeague(eLeague);
+
+	// GetLeague returns NULL for an id this machine has no league for, and the asserts above are
+	// compiled out (a client with a different build or database can send one).
+	if(pLeague == NULL)
+	{
+		CUSTOMLOG("ResponseLeague: ignoring league id %d", (int)eLeague);
+		return;
+	}
 	CvAssertMsg(pLeague->CanVote(eVoter), "eVoter not allowed to vote. Please send Anton your save file and version.");
 	pLeague->DoVoteAbstain(eVoter, iNumVotes);
 }
@@ -497,6 +536,14 @@ void CvDllNetMessageHandler::ResponseLeagueProposeEnact(LeagueTypes eLeague, Res
 	CvAssertMsg(eProposer != NO_PLAYER, "eProposer invalid");
 
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetLeague(eLeague);
+
+	// GetLeague returns NULL for an id this machine has no league for, and the asserts above are
+	// compiled out (a client with a different build or database can send one).
+	if(pLeague == NULL)
+	{
+		CUSTOMLOG("ResponseLeague: ignoring league id %d", (int)eLeague);
+		return;
+	}
 	CvAssertMsg(pLeague->CanProposeEnact(eResolution, eProposer, iChoice), "eProposer not allowed to enact Resolution. Please send Anton your save file and version.");
 	pLeague->DoProposeEnact(eResolution, eProposer, iChoice);
 }
@@ -507,6 +554,14 @@ void CvDllNetMessageHandler::ResponseLeagueProposeRepeal(LeagueTypes eLeague, in
 	CvAssertMsg(eProposer != NO_PLAYER, "eProposer invalid");
 
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetLeague(eLeague);
+
+	// GetLeague returns NULL for an id this machine has no league for, and the asserts above are
+	// compiled out (a client with a different build or database can send one).
+	if(pLeague == NULL)
+	{
+		CUSTOMLOG("ResponseLeague: ignoring league id %d", (int)eLeague);
+		return;
+	}
 	CvAssertMsg(pLeague->CanProposeRepeal(iResolutionID, eProposer), "eProposer not allowed to repeal Resolution. Please send Anton your save file and version.");
 	pLeague->DoProposeRepeal(iResolutionID, eProposer);
 }
@@ -516,6 +571,14 @@ void CvDllNetMessageHandler::ResponseLeagueEditName(LeagueTypes eLeague, PlayerT
 	CvAssertMsg(eLeague != NO_LEAGUE, "eLeague invalid");
 
 	CvLeague* pLeague = GC.getGame().GetGameLeagues()->GetLeague(eLeague);
+
+	// GetLeague returns NULL for an id this machine has no league for, and the asserts above are
+	// compiled out (a client with a different build or database can send one).
+	if(pLeague == NULL)
+	{
+		CUSTOMLOG("ResponseLeague: ignoring league id %d", (int)eLeague);
+		return;
+	}
 	pLeague->DoChangeCustomName(ePlayer, szCustomName);
 }
 //------------------------------------------------------------------------------
@@ -607,6 +670,13 @@ void CvDllNetMessageHandler::ResponseGiftUnit(PlayerTypes ePlayer, PlayerTypes e
 //------------------------------------------------------------------------------
 void CvDllNetMessageHandler::ResponseLaunchSpaceship(PlayerTypes ePlayer, VictoryTypes eVictory)
 {
+	// canLaunch indexes its own array with the victory id, which arrives from the network
+	if(eVictory < 0 || eVictory >= GC.getNumVictoryInfos())
+	{
+		CUSTOMLOG("ResponseLaunchSpaceship: ignoring victory id %d from player %d", (int)eVictory, (int)ePlayer);
+		return;
+	}
+
 	CvPlayerAI& kPlayer = GET_PLAYER(ePlayer);
 	CvTeam& kTeam = GET_TEAM(kPlayer.getTeam());
 
@@ -808,6 +878,14 @@ void CvDllNetMessageHandler::ResponseArchaeologyChoice(PlayerTypes ePlayer, Arch
 //------------------------------------------------------------------------------
 void CvDllNetMessageHandler::ResponseIdeologyChoice(PlayerTypes ePlayer, PolicyBranchTypes eChoice)
 {
+	// The branch id arrives from the network; SetPolicyBranchUnlocked writes into the branch array
+	// with it, so an id this machine does not have would be an out-of-bounds write.
+	if(eChoice < 0 || eChoice >= GC.getNumPolicyBranchInfos())
+	{
+		CUSTOMLOG("ResponseIdeologyChoice: ignoring policy branch id %d from player %d", (int)eChoice, (int)ePlayer);
+		return;
+	}
+
 	CvPlayerAI& kPlayer = GET_PLAYER(ePlayer);
 	kPlayer.GetPlayerPolicies()->SetPolicyBranchUnlocked(eChoice, true, false);
 }

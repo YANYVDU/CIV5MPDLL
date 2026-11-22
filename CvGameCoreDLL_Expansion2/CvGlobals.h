@@ -640,7 +640,7 @@ public:
 
 	int getNumEraInfos();
 	std::vector<CvEraInfo*>& getEraInfo();
-	CvEraInfo* getEraInfo(EraTypes eEraNum);
+	_Ret_maybenull_ CvEraInfo* getEraInfo(EraTypes eEraNum);
 
 	int getNumHurryInfos();
 	std::vector<CvHurryInfo*>& getHurryInfo();

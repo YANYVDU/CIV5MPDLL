@@ -3339,6 +3339,8 @@ void CvTeam::changeCityWorkingChange(int iChange)
 {
 	if(iChange != 0)
 	{
+		std::vector<std::pair<CvCity*, int> > vReleasedCitizens;
+
 		for (int iPlayer = 0; iPlayer < MAX_PLAYERS; iPlayer++) {
 			CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iPlayer);
 			if (kLoopPlayer.isAlive()) {
@@ -3349,13 +3351,42 @@ void CvTeam::changeCityWorkingChange(int iChange)
 					for (pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kLoopPlayer.nextCity(&iLoop)) {
 						int iOldPlots = pLoopCity->GetNumWorkablePlots();
 						int iNewPlots = pLoopCity->GetNumWorkablePlots(iChange);
-			
+						int iReleased = 0;
+
+						CvCityCitizens* pCitizens = pLoopCity->GetCityCitizens();
+
+						// Release citizens and forced assignments from the plots leaving the range
+						for (int iI = iNewPlots; iI < iOldPlots; ++iI) {
+							CvPlot* pLoopPlot = plotCity(pLoopCity->getX(), pLoopCity->getY(), iI);
+
+							if (pLoopPlot) {
+								if (pCitizens->IsForcedWorkingPlot(pLoopPlot))
+								{
+									pCitizens->SetForcedWorkingPlot(pLoopPlot, false);
+								}
+
+								if (pCitizens->IsWorkingPlot(pLoopPlot))
+								{
+									pCitizens->SetWorkingPlot(pLoopPlot, false);
+									iReleased++;
+								}
+							}
+						}
+
+						if (iReleased > 0)
+						{
+							vReleasedCitizens.push_back(std::make_pair(pLoopCity, iReleased));
+						}
+
+						// Exactly one city gains or loses each plot, whatever the size of the change
+						const int iRadiusChange = (iChange > 0) ? 1 : -1;
+
 						for (int iI = std::min(iOldPlots, iNewPlots); iI < std::max(iOldPlots, iNewPlots); ++iI) {
 							CvPlot* pLoopPlot = plotCity(pLoopCity->getX(), pLoopCity->getY(), iI);
 
 							if (pLoopPlot) {
-								pLoopPlot->changeCityRadiusCount(iChange);
-								pLoopPlot->changePlayerCityRadiusCount(kLoopPlayer.GetID(), iChange);
+								pLoopPlot->changeCityRadiusCount(iRadiusChange);
+								pLoopPlot->changePlayerCityRadiusCount(kLoopPlayer.GetID(), iRadiusChange);
 							}
 						}
 					}
@@ -3364,6 +3395,16 @@ void CvTeam::changeCityWorkingChange(int iChange)
 		}
 
 		m_iCityWorkingChange = (m_iCityWorkingChange + iChange);
+
+		// Reassign what the smaller ranges released, now that the new range is in force
+		for (size_t iI = 0; iI < vReleasedCitizens.size(); ++iI)
+		{
+			CvCityCitizens* pCitizens = vReleasedCitizens[iI].first->GetCityCitizens();
+			for (int iJ = 0; iJ < vReleasedCitizens[iI].second; ++iJ)
+			{
+				pCitizens->DoAddBestCitizenFromUnassigned();
+			}
+		}
 	}
 }
 #endif

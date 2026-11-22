@@ -11755,7 +11755,7 @@ void CvCity::changeCityWorkingChange(int iChange)
 
 		// Every plot in the changed range gains or loses exactly one city, whatever the size of the
 		// change: passing iChange counted a two-ring change twice on each of those plots.
-		const int iRadiusChange = (iNewPlots > iOldPlots) ? 1 : -1;
+		const int iRadiusChange = (iChange > 0) ? 1 : -1;
 
 		for (int iI = std::min(iOldPlots, iNewPlots); iI < std::max(iOldPlots, iNewPlots); ++iI) {
 			CvPlot* pLoopPlot = plotCity(getX(), getY(), iI);
