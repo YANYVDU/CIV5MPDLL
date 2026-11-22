@@ -21,6 +21,17 @@
 // must be included after all other headers
 #include "LintFree.h"
 
+namespace
+{
+	// Quest notifications name a building whose id comes from the quest data, and the getter returns
+	// NULL for an id this build has no entry for.
+	const char* GetBuildingDescriptionKeySafe(BuildingTypes eBuilding)
+	{
+		CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+		return (pkBuildingInfo != NULL) ? pkBuildingInfo->GetDescriptionKey() : "";
+	}
+}
+
 //======================================================================================================
 //					CvMinorCivQuest
 //======================================================================================================
@@ -1452,7 +1463,7 @@ bool CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 
 		m_iData1 = eWonder;
 
-		const char* strBuildingName = GC.getBuildingInfo(eWonder)->GetDescriptionKey();
+		const char* strBuildingName = GetBuildingDescriptionKeySafe(eWonder);
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_CONSTRUCT_WONDER");
 		strMessage << strBuildingName;
@@ -1783,7 +1794,7 @@ bool CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 
 		m_iData1 = eWonder;
 
-		const char* strBuildingName = GC.getBuildingInfo(eWonder)->GetDescriptionKey();
+		const char* strBuildingName = GetBuildingDescriptionKeySafe(eWonder);
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_CONSTRUCT_NATIONAL_WONDER");
 		strMessage << strBuildingName;
@@ -1805,7 +1816,7 @@ bool CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 		m_iData1 = eBuilding;
 		m_iData2 = iTargetCities;
 
-		const char* strBuildingName = GC.getBuildingInfo(eBuilding)->GetDescriptionKey();
+		const char* strBuildingName = GetBuildingDescriptionKeySafe(eBuilding);
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_SPREAD_BUILDING");
 		strMessage << strBuildingName;
@@ -2402,7 +2413,7 @@ bool CvMinorCivQuest::DoFinishQuest()
 	else if(m_eType == MINOR_CIV_QUEST_CONSTRUCT_WONDER)
 	{
 		BuildingTypes eWonder = (BuildingTypes) GetPrimaryData();
-		const char* strBuildingName = GC.getBuildingInfo(eWonder)->GetDescriptionKey();
+		const char* strBuildingName = GetBuildingDescriptionKeySafe(eWonder);
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_CONSTRUCT_WONDER");
 		strMessage << strBuildingName;
@@ -2594,7 +2605,7 @@ bool CvMinorCivQuest::DoFinishQuest()
 	else if(m_eType == MINOR_CIV_QUEST_CONSTRUCT_NATIONAL_WONDER)
 	{
 		BuildingTypes eWonder = (BuildingTypes) GetPrimaryData();
-		const char* strBuildingName = GC.getBuildingInfo(eWonder)->GetDescriptionKey();
+		const char* strBuildingName = GetBuildingDescriptionKeySafe(eWonder);
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_CONSTRUCT_NATIONAL_WONDER");
 		strMessage << strBuildingName;
@@ -2606,7 +2617,7 @@ bool CvMinorCivQuest::DoFinishQuest()
 	else if(m_eType == MINOR_CIV_QUEST_SPREAD_BUILDING)
 	{
 		BuildingTypes eBuilding = (BuildingTypes) GetPrimaryData();
-		const char* strBuildingName = GC.getBuildingInfo(eBuilding)->GetDescriptionKey();
+		const char* strBuildingName = GetBuildingDescriptionKeySafe(eBuilding);
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_SPREAD_BUILDING");
 		strMessage << strBuildingName;

@@ -1358,13 +1358,15 @@ int CvMilitaryAI::ScoreTarget(CvMilitaryTarget& target, AIOperationTypes eAIOper
 
 	if (target.m_pTargetCity->IsOriginalCapital())
 	{
-		uliRtnValue *= GC.getAI_MILITARY_CAPTURING_ORIGINAL_CAPITAL();
+		// Clamped: these are signed defines multiplied into an unsigned value, so a negative
+		// setting would otherwise wrap into a near-maximum score for every original capital
+		uliRtnValue *= (unsigned long long)max(0, GC.getAI_MILITARY_CAPTURING_ORIGINAL_CAPITAL());
 		uliRtnValue /= 100;
 	}
 
 	if (target.m_pTargetCity->getOriginalOwner() == m_pPlayer->GetID())
 	{
-		uliRtnValue *= GC.getAI_MILITARY_RECAPTURING_OWN_CITY();
+		uliRtnValue *= (unsigned long long)max(0, GC.getAI_MILITARY_RECAPTURING_OWN_CITY());
 		uliRtnValue /= 100;
 	}
 	
@@ -4157,7 +4159,7 @@ void CvMilitaryAI::LogStrategy(MilitaryAIStrategyTypes eStrategy, bool bValue)
 
 		// Strategy Info
 		CvMilitaryAIStrategyXMLEntry* pEntry = GC.getMilitaryAIStrategyInfo(eStrategy);
-		const char* szType = (pEntry != NULL)? pEntry->GetType() : NULL;
+		const char* szType = (pEntry != NULL)? pEntry->GetType() : "INVALID_STRATEGY";
 
 		strTemp.Format("%s, %d", szType, bValue);
 		strOutBuf = strBaseString + strTemp;

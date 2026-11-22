@@ -3761,7 +3761,8 @@ void CvDealAI::DoAddItemsToDealForPeaceTreaty(PlayerTypes eOtherPlayer, CvDeal* 
 	// If the player only has 1 City then we can't get any more from him
 	else if (iPercentCitiesGiveUp > 0 || bGiveOnlyOneCity && pLosingPlayer->getNumCities() > 1)
 	{
-		int iCityValue = 0;
+		// 64 bits: this sums every city the loser has, which passes INT_MAX in a wide late-game empire
+		long long iCityValue = 0;
 		int iCityDistanceFromWinnersCapital = 0;
 		int iWinnerCapitalX = -1, iWinnerCapitalY = -1;
 

@@ -989,9 +989,10 @@ void CvPlot::verifyUnitValidPlot()
 
 //	--------------------------------------------------------------------------------
 // Left-over method, primarily because it is exposed to Lua.
-void CvPlot::nukeExplosion(int iDamageLevel, CvUnit*)
+void CvPlot::nukeExplosion(int iDamageLevel, CvUnit* pNukeUnit)
 {
-	CvUnitCombat::ApplyNuclearExplosionDamage(this, iDamageLevel);
+	// Pass the attacker through: it decides the extra blast radius, fallout and who is blamed
+	CvUnitCombat::ApplyNuclearExplosionDamage(this, iDamageLevel, pNukeUnit);
 }
 
 //	--------------------------------------------------------------------------------
