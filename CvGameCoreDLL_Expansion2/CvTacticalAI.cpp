@@ -4490,7 +4490,7 @@ void CvTacticalAI::PlotNavalEscortOperationMoves(CvAINavalEscortedOperation* pOp
 		if(iUnitID != -1)
 		{
 			pEscort = m_pPlayer->getUnit(iUnitID);
-			if(pEscort->getDomainType() != DOMAIN_LAND)
+			if(pEscort != NULL && pEscort->getDomainType() != DOMAIN_LAND)
 			{
 				pEscort = NULL;   // Second unit wasn't the escort
 			}
@@ -5167,6 +5167,10 @@ void CvTacticalAI::ExecuteFormationMoves(CvArmyAI* pArmy, CvPlot *pClosestCurren
 	for(it = m_OperationUnits.begin(); it != m_OperationUnits.end(); it++)
 	{
 		CvUnit *pOpUnit = m_pPlayer->getUnit(it->GetUnitID());
+		if (pOpUnit == NULL)
+		{
+			continue;
+		}
 		if (pOpUnit->IsCanAttackRanged())
 		{
 			iRangedUnits++;
@@ -10795,7 +10799,7 @@ void CvTacticalAI::PerformChosenMoves(int iFallbackMoveRange)
 	for(unsigned int iI = 0; iI < m_ChosenBlocks.size(); iI++)
 	{
 		CvUnit* pUnit = m_pPlayer->getUnit(m_ChosenBlocks[iI].GetUnitID());
-		if(!pUnit->isDelayedDeath())
+		if(pUnit != NULL && !pUnit->isDelayedDeath())
 		{
 			if (pUnit->getMoves() > 0)
 			{

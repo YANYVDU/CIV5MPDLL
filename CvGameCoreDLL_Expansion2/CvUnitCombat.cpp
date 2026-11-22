@@ -3259,13 +3259,21 @@ uint CvUnitCombat::ApplyNuclearExplosionDamage(const CvCombatMemberEntry* pkDama
 					pkUnit->kill(false, eAttackerOwner);
 				}
 
-				GET_PLAYER(kEntry.GetPlayer()).GetDiplomacyAI()->ChangeNumTimesNuked(pkAttacker->getOwner(), 1);
+				// The attacker is optional here (a meltdown passes none), so it cannot be read unguarded
+				if (pkAttacker != NULL)
+				{
+					GET_PLAYER(kEntry.GetPlayer()).GetDiplomacyAI()->ChangeNumTimesNuked(eAttackerOwner, 1);
+				}
 			}
 		}
 	}
 
 	// Then the terrain effects
-	int iBlastRadius = GC.getNUKE_BLAST_RADIUS() + pkAttacker->GetExtraNukeBlastRadius();
+	int iBlastRadius = GC.getNUKE_BLAST_RADIUS();
+	if (pkAttacker != NULL)
+	{
+		iBlastRadius += pkAttacker->GetExtraNukeBlastRadius();
+	}
 
 	for (int iDX = -(iBlastRadius); iDX <= iBlastRadius; iDX++)
 	{
@@ -3294,7 +3302,7 @@ uint CvUnitCombat::ApplyNuclearExplosionDamage(const CvCombatMemberEntry* pkDama
 										pLoopPlot->SetImprovementPillaged(true);
 									}
 
-									if (!pkAttacker->isNoFallout())
+									if (pkAttacker == NULL || !pkAttacker->isNoFallout())
 									{
 									 pLoopPlot->setFeatureType((FeatureTypes)(GC.getNUKE_FEATURE()));
 									}
@@ -3310,7 +3318,7 @@ uint CvUnitCombat::ApplyNuclearExplosionDamage(const CvCombatMemberEntry* pkDama
 									pLoopPlot->SetImprovementPillaged(true);
 								}
 
-								if (!pkAttacker->isNoFallout())
+								if (pkAttacker == NULL || !pkAttacker->isNoFallout())
 								{
 									pLoopPlot->setFeatureType((FeatureTypes)(GC.getNUKE_FEATURE()));
 								}
@@ -3355,7 +3363,10 @@ uint CvUnitCombat::ApplyNuclearExplosionDamage(const CvCombatMemberEntry* pkDama
 					pkCity->kill();
 
 					// slewis - check for killing a player
-					GET_PLAYER(pkAttacker->getOwner()).CheckForMurder(eOldOwner);
+					if (pkAttacker != NULL)
+					{
+						GET_PLAYER(pkAttacker->getOwner()).CheckForMurder(eOldOwner);
+					}
 				}
 				else
 				{
@@ -3391,7 +3402,10 @@ uint CvUnitCombat::ApplyNuclearExplosionDamage(const CvCombatMemberEntry* pkDama
 					// Add damage to the city
 					pkCity->setDamage(kEntry.GetFinalDamage());
 
-					GET_PLAYER(pkCity->getOwner()).GetDiplomacyAI()->ChangeNumTimesNuked(pkAttacker->getOwner(), 1);
+					if (pkAttacker != NULL)
+					{
+						GET_PLAYER(pkCity->getOwner()).GetDiplomacyAI()->ChangeNumTimesNuked(eAttackerOwner, 1);
+					}
 					}
 				}
 			}
@@ -3404,7 +3418,12 @@ uint CvUnitCombat::ApplyNuclearExplosionDamage(const CvCombatMemberEntry* pkDama
 //	The attacker is optional, this is also called for a meltdown
 void CvUnitCombat::GenerateNuclearExplosionDamage(CvPlot* pkTargetPlot, int iDamageLevel, CvUnit* pkAttacker, CvCombatMemberEntry* pkDamageArray, int* piDamageMembers, int iMaxDamageMembers)
 {
-	int iBlastRadius = GC.getNUKE_BLAST_RADIUS()+ pkAttacker->GetExtraNukeBlastRadius();
+	// The attacker is optional (a meltdown passes none), so the extra radius must not be read from it
+	int iBlastRadius = GC.getNUKE_BLAST_RADIUS();
+	if (pkAttacker != NULL)
+	{
+		iBlastRadius += pkAttacker->GetExtraNukeBlastRadius();
+	}
 
 	for (int iDX = -(iBlastRadius); iDX <= iBlastRadius; iDX++)
 	{
@@ -3426,7 +3445,7 @@ void CvUnitCombat::GenerateNuclearExplosionDamage(CvPlot* pkTargetPlot, int iDam
 						{
 							if (iDamageLevel > 3)
 							{
-								pLoopUnit->changeDamage(pLoopUnit->GetMaxHitPoints(), pkAttacker->getOwner(), pkAttacker->GetID());
+								pLoopUnit->changeDamage(pLoopUnit->GetMaxHitPoints(), pkAttacker != NULL ? pkAttacker->getOwner() : NO_PLAYER, pkAttacker != NULL ? pkAttacker->GetID() : -1);
 								if (pkAttacker)
 									pLoopUnit->setCombatUnit(pkAttacker);
 							}
@@ -3452,7 +3471,7 @@ void CvUnitCombat::GenerateNuclearExplosionDamage(CvPlot* pkTargetPlot, int iDam
 										iNukeDamage *= std::max(0, (pLoopCity->getNukeModifier() + 100));
 										iNukeDamage /= 100;
 									}
-									pLoopUnit->changeDamage(iNukeDamage, pkAttacker->getOwner(), pkAttacker->GetID());
+									pLoopUnit->changeDamage(iNukeDamage, pkAttacker != NULL ? pkAttacker->getOwner() : NO_PLAYER, pkAttacker != NULL ? pkAttacker->GetID() : -1);
 									if (pkAttacker)
 										pLoopUnit->setCombatUnit(pkAttacker);
 								}
