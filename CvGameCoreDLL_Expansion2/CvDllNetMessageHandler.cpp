@@ -258,7 +258,11 @@ void CvDllNetMessageHandler::ResponseDoCommand(PlayerTypes ePlayer, int iUnitID,
 
 	if(pkUnit != NULL)
 	{
-		if(bAlt && GC.getCommandInfo(eCommand)->getAll())
+		// getCommandInfo returns NULL for an id this machine has no entry for (a client with a
+		// different build or database can send one).
+		CvCommandInfo* pkCommandInfo = GC.getCommandInfo(eCommand);
+
+		if(bAlt && pkCommandInfo != NULL && pkCommandInfo->getAll())
 		{
 			const UnitTypes eUnitType = pkUnit->getUnitType();
 
@@ -1093,6 +1097,14 @@ void CvDllNetMessageHandler::ResponseUpdatePolicies(PlayerTypes ePlayer, bool bN
 	// Policy Update
 	if(bNOTPolicyBranch)
 	{
+		// The id arrives from the network, and a client with a different build or database can send
+		// one this machine has no entry for. Everything below indexes the policy arrays directly.
+		if(iPolicyID < 0 || iPolicyID >= GC.getNumPolicyInfos())
+		{
+			CUSTOMLOG("ResponseUpdatePolicies: ignoring policy id %d from player %d", iPolicyID, (int)ePlayer);
+			return;
+		}
+
 		const PolicyTypes ePolicy = static_cast<PolicyTypes>(iPolicyID);
 		if(bValue)
 		{
@@ -1106,6 +1118,12 @@ void CvDllNetMessageHandler::ResponseUpdatePolicies(PlayerTypes ePlayer, bool bN
 	// Policy Branch Update
 	else
 	{
+		if(iPolicyID < 0 || iPolicyID >= GC.getNumPolicyBranchInfos())
+		{
+			CUSTOMLOG("ResponseUpdatePolicies: ignoring policy branch id %d from player %d", iPolicyID, (int)ePlayer);
+			return;
+		}
+
 		const PolicyBranchTypes eBranch = static_cast<PolicyBranchTypes>(iPolicyID);
 		CvPlayerPolicies* pPlayerPolicies = kPlayer.GetPlayerPolicies();
 

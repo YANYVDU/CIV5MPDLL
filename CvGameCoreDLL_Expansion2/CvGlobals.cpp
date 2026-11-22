@@ -4297,6 +4297,10 @@ std::vector<CvMilitaryAIStrategyXMLEntry*>& CvGlobals::getMilitaryAIStrategyInfo
 CvMilitaryAIStrategyXMLEntry* CvGlobals::getMilitaryAIStrategyInfo(MilitaryAIStrategyTypes eAIStrategyNum)
 {
 	FAssert(eAIStrategyNum < GC.getNumMilitaryAIStrategyInfos());
+	if(eAIStrategyNum < 0 || eAIStrategyNum >= GC.getNumMilitaryAIStrategyInfos())
+	{
+		return NULL;
+	}
 	return m_pMilitaryAIStrategies->GetMilitaryAIStrategyEntries()[eAIStrategyNum];
 }
 
@@ -4319,6 +4323,10 @@ CvAIGrandStrategyXMLEntry* CvGlobals::getAIGrandStrategyInfo(AIGrandStrategyType
 {
 	CvAssert(eAIGrandStrategyNum > -1);
 	CvAssert(eAIGrandStrategyNum < GC.getNumAIGrandStrategyInfos());
+	if(eAIGrandStrategyNum < 0 || eAIGrandStrategyNum >= GC.getNumAIGrandStrategyInfos())
+	{
+		return NULL;
+	}
 	return m_pAIGrandStrategies->GetAIGrandStrategyEntries()[eAIGrandStrategyNum];
 }
 
@@ -4341,6 +4349,10 @@ CvAICityStrategyEntry* CvGlobals::getAICityStrategyInfo(AICityStrategyTypes eAIC
 {
 	CvAssert(eAICityStrategyNum > -1);
 	CvAssert(eAICityStrategyNum < GC.getNumAICityStrategyInfos());
+	if(eAICityStrategyNum < 0 || eAICityStrategyNum >= GC.getNumAICityStrategyInfos())
+	{
+		return NULL;
+	}
 	return m_pAICityStrategies->GetAICityStrategyEntries()[eAICityStrategyNum];
 }
 
@@ -4363,6 +4375,10 @@ CvPolicyEntry* CvGlobals::getPolicyInfo(PolicyTypes ePolicyNum)
 {
 	CvAssert(ePolicyNum > -1);
 	CvAssert(ePolicyNum < GC.getNumPolicyInfos());
+	if(ePolicyNum < 0 || ePolicyNum >= GC.getNumPolicyInfos())
+	{
+		return NULL;
+	}
 	return m_pPolicies->GetPolicyEntries()[ePolicyNum];
 }
 
@@ -4385,6 +4401,10 @@ CvPolicyBranchEntry* CvGlobals::getPolicyBranchInfo(PolicyBranchTypes ePolicyBra
 {
 	CvAssert(ePolicyBranchNum > -1);
 	CvAssert(ePolicyBranchNum < GC.getNumPolicyBranchInfos());
+	if(ePolicyBranchNum < 0 || ePolicyBranchNum >= GC.getNumPolicyBranchInfos())
+	{
+		return NULL;
+	}
 	return m_pPolicies->GetPolicyBranchEntries()[ePolicyBranchNum];
 }
 
@@ -4402,6 +4422,10 @@ CvEmphasisEntry* CvGlobals::getEmphasisInfo(EmphasizeTypes eEmphasisNum)
 {
 	CvAssert(eEmphasisNum > -1);
 	CvAssert(eEmphasisNum < GC.getNumEmphasisInfos());
+	if(eEmphasisNum < 0 || eEmphasisNum >= GC.getNumEmphasisInfos())
+	{
+		return NULL;
+	}
 	return m_pEmphases->GetEmphasisEntries()[eEmphasisNum];
 }
 
@@ -4424,6 +4448,10 @@ CvTraitEntry* CvGlobals::getTraitInfo(TraitTypes eTraitNum)
 {
 	CvAssert(eTraitNum > -1);
 	CvAssert(eTraitNum < GC.getNumTraitInfos());
+	if(eTraitNum < 0 || eTraitNum >= GC.getNumTraitInfos())
+	{
+		return NULL;
+	}
 	return m_pTraits->GetTraitEntries()[eTraitNum];
 }
 
@@ -4464,6 +4492,10 @@ CvReligionEntry* CvGlobals::getReligionInfo(ReligionTypes eReligionNum)
 {
 	CvAssert(eReligionNum > -1);
 	CvAssert(eReligionNum < GC.getNumReligionInfos());
+	if(eReligionNum < 0 || eReligionNum >= GC.getNumReligionInfos())
+	{
+		return NULL;
+	}
 	return m_pReligions->GetReligionEntries()[eReligionNum];
 }
 
@@ -4486,6 +4518,10 @@ CvBeliefEntry* CvGlobals::getBeliefInfo(BeliefTypes eBeliefNum)
 {
 	CvAssert(eBeliefNum > -1);
 	CvAssert(eBeliefNum < GC.getNumBeliefInfos());
+	if(eBeliefNum < 0 || eBeliefNum >= GC.getNumBeliefInfos())
+	{
+		return NULL;
+	}
 	return m_pBeliefs->GetBeliefEntries()[eBeliefNum];
 }
 
@@ -4508,6 +4544,10 @@ _Ret_maybenull_ CvLeagueSpecialSessionEntry* CvGlobals::getLeagueSpecialSessionI
 {
 	CvAssert(eLeagueSpecialSessionNum > -1);
 	CvAssert(eLeagueSpecialSessionNum < GC.getNumLeagueSpecialSessionInfos());
+	if(eLeagueSpecialSessionNum < 0 || eLeagueSpecialSessionNum >= GC.getNumLeagueSpecialSessionInfos())
+	{
+		return NULL;
+	}
 	return m_pLeagueSpecialSessions->GetLeagueSpecialSessionEntries()[eLeagueSpecialSessionNum];
 }
 
@@ -4530,6 +4570,10 @@ CvLeagueNameEntry* CvGlobals::getLeagueNameInfo(LeagueNameTypes eLeagueNameNum)
 {
 	CvAssert(eLeagueNameNum > -1);
 	CvAssert(eLeagueNameNum < GC.getNumLeagueNameInfos());
+	if(eLeagueNameNum < 0 || eLeagueNameNum >= GC.getNumLeagueNameInfos())
+	{
+		return NULL;
+	}
 	return m_pLeagueNames->GetLeagueNameEntries()[eLeagueNameNum];
 }
 
@@ -4552,6 +4596,10 @@ CvLeagueProjectEntry* CvGlobals::getLeagueProjectInfo(LeagueProjectTypes eLeague
 {
 	CvAssert(eLeagueProjectNum > -1);
 	CvAssert(eLeagueProjectNum < GC.getNumLeagueProjectInfos());
+	if(eLeagueProjectNum < 0 || eLeagueProjectNum >= GC.getNumLeagueProjectInfos())
+	{
+		return NULL;
+	}
 	return m_pLeagueProjects->GetLeagueProjectEntries()[eLeagueProjectNum];
 }
 
@@ -4574,6 +4622,10 @@ CvLeagueProjectRewardEntry* CvGlobals::getLeagueProjectRewardInfo(LeagueProjectR
 {
 	CvAssert(eLeagueProjectRewardNum > -1);
 	CvAssert(eLeagueProjectRewardNum < GC.getNumLeagueProjectRewardInfos());
+	if(eLeagueProjectRewardNum < 0 || eLeagueProjectRewardNum >= GC.getNumLeagueProjectRewardInfos())
+	{
+		return NULL;
+	}
 	return m_pLeagueProjectRewards->GetLeagueProjectRewardEntries()[eLeagueProjectRewardNum];
 }
 
@@ -4596,6 +4648,10 @@ CvResolutionEntry* CvGlobals::getResolutionInfo(ResolutionTypes eResolutionNum)
 {
 	CvAssert(eResolutionNum > -1);
 	CvAssert(eResolutionNum < GC.getNumResolutionInfos());
+	if(eResolutionNum < 0 || eResolutionNum >= GC.getNumResolutionInfos())
+	{
+		return NULL;
+	}
 	return m_pResolutions->GetResolutionEntries()[eResolutionNum];
 }
 
@@ -4618,6 +4674,10 @@ CvTechEntry* CvGlobals::getTechInfo(TechTypes eTechNum)
 {
 	CvAssert(eTechNum > -1);
 	CvAssert(eTechNum < GC.getNumTechInfos());
+	if(eTechNum < 0 || eTechNum >= GC.getNumTechInfos())
+	{
+		return NULL;
+	}
 	return m_pTechs->GetTechEntries()[eTechNum];
 }
 
@@ -4640,6 +4700,10 @@ CvEraInfo* CvGlobals::getEraInfo(EraTypes eEraNum)
 {
 	CvAssert(eEraNum > -1);
 	CvAssert(eEraNum < GC.getNumEraInfos());
+	if(eEraNum < 0 || eEraNum >= GC.getNumEraInfos())
+	{
+		return NULL;
+	}
 	return m_aEraInfo[eEraNum];
 }
 
@@ -4657,6 +4721,10 @@ CvHurryInfo* CvGlobals::getHurryInfo(HurryTypes eHurryNum)
 {
 	CvAssert(eHurryNum > -1);
 	CvAssert(eHurryNum < GC.getNumHurryInfos());
+	if(eHurryNum < 0 || eHurryNum >= GC.getNumHurryInfos())
+	{
+		return NULL;
+	}
 	return m_paHurryInfo[eHurryNum];
 }
 
@@ -4674,6 +4742,10 @@ CvVictoryInfo* CvGlobals::getVictoryInfo(VictoryTypes eVictoryNum)
 {
 	CvAssert(eVictoryNum > -1);
 	CvAssert(eVictoryNum < GC.getNumVictoryInfos());
+	if(eVictoryNum < 0 || eVictoryNum >= GC.getNumVictoryInfos())
+	{
+		return NULL;
+	}
 	return m_paVictoryInfo[eVictoryNum];
 }
 
@@ -4691,6 +4763,10 @@ CvSmallAwardInfo* CvGlobals::getSmallAwardInfo(SmallAwardTypes eSmallAwardNum)
 {
 	CvAssert(eSmallAwardNum > -1);
 	CvAssert(eSmallAwardNum < GC.getNumSmallAwardInfos());
+	if(eSmallAwardNum < 0 || eSmallAwardNum >= GC.getNumSmallAwardInfos())
+	{
+		return NULL;
+	}
 	return m_paSmallAwardInfo[eSmallAwardNum];
 }
 
@@ -4709,6 +4785,10 @@ CvDomainInfo* CvGlobals::getUnitDomainInfo(DomainTypes eDomainNum)
 {
 	CvAssert(eDomainNum > -1);
 	CvAssert(eDomainNum < GC.getNumUnitDomainInfos());
+	if(eDomainNum < 0 || eDomainNum >= GC.getNumUnitDomainInfos())
+	{
+		return NULL;
+	}
 	return m_paUnitDomainInfo[eDomainNum];
 }
 
