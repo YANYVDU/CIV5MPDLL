@@ -34852,24 +34852,65 @@ void CvPlayer::ChangeCityWorkingChange(int iChange)
 {
 	if(iChange != 0)
 	{
-		CvCity* pLoopCity;
-		int iLoop;
-		
-		for (pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop)) {
+		std::vector<std::pair<CvCity*, int> > vReleasedCitizens;
+
+		// Each city is handled against its old range first, before the player modifier moves
+		int iLoop = 0;
+		for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop)) {
 			int iOldPlots = pLoopCity->GetNumWorkablePlots();
 			int iNewPlots = pLoopCity->GetNumWorkablePlots(iChange);
-			
+			int iReleased = 0;
+
+			CvCityCitizens* pCitizens = pLoopCity->GetCityCitizens();
+
+			// Release citizens and forced assignments from the plots leaving the range
+			for (int iI = iNewPlots; iI < iOldPlots; ++iI) {
+				CvPlot* pLoopPlot = plotCity(pLoopCity->getX(), pLoopCity->getY(), iI);
+
+				if (pLoopPlot) {
+					if (pCitizens->IsForcedWorkingPlot(pLoopPlot))
+					{
+						pCitizens->SetForcedWorkingPlot(pLoopPlot, false);
+					}
+
+					if (pCitizens->IsWorkingPlot(pLoopPlot))
+					{
+						pCitizens->SetWorkingPlot(pLoopPlot, false);
+						iReleased++;
+					}
+				}
+			}
+
+			if (iReleased > 0)
+			{
+				vReleasedCitizens.push_back(std::make_pair(pLoopCity, iReleased));
+			}
+
+			// Exactly one city gains or loses each plot, whatever the size of the change; passing
+			// iChange counted a two-ring change twice on each of those plots.
+			const int iRadiusChange = (iNewPlots > iOldPlots) ? 1 : -1;
+
 			for (int iI = std::min(iOldPlots, iNewPlots); iI < std::max(iOldPlots, iNewPlots); ++iI) {
 				CvPlot* pLoopPlot = plotCity(pLoopCity->getX(), pLoopCity->getY(), iI);
 
 				if (pLoopPlot) {
-					pLoopPlot->changeCityRadiusCount(iChange);
-					pLoopPlot->changePlayerCityRadiusCount(GetID(), iChange);
+					pLoopPlot->changeCityRadiusCount(iRadiusChange);
+					pLoopPlot->changePlayerCityRadiusCount(GetID(), iRadiusChange);
 				}
 			}
 		}
 
 		m_iCityWorkingChange += iChange;
+
+		// Reassign what the smaller ranges released, now that the new range is in force
+		for (size_t iI = 0; iI < vReleasedCitizens.size(); ++iI)
+		{
+			CvCityCitizens* pCitizens = vReleasedCitizens[iI].first->GetCityCitizens();
+			for (int iJ = 0; iJ < vReleasedCitizens[iI].second; ++iJ)
+			{
+				pCitizens->DoAddBestCitizenFromUnassigned();
+			}
+		}
 	}
 }
 #endif

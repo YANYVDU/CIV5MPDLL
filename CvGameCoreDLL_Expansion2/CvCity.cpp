@@ -11728,22 +11728,49 @@ void CvCity::changeCityWorkingChange(int iChange)
 	{
 		int iOldPlots = GetNumWorkablePlots();
 		int iNewPlots = GetNumWorkablePlots(iChange);
-			
+		int iReleased = 0;
+
+		CvCityCitizens* pCitizens = GetCityCitizens();
+
+		// Release citizens and forced assignments from the plots leaving the range before the new
+		// range takes effect, or a citizen stays assigned to a plot the city no longer works.
+		for (int iI = iNewPlots; iI < iOldPlots; ++iI) {
+			CvPlot* pLoopPlot = plotCity(getX(), getY(), iI);
+
+			if (pLoopPlot) {
+				if (pCitizens->IsForcedWorkingPlot(pLoopPlot))
+				{
+					pCitizens->SetForcedWorkingPlot(pLoopPlot, false);
+				}
+
+				if (pCitizens->IsWorkingPlot(pLoopPlot))
+				{
+					pCitizens->SetWorkingPlot(pLoopPlot, false);
+					iReleased++;
+				}
+			}
+		}
+
+		m_iCityWorkingChange = (m_iCityWorkingChange + iChange);
+
+		// Every plot in the changed range gains or loses exactly one city, whatever the size of the
+		// change: passing iChange counted a two-ring change twice on each of those plots.
+		const int iRadiusChange = (iNewPlots > iOldPlots) ? 1 : -1;
+
 		for (int iI = std::min(iOldPlots, iNewPlots); iI < std::max(iOldPlots, iNewPlots); ++iI) {
 			CvPlot* pLoopPlot = plotCity(getX(), getY(), iI);
 
 			if (pLoopPlot) {
-				pLoopPlot->changeCityRadiusCount(iChange);
-				pLoopPlot->changePlayerCityRadiusCount(getOwner(), iChange);
-				// remove Citizens when Workable Plots reduce
-				if(iChange < 0)
-				{
-					GetCityCitizens()->SetWorkingPlot(pLoopPlot, false);
-					GetCityCitizens()->SetForcedWorkingPlot(pLoopPlot, false);
-				}
+				pLoopPlot->changeCityRadiusCount(iRadiusChange);
+				pLoopPlot->changePlayerCityRadiusCount(getOwner(), iRadiusChange);
 			}
 		}
-		m_iCityWorkingChange = (m_iCityWorkingChange + iChange);
+
+		// Give the released citizens a plot again, now that the new range is in force
+		for (int iI = 0; iI < iReleased; ++iI)
+		{
+			pCitizens->DoAddBestCitizenFromUnassigned();
+		}
 	}
 }
 #endif
