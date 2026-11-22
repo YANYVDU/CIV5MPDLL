@@ -29596,8 +29596,12 @@ void CvDiplomacyAI::LogOtherPlayerGuessStatus()
 							eGrandStrategy = GetPlayer()->GetGrandStrategyAI()->GetGuessOtherPlayerActiveGrandStrategy(eLoopOtherPlayer);
 							if(eGrandStrategy != NO_AIGRANDSTRATEGY)
 							{
-								strTemp.Format("%s", GC.getAIGrandStrategyInfo(eGrandStrategy)->GetType());
-								strThirdPlayerGrandStrategy = strTemp;
+								CvAIGrandStrategyXMLEntry* pkGrandStrategy = GC.getAIGrandStrategyInfo(eGrandStrategy);
+								if(pkGrandStrategy != NULL)
+								{
+									strTemp.Format("%s", pkGrandStrategy->GetType());
+									strThirdPlayerGrandStrategy = strTemp;
+								}
 
 								// Confidence in our guess
 								switch(GetPlayer()->GetGrandStrategyAI()->GetGuessOtherPlayerActiveGrandStrategyConfidence(eLoopOtherPlayer))

@@ -190,7 +190,9 @@ CvString CvGameCulture::GetGreatWorkTooltip(int iIndex, PlayerTypes eOwner) cons
 	}
 	szTooltip += GET_PLAYER(pWork->m_ePlayer).getCivilizationShortDescription();
 	szTooltip += "[NEWLINE]";
-	szTooltip += GC.getEraInfo(pWork->m_eEra)->GetDescription();
+	// A great work whose era never got filled in holds NO_ERA, and the getter returns NULL for it
+	CvEraInfo* pkEraInfo = GC.getEraInfo(pWork->m_eEra);
+	szTooltip += (pkEraInfo != NULL) ? pkEraInfo->GetDescription() : "";
 	szTooltip += " (";
 	szTooltip += strYearString;
 	szTooltip += ")";
@@ -290,7 +292,8 @@ CvString CvGameCulture::GetGreatWorkEra(int iIndex) const
 		GC.getGame().getStartYear(),
 		GC.getGame().getGameSpeedType());
 
-	szEra += GC.getEraInfo(pWork->m_eEra)->GetDescription();
+	CvEraInfo* pkEraInfo = GC.getEraInfo(pWork->m_eEra);
+	szEra += (pkEraInfo != NULL) ? pkEraInfo->GetDescription() : "";
 	szEra += " (";
 	szEra += strYearString;
 	szEra += ")";
@@ -304,7 +307,8 @@ CvString CvGameCulture::GetGreatWorkEraAbbreviation(int iIndex) const
 	CvString szEra = "";
 
 	const CvGreatWork *pWork = &m_CurrentGreatWorks[iIndex];
-	szEra = GC.getEraInfo(pWork->m_eEra)->getAbbreviation();
+	CvEraInfo* pkEraInfo = GC.getEraInfo(pWork->m_eEra);
+	szEra = (pkEraInfo != NULL) ? pkEraInfo->getAbbreviation() : "";
 
 	return szEra;	
 }
@@ -315,7 +319,8 @@ CvString CvGameCulture::GetGreatWorkEraShort(int iIndex) const
 	CvString szEra = "";
 
 	const CvGreatWork *pWork = &m_CurrentGreatWorks[iIndex];
-	szEra = GC.getEraInfo(pWork->m_eEra)->getShortDesc();
+	CvEraInfo* pkEraInfo = GC.getEraInfo(pWork->m_eEra);
+	szEra = (pkEraInfo != NULL) ? pkEraInfo->getShortDesc() : "";
 
 	return szEra;	
 }
@@ -3827,9 +3832,13 @@ void CvPlayerCulture::DoPublicOpinion()
 
 	if (m_ePreferredIdeology != NO_POLICY_BRANCH_TYPE)
 	{
-		Localization::String locText = Localization::Lookup("TXT_KEY_CO_OPINION_TT_PREFERRED_IDEOLOGY");
-		locText << GC.getPolicyBranchInfo(m_ePreferredIdeology)->GetDescription();
-		m_strOpinionTooltip += locText.toUTF8();
+		CvPolicyBranchEntry* pkIdeology = GC.getPolicyBranchInfo(m_ePreferredIdeology);
+		if (pkIdeology != NULL)
+		{
+			Localization::String locText = Localization::Lookup("TXT_KEY_CO_OPINION_TT_PREFERRED_IDEOLOGY");
+			locText << pkIdeology->GetDescription();
+			m_strOpinionTooltip += locText.toUTF8();
+		}
 	}
 
 	if (m_iOpinionUnhappiness > 0)
@@ -5082,7 +5091,8 @@ CvString CvCityCulture::GetThemingTooltip(BuildingClassTypes eBuildingClass) con
 				{
 					int iGreatWork = m_pCity->GetCityBuildings()->GetBuildingGreatWork(eBuildingClass, 0);
 					CvGreatWork work = GC.getGame().GetGameCulture()->m_CurrentGreatWorks[iGreatWork];
-					CvString szEraString = GC.getEraInfo(work.m_eEra)->getShortDesc();
+					CvEraInfo* pkWorkEra = GC.getEraInfo(work.m_eEra);
+					CvString szEraString = (pkWorkEra != NULL) ? pkWorkEra->getShortDesc() : "";
 					CvString szCivAdj = GET_PLAYER(m_pCity->getOwner()).getCivilizationAdjectiveKey();
 					switch (iIndex)
 					{

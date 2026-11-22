@@ -12078,8 +12078,12 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 		kOpinion.m_iValue = iValue;
 		kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_SAME_LATE_POLICY_TREES");
 		PolicyBranchTypes eBranch = pkPlayer->GetPlayerPolicies()->GetLateGamePolicyTree();
-		kOpinion.m_str << GC.getPolicyBranchInfo(eBranch)->GetDescription();
-		aOpinions.push_back(kOpinion);
+		CvPolicyBranchEntry* pkBranch = (eBranch != NO_POLICY_BRANCH_TYPE) ? GC.getPolicyBranchInfo(eBranch) : NULL;
+		if (pkBranch != NULL)
+		{
+			kOpinion.m_str << pkBranch->GetDescription();
+			aOpinions.push_back(kOpinion);
+		}
 	}
 
 	iValue = pDiploAI->GetDifferentLatePoliciesScore(eWithPlayer);
@@ -12090,9 +12094,14 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 		kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_DIFFERENT_LATE_POLICY_TREES");
 		PolicyBranchTypes eTheirBranch = pkPlayer->GetPlayerPolicies()->GetLateGamePolicyTree();
 		PolicyBranchTypes eMyBranch = GET_PLAYER(eWithPlayer).GetPlayerPolicies()->GetLateGamePolicyTree();
-		kOpinion.m_str << GC.getPolicyBranchInfo(eMyBranch)->GetDescription();
-		kOpinion.m_str << GC.getPolicyBranchInfo(eTheirBranch)->GetDescription();
-		aOpinions.push_back(kOpinion);
+		CvPolicyBranchEntry* pkTheirBranch = (eTheirBranch != NO_POLICY_BRANCH_TYPE) ? GC.getPolicyBranchInfo(eTheirBranch) : NULL;
+		CvPolicyBranchEntry* pkMyBranch = (eMyBranch != NO_POLICY_BRANCH_TYPE) ? GC.getPolicyBranchInfo(eMyBranch) : NULL;
+		if (pkMyBranch != NULL && pkTheirBranch != NULL)
+		{
+			kOpinion.m_str << pkMyBranch->GetDescription();
+			kOpinion.m_str << pkTheirBranch->GetDescription();
+			aOpinions.push_back(kOpinion);
+		}
 	}
 
 	iValue = pDiploAI->GetTimesRobbedScore(eWithPlayer);

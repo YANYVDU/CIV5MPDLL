@@ -1756,7 +1756,8 @@ bool CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 
 		m_iData1 = eTech;
 
-		const char* strTechName = GC.getTechInfo(eTech)->GetDescriptionKey();
+		CvTechEntry* pkQuestTech = GC.getTechInfo(eTech);
+		const char* strTechName = (pkQuestTech != NULL) ? pkQuestTech->GetDescriptionKey() : "";
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_RESEARCH_TECH");
 		strMessage << strTechName;
@@ -2574,7 +2575,8 @@ bool CvMinorCivQuest::DoFinishQuest()
 	else if(m_eType == MINOR_CIV_QUEST_RESEARCH_TECH)
 	{
 		TechTypes eTech = (TechTypes) GetPrimaryData();
-		const char* strTechName = GC.getTechInfo(eTech)->GetDescriptionKey();
+		CvTechEntry* pkQuestTech = GC.getTechInfo(eTech);
+		const char* strTechName = (pkQuestTech != NULL) ? pkQuestTech->GetDescriptionKey() : "";
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_COMPLETE_RESEARCH_TECH");
 		strMessage << strTechName;

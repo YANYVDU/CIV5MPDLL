@@ -2196,7 +2196,9 @@ int CvGameReligions::GetNumReligionsFounded() const
 		if(!it->m_bPantheon)
 		{
 #if defined(MOD_RELIGION_LOCAL_RELIGIONS)
-			if (MOD_RELIGION_LOCAL_RELIGIONS && bIgnoreLocal && GC.getReligionInfo(it->m_eReligion)->IsLocalReligion()) {
+			// The id comes from the save, so a mod change can leave one this build has no entry for
+			CvReligionEntry* pkLoopReligion = (it->m_eReligion != NO_RELIGION) ? GC.getReligionInfo(it->m_eReligion) : NULL;
+			if (MOD_RELIGION_LOCAL_RELIGIONS && bIgnoreLocal && pkLoopReligion != NULL && pkLoopReligion->IsLocalReligion()) {
 				continue;
 			}
 #endif
@@ -2492,7 +2494,9 @@ int CvGameReligions::GetAdjacentCityReligiousPressure (ReligionTypes eReligion, 
 	}
 
 #if defined(MOD_RELIGION_LOCAL_RELIGIONS)
-	if (MOD_RELIGION_LOCAL_RELIGIONS && GC.getReligionInfo(eReligion)->IsLocalReligion()) {
+	// The religion id can be absent from this build's table (save from another database)
+	CvReligionEntry* pkReligion = (eReligion != NO_RELIGION) ? GC.getReligionInfo(eReligion) : NULL;
+	if (MOD_RELIGION_LOCAL_RELIGIONS && pkReligion != NULL && pkReligion->IsLocalReligion()) {
 		// Can only spread a local religion to our own cities or City States
 		if (pToCity->getOwner() < MAX_MAJOR_CIVS && pFromCity->getOwner() != pToCity->getOwner()) {
 			return iPressure;
@@ -6127,6 +6131,13 @@ ReligionTypes CvReligionAI::GetReligionToSpread() const
 		int iValue = 0;
 		if (LuaSupport::CallAccumulator(pkScriptSystem, "GetReligionToSpread", args.get(), iValue))
 		{
+			// The accumulator comes from a Lua script: only accept an id this machine actually has,
+			// or every caller that looks the religion up would index past the table.
+			if (iValue < 0 || iValue >= GC.getNumReligionInfos())
+			{
+				return NO_RELIGION;
+			}
+
 			eRtnValue = (ReligionTypes)iValue;
 			return eRtnValue;
 		}
@@ -7521,7 +7532,9 @@ int CvReligionAI::ScoreCityForMissionary(CvCity* pCity, UnitHandle pUnit)
 	ReligionTypes eMyReligion = GetReligionToSpread();
 	
 #if defined(MOD_RELIGION_LOCAL_RELIGIONS)
-	if (MOD_RELIGION_LOCAL_RELIGIONS && GC.getReligionInfo(eMyReligion)->IsLocalReligion()) {
+	// GetReligionToSpread can answer NO_RELIGION, and the getter returns NULL for it
+	CvReligionEntry* pkMyReligion = (eMyReligion != NO_RELIGION) ? GC.getReligionInfo(eMyReligion) : NULL;
+	if (MOD_RELIGION_LOCAL_RELIGIONS && pkMyReligion != NULL && pkMyReligion->IsLocalReligion()) {
 		if (pCity->getOwner() != pUnit->getOwner()) {
 			return iScore;
 		}
@@ -7596,7 +7609,9 @@ int CvReligionAI::ScoreCityForInquisitor(CvCity* pCity, UnitHandle pUnit)
 	ReligionTypes eMyReligion = GetReligionToSpread();
 
 #if defined(MOD_RELIGION_LOCAL_RELIGIONS)
-	if (MOD_RELIGION_LOCAL_RELIGIONS && GC.getReligionInfo(eMyReligion)->IsLocalReligion()) {
+	// GetReligionToSpread can answer NO_RELIGION, and the getter returns NULL for it
+	CvReligionEntry* pkMyReligion = (eMyReligion != NO_RELIGION) ? GC.getReligionInfo(eMyReligion) : NULL;
+	if (MOD_RELIGION_LOCAL_RELIGIONS && pkMyReligion != NULL && pkMyReligion->IsLocalReligion()) {
 		if (pCity->getOwner() != pUnit->getOwner()) {
 			return iScore;
 		}

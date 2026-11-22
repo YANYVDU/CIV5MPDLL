@@ -8071,7 +8071,14 @@ void CvPlayer::receiveGoody(CvPlot* pPlot, GoodyTypes eGoody, CvUnit* pUnit)
 								// Must be within 10 plots of our Capital
 								if(iResourceDistance <= 10)
 								{
-									iResourceCost = GC.getTechInfo(eRevealTech)->GetResearchCost();
+									// A resource with no reveal tech cannot be priced; the getter would return NULL
+									CvTechEntry* pkRevealTech = GC.getTechInfo(eRevealTech);
+									if(pkRevealTech == NULL)
+									{
+										continue;
+									}
+
+									iResourceCost = pkRevealTech->GetResearchCost();
 
 									// Find the one with the cheapest Tech (or pick one if we haven't identified one yet)
 									if(iBestResourceCost == -1 || iResourceCost < iBestResourceCost)
@@ -11478,7 +11485,8 @@ int CvPlayer::calculateResearchModifier(TechTypes eTech)
 {
 	int iModifier = 100;
 
-	if(NO_TECH == eTech)
+	// The getter returns NULL for an id this build has no entry for, and the loop below dereferences it
+	if(NO_TECH == eTech || GC.getTechInfo(eTech) == NULL)
 	{
 		return iModifier;
 	}
@@ -29307,7 +29315,8 @@ int CvPlayer::getAdvancedStartImprovementCost(ImprovementTypes eImprovement, boo
 
 int CvPlayer::getAdvancedStartTechCost(TechTypes eTech, bool bAdd)
 {
-	if(eTech == NO_TECH)
+	// The getter returns NULL for an id this build has no entry for
+	if(eTech == NO_TECH || GC.getTechInfo(eTech) == NULL)
 	{
 		return -1;
 	}
@@ -33488,7 +33497,8 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 	{
 		int iBase = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
 		EraTypes eWorldEra = LeagueHelpers::GetGameEraForTrigger();
-		int iExtra = (eWorldEra != NO_ERA) ? GC.getEraInfo(eWorldEra)->getMinorCivAlliesThresholdExtra() : 0;
+		CvEraInfo* pkWorldEra = (eWorldEra != NO_ERA) ? GC.getEraInfo(eWorldEra) : NULL;
+	int iExtra = (pkWorldEra != NULL) ? pkWorldEra->getMinorCivAlliesThresholdExtra() : 0;
 		int iMod = GetMinorCivAlliesThresholdModifier();
 		int iRaw = iBase + iExtra;
 		return (iRaw * (100 + iMod)) / 100;
