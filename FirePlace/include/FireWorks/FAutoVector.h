@@ -269,7 +269,19 @@ void FAutoVariable<std::vector<ElementType>, ClassContainer>::save(FDataStream& 
 template<typename ElementType, typename ClassContainer>
 void FAutoVariable<std::vector<ElementType>, ClassContainer>::loadDelta(FDataStream& loadFrom)
 {
-	loadFrom >> m_value;
+	// Called for a received sync check: apply the sender's value unless this variable keeps its own
+	if (FAutoVariableDesync::AppliesRemoteValue(name()))
+	{
+		loadFrom >> m_value;
+		return;
+	}
+
+	std::vector<ElementType> remoteValue;
+	loadFrom >> remoteValue;
+
+	FAutoVariableDesync::NoteRemoteValueSkipped(name(),
+		FAutoVariableDesync::DescribeVector(m_value),
+		FAutoVariableDesync::DescribeVector(remoteValue));
 }
 
 //---------------------------------------------------------------------------------------

@@ -65,6 +65,14 @@ namespace FAutoVariableDesync
 		return ToStringSelector<(__is_class(T) != 0), T>::Get(value);
 	}
 
+	// Whether a received sync check may write the sender's value into this variable. Counters that
+	// the game keeps up to date from state outside the sync check must not take it: the written
+	// value no longer matches that state, and the difference stays once the state agrees again.
+	bool AppliesRemoteValue(const std::string& varName);
+
+	// Records one refused value, so the mechanism can be seen working in a test game.
+	void NoteRemoteValueSkipped(const std::string& varName, const std::string& localValue, const std::string& remoteValue);
+
 	// Vectors cannot be streamed; the size plus the first few elements is enough to locate one.
 	// Elements go through FSerialization::toString, which has a fallback for pair / Firaxis::Array.
 	template<typename T>
@@ -362,7 +370,19 @@ void FAutoVariable<ObjectType, ContainerType>::save(FDataStream& saveTo) const
 template<typename ObjectType, typename ContainerType>
 void FAutoVariable<ObjectType, ContainerType>::loadDelta(FDataStream& loadFrom)
 {
-	load(loadFrom);
+	// Called for a received sync check: apply the sender's value unless this variable keeps its own
+	if (FAutoVariableDesync::AppliesRemoteValue(name()))
+	{
+		load(loadFrom);
+		return;
+	}
+
+	ObjectType remoteValue;
+	loadFrom >> remoteValue;
+
+	FAutoVariableDesync::NoteRemoteValueSkipped(name(),
+		FAutoVariableDesync::ToString(m_value),
+		FAutoVariableDesync::ToString(remoteValue));
 }
 
 //---------------------------------------------------------------------------------------
