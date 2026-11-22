@@ -194,6 +194,9 @@ bool CvCityEmphases::IsEmphasize(EmphasizeTypes eIndex)
 
 	if(!m_pbEmphasize) return false;
 
+	// The index can come from a network message or a Lua call, and the asserts above are compiled out
+	if(eIndex < 0 || eIndex >= GC.getNumEmphasisInfos()) return false;
+
 	return m_pbEmphasize[eIndex];
 }
 
@@ -202,6 +205,12 @@ void CvCityEmphases::SetEmphasize(EmphasizeTypes eIndex, bool bNewValue)
 {
 	CvAssertMsg(eIndex >= 0, "eIndex is expected to be non-negative (invalid Index)");
 	CvAssertMsg(eIndex < GC.getNumEmphasisInfos(), "eIndex is expected to be within maximum bounds (invalid Index)");
+
+	// Unchecked, this writes past m_pbEmphasize and then reads a NULL entry below
+	if(eIndex < 0 || eIndex >= GC.getNumEmphasisInfos())
+	{
+		return;
+	}
 
 	if(IsEmphasize(eIndex) != bNewValue)
 	{

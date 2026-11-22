@@ -884,7 +884,8 @@ void CvCity::init(int iID, PlayerTypes eOwner, int iX, int iY, bool bBumpUnits, 
 #if defined(MOD_RELIGION_LOCAL_RELIGIONS)
 		else if (MOD_RELIGION_LOCAL_RELIGIONS) {
 			// Spread a local religion here if one is active
-			if(pReligions->HasCreatedReligion() && GC.getReligionInfo(pReligions->GetReligionCreatedByPlayer())->IsLocalReligion()) {
+			CvReligionEntry* pkLocalReligion = GC.getReligionInfo(pReligions->GetReligionCreatedByPlayer());
+			if(pReligions->HasCreatedReligion() && pkLocalReligion != NULL && pkLocalReligion->IsLocalReligion()) {
 				GetCityReligions()->AdoptReligionFully(pReligions->GetReligionCreatedByPlayer());
 			}
 		}

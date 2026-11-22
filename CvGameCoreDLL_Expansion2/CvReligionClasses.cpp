@@ -2042,7 +2042,9 @@ bool CvGameReligions::HasCreatedReligion(PlayerTypes ePlayer) const
 	{
 #if defined(MOD_RELIGION_LOCAL_RELIGIONS)
 		if (MOD_RELIGION_LOCAL_RELIGIONS && bIgnoreLocal) {
-			return !(GC.getReligionInfo(GetReligionCreatedByPlayer(ePlayer))->IsLocalReligion());
+			// The religion id comes from the save, so it may be absent from this build's table
+			CvReligionEntry* pkCreatedReligion = GC.getReligionInfo(GetReligionCreatedByPlayer(ePlayer));
+			return (pkCreatedReligion == NULL || !pkCreatedReligion->IsLocalReligion());
 		}
 #endif
 
@@ -6132,14 +6134,13 @@ ReligionTypes CvReligionAI::GetReligionToSpread() const
 		if (LuaSupport::CallAccumulator(pkScriptSystem, "GetReligionToSpread", args.get(), iValue))
 		{
 			// The accumulator comes from a Lua script: only accept an id this machine actually has,
-			// or every caller that looks the religion up would index past the table.
-			if (iValue < 0 || iValue >= GC.getNumReligionInfos())
+			// or every caller that looks the religion up would index past the table. An unusable
+			// answer falls through to the religion this player founded, rather than stopping here.
+			if (iValue >= 0 && iValue < GC.getNumReligionInfos())
 			{
-				return NO_RELIGION;
+				eRtnValue = (ReligionTypes)iValue;
+				return eRtnValue;
 			}
-
-			eRtnValue = (ReligionTypes)iValue;
-			return eRtnValue;
 		}
 	}
 

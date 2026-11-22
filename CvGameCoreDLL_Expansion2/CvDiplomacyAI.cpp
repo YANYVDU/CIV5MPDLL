@@ -29602,6 +29602,13 @@ void CvDiplomacyAI::LogOtherPlayerGuessStatus()
 									strTemp.Format("%s", pkGrandStrategy->GetType());
 									strThirdPlayerGrandStrategy = strTemp;
 								}
+								else
+								{
+									// A strategy id this build has no entry for: do not append the confidence
+									// to whatever the previous player left in the string
+									strThirdPlayerGrandStrategy.Format("Invalid GS");
+									strTemp.Format("");
+								}
 
 								// Confidence in our guess
 								switch(GetPlayer()->GetGrandStrategyAI()->GetGuessOtherPlayerActiveGrandStrategyConfidence(eLoopOtherPlayer))

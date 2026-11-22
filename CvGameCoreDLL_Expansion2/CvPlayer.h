@@ -107,6 +107,8 @@ public:
 #if defined(MOD_GLOBAL_CITY_WORKING)
 	int getBuyPlotDistance() const;
 	int getWorkPlotDistance() const;
+	//! Distance if the player's (or its team's) working change moved by iChange, clamped at the end
+	int getWorkPlotDistanceWithChange(int iChange) const;
 	int GetNumWorkablePlots() const;
 #endif
 

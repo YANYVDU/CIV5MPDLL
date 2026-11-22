@@ -10799,7 +10799,15 @@ void CvTacticalAI::PerformChosenMoves(int iFallbackMoveRange)
 	for(unsigned int iI = 0; iI < m_ChosenBlocks.size(); iI++)
 	{
 		CvUnit* pUnit = m_pPlayer->getUnit(m_ChosenBlocks[iI].GetUnitID());
-		if(pUnit != NULL && !pUnit->isDelayedDeath())
+		if(pUnit == NULL)
+		{
+			// The unit is gone for good; drop its id so a later unit that reuses it is not treated
+			// as already processed for the rest of the turn.
+			UnitProcessed(m_ChosenBlocks[iI].GetUnitID());
+			continue;
+		}
+
+		if(!pUnit->isDelayedDeath())
 		{
 			if (pUnit->getMoves() > 0)
 			{

@@ -1756,8 +1756,14 @@ bool CvMinorCivQuest::DoStartQuest(int iStartTurn, PlayerTypes eForcedTarget)
 
 		m_iData1 = eTech;
 
+		// The quest stores the tech id, so an id this build has no entry for must not be accepted
 		CvTechEntry* pkQuestTech = GC.getTechInfo(eTech);
-		const char* strTechName = (pkQuestTech != NULL) ? pkQuestTech->GetDescriptionKey() : "";
+		if(pkQuestTech == NULL)
+		{
+			return false;
+		}
+
+		const char* strTechName = pkQuestTech->GetDescriptionKey();
 
 		strMessage = Localization::Lookup("TXT_KEY_NOTIFICATION_QUEST_RESEARCH_TECH");
 		strMessage << strTechName;

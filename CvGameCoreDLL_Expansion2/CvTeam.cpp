@@ -3345,6 +3345,13 @@ void CvTeam::changeCityWorkingChange(int iChange)
 			CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iPlayer);
 			if (kLoopPlayer.isAlive()) {
 				if (kLoopPlayer.getTeam() == GetID()) {
+					// A change the clamp swallows does not move the range; acting on the raw delta
+					// would release citizens from plots the city still works.
+					if(kLoopPlayer.getWorkPlotDistance() == kLoopPlayer.getWorkPlotDistanceWithChange(iChange))
+					{
+						continue;
+					}
+
 					CvCity* pLoopCity;
 					int iLoop;
 		
@@ -7649,6 +7656,10 @@ void CvTeam::SetCurrentEra(EraTypes eNewValue)
 							strMessage = Localization::Lookup("TXT_KEY_NTFN_PLAYER_ERA");
 
 							CvEraInfo* pkEraInfo = GC.getEraInfo(eNewValue);
+							if(pkEraInfo == NULL)
+							{
+								continue;
+							}
 							const char* szEraTextKey = pkEraInfo->GetTextKey();
 
 							// Notify player has met this team
@@ -7719,7 +7730,7 @@ void CvTeam::SetCurrentEra(EraTypes eNewValue)
 			}
 
 			CvEraInfo* pEraInfo = GC.getEraInfo(eNewValue);
-			if(pEraInfo->getSpiesGrantedForPlayer() > 0)
+			if(pEraInfo != NULL && pEraInfo->getSpiesGrantedForPlayer() > 0)
 			{
 				PlayerTypes ePlayer;
 				for(int iPlayerLoop = 0; iPlayerLoop < MAX_CIV_PLAYERS; iPlayerLoop++)

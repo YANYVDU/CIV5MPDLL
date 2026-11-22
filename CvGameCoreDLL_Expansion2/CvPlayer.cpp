@@ -4168,6 +4168,30 @@ int CvPlayer::getWorkPlotDistance() const
 }
 
 //	--------------------------------------------------------------------------------
+/// The same distance if the player's or its team's working change moved by iChange.
+/// The clamp has to come after the change, or a bonus already at MAX_CITY_RADIUS makes the
+/// caller believe the range shrinks when it does not.
+int CvPlayer::getWorkPlotDistanceWithChange(int iChange) const
+{
+	int iDistance = GC.getMAXIMUM_WORK_PLOT_DISTANCE();
+
+	if(isMinorCiv())
+		iDistance -= GC.getMAXIMUM_WORK_PLOT_DISTANCE_MINOR_REDUCE();
+
+#if defined(MOD_TRAITS_CITY_WORKING) || defined(MOD_BUILDINGS_CITY_WORKING) || defined(MOD_POLICIES_CITY_WORKING)
+	iDistance += GetCityWorkingChange();
+#endif
+#if defined(MOD_TECHS_CITY_WORKING)
+	iDistance += GET_TEAM(getTeam()).GetCityWorkingChange();
+#endif
+
+	iDistance += iChange;
+
+	iDistance = std::min(MAX_CITY_RADIUS, std::max(MIN_CITY_RADIUS, iDistance));
+	return iDistance;
+}
+
+//	--------------------------------------------------------------------------------
 /// How many plots a generic city may work
 int CvPlayer::GetNumWorkablePlots() const
 {
@@ -11082,11 +11106,16 @@ bool CvPlayer::canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestEra, b
 		return false;
 	}
 
-	if(GC.getBuildInfo(eBuild)->getTechPrereq() != NO_TECH)
+	CvBuildInfo* pkCanBuildInfo = GC.getBuildInfo(eBuild);
+	if(pkCanBuildInfo != NULL && pkCanBuildInfo->getTechPrereq() != NO_TECH)
 	{
-		if(!(GET_TEAM(getTeam()).GetTeamTechs()->HasTech((TechTypes)GC.getBuildInfo(eBuild)->getTechPrereq())))
+		const TechTypes ePrereqTech = (TechTypes) pkCanBuildInfo->getTechPrereq();
+
+		if(!(GET_TEAM(getTeam()).GetTeamTechs()->HasTech(ePrereqTech)))
 		{
-			if((!bTestEra && !bTestVisible) || ((GetCurrentEra() + 1) < GC.getTechInfo((TechTypes) GC.getBuildInfo(eBuild)->getTechPrereq())->GetEra()))
+			// The getter returns NULL for a tech id this build has no entry for
+			CvTechEntry* pkPrereqTech = GC.getTechInfo(ePrereqTech);
+			if((!bTestEra && !bTestVisible) || (pkPrereqTech != NULL && (GetCurrentEra() + 1) < pkPrereqTech->GetEra()))
 			{
 				return false;
 			}
@@ -33498,7 +33527,7 @@ void CvPlayer::ChangeNumCityStateAllies(int iChange)
 		int iBase = GC.getFRIENDSHIP_THRESHOLD_ALLIES();
 		EraTypes eWorldEra = LeagueHelpers::GetGameEraForTrigger();
 		CvEraInfo* pkWorldEra = (eWorldEra != NO_ERA) ? GC.getEraInfo(eWorldEra) : NULL;
-	int iExtra = (pkWorldEra != NULL) ? pkWorldEra->getMinorCivAlliesThresholdExtra() : 0;
+		int iExtra = (pkWorldEra != NULL) ? pkWorldEra->getMinorCivAlliesThresholdExtra() : 0;
 		int iMod = GetMinorCivAlliesThresholdModifier();
 		int iRaw = iBase + iExtra;
 		return (iRaw * (100 + iMod)) / 100;
@@ -34864,9 +34893,18 @@ void CvPlayer::ChangeCityWorkingChange(int iChange)
 	{
 		std::vector<std::pair<CvCity*, int> > vReleasedCitizens;
 
+		// A change the clamp swallows does not move the range at all. Acting on the raw delta would
+		// release citizens from plots the city still works and mis-count them for good.
+		const bool bRangeChanges = (getWorkPlotDistance() != getWorkPlotDistanceWithChange(iChange));
+
 		// Each city is handled against its old range first, before the player modifier moves
 		int iLoop = 0;
 		for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop)) {
+			if(!bRangeChanges)
+			{
+				continue;
+			}
+
 			int iOldPlots = pLoopCity->GetNumWorkablePlots();
 			int iNewPlots = pLoopCity->GetNumWorkablePlots(iChange);
 			int iReleased = 0;
