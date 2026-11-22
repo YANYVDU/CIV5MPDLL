@@ -2867,7 +2867,8 @@ InfluenceLevelTypes CvPlayerCulture::GetInfluenceLevel(PlayerTypes ePlayer) cons
 
 		if (iLifetimeCulture > 0)
 		{
-			iPercent = iInfluenceOn * 100 / iLifetimeCulture;
+			// 64 bits: influence can pass INT_MAX / 100 in a long game
+			iPercent = (int)((long long)iInfluenceOn * 100 / iLifetimeCulture);
 		}
 
 		eRtnValue = INFLUENCE_LEVEL_UNKNOWN;
@@ -2908,8 +2909,10 @@ InfluenceLevelTrend CvPlayerCulture::GetInfluenceTrend(PlayerTypes ePlayer) cons
 	// PctTurn2 = InfluenceT2 / LifetimeCultureT2
 	
 	// So if looking at is PctT2 > PctT1, can see if  (InfluenceT2 * LifetimeCultureT1) > (InfluenceT1 * LifetimeCultureT2)
-	int iLHS = GetInfluenceOn(ePlayer) * kOtherPlayer.GetCulture()->GetLastTurnLifetimeCulture();
-	int iRHS = GetLastTurnInfluenceOn(ePlayer) * kOtherPlayer.GetJONSCultureEverGenerated();
+	// Both factors are lifetime totals, so the products pass INT_MAX well before the late game and
+	// the comparison below would go either way on the sign. Compare in 64 bits.
+	const long long iLHS = (long long)GetInfluenceOn(ePlayer) * kOtherPlayer.GetCulture()->GetLastTurnLifetimeCulture();
+	const long long iRHS = (long long)GetLastTurnInfluenceOn(ePlayer) * kOtherPlayer.GetJONSCultureEverGenerated();
 
 	if (kOtherPlayer.GetCulture()->GetLastTurnLifetimeCulture() > 0 && kOtherPlayer.GetJONSCultureEverGenerated() > 0)
 	{
@@ -3018,7 +3021,8 @@ PlayerTypes CvPlayerCulture::GetCivLowestInfluence(bool bCheckOpenBorders) const
 
 				if (iLifetimeCulture > 0)
 				{
-					iPercent = iInfluenceOn * 100 / iLifetimeCulture;
+					// 64 bits, as above
+					iPercent = (int)((long long)iInfluenceOn * 100 / iLifetimeCulture);
 				}
 
 				if (iPercent < iLowestPercent)

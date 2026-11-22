@@ -3815,7 +3815,10 @@ void CvDealAI::DoAddItemsToDealForPeaceTreaty(PlayerTypes eOtherPlayer, CvDeal* 
 		else
 		{
 			// Determine the value of Cities to be given up
-			int iCityValueToSurrender = iCityValue * iPercentCitiesGiveUp / 100;
+			// 64 bits: iCityValue sums every city the loser has, and that times the percentage
+			// passes INT_MAX in a wide late-game empire; the threshold would then be negative and
+			// no city would ever be handed over.
+			long long iCityValueToSurrender = (long long)iCityValue * iPercentCitiesGiveUp / 100;
 
 			// Loop through sorted Cities and add them to the deal if they're under the amount to give up - start from the back of the list, because that's where the CLOSEST cities are
 			for(int iSortedCityIndex = viCityProximities.size() - 1; iSortedCityIndex > -1 ; iSortedCityIndex--)

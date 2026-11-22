@@ -1336,10 +1336,13 @@ int CvCitySpecializationAI::PlotValueForScience(CvPlot* pPlot)
 /// Multiply city value for a yield based on buildings present
 int CvCitySpecializationAI::AdjustValueBasedOnBuildings(CvCity* pCity, YieldTypes eYield, int iInitialValue)
 {
-	int iRtnValue;
+	// The multipliers below are applied one after another, so the intermediate value can pass
+	// INT_MAX in a large late-game city; it used to wrap negative and the caller then zeroed the
+	// city's weight for that yield. Keep the chain in 64 bits and saturate on the way out.
+	long long iRtnValue;
 
 	// Everything looks at yield modifier
-	iRtnValue = iInitialValue * (100 + pCity->getYieldRateModifier(eYield)) / 100;
+	iRtnValue = (long long)iInitialValue * (100 + pCity->getYieldRateModifier(eYield)) / 100;
 
 	// ... and yield per pop
 	int iYieldPerPop = pCity->GetYieldPerPopTimes100(eYield);
@@ -1348,9 +1351,9 @@ int CvCitySpecializationAI::AdjustValueBasedOnBuildings(CvCity* pCity, YieldType
 		iRtnValue = iRtnValue * (100 + iYieldPerPop) / 100;
 	}
 
-	// ... and yield per pop
+	// ... and yield per religion
 	int iYieldPerReligion = pCity->GetYieldPerReligionTimes100(eYield);
-	if(iYieldPerPop > 0)
+	if(iYieldPerReligion > 0)
 	{
 		iRtnValue = iRtnValue * (100 + (iYieldPerReligion * pCity->GetCityReligions()->GetNumReligionsWithFollowers())) / 100;
 	}
@@ -1426,9 +1429,7 @@ int CvCitySpecializationAI::AdjustValueBasedOnBuildings(CvCity* pCity, YieldType
 #endif
 	}
 
-
-
-	return iRtnValue;
+	return (int)min(iRtnValue, (long long)INT_MAX);
 }
 
 /// Should this player worry about assigning cities to build spaceship parts?

@@ -1,4 +1,4 @@
-﻿/*	-------------------------------------------------------------------------------------------------------
+/*	-------------------------------------------------------------------------------------------------------
 	© 1991-2012 Take-Two Interactive Software and its subsidiaries.  Developed by Firaxis Games.  
 	Sid Meier's Civilization V, Civ, Civilization, 2K Games, Firaxis Games, Take-Two Interactive Software 
 	and their respective logos are all trademarks of Take-Two interactive Software, Inc.  
@@ -1246,7 +1246,7 @@ void CvMilitaryAI::ShouldAttackBySea(PlayerTypes eEnemy, CvMilitaryTarget& targe
 /// Come up with a target priority looking at distance, strength, approaches (high score = more desirable target)
 int CvMilitaryAI::ScoreTarget(CvMilitaryTarget& target, AIOperationTypes eAIOperationType)
 {
-	unsigned long int uliRtnValue = 1;  // Start with a high base number since divide into it later
+	unsigned long long uliRtnValue = 1;  // Start with a high base number since divide into it later
 
 	// Take into account distance to target (and use higher multipliers for land paths)
 	if(!target.m_bAttackBySea)
@@ -1392,7 +1392,9 @@ int CvMilitaryAI::ScoreTarget(CvMilitaryTarget& target, AIOperationTypes eAIOper
 
 	uliRtnValue /= 10;
 
-	return min(10000000, (int)uliRtnValue & 0x7fffffff);
+	// 64 bits up to here: the product passed 32 bits for large late-game cities, and masking the
+	// wrapped value produced an arbitrary (sometimes very small) score for the fattest target.
+	return (int)min((unsigned long long)10000000, uliRtnValue);
 }
 
 /// How open an approach do we have to this city if we want to attack it?
