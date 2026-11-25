@@ -2307,7 +2307,9 @@ void CvCity::doTurn()
 				if (iSiegeCount[iP] <= 0) continue;
 				CvPlayerCityStateUA* pUA = GET_PLAYER((PlayerTypes)iP).GetPlayerCityStateUA();
 				int iThreshold = pUA ? pUA->GetEnemyCityNoHealBesiegeCount() : 0;
-				if (iThreshold > 0 && iSiegeCount[iP] >= iThreshold)
+				// Dao war grace: a besieged city stops healing while besiegers remain.
+				bool bDaoNoHeal = GET_PLAYER((PlayerTypes)iP).HasDaoSiegeNoHeal();
+				if (bDaoNoHeal || (iThreshold > 0 && iSiegeCount[iP] >= iThreshold))
 				{
 					iHitsHealed = 0;
 					break;
@@ -3531,6 +3533,44 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, bool bContinue, bool bTestVis
 	{
 		return false;
 	}
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// A wonder placed in an overlord's reward pool is reserved: only that
+	// overlord, or a vassal it explicitly approved, may build it.
+	if (MOD_GLOBAL_SUZERAIN)
+	{
+		BuildingClassTypes eBuildingClass = (BuildingClassTypes)pkBuildingInfo->GetBuildingClassType();
+		CvBuildingClassInfo* pBuildingClass = GC.getBuildingClassInfo(eBuildingClass);
+		if (pBuildingClass != NULL && isWorldWonderClass(*pBuildingClass))
+		{
+			PlayerTypes eCityOwner = getOwner();
+			PlayerTypes eOverlord = kPlayer.GetOverlord();
+
+			if (eOverlord != NO_PLAYER)
+			{
+				if (!GET_PLAYER(eOverlord).CanVassalBuildWonder(eCityOwner, eBuilding))
+					return false;
+			}
+			else
+			{
+				for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+				{
+					PlayerTypes eOther = (PlayerTypes)i;
+					if (eOther == eCityOwner) continue;
+
+					CvPlayer& kOther = GET_PLAYER(eOther);
+					if (!kOther.isAlive()) continue;
+
+					for (int j = 0; j < kOther.GetVassalWonderPoolCount(); j++)
+					{
+						if (kOther.GetVassalWonderPoolEntry(j) == (int)eBuilding)
+							return false;
+					}
+				}
+			}
+		}
+	}
+#endif
 
 	if(pkBuildingInfo->IsNoPuppet() && IsPuppet() && !kPlayer.GetPlayerTraits()->IsNoAnnexing())
 	{
@@ -6203,6 +6243,14 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 					}
 #endif
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+					// Dao insight grace: faith may buy any great person.
+					if (MOD_GLOBAL_SUZERAIN && kPlayer.HasDaoFaithGreatPeople())
+					{
+						bAllUnlockedByBelief = true;
+					}
+#endif
+
 #if defined(MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 					if (MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 					{
@@ -6462,6 +6510,18 @@ int CvCity::GetFaithPurchaseCost(BuildingTypes eBuilding)
 
 	// Cost goes up in later eras
 	iCost = pkBuildingInfo->GetFaithCost();
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Dao abundance: world wonders may be bought with faith, priced from their
+	// production cost. Regular buildings without a FaithCost stay unbuyable.
+	if (iCost <= 0 && GET_PLAYER(getOwner()).HasDaoPerk(8)
+		&& isWorldWonderClass(pkBuildingInfo->GetBuildingClassInfo()))
+	{
+		int iMultiplier = GC.getDefineINT("SUZERAIN_DAO_WONDER_FAITH_MULTIPLIER", false);
+		if (iMultiplier <= 0) iMultiplier = 2;
+		iCost = getProductionNeeded(eBuilding) * iMultiplier;
+	}
+#endif
 	int iTraitCost = GET_PLAYER(getOwner()).GetPlayerTraits()->GetBuildingClassFaithCost((BuildingClassTypes)pkBuildingInfo->GetBuildingClassType());
 	if(iTraitCost > 0 && iCost > 0) iCost = std::min(iTraitCost, iCost);
 	else if(iTraitCost > 0) iCost = iTraitCost;
@@ -9590,6 +9650,19 @@ int CvCity::growthThreshold() const
 				iNumFoodNeeded *= (100 + iMod);
 				iNumFoodNeeded /= 100;
 			}
+		}
+	}
+#endif
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Dao diligence: lower the food needed for growth.
+	if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(getOwner()).HasDaoPerk(1))
+	{
+		int iDaoMod = GC.getDefineINT("SUZERAIN_DAO_GROWTH_COST", false);
+		if (iDaoMod > 0)
+		{
+			iNumFoodNeeded *= (100 - iDaoMod);
+			iNumFoodNeeded /= 100;
 		}
 	}
 #endif
@@ -14426,6 +14499,31 @@ int CvCity::getBaseYieldRateModifier(YieldTypes eIndex, int iExtra, CvString* to
 	// note: player->invalidateYieldRankCache() must be called for anything that is checked here
 	// so if any extra checked things are added here, the cache needs to be invalidated
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Mandate punishment: the punished civ's cities lose a share of food and production.
+	if (owner.IsUnderMandatePunishment())
+	{
+		int iPenalty = 0;
+		if (eIndex == YIELD_FOOD)
+			iPenalty = GC.getDefineINT("SUZERAIN_MANDATE_TIANFA_FOOD_PERCENT", false);
+		else if (eIndex == YIELD_PRODUCTION)
+			iPenalty = GC.getDefineINT("SUZERAIN_MANDATE_TIANFA_PRODUCTION_PERCENT", false);
+
+		if (iPenalty > 0)
+			iModifier -= iPenalty;
+	}
+#endif
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Resource monopoly: the overlord and its vassals share the per-resource
+	// yield bonuses.
+	{
+		PlayerTypes eOverlord = owner.GetOverlord();
+		CvPlayer& kPoolOwner = (eOverlord != NO_PLAYER) ? GET_PLAYER(eOverlord) : owner;
+		iModifier += kPoolOwner.GetMonopolyYieldBonus(eIndex);
+	}
+#endif
+
 	return std::max(0, iModifier);
 }
 
@@ -14750,6 +14848,28 @@ int CvCity::getBaseYieldRate(YieldTypes eIndex, const bool bIgnoreFromOtherYield
 			if (leftHealth < 0)
 			{
 				iValue += leftHealth;
+			}
+		}
+	}
+#endif
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Observatory: each vassal adds science in a city that has one.
+	if (MOD_GLOBAL_SUZERAIN && eIndex == YIELD_SCIENCE)
+	{
+		CvString sBuildingType = GC.getDefineSTRING("SUZERAIN_OBSERVATORY_BUILDING", false);
+		if (!sBuildingType.empty())
+		{
+			BuildingTypes eObs = (BuildingTypes)GC.getInfoTypeForString(sBuildingType.c_str(), true);
+			if (eObs != NO_BUILDING && GetCityBuildings()->GetNumBuilding(eObs) > 0)
+			{
+				int iVassals = (int)GET_PLAYER(getOwner()).GetVassals().size();
+				if (iVassals > 0)
+				{
+					int iPerVassal = GC.getDefineINT("SUZERAIN_OBSERVATORY_SCIENCE_PER_VASSAL", false);
+					if (iPerVassal > 0)
+						iValue += iVassals * iPerVassal;
+				}
 			}
 		}
 	}
@@ -16855,7 +16975,16 @@ bool CvCity::isRevealed(TeamTypes eIndex, bool bDebug) const
 		CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
 		CvAssertMsg(eIndex < MAX_TEAMS, "eIndex expected to be < MAX_TEAMS");
 
-		return m_abRevealed[eIndex];
+		if (m_abRevealed[eIndex]) return true;
+#if defined(MOD_GLOBAL_SUZERAIN)
+		if (MOD_GLOBAL_SUZERAIN)
+		{
+			const std::vector<int>& vSources = GET_TEAM(eIndex).GetVassalVisionSources();
+			for (size_t i = 0; i < vSources.size(); i++)
+				if (m_abRevealed[vSources[i]]) return true;
+		}
+#endif
+		return false;
 	}
 }
 
@@ -16867,7 +16996,7 @@ bool CvCity::setRevealed(TeamTypes eIndex, bool bNewValue)
 	CvAssertMsg(eIndex >= 0, "eIndex expected to be >= 0");
 	CvAssertMsg(eIndex < MAX_TEAMS, "eIndex expected to be < MAX_TEAMS");
 
-	if(isRevealed(eIndex, false) != bNewValue)
+	if(m_abRevealed[eIndex] != bNewValue)
 	{
 		m_abRevealed.setAt(eIndex, bNewValue);
 
@@ -19664,6 +19793,18 @@ int CvCity::CreateUnit(UnitTypes eUnitType, bool bIsGold, bool bIsFaith, UnitAIT
 		}
 		
 	}
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Chronicle: count units actually trained in a province (purchases excluded).
+	if (MOD_GLOBAL_SUZERAIN && !bIsGold && !bIsFaith && GC.getGame().getGameTurn() > 0)
+	{
+		int iProv = thisPlayer.GetCityProvince(GetID());
+		if (iProv >= 0)
+			thisPlayer.AddProvinceReport(iProv,
+				CvPlayer::SuzerainReportType("SUZERAIN_REPORT_UNIT_TRAINED", 15), eUnitType, pUnit->GetID());
+	}
+#endif
+
 	return pUnit->GetID();
 }
 
@@ -19730,6 +19871,17 @@ bool CvCity::CreateBuilding(BuildingTypes eBuildingType)
 	{
 		kPlayer.ChangeNumWorldWondersBuilt(1);
 	}
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Chronicle: count buildings acquired by a province city.
+	if (MOD_GLOBAL_SUZERAIN && GC.getGame().getGameTurn() > 0)
+	{
+		int iProv = kPlayer.GetCityProvince(GetID());
+		if (iProv >= 0)
+			kPlayer.AddProvinceReport(iProv,
+				CvPlayer::SuzerainReportType("SUZERAIN_REPORT_BUILDING_BUILT", 14), eBuildingType, 0);
+	}
+#endif
 
 	return true;
 }
@@ -20090,8 +20242,19 @@ bool CvCity::IsCanPurchase(bool bTestPurchaseCost, bool bTestTrainable, UnitType
 		{
 			if(bTestPurchaseCost)
 			{
-				// Trying to buy something when you don't have enough money!!
-				if(iGoldCost > GET_PLAYER(getOwner()).GetTreasury()->GetGold())
+				// Trying to buy something when you don't have enough money!
+				long long iAvailableGold = GET_PLAYER(getOwner()).GetTreasury()->GetGold();
+#if defined(MOD_GLOBAL_SUZERAIN)
+				// A province's own treasury can cover its purchases.
+				if (MOD_GLOBAL_SUZERAIN)
+				{
+					CvPlayer& kOwner = GET_PLAYER(getOwner());
+					int iProv = kOwner.GetCityProvince(GetID());
+					if (iProv >= 0 && !kOwner.IsCapitalProvince(iProv))
+						iAvailableGold += kOwner.GetProvinceTreasury(iProv);
+				}
+#endif
+				if(iGoldCost > iAvailableGold)
 					return false;
 			}
 		}
@@ -20403,6 +20566,21 @@ void CvCity::Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectT
 			kPlayer.GetTreasury()->LogExpenditure((CvString)GC.getProjectInfo(eProjectType)->GetText(), iGoldCost, 2);
 		}
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+		// Let the province pay first; the national treasury only covers the rest.
+		bool bProvincePaid = false;
+		if (MOD_GLOBAL_SUZERAIN && iGoldCost > 0)
+		{
+			int iProv = kPlayer.GetCityProvince(GetID());
+			if (iProv >= 0 && !kPlayer.IsCapitalProvince(iProv)
+				&& kPlayer.GetProvinceTreasury(iProv) >= iGoldCost
+				&& kPlayer.SpendProvinceTreasury(iProv, iGoldCost))
+			{
+				bProvincePaid = true;
+			}
+		}
+		if (!bProvincePaid)
+#endif
 		kPlayer.GetTreasury()->ChangeGold(-iGoldCost);
 
 		bool bResult = false;
@@ -20753,6 +20931,11 @@ void CvCity::doGrowth()
 #ifdef MOD_GLOBAL_UNLIMITED_ONE_TURN_GROWTH
 	if (MOD_GLOBAL_UNLIMITED_ONE_TURN_GROWTH) iLoopTime = 1000;
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Dao diligence: a food surplus can grow the city repeatedly in one turn.
+	if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(getOwner()).HasDaoPerk(1))
+		iLoopTime = 1000;
+#endif
 	while (getFood() >= iGrowthThreshold && iLoopTime--)
 	{
 		if (GetCityCitizens()->IsForcedAvoidGrowth())  // don't grow a city if we are at avoid growth
@@ -21059,6 +21242,15 @@ void CvCity::doProduction(bool bAllowNoProduction)
 
 	int iMaxProductionCount = 1;
 	iMaxProductionCount += GET_PLAYER(getOwner()).getPolicyModifiers(POLICYMOD_CITY_EXTRA_PRODUCTION_COUNT);
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Dao industry: more projects may finish per city per turn.
+	if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(getOwner()).HasDaoPerk(2))
+	{
+		int iExtra = GC.getDefineINT("SUZERAIN_DAO_MULTI_BUILD_COUNT", false);
+		if (iExtra > 0)
+			iMaxProductionCount += iExtra;
+	}
+#endif
 #ifdef MOD_GLOBAL_UNLIMITED_ONE_TURN_PRODUCTION
 	if (MOD_GLOBAL_UNLIMITED_ONE_TURN_PRODUCTION) iMaxProductionCount += 4;
 #endif

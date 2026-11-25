@@ -32,6 +32,7 @@
 #include <set>
 #include "FStlContainerSerialization.h"
 #include "CvUnitMission.h"
+#include "CvNationalMilitaryDispatcher.h"
 #include "CvUnitCombat.h"
 #include "CvEconomicAI.h"
 #include "CvAchievementUnlocker.h"
@@ -589,6 +590,12 @@ CvUnit::CvUnit() :
 	, m_missionAIUnit()
 	, m_eActivityType("CvUnit::m_eActivityType", m_syncArchive, true)
 	, m_eAutomateType("CvUnit::m_eAutomateType", m_syncArchive)
+	, m_iProvinceLevy("CvUnit::m_iProvinceLevy", m_syncArchive)
+	, m_iLevyTarget("CvUnit::m_iLevyTarget", m_syncArchive)
+	, m_iProvinceTask("CvUnit::m_iProvinceTask", m_syncArchive)
+	, m_iTaskProvince("CvUnit::m_iTaskProvince", m_syncArchive)
+	, m_iTaskPriority("CvUnit::m_iTaskPriority", m_syncArchive)
+	, m_iHomeProvince("CvUnit::m_iHomeProvince", m_syncArchive)
 	, m_eUnitAIType("CvUnit::m_eUnitAIType", m_syncArchive)
 	, m_thisHandle(this)
 	, m_bWaitingForMove(false)
@@ -1624,6 +1631,12 @@ if (MOD_API_UNIT_CANNOT_BE_RANGED_ATTACKED)
 	m_iMissionTimer = 0;
 	m_eActivityType = ACTIVITY_AWAKE;
 	m_eAutomateType = NO_AUTOMATE;
+	m_iProvinceLevy = -1;
+	m_iLevyTarget = -1;
+	m_iProvinceTask = 0;      // PROVINCE_TASK_NONE
+	m_iTaskProvince = -1;
+	m_iTaskPriority = 0;
+	m_iHomeProvince = -1;
 
 	m_kLastPath.clear();
 	m_uiLastPathCacheDest = (uint)-1;
@@ -3376,7 +3389,7 @@ bool CvUnit::canDoCommand(CommandTypes eCommand, int iData1, int iData2, bool bT
 		break;
 
 	case COMMAND_STOP_AUTOMATION:
-		if(IsAutomated())
+		if(IsAutomated() || HasProvinceOrder())
 		{
 			return true;
 		}
@@ -3423,6 +3436,13 @@ void CvUnit::doCommand(CommandTypes eCommand, int iData1, int iData2)
 
 	if(canDoCommand(eCommand, iData1, iData2))
 	{
+		if (HasProvinceOrder() && (eCommand == COMMAND_WAKE || eCommand == COMMAND_CANCEL || eCommand == COMMAND_CANCEL_ALL
+			|| eCommand == COMMAND_STOP_AUTOMATION || eCommand == COMMAND_AUTOMATE))
+		{
+			CancelProvinceOrder(true);
+			// Cancellation already cleared the queue; never pop an empty queue.
+			if (eCommand == COMMAND_CANCEL || eCommand == COMMAND_CANCEL_ALL) return;
+		}
 		switch(eCommand)
 		{
 		case COMMAND_PROMOTION:
@@ -5187,6 +5207,10 @@ bool CvUnit::canGift(bool bTestVisible, bool bTestTransport) const
 	// Minors
 	if(GET_PLAYER(pPlot->getOwner()).isMinorCiv())
 	{
+		// Cannot gift to a city-state that already has a permanent ally
+		if (GET_PLAYER(pPlot->getOwner()).GetMinorCivAI()->HasPermanentAlly())
+			return false;
+
 		// No settlers
 		if(isFound() || IsFoundAbroad())
 			return false;
@@ -5326,6 +5350,10 @@ bool CvUnit::CanDistanceGift(PlayerTypes eToPlayer) const
 	// Minors
 	if(GET_PLAYER(eToPlayer).isMinorCiv())
 	{
+		// Cannot gift to a city-state that already has a permanent ally
+		if (GET_PLAYER(eToPlayer).GetMinorCivAI()->HasPermanentAlly())
+			return false;
+
 		// No settlers
 		if(isFound() || IsFoundAbroad())
 			return false;
@@ -14305,6 +14333,7 @@ bool CvUnit::CanUpgradeInTerritory(bool bOnlyTestVisible) const
 
 //	--------------------------------------------------------------------------------
 /// What UnitType does this Unit upgrade into?
+//--------------------------------------------------------------------------------
 UnitTypes CvUnit::GetUpgradeUnitType() const
 {
 	VALIDATE_OBJECT
@@ -15570,6 +15599,10 @@ int CvUnit::GetGenericMaxStrengthModifier(const CvUnit* pOtherUnit, const CvPlot
 	iModifier += GetCombatModifierFromBuilding();
 
 	CvPlayerAI& kPlayer = GET_PLAYER(getOwner());
+
+	// Dao grace: temporary empire-wide combat strength.
+	iModifier += kPlayer.GetDaoCombatModifier();
+
 	CvGameReligions* pReligions = GC.getGame().GetGameReligions();
 	ReligionTypes eFoundedReligion = pReligions->GetFounderBenefitsReligion(kPlayer.GetID());
 
@@ -16273,6 +16306,16 @@ int CvUnit::GetMaxDefenseStrength(const CvPlot* pInPlot, const CvUnit* pAttacker
 
 	if(GetBaseCombatStrength() == 0)
 		return 0;
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Dao war: a melee attacker voids every defensive bonus of the target.
+	if (MOD_GLOBAL_SUZERAIN && pAttacker != NULL && !bFromRangedAttack
+		&& !pAttacker->isRanged()
+		&& GET_PLAYER(pAttacker->getOwner()).HasDaoPerk(4))
+	{
+		return GetBaseCombatStrength();
+	}
+#endif
 
 	int iCombat;
 
@@ -29712,6 +29755,107 @@ bool CvUnit::IsAutomated() const
 	return (GetAutomateType() != NO_AUTOMATE);
 }
 
+//	--------------------------------------------------------------------------------
+int CvUnit::GetProvinceLevy() const
+{
+	VALIDATE_OBJECT
+	return m_iProvinceLevy;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetProvinceLevy(int iProvince)
+{
+	VALIDATE_OBJECT
+	m_iProvinceLevy = iProvince;
+}
+
+//	--------------------------------------------------------------------------------
+int CvUnit::GetLevyTarget() const
+{
+	VALIDATE_OBJECT
+	return m_iLevyTarget;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetLevyTarget(int iProvince)
+{
+	VALIDATE_OBJECT
+	m_iLevyTarget = iProvince;
+}
+
+
+//	--------------------------------------------------------------------------------
+bool CvUnit::HasProvinceOrder() const
+{
+	return MOD_GLOBAL_SUZERAIN && (GetProvinceTask() == PROVINCE_TASK_ORDER_RAID
+		|| GetProvinceTask() == PROVINCE_TASK_ORDER_MOVE);
+}
+
+void CvUnit::CancelProvinceOrder(bool bManual)
+{
+	if (!HasProvinceOrder()) return;
+	SetProvinceTask(bManual ? PROVINCE_TASK_PLAYER : PROVINCE_TASK_NONE);
+	SetTaskProvince(-1);
+	SetTaskPriority(0);
+	ClearMissionQueue();
+	SetActivityType(ACTIVITY_AWAKE);
+}
+
+int CvUnit::GetProvinceTask() const
+{
+	VALIDATE_OBJECT
+	return m_iProvinceTask;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetProvinceTask(int iTask)
+{
+	VALIDATE_OBJECT
+	m_iProvinceTask = iTask;
+}
+
+//	--------------------------------------------------------------------------------
+int CvUnit::GetTaskProvince() const
+{
+	VALIDATE_OBJECT
+	return m_iTaskProvince;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetTaskProvince(int iProv)
+{
+	VALIDATE_OBJECT
+	m_iTaskProvince = iProv;
+}
+
+//	--------------------------------------------------------------------------------
+int CvUnit::GetTaskPriority() const
+{
+	VALIDATE_OBJECT
+	return m_iTaskPriority;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetTaskPriority(int iPriority)
+{
+	VALIDATE_OBJECT
+	m_iTaskPriority = iPriority;
+}
+
+//	--------------------------------------------------------------------------------
+int CvUnit::GetHomeProvince() const
+{
+	VALIDATE_OBJECT
+	return m_iHomeProvince;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::SetHomeProvince(int iProv)
+{
+	VALIDATE_OBJECT
+	m_iHomeProvince = iProv;
+}
+
 
 //	--------------------------------------------------------------------------------
 void CvUnit::SetAutomateType(AutomateTypes eNewValue)
@@ -29771,6 +29915,7 @@ bool CvUnit::ReadyToSelect() const
 bool CvUnit::ReadyToMove() const
 {
 	VALIDATE_OBJECT
+	if (HasProvinceOrder()) return false;
 	if(!canMove())
 	{
 		return false;
@@ -30790,6 +30935,7 @@ void CvUnit::PushMission(MissionTypes eMission, int iData1, int iData2, int iFla
 			if(pPlot != NULL) BatchMove(*pPlot, 1);
 		}
 	}
+	if (bManual) CancelProvinceOrder(true);
 	CvUnitMission::PushMission(this, eMission, iData1, iData2, iFlags, bAppend, bManual, eMissionAI, pMissionAIPlot, pMissionAIUnit);
 }
 

@@ -178,6 +178,23 @@ public:
 	AutomateTypes GetAutomateType() const;
 	bool IsAutomated() const;
 	void SetAutomateType(AutomateTypes eNewValue);
+	// Province that levied this unit for the centre (-1 = not levied).
+	int GetProvinceLevy() const;
+	void SetProvinceLevy(int iProvince);
+	// Province this levy is marching to (-1 = no auto target).
+	int GetLevyTarget() const;
+	void SetLevyTarget(int iProvince);
+	// New task system accessors
+	bool HasProvinceOrder() const;
+	void CancelProvinceOrder(bool bManual);
+	int GetProvinceTask() const;
+	void SetProvinceTask(int iTask);
+	int GetTaskProvince() const;
+	void SetTaskProvince(int iProv);
+	int GetTaskPriority() const;
+	void SetTaskPriority(int iPriority);
+	int GetHomeProvince() const;
+	void SetHomeProvince(int iProv);
 	bool CanAutomate(AutomateTypes eAutomate, bool bTestVisible = false) const;
 	void Automate(AutomateTypes eAutomate);
 
@@ -2583,6 +2600,13 @@ protected:
 	IDInfo m_missionAIUnit;
 	FAutoVariable<ActivityTypes, CvUnit> m_eActivityType;
 	FAutoVariable<AutomateTypes, CvUnit> m_eAutomateType;
+	FAutoVariable<int, CvUnit> m_iProvinceLevy;
+	FAutoVariable<int, CvUnit> m_iLevyTarget;
+	// New task system for national military dispatcher
+	FAutoVariable<int, CvUnit> m_iProvinceTask;        // Current task type (0=none, 1=defend, 2=raid, 3=patrol, 4=player)
+	FAutoVariable<int, CvUnit> m_iTaskProvince;        // Province that issued the task (-1 if none)
+	FAutoVariable<int, CvUnit> m_iTaskPriority;        // Task priority (1-10)
+	FAutoVariable<int, CvUnit> m_iHomeProvince;        // Home garrison province (-1=capital direct command)
 	FAutoVariable<UnitAITypes, CvUnit> m_eUnitAIType;
 	DestructionNotification<UnitHandle> m_destructionNotification;
 

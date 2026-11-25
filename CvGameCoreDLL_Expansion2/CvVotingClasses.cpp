@@ -231,6 +231,13 @@ CvResolutionEffects::CvResolutionEffects(void)
 #if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain = false;
 	iVassalTaxPercent = 0;
+	iVassalTechDiscount = 0;
+	iVassalDemandCityPopulationPercent = 0;
+	iVassalDemandGoldPercent = 0;
+	iVassalDemandGoldPerTurnPercent = 0;
+	iVassalDemandLuxuryResourcePercent = 0;
+	iVassalDemandStrategicResourcePercent = 0;
+	iVassalDemandCooldownTurns = 0;
 	bVassalTaxScience = false;
 	bVassalTaxCulture = false;
 	bVassalTaxFaith = false;
@@ -294,8 +301,21 @@ CvResolutionEffects::CvResolutionEffects(ResolutionTypes eType)
 		// resolution that only sets a tax type.
 		bSubmitSuzerain = (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC()
 			|| pInfo->IsVassalTaxScience() || pInfo->IsVassalTaxCulture()
-			|| pInfo->IsVassalTaxFaith() || pInfo->IsVassalTaxGold());
+			|| pInfo->IsVassalTaxFaith() || pInfo->IsVassalTaxGold()
+			|| pInfo->GetVassalDemandCityPopulationPercent() > 0
+			|| pInfo->GetVassalDemandGoldPercent() > 0
+			|| pInfo->GetVassalDemandGoldPerTurnPercent() > 0
+			|| pInfo->GetVassalDemandLuxuryResourcePercent() > 0
+			|| pInfo->GetVassalDemandStrategicResourcePercent() > 0
+			|| pInfo->GetVassalDemandCooldownTurns() > 0);
 		iVassalTaxPercent = pInfo->GetVassalTaxPercent();
+		iVassalTechDiscount = pInfo->GetVassalTechDiscount();
+		iVassalDemandCityPopulationPercent = pInfo->GetVassalDemandCityPopulationPercent();
+		iVassalDemandGoldPercent = pInfo->GetVassalDemandGoldPercent();
+		iVassalDemandGoldPerTurnPercent = pInfo->GetVassalDemandGoldPerTurnPercent();
+		iVassalDemandLuxuryResourcePercent = pInfo->GetVassalDemandLuxuryResourcePercent();
+		iVassalDemandStrategicResourcePercent = pInfo->GetVassalDemandStrategicResourcePercent();
+		iVassalDemandCooldownTurns = pInfo->GetVassalDemandCooldownTurns();
 		bVassalTaxScience = pInfo->IsVassalTaxScience();
 		bVassalTaxCulture = pInfo->IsVassalTaxCulture();
 		bVassalTaxFaith = pInfo->IsVassalTaxFaith();
@@ -447,6 +467,13 @@ void CvResolutionEffects::AddOngoingEffects(const CvResolutionEffects* pOtherEff
 #if defined(MOD_GLOBAL_SUZERAIN)
 	bSubmitSuzerain						|= pOtherEffects->bSubmitSuzerain;
 	iVassalTaxPercent						+= pOtherEffects->iVassalTaxPercent;
+	iVassalTechDiscount					+= pOtherEffects->iVassalTechDiscount;
+	iVassalDemandCityPopulationPercent += pOtherEffects->iVassalDemandCityPopulationPercent;
+	iVassalDemandGoldPercent			+= pOtherEffects->iVassalDemandGoldPercent;
+	iVassalDemandGoldPerTurnPercent += pOtherEffects->iVassalDemandGoldPerTurnPercent;
+	iVassalDemandLuxuryResourcePercent += pOtherEffects->iVassalDemandLuxuryResourcePercent;
+	iVassalDemandStrategicResourcePercent += pOtherEffects->iVassalDemandStrategicResourcePercent;
+	iVassalDemandCooldownTurns		+= pOtherEffects->iVassalDemandCooldownTurns;
 	bVassalTaxScience						|= pOtherEffects->bVassalTaxScience;
 	bVassalTaxCulture						|= pOtherEffects->bVassalTaxCulture;
 	bVassalTaxFaith							|= pOtherEffects->bVassalTaxFaith;
@@ -592,6 +619,13 @@ FDataStream& operator>>(FDataStream& loadFrom, CvResolutionEffects& writeTo)
 	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalForcePeace, false);
 	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalNoDenounce, false);
 	MOD_SERIALIZE_READ(163, loadFrom, writeTo.bVassalGetUC, false);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iVassalTechDiscount, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iVassalDemandCityPopulationPercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iVassalDemandGoldPercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iVassalDemandGoldPerTurnPercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iVassalDemandLuxuryResourcePercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iVassalDemandStrategicResourcePercent, 0);
+	MOD_SERIALIZE_READ(164, loadFrom, writeTo.iVassalDemandCooldownTurns, 0);
 #endif
 
 
@@ -657,6 +691,13 @@ FDataStream& operator<<(FDataStream& saveTo, const CvResolutionEffects& readFrom
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalForcePeace);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalNoDenounce);
 	MOD_SERIALIZE_WRITE(saveTo, readFrom.bVassalGetUC);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalTechDiscount);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalDemandCityPopulationPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalDemandGoldPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalDemandGoldPerTurnPercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalDemandLuxuryResourcePercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalDemandStrategicResourcePercent);
+	MOD_SERIALIZE_WRITE(saveTo, readFrom.iVassalDemandCooldownTurns);
 #endif
 
 	return saveTo;
@@ -1428,7 +1469,7 @@ void CvActiveResolution::Init()
 {
 }
 
-void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
+void CvActiveResolution::DoEffects(PlayerTypes ePlayer, bool bEnacting)
 {
 	CvPlayer* pPlayer = &GET_PLAYER(ePlayer);
 	CvAssertMsg(pPlayer != NULL, "Player is null when doing effects of an active resolution. Please send Anton your save file and version.");
@@ -1693,7 +1734,6 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 				// Mark as permanent ally to prevent decay and coups
 				GetEffects()->bPermanentAlly = true;
 				pPlayer->SetPermanentAlly(eTargetCityState, true);
-				pPlayer->ChangePrestigeExemptAllyCount(1);
 
 				// Clear all quests and notify players
 				pMinorAI->ResetQuestList();
@@ -1718,20 +1758,23 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 
 
 #if defined(MOD_GLOBAL_SUZERAIN)
-	if (GetEffects()->bSubmitSuzerain)
+	if (GetEffects()->bSubmitSuzerain && ePlayer == GetProposerDecision()->GetDecision())
 	{
 		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
 		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
 		// Guard against invalid decision targets (e.g. a dead or missing player)
-		if (eOverlord != NO_PLAYER && eVassal != NO_PLAYER)
+		if (eOverlord >= 0 && eOverlord < MAX_MAJOR_CIVS && eVassal >= 0 && eVassal < MAX_MAJOR_CIVS)
 		{
 			CvPlayer& kOverlord = GET_PLAYER(eOverlord);
 			CvPlayer& kVassal = GET_PLAYER(eVassal);
-			// If the target is already someone's vassal, skip (first resolution wins)
-			if (kVassal.GetOverlord() == NO_PLAYER)
+			// Rejoining the league only reapplies member effects.
+			if (bEnacting && (!kOverlord.isAlive() || !kVassal.isAlive() || kOverlord.getTeam() == kVassal.getTeam()
+				|| kOverlord.GetOverlord() != NO_PLAYER || kVassal.GetOverlord() != NO_PLAYER || kVassal.HasAnyVassal()))
+				GetEffects()->bSubmitSuzerain = false;
+			if (bEnacting && GetEffects()->bSubmitSuzerain)
 			{
 				// Establish vassal relationship
-				kOverlord.AddVassal(eVassal);
+				kOverlord.AddVassal(eVassal, 5);
 				kVassal.SetOverlord(eOverlord);
 				// Vassalization changes the overlord's effective control over original capitals -
 				// re-check domination victory immediately rather than waiting for the next city capture
@@ -1741,8 +1784,9 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 				{
 					TeamTypes eTeamA = kOverlord.getTeam();
 					TeamTypes eTeamB = kVassal.getTeam();
-					GET_TEAM(eTeamA).setForcePeace(eTeamB, true);
-					GET_TEAM(eTeamB).setForcePeace(eTeamA, true);
+					// The relationship itself bars declarations; treaty flags belong to deals.
+					if (GET_TEAM(eTeamA).isAtWar(eTeamB))
+						GET_TEAM(eTeamA).makePeace(eTeamB, true, false, eOverlord);
 				}
 				// Clear denouncements between overlord and vassal
 				if (GetEffects()->bVassalNoDenounce)
@@ -1792,10 +1836,10 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		}
 	}
 #endif
-	m_iTurnEnacted = GC.getGame().getGameTurn();
+	if (bEnacting) m_iTurnEnacted = GC.getGame().getGameTurn();
 }
 
-void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
+void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer, bool bRepealing)
 {
 	CvPlayer* pPlayer = &GET_PLAYER(ePlayer);
 	CvAssertMsg(pPlayer != NULL, "Player is null when doing effects of an active resolution. Please send Anton your save file and version.");
@@ -1973,34 +2017,21 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 	
 
 #if defined(MOD_GLOBAL_SUZERAIN)
-	if (GetEffects()->bSubmitSuzerain)
+	if (GetEffects()->bSubmitSuzerain && ePlayer == GetProposerDecision()->GetDecision())
 	{
 		PlayerTypes eOverlord = GetProposerDecision()->GetProposer();
 		PlayerTypes eVassal = (PlayerTypes)GetProposerDecision()->GetDecision();
 		// Guard against invalid decision targets (e.g. a dead or missing player)
-		if (eOverlord != NO_PLAYER && eVassal != NO_PLAYER)
+		if (eOverlord >= 0 && eOverlord < MAX_MAJOR_CIVS && eVassal >= 0 && eVassal < MAX_MAJOR_CIVS)
 		{
 			CvPlayer& kOverlord = GET_PLAYER(eOverlord);
 			CvPlayer& kVassal = GET_PLAYER(eVassal);
 			// Only remove if this resolution actually established the relationship
-			if (kVassal.GetOverlord() == eOverlord)
+			if (bRepealing && kVassal.GetOverlord() == eOverlord)
 			{
 				// Remove vassal relationship
 				kOverlord.RemoveVassal(eVassal);
 				kVassal.SetOverlord(NO_PLAYER);
-				// Remove force peace
-				if (GetEffects()->bVassalForcePeace)
-				{
-					TeamTypes eTeamA = kOverlord.getTeam();
-					TeamTypes eTeamB = kVassal.getTeam();
-					GET_TEAM(eTeamA).setForcePeace(eTeamB, false);
-					GET_TEAM(eTeamB).setForcePeace(eTeamA, false);
-				}
-				// Remove UC access acquired from vassals
-				if (GetEffects()->bVassalGetUC)
-				{
-					kOverlord.RefreshUCFromVassals();
-				}
 				// Notify overlord and vassal that the relationship has ended
 				if (kOverlord.isHuman())
 				{
@@ -2038,7 +2069,7 @@ void CvActiveResolution::RemoveEffects(PlayerTypes ePlayer)
 		}
 	}
 #endif
-	m_iTurnEnacted = -1;
+	if (bRepealing) m_iTurnEnacted = -1;
 }
 
 bool CvActiveResolution::HasOngoingEffects()
@@ -3036,12 +3067,10 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 
 #if defined(MOD_GLOBAL_SUZERAIN)
 	// Check vassal suzerain resolution conditions
-	if (pInfo->GetVassalTaxPercent() > 0 || pInfo->IsVassalGetUC()
-		|| pInfo->IsVassalTaxScience() || pInfo->IsVassalTaxCulture()
-		|| pInfo->IsVassalTaxFaith() || pInfo->IsVassalTaxGold())
+	if (CvResolutionEffects(eResolution).bSubmitSuzerain)
 	{
 		PlayerTypes eTarget = (PlayerTypes)iChoice;
-		if (eTarget != NO_PLAYER && eTarget != eProposer && eProposer != NO_PLAYER)
+		if (eTarget >= 0 && eTarget < MAX_MAJOR_CIVS && eProposer >= 0 && eProposer < MAX_MAJOR_CIVS && eTarget != eProposer)
 		{
 			CvPlayer& kProposer = GET_PLAYER(eProposer);
 			CvPlayer& kTarget = GET_PLAYER(eTarget);
@@ -3105,8 +3134,13 @@ bool CvLeague::CanProposeEnact(ResolutionTypes eResolution, PlayerTypes ePropose
 				bValid = false;
 			if (iProposerMilitaryMight < (long long)kTarget.GetMilitaryMight() * 2)
 				bValid = false;
-			// Target must not already have an overlord
-			if (kTarget.GetOverlord() != NO_PLAYER)
+			for (uint j = 0; j < m_vEnactProposals.size(); ++j)
+				if (m_vEnactProposals[j].GetEffects()->bSubmitSuzerain && m_vEnactProposals[j].GetProposerDecision()->GetDecision() == iChoice)
+					bValid = false;
+			for (uint j = 0; j < m_vActiveResolutions.size(); ++j)
+				if (m_vActiveResolutions[j].GetEffects()->bSubmitSuzerain && m_vActiveResolutions[j].GetProposerDecision()->GetDecision() == iChoice)
+					bValid = false;
+			if (kTarget.GetOverlord() != NO_PLAYER || kTarget.HasAnyVassal() || kTarget.getTeam() == kProposer.getTeam())
 				bValid = false;
 			// Proposer must not already be a vassal
 			if (kProposer.GetOverlord() != NO_PLAYER)
@@ -3511,52 +3545,7 @@ std::vector<int> CvLeague::GetChoicesForDecision(ResolutionDecisionTypes eDecisi
 		{
 			if (m_vMembers[i].ePlayer != eDecider && !GET_PLAYER(m_vMembers[i].ePlayer).isMinorCiv())
 			{
-#if defined(MOD_GLOBAL_SUZERAIN)
-				PlayerTypes eMember = m_vMembers[i].ePlayer;
-				bool bSkip = false;
-				// Skip players already vassalized or already targeted by a vassalization resolution
-				if (GET_PLAYER(eMember).GetOverlord() != NO_PLAYER)
-				{
-					bSkip = true;
-				}
-				if (!bSkip)
-				{
-					for (uint j = 0; j < m_vEnactProposals.size(); j++)
-					{
-						if (m_vEnactProposals[j].GetEffects()->bSubmitSuzerain &&
-							m_vEnactProposals[j].GetProposerDecision()->GetDecision() == (int)eMember)
-						{
-							bSkip = true;
-							break;
-						}
-					}
-				}
-				if (!bSkip)
-				{
-					CvGameLeagues* pLeagues = GC.getGame().GetGameLeagues();
-					if (pLeagues)
-					{
-						CvLeague* pLeague = pLeagues->GetActiveLeague();
-						if (pLeague)
-						{
-							ActiveResolutionList vRes = pLeague->GetActiveResolutions();
-							for (size_t j = 0; j < vRes.size(); j++)
-							{
-								if (vRes[j].GetEffects()->bSubmitSuzerain &&
-									vRes[j].GetProposerDecision()->GetDecision() == (int)eMember)
-								{
-									bSkip = true;
-									break;
-								}
-							}
-						}
-					}
-				}
-				if (!bSkip)
-#endif
-				{
-					vChoices.push_back(m_vMembers[i].ePlayer);
-				}
+				vChoices.push_back(m_vMembers[i].ePlayer);
 			}
 		}
 		break;
@@ -3705,6 +3694,17 @@ RepealProposalList CvLeague::GetRepealProposalsOnHold() const
 	return m_vRepealProposalsOnHold;
 }
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+void CvLeague::EndVassalSubmission(PlayerTypes eOverlord, PlayerTypes eVassal)
+{
+	for (ActiveResolutionList::iterator it = m_vActiveResolutions.begin(); it != m_vActiveResolutions.end(); ++it)
+	{
+		if (it->GetProposerDecision()->GetProposer() == eOverlord && it->GetProposerDecision()->GetDecision() == eVassal)
+			it->GetEffects()->bSubmitSuzerain = false;
+	}
+}
+#endif
+
 CvActiveResolution* CvLeague::GetActiveResolution(int iResolutionID)
 {
 	for (ActiveResolutionList::iterator it = m_vActiveResolutions.begin(); it != m_vActiveResolutions.end(); ++it)
@@ -3801,7 +3801,7 @@ void CvLeague::RemoveMember(PlayerTypes ePlayer)
 		if (it->ePlayer == ePlayer)
 		{
 			m_vMembers.erase(it);
-			it--;
+			break;
 		}
 	}
 
@@ -6610,7 +6610,7 @@ void CvLeague::CheckResolutionsValid()
 		{
 			for (uint i = 0; i < m_vMembers.size(); i++)
 			{
-				it->RemoveEffects(m_vMembers[i].ePlayer);
+				it->RemoveEffects(m_vMembers[i].ePlayer, true);
 			}
 			m_vActiveResolutions.erase(it);
 			//antonjs: todo: relocate these league-level effects:
@@ -6650,7 +6650,7 @@ void CvLeague::DoEnactResolution(CvEnactProposal* pProposal)
 	CvActiveResolution resolution(pProposal);
 	for (uint i = 0; i < m_vMembers.size(); i++)
 	{
-		resolution.DoEffects(m_vMembers[i].ePlayer);
+		resolution.DoEffects(m_vMembers[i].ePlayer, true);
 	}
 
 	int iGAttackModifier = resolution.GetEffects()->iGlobalAttackModifier;
@@ -6714,7 +6714,7 @@ void CvLeague::DoRepealResolution(CvRepealProposal* pProposal)
 		{
 			for (uint i = 0; i < m_vMembers.size(); i++)
 			{
-				it->RemoveEffects(m_vMembers[i].ePlayer);
+				it->RemoveEffects(m_vMembers[i].ePlayer, true);
 			}
 #if defined(MOD_VOTING_NEW_EFFECT_FOR_SP)
 			int iGAttackModifier = it->GetEffects()->iGlobalAttackModifier;
@@ -11333,6 +11333,25 @@ int CvLeagueAI::ScoreProposal(CvLeague* pLeague, ResolutionTypes eResolution, in
 		}
 	}
 #endif
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// A suzerain civ should actively push to bring a weak independent civ under
+	// its wing. The league has already validated the target through
+	// CanProposeEnact; the generic vote score simply has no opinion on it.
+	if (MOD_GLOBAL_SUZERAIN && GetPlayer()->IsSuzerainCiv()
+		&& iChoice >= 0 && iChoice < MAX_MAJOR_CIVS
+		&& iChoice != GetPlayer()->GetID())
+	{
+		CvResolutionEntry* pkResolution = GC.getResolutionInfo(eResolution);
+		CvPlayer& kTarget = GET_PLAYER((PlayerTypes)iChoice);
+		if (pkResolution != NULL
+			&& kTarget.isAlive() && kTarget.isMajorCiv()
+			&& kTarget.GetOverlord() == NO_PLAYER
+			&& (pkResolution->GetVassalTaxPercent() > 0 || pkResolution->GetVassalDemandGoldPercent() > 0))
+		{
+			iYesScore += GC.getDefineINT("SUZERAIN_AI_PROPOSAL_SCORE", false);
+		}
+	}
+#endif
 
 	return iYesScore;
 }
@@ -11971,6 +11990,13 @@ CvResolutionEntry::CvResolutionEntry(void)
 	m_eCivilizationType = NO_CIVILIZATION;
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = 0;
+	m_iVassalTechDiscount = 0;
+	m_iVassalDemandCityPopulationPercent = 0;
+	m_iVassalDemandGoldPercent = 0;
+	m_iVassalDemandGoldPerTurnPercent = 0;
+	m_iVassalDemandLuxuryResourcePercent = 0;
+	m_iVassalDemandStrategicResourcePercent = 0;
+	m_iVassalDemandCooldownTurns = 0;
 	m_bVassalTaxScience = false;
 	m_bVassalTaxCulture = false;
 	m_bVassalTaxFaith = false;
@@ -12052,6 +12078,13 @@ bool CvResolutionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtil
 #endif
 #if defined(MOD_GLOBAL_SUZERAIN)
 	m_iVassalTaxPercent = kResults.GetInt("VassalTaxPercent");
+	m_iVassalTechDiscount = kResults.GetInt("VassalTechDiscount");
+	m_iVassalDemandCityPopulationPercent = kResults.GetInt("VassalDemandCityPopulationPercent");
+	m_iVassalDemandGoldPercent = kResults.GetInt("VassalDemandGoldPercent");
+	m_iVassalDemandGoldPerTurnPercent = kResults.GetInt("VassalDemandGoldPerTurnPercent");
+	m_iVassalDemandLuxuryResourcePercent = kResults.GetInt("VassalDemandLuxuryResourcePercent");
+	m_iVassalDemandStrategicResourcePercent = kResults.GetInt("VassalDemandStrategicResourcePercent");
+	m_iVassalDemandCooldownTurns = kResults.GetInt("VassalDemandCooldownTurns");
 	m_bVassalTaxScience = kResults.GetBool("VassalTaxScience");
 	m_bVassalTaxCulture = kResults.GetBool("VassalTaxCulture");
 	m_bVassalTaxFaith   = kResults.GetBool("VassalTaxFaith");
@@ -12293,6 +12326,16 @@ int CvResolutionEntry::GetVassalTaxPercent() const
 {
 	return m_iVassalTaxPercent;
 }
+int CvResolutionEntry::GetVassalTechDiscount() const
+{
+	return m_iVassalTechDiscount;
+}
+int CvResolutionEntry::GetVassalDemandCityPopulationPercent() const { return m_iVassalDemandCityPopulationPercent; }
+int CvResolutionEntry::GetVassalDemandGoldPercent() const { return m_iVassalDemandGoldPercent; }
+int CvResolutionEntry::GetVassalDemandGoldPerTurnPercent() const { return m_iVassalDemandGoldPerTurnPercent; }
+int CvResolutionEntry::GetVassalDemandLuxuryResourcePercent() const { return m_iVassalDemandLuxuryResourcePercent; }
+int CvResolutionEntry::GetVassalDemandStrategicResourcePercent() const { return m_iVassalDemandStrategicResourcePercent; }
+int CvResolutionEntry::GetVassalDemandCooldownTurns() const { return m_iVassalDemandCooldownTurns; }
 bool CvResolutionEntry::IsVassalTaxScience() const
 {
 	return m_bVassalTaxScience;

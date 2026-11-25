@@ -10736,6 +10736,11 @@ void CvDiplomacyAI::ChangeOtherPlayerNumMajorsAttacked(PlayerTypes ePlayer, int 
 			if(GET_PLAYER(eAttackedPlayer).getTeam() != eAttackedTeam)
 				continue;
 
+#if defined(MOD_GLOBAL_SUZERAIN)
+			// The exemption belongs to the attacked player, not an observer's wars.
+			if (MOD_GLOBAL_SUZERAIN && GET_PLAYER(ePlayer).HasVassalPunishRight(eAttackedPlayer))
+				return;
+#endif
 			// Don't ACTUALLY count this if we're at war with the guy also
 			if(IsAtWar(eAttackedPlayer))
 				return;
@@ -10794,6 +10799,8 @@ int CvDiplomacyAI::GetOtherPlayerWarmongerAmount(PlayerTypes ePlayer)
 #if defined(MOD_API_EXTENSIONS)
 void CvDiplomacyAI::ChangeOtherPlayerWarmongerAmountTimes100(PlayerTypes ePlayer, int iChangeAmount)
 {
+
+
 	int iNewValue = m_paiOtherPlayerWarmongerAmountTimes100[ePlayer] + iChangeAmount;
 	iNewValue = max(0, iNewValue);
 	m_paiOtherPlayerWarmongerAmountTimes100[ePlayer] = iNewValue;
@@ -20088,8 +20095,23 @@ void CvDiplomacyAI::DoFromUIDiploEvent(PlayerTypes eFromPlayer, FromUIDiploEvent
 		// **** NOTE **** - iArg1 is RESPONSE TYPE from CvDealAI::DoHumanDemand()
 		DemandResponseTypes eResponse = (DemandResponseTypes) iArg1;
 
-		// THIS is the important part of the message - it seeds the demand timer on all players' machines
-		DoDemandMade(eFromPlayer);
+		// THIS is the important part of the message - it seeds the demand timer on all players' machines.
+		// Vassal demands are an overlord privilege and do not create the normal demand penalty.
+		bool bVassalDemand = false;
+#if defined(MOD_GLOBAL_SUZERAIN)
+		if (MOD_GLOBAL_SUZERAIN && eFromPlayer >= 0 && eFromPlayer < MAX_MAJOR_CIVS)
+		{
+			bVassalDemand = GetPlayer()->GetOverlord() == eFromPlayer;
+		}
+#endif
+		if (!bVassalDemand)
+			DoDemandMade(eFromPlayer);
+		else if (eResponse == DEMAND_RESPONSE_ACCEPT)
+		{
+			const int iCooldownTurns = GET_PLAYER(eFromPlayer).GetVassalDemandCooldownTurnsFor(GetPlayer()->GetID());
+			if (iCooldownTurns > 0)
+				DoDemandMadeWithCooldown(eFromPlayer, iCooldownTurns);
+		}
 
 		if(bActivePlayer)
 		{
@@ -21500,6 +21522,13 @@ void CvDiplomacyAI::DoDemandMade(PlayerTypes ePlayer)
 	iNumTurns += iRand;
 
 	m_paiDemandTooSoonNumTurns[ePlayer] = iNumTurns;
+}
+
+void CvDiplomacyAI::DoDemandMadeWithCooldown(PlayerTypes ePlayer, int iCooldownTurns)
+{
+	CvAssertMsg(ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS, "DIPLOMACY_AI: Invalid demand player.");
+	SetDemandCounter(ePlayer, 0);
+	m_paiDemandTooSoonNumTurns[ePlayer] = static_cast<short>(std::max(0, iCooldownTurns));
 }
 
 bool CvDiplomacyAI::IsDemandTooSoon(PlayerTypes ePlayer) const
@@ -25166,14 +25195,37 @@ int CvDiplomacyAI::GetDiploModifiers(PlayerTypes eToPlayer, std::vector<Opinion>
 	iModifier = GetScenarioModifier3(eToPlayer);
 	if (iModifier != 0) {
 		iValue += iModifier;
-		
+
 		Opinion kOpinion;
 		kOpinion.m_iValue = iModifier;
 		Localization::String strOpinion = Localization::Lookup("TXT_KEY_SPECIFIC_DIPLO_STRING_3");
 		kOpinion.m_str = strOpinion.toUTF8();
 		aOpinions.push_back(kOpinion);
 	}
-	
+
+#if defined(MOD_GLOBAL_SUZERAIN)
+	// Mandate punishment: the punisher and its vassals dislike the punished civ.
+	if (GET_PLAYER(eToPlayer).IsUnderMandatePunishment())
+	{
+		PlayerTypes eBy = GET_PLAYER(eToPlayer).GetPunishBy();
+		if (eBy != NO_PLAYER
+			&& (m_pPlayer->GetID() == eBy || m_pPlayer->IsVassalOf(eBy)))
+		{
+			int iPenalty = GC.getDefineINT("TIANDAO_MANDATE_TIANFA_DIPLO_PENALTY", false);
+			if (iPenalty > 0)
+			{
+				iValue -= iPenalty;
+
+				Opinion kOpinion;
+				kOpinion.m_iValue = -iPenalty;
+				Localization::String strOpinion = Localization::Lookup("TXT_KEY_DIPLO_MODIFIER_TIANDAO_PUNISHED");
+				kOpinion.m_str = strOpinion.toUTF8();
+				aOpinions.push_back(kOpinion);
+			}
+		}
+	}
+#endif
+
 	if (MOD_EVENTS_DIPLO_MODIFIERS)
 	{
 		PlayerTypes eFromPlayer = m_pPlayer->GetID();
