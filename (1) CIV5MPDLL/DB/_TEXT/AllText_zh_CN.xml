@@ -2,7 +2,15 @@
 <GameData>
 	<!-- Espionage.xml -->
 	<Language_zh_CN>
-
+	    <Row Tag="TXT_KEY_CANNOT_PURCHASE_NO_CULTURE">
+			<Text>[ICON_CULTURE]文化不足！!</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CULTURE_PURCHASE">
+			<Text>文化购买</Text>
+		</Row>
+		<Row Tag="TXT_KEY_CULTURE_PURCHASE_UNIT">
+			<Text>用文化购买当前生产的单位</Text>
+		</Row>
 		<Row Tag="TXT_KEY_UNIT_PLAGUE_CHANCE">
 			<Text>[COLOR_CYAN]受到({1_Name})状态影响的几率[ENDCOLOR]</Text>
 		</Row>
@@ -314,6 +322,22 @@
 
 	<!-- New Yield Modifier -->
 	<Language_zh_CN>
+	<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE">
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE">
+      <Text>穿透伤害：{1_Str} 对 {2_Str} 造成 {3_Num} 点伤害。</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_DEATH">
+      <Text>穿透伤害：{1_Str} 击杀了 {2_Str}。</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_ENEMY">
+      <Text>你的 {1_Str} 穿透命中了 {2_Str}，造成 {3_Num} 点伤害。</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_ENEMY_DEATH">
+       <Text>你的 {1_Str} 穿透击杀了 {2_Str}。</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_CITY_DAMAGE">
+       <Text>{1_Str} 的穿透攻击对 {2_Str} 造成了 {3_Num} 点伤害。</Text>
+</Row>
 		<Row Tag="TXT_KEY_PRODMOD_YIELD_NUM_GREAT_WORK">
 			<Text>[NEWLINE][ICON_BULLET]杰作修正: {1_Num}%</Text>
 		</Row>

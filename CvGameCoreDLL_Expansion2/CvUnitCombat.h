@@ -88,6 +88,7 @@ public:
 	static void DoNukeDamage(const CvCombatInfo& kInfo);
 	static void DoSplashDamage(const CvCombatInfo& kInfo);
 	static void DoCollateralDamage(const CvCombatInfo& kInfo);
+	static void DoPenetrationDamage(const CvCombatInfo& kInfo);
 	static void DoAddEnemyPromotions(const CvCombatInfo& kInfo);
 	static void DoDestroyBuildings(const CvCombatInfo& kInfo);
 	static void DoKillCitizens(const CvCombatInfo& kInfo);

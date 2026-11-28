@@ -5234,6 +5234,7 @@ void CvUnitCombat::DoNewBattleEffects(const CvCombatInfo& kCombatInfo, int iAtta
 	DoNukeDamage(kCombatInfo);
 	DoSplashDamage(kCombatInfo);
 	DoCollateralDamage(kCombatInfo);
+	DoPenetrationDamage(kCombatInfo);
 	DoAddEnemyPromotions(kCombatInfo);
 	DoDestroyBuildings(kCombatInfo);
 	DoKillCitizens(kCombatInfo);
@@ -5682,6 +5683,124 @@ void CvUnitCombat::DoCollateralDamage(const CvCombatInfo& kCombatInfo)
 	}
 }
 #endif
+
+void CvUnitCombat::DoPenetrationDamage(const CvCombatInfo& kCombatInfo)
+{
+	CvUnit* pAttackerUnit = kCombatInfo.getUnit(BATTLE_UNIT_ATTACKER);
+	if (pAttackerUnit == nullptr) return;
+
+
+	bool bRangedAttack = kCombatInfo.getAttackIsRanged() || kCombatInfo.getAttackIsBombingMission();
+	if (bRangedAttack) return;
+
+	int iRange = pAttackerUnit->GetPenetrationRange();
+	if (iRange <= 0) return;
+
+	int iPenMod = pAttackerUnit->GetPenetrationDamage();
+	if (iPenMod <= 0)
+		return;
+
+	CvPlot* pFromPlot = pAttackerUnit->plot();
+	CvPlot* pTargetPlot = kCombatInfo.getPlot();
+	if (pFromPlot == nullptr || pTargetPlot == nullptr || pFromPlot == pTargetPlot) return;
+
+	if (plotDistance(pFromPlot->getX(), pFromPlot->getY(), pTargetPlot->getX(), pTargetPlot->getY()) != 1) return;
+
+	DirectionTypes eDir = directionXY(pFromPlot, pTargetPlot);
+	if (eDir == NO_DIRECTION) return;
+
+	CvPlayerAI& kAttackPlayer = getAttackerPlayer(kCombatInfo);
+	ICvUserInterface2* pkDLLInterface = GC.GetEngineUserInterface();
+
+	std::tr1::unordered_map<CvUnit*, int> mUnitDamageBaseMap;
+
+	CvPlot* pLoopPlot = pTargetPlot;
+	for (int i = 1; i <= iRange; i++)
+	{
+		pLoopPlot = plotDirection(pLoopPlot->getX(), pLoopPlot->getY(), eDir);
+		if (pLoopPlot == nullptr) break;
+
+		for (int iUnitIndex = 0; iUnitIndex < pLoopPlot->getNumUnits(); iUnitIndex++)
+		{
+			CvUnit* pAffectedUnit = pLoopPlot->getUnitByIndex(iUnitIndex);
+			if (pAffectedUnit == nullptr) continue;
+			if (pAffectedUnit == pAttackerUnit) continue;
+			if (pAffectedUnit->getDomainType() != pAttackerUnit->getDomainType()) continue;
+			if (!kAttackPlayer.IsAtWarWith(pAffectedUnit->getOwner())) continue;
+			if (pAffectedUnit->isDelayedDeath() || pAffectedUnit->IsDead()) continue;
+
+			int iDamage = calcOrCacheDamage(pAttackerUnit, pFromPlot, pAffectedUnit, pLoopPlot, /*bRangedAttack*/ false, mUnitDamageBaseMap);
+			if (iDamage > 0)
+				iDamage = (int)((int64)iDamage * iPenMod / 100);
+#if defined(MOD_ROG_CORE)
+			if (pAffectedUnit->getForcedDamageValue() != 0)
+			{
+				iDamage = pAffectedUnit->getForcedDamageValue();
+			}
+			if (pAffectedUnit->getChangeDamageValue() != 0)
+			{
+				iDamage += pAffectedUnit->getChangeDamageValue();
+				if (iDamage <= 0)
+					iDamage = 0;
+			}
+
+			if (pAffectedUnit->GetIgnoreDamageChance() > 0)
+			{
+				int iRand = GC.getGame().getJonRandNum(100, "Ignore Damage Chance");
+				if (iRand <= pAffectedUnit->GetIgnoreDamageChance())
+				{
+					iDamage = 0;
+				}
+			}
+#endif
+			if (iDamage <= 0) continue;
+
+			bool bKill = iDamage >= pAffectedUnit->GetCurrHitPoints();
+			pAffectedUnit->changeDamage(iDamage, kAttackPlayer.GetID(), pAttackerUnit->GetID());
+			pAffectedUnit->ShowDamageDeltaText(iDamage, pAffectedUnit->plot());
+
+			if (kAttackPlayer.isHuman())
+			{
+				CvString strBuffer = bKill
+					? GetLocalizedText("TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_ENEMY_DEATH", pAttackerUnit->getNameKey(), pAffectedUnit->getNameKey())
+					: GetLocalizedText("TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_ENEMY", pAttackerUnit->getNameKey(), pAffectedUnit->getNameKey(), iDamage);
+				pkDLLInterface->AddMessage(0, kAttackPlayer.GetID(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+			}
+			if (GET_PLAYER(pAffectedUnit->getOwner()).isHuman())
+			{
+				CvString strBuffer = bKill
+					? GetLocalizedText("TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_DEATH", pAttackerUnit->getNameKey(), pAffectedUnit->getNameKey())
+					: GetLocalizedText("TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE", pAttackerUnit->getNameKey(), pAffectedUnit->getNameKey(), iDamage);
+				pkDLLInterface->AddMessage(0, pAffectedUnit->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+			}
+		}
+
+		CvCity* pAffectedCity = pLoopPlot->getPlotCity();
+		if (pAffectedCity != nullptr && kAttackPlayer.IsAtWarWith(pAffectedCity->getOwner()))
+		{
+			int iAttackerStrength = pAttackerUnit->GetMaxAttackStrength(pFromPlot, pLoopPlot, NULL);
+			int iDefenderStrength = pAffectedCity->getStrengthValue(/*bForRangeStrike*/ false);
+			int iCityDamage = pAttackerUnit->getCombatDamage(iAttackerStrength, iDefenderStrength, pAttackerUnit->getDamage(),
+				/*bIncludeRand*/ false, /*bAttackerIsCity*/ false, /*bDefenderIsCity*/ true);
+			if (iCityDamage > 0)
+				iCityDamage = (int)((int64)iCityDamage * iPenMod / 100);
+			if (iCityDamage > 0)
+			{
+				pAffectedCity->changeDamage(iCityDamage);
+
+				if (kAttackPlayer.isHuman() || GET_PLAYER(pAffectedCity->getOwner()).isHuman())
+				{
+					CvString strBuffer = GetLocalizedText("TXT_KEY_NOTIFICATION_PENETRATION_CITY_DAMAGE", pAttackerUnit->getNameKey(), pAffectedCity->getNameKey(), iCityDamage);
+					pkDLLInterface->AddMessage(0, kAttackPlayer.GetID(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+					if (pAffectedCity->getOwner() != kAttackPlayer.GetID())
+					{
+						pkDLLInterface->AddMessage(0, pAffectedCity->getOwner(), true, GC.getEVENT_MESSAGE_TIME(), strBuffer);
+					}
+				}
+			}
+		}
+	}
+}
 
 #ifdef MOD_PROMOTION_ADD_ENEMY_PROMOTIONS
 static void DoAddEnemyPromotionsInner(CvUnit* thisUnit, CvUnit* thatUnit, BattleUnitTypes thisBattleType, const CvCombatInfo& kCombatInfo)

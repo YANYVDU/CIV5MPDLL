@@ -64,6 +64,7 @@ protected:
 
 	static int lGetPurchaseUnitTooltip(lua_State* L);
 	static int lGetFaithPurchaseUnitTooltip(lua_State* L);
+	static int lGetCulturePurchaseUnitTooltip(lua_State* L);
 	static int lGetPurchaseBuildingTooltip(lua_State* L);
 	static int lGetFaithPurchaseBuildingTooltip(lua_State* L);
 
@@ -128,6 +129,7 @@ protected:
 	static int lGetNumTimesAttackedThisTurn(lua_State* L);
 	static int lGetUnitPurchaseCost(lua_State* L);
 	static int lGetUnitFaithPurchaseCost(lua_State* L);
+	static int lGetUnitCulturePurchaseCost(lua_State* L);
 	static int lGetBuildingPurchaseCost(lua_State* L);
 	static int lGetBuildingFaithPurchaseCost(lua_State* L);
 	static int lGetProjectPurchaseCost(lua_State* L);

@@ -6389,6 +6389,78 @@ int CvCity::GetFaithPurchaseCost(UnitTypes eUnit, bool bIncludeBeliefDiscounts)
 }
 
 //	--------------------------------------------------------------------------------
+// 
+//	--------------------------------------------------------------------------------
+int CvCity::GetCulturePurchaseCost(UnitTypes eUnit)
+{
+	VALIDATE_OBJECT
+
+		CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eUnit);
+	if (pkUnitInfo == NULL)
+	{
+		return -1;
+	}
+
+	const UnitClassTypes eUnitClass = (UnitClassTypes)pkUnitInfo->GetUnitClassType();
+	if (eUnitClass == NO_UNITCLASS)
+	{
+		return -1;
+	}
+
+	CvPlayer& kPlayer = GET_PLAYER(getOwner());
+
+	
+	int iCostModifier = -1;
+	for (int iPolicyLoop = 0; iPolicyLoop < kPlayer.GetPlayerPolicies()->GetPolicies()->GetNumPolicies(); iPolicyLoop++)
+	{
+		const PolicyTypes eLoopPolicy = static_cast<PolicyTypes>(iPolicyLoop);
+		if (!kPlayer.HasPolicy(eLoopPolicy))
+			continue;
+
+		CvPolicyEntry* pkLoopPolicyInfo = GC.getPolicyInfo(eLoopPolicy);
+		if (pkLoopPolicyInfo == NULL)
+			continue;
+
+		if (pkLoopPolicyInfo->IsUnitPurchaseClass(eUnitClass))
+		{
+			const int iMod = pkLoopPolicyInfo->GetUnitPurchaseClassCostModifier(eUnitClass);
+			if (iMod > 0 && (iCostModifier < 0 || iMod < iCostModifier))
+			{
+				iCostModifier = iMod;
+			}
+		}
+	}
+
+	
+	if (iCostModifier <= 0)
+	{
+		return -1;
+	}
+
+	
+	int iCost = pkUnitInfo->GetProductionCost();
+	iCost = iCost * iCostModifier / 100;
+
+	
+	iCost *= GC.getGame().getGameSpeedInfo().getTrainPercent();
+	iCost /= 100;
+
+	
+	if (!isHuman() && !kPlayer.IsAITeammateOfHuman() && !isBarbarian())
+	{
+		iCost *= GC.getGame().getHandicapInfo().getAITrainPercent();
+		iCost /= 100;
+	}
+
+
+	int iDivisor = /*10*/ GC.getGOLD_PURCHASE_VISIBLE_DIVISOR();
+	iCost /= iDivisor;
+	iCost *= iDivisor;
+
+	return iCost;
+}
+
+//	--------------------------------------------------------------------------------
 int CvCity::GetPurchaseCost(BuildingTypes eBuilding)
 {
 	VALIDATE_OBJECT
@@ -19949,6 +20021,44 @@ bool CvCity::IsCanPurchase(bool bTestPurchaseCost, bool bTestTrainable, UnitType
 		}
 	}
 	break;
+
+	case YIELD_CULTURE:
+	{
+		int iCultureCost = -1;
+
+		if (eUnitType != NO_UNIT)
+		{
+			CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eUnitType);
+			if (pkUnitInfo == NULL)
+			{
+				return false;
+			}
+
+			iCultureCost = GetCulturePurchaseCost(eUnitType);
+			if (iCultureCost < 1)
+			{
+				return false;
+			}
+
+			if (!canTrain(eUnitType, false, !bTestTrainable, false /*bIgnoreCost*/, true /*bWillPurchase*/))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+
+		if (bTestPurchaseCost)
+		{			
+			if (iCultureCost > kPlayer.getJONSCulture())
+			{
+				return false;
+			}
+		}
+	}
+	break;
 	}
 
 	return true;
@@ -20384,6 +20494,67 @@ void CvCity::Purchase(UnitTypes eUnitType, BuildingTypes eBuildingType, ProjectT
 				strLogMsg += temp;
 				GC.getGame().GetGameReligions()->LogReligionMessage(strLogMsg);
 			}
+		}
+	}
+	break;
+
+	case YIELD_CULTURE:
+	{
+		int iCultureCost = 0;
+
+		if (!IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eUnitType, eBuildingType, eProjectType, YIELD_CULTURE))
+			return;
+
+		if (eUnitType != NO_UNIT)
+		{
+			iCultureCost = GetCulturePurchaseCost(eUnitType);
+		}
+		else
+		{
+			return;
+		}
+
+		if (eUnitType >= 0)
+		{
+			int iResult = CreateUnit(eUnitType, false /*bIsGold*/, false /*bIsFaith*/);
+			CvAssertMsg(iResult != FFreeList::INVALID_INDEX, "Unable to create unit");
+			if (iResult == FFreeList::INVALID_INDEX)
+				return;	
+
+			CvUnit* pUnit = kPlayer.getUnit(iResult);
+#if defined(MOD_BUGFIX_MOVE_AFTER_PURCHASE)
+			if (!pUnit->getUnitInfo().CanMoveAfterPurchase())
+			{
+#endif
+				pUnit->setMoves(0);
+#if defined(MOD_BUGFIX_MOVE_AFTER_PURCHASE)
+			}
+#endif
+
+#if defined(MOD_EVENTS_CITY)
+			if (MOD_EVENTS_CITY) {
+				GAMEEVENTINVOKE_HOOK(GAMEEVENT_CityTrained, getOwner(), GetID(), pUnit->GetID(), false, false);
+			}
+			else {
+#endif
+				ICvEngineScriptSystem1* pkScriptSystem = gDLL->GetScriptSystem();
+				if (pkScriptSystem)
+				{
+					CvLuaArgsHandle args;
+					args->Push(getOwner());
+					args->Push(GetID());
+					args->Push(pUnit->GetID());
+					args->Push(false); // bGold
+					args->Push(false); // bFaith/bCulture
+
+					bool bResult;
+					LuaSupport::CallHook(pkScriptSystem, "CityTrained", args.get(), bResult);
+				}
+#if defined(MOD_EVENTS_CITY)
+			}
+#endif
+
+			kPlayer.changeJONSCulture(-iCultureCost);
 		}
 	}
 	break;

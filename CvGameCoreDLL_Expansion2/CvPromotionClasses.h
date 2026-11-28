@@ -179,6 +179,8 @@ public:
 	int GetDamageAoEFortified() const;
 	int GetMoraleBreakChance() const;
 	int GetIgnoreDamageChance() const;
+	int GetPenetrationDamage() const;
+	int GetPenetrationRange() const;
 	int GetWorkRateMod() const;
 	int GetTurnDamage() const;
 	int GetTurnDamagePercent() const;
@@ -790,6 +792,8 @@ protected:
 	int m_iAOEDamageOnPillage;
 	int m_iMoraleBreakChance;
 	int m_iIgnoreDamageChance;
+	int m_iPenetrationDamage;
+	int m_iPenetrationRange;
 	int m_iDamageAoEFortified;
 	int m_iWorkRateMod;
 	int m_iTurnDamage;

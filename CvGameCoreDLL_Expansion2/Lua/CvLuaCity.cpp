@@ -182,6 +182,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 
 	Method(GetPurchaseUnitTooltip);
 	Method(GetFaithPurchaseUnitTooltip);
+	Method(GetCulturePurchaseUnitTooltip);
 	Method(GetPurchaseBuildingTooltip);
 	Method(GetFaithPurchaseBuildingTooltip);
 
@@ -250,6 +251,7 @@ void CvLuaCity::PushMethods(lua_State* L, int t)
 	Method(GetNumTimesAttackedThisTurn);
 	Method(GetUnitPurchaseCost);
 	Method(GetUnitFaithPurchaseCost);
+	Method(GetUnitCulturePurchaseCost);
 	Method(GetBuildingPurchaseCost);
 	Method(GetBuildingFaithPurchaseCost);
 	Method(GetProjectPurchaseCost);
@@ -1546,6 +1548,46 @@ int CvLuaCity::lGetFaithPurchaseUnitTooltip(lua_State* L)
 	lua_pushstring(L, toolTip.c_str());
 	return 1;
 }
+
+//------------------------------------------------------------------------------
+int CvLuaCity::lGetCulturePurchaseUnitTooltip(lua_State* L)
+{
+	CvString toolTip;
+	CvCity* pkCity = GetInstance(L);
+	const UnitTypes eUnit = (UnitTypes)lua_tointeger(L, 2);
+	pkCity->canTrain(eUnit, false, false, false, false, &toolTip);
+
+	if (!pkCity->CanPlaceUnitHere(eUnit))
+	{
+		Localization::String localizedText = Localization::Lookup("TXT_KEY_CANNOT_PURCHASE_UNIT_HERE");
+
+		const char* const localized = localizedText.toUTF8();
+		if (localized)
+		{
+			if (!toolTip.IsEmpty())
+				toolTip += "[NEWLINE]";
+
+			toolTip += localized;
+		}
+	}
+
+	if (pkCity->GetCulturePurchaseCost(eUnit) > GET_PLAYER(pkCity->getOwner()).getJONSCulture())
+	{
+		Localization::String localizedText = Localization::Lookup("TXT_KEY_CANNOT_PURCHASE_NO_CULTURE");
+
+		const char* const localized = localizedText.toUTF8();
+		if (localized)
+		{
+			if (!toolTip.IsEmpty())
+				toolTip += "[NEWLINE]";
+
+			toolTip += localized;
+		}
+	}
+
+	lua_pushstring(L, toolTip.c_str());
+	return 1;
+}
 //------------------------------------------------------------------------------
 int CvLuaCity::lGetPurchaseBuildingTooltip(lua_State* L)
 {
@@ -1988,6 +2030,12 @@ int CvLuaCity::lGetUnitPurchaseCost(lua_State* L)
 int CvLuaCity::lGetUnitFaithPurchaseCost(lua_State* L)
 {
 	return BasicLuaMethod<int, UnitTypes>(L, &CvCity::GetFaithPurchaseCost);
+}
+//------------------------------------------------------------------------------
+// int GetCulturePurchaseCost(UnitTypes eUnit);
+int CvLuaCity::lGetUnitCulturePurchaseCost(lua_State* L)
+{
+	return BasicLuaMethod<int, UnitTypes>(L, &CvCity::GetCulturePurchaseCost);
 }
 //------------------------------------------------------------------------------
 //int GetPurchaseCost(BuildingTypes eBuilding);

@@ -189,3 +189,9 @@ create table Policy_CityStateGiftUnitFreePromotion (
     UnitCombatType text references UnitCombatInfos(Type),
     PromotionType text references UnitPromotions(Type)
 );
+
+CREATE TABLE IF NOT EXISTS Policy_EnableUnitPurchase (
+    PolicyType     TEXT    NOT NULL REFERENCES Policies(Type),
+    UnitClassType  TEXT    NOT NULL REFERENCES UnitClasses(Type),
+    CostModifier   INTEGER NOT NULL DEFAULT 100
+);

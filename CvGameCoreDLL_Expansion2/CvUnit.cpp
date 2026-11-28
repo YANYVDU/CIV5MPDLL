@@ -414,6 +414,8 @@ CvUnit::CvUnit() :
 	, m_iAuraEffectChange(0)
 #endif
 	, m_iGreatGeneralModifier("CvUnit::m_iGreatGeneralModifier", m_syncArchive)
+	, m_iPenetrationDamage("CvUnit::m_iPenetrationDamage", m_syncArchive)
+	, m_iPenetrationRange("CvUnit::m_iPenetrationRange", m_syncArchive)
 #if defined(MOD_UNITS_NO_SUPPLY)
 	, m_iNoSupply(0)
 #endif
@@ -1468,6 +1470,8 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_iAuraEffectChange = 0;
 #endif
 	m_iGreatGeneralModifier = 0;
+	m_iPenetrationDamage = 0;
+	m_iPenetrationRange = 0;
 	m_iGreatGeneralReceivesMovementCount = 0;
 	m_iGreatGeneralCombatModifier = 0;
 	m_iIgnoreGreatGeneralBenefit = 0;
@@ -25239,6 +25243,40 @@ void CvUnit::changeGreatGeneralModifier(int iChange)
 }
 
 //	--------------------------------------------------------------------------------
+int CvUnit::GetPenetrationDamage() const
+{
+	VALIDATE_OBJECT
+	return m_iPenetrationDamage;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::ChangePenetrationDamage(int iChange)
+{
+	VALIDATE_OBJECT
+		if (iChange != 0)
+		{
+			m_iPenetrationDamage += iChange;
+		}
+}
+
+//	--------------------------------------------------------------------------------
+int CvUnit::GetPenetrationRange() const
+{
+	VALIDATE_OBJECT
+	return m_iPenetrationRange;
+}
+
+//	--------------------------------------------------------------------------------
+void CvUnit::ChangePenetrationRange(int iChange)
+{
+	VALIDATE_OBJECT
+		if (iChange != 0)
+		{
+			m_iPenetrationRange += iChange;
+		}
+}
+
+//	--------------------------------------------------------------------------------
 bool CvUnit::IsGreatGeneralReceivesMovement() const
 {
 	return m_iGreatGeneralReceivesMovementCount > 0;
@@ -27568,6 +27606,8 @@ void CvUnit::setHasPromotion(PromotionTypes eIndex, bool bNewValue)
 		ChangeAuraEffectChange(thisPromotion.GetAuraEffectChange() * iChange);
 #endif
 		changeGreatGeneralModifier(thisPromotion.GetGreatGeneralModifier() * iChange);
+		ChangePenetrationDamage(thisPromotion.GetPenetrationDamage() * iChange);
+		ChangePenetrationRange(thisPromotion.GetPenetrationRange() * iChange);
 		ChangeGreatGeneralReceivesMovementCount(thisPromotion.IsGreatGeneralReceivesMovement() ? iChange: 0);
 		ChangeGreatGeneralCombatModifier(thisPromotion.GetGreatGeneralCombatModifier() * iChange);
 

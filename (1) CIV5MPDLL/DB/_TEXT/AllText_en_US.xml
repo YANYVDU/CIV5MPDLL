@@ -2,6 +2,15 @@
 <GameData>
 	<!-- Espionage.xml -->
 	<Language_en_US>
+	<Row Tag="TXT_KEY_CANNOT_PURCHASE_NO_CULTURE">
+		<Text>Not enough [ICON_CULTURE] Culture!</Text>
+	</Row>
+	<Row Tag="TXT_KEY_CULTURE_PURCHASE">
+		<Text>Culture Purchase</Text>
+	</Row>
+	<Row Tag="TXT_KEY_CULTURE_PURCHASE_UNIT">
+		<Text>Buy with Culture</Text>
+	</Row>
 		<Row Tag="TXT_KEY_UNIT_PLAGUE_CHANCE">
 			<Text>[COLOR_CYAN]Status Effect Chance ({1_Name})[ENDCOLOR]</Text>
 		</Row>
@@ -324,6 +333,21 @@
 	</Language_en_US>
 
 	<Language_en_US>
+	<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE">
+      <Text>Penetration Damage: {1_Str} deals {3_Num} damage to {2_Str}.</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_DEATH">
+      <Text>Penetration Damage: {1_Str} killed {2_Str}.</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_ENEMY">
+      <Text>Your {1_Str} penetrated and hit {2_Str}, dealing {3_Num} damage.</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_DAMAGE_ENEMY_DEATH">
+       <Text>Your {1_Str} penetrated and killed {2_Str}.</Text>
+</Row>
+<Row Tag="TXT_KEY_NOTIFICATION_PENETRATION_CITY_DAMAGE">
+       <Text>{1_Str}'s penetration attack dealt {3_Num} damage to {2_Str}.</Text>
+</Row>
 		<Row Tag="TXT_KEY_NOTIFICATION_WAR_CASUALTIES_MESSAGE">
 			<Text>Casualties in the battle has caused {2_loss} [ICON_CITIZEN] Citizen lost (urgently drawn into the reserves) in your city: [COLOR_NEGATIVE_TEXT]{@1_CityName}[ENDCOLOR]!</Text>
 		</Row>

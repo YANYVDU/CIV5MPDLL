@@ -4,7 +4,8 @@ alter table UnitPromotions add MultiAttackBonus integer default 0;
 alter table UnitPromotions add AntiHigherPopMod integer default 0;
 alter table UnitPromotions add GoldenAgeMod integer default 0;
 alter table UnitPromotions add WoundedMod integer default 0;
-
+ALTER TABLE UnitPromotions ADD COLUMN PenetrationDamage INTEGER DEFAULT 0;
+ALTER TABLE UnitPromotions ADD COLUMN PenetrationRange INTEGER DEFAULT 0;
 alter table UnitPromotions add MoveLfetAttackMod integer default 0;
 alter table UnitPromotions add MoveLeftDefenseMod integer default 0;
 alter table UnitPromotions add MoveUsedAttackMod integer default 0;

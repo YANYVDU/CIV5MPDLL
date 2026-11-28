@@ -1324,6 +1324,11 @@ public:
 	int getGreatGeneralModifier() const;
 	void changeGreatGeneralModifier(int iChange);
 
+	int GetPenetrationDamage() const;
+	void ChangePenetrationDamage(int iChange);
+	int GetPenetrationRange() const;
+	void ChangePenetrationRange(int iChange);
+
 	bool IsGreatGeneralReceivesMovement() const;
 	void ChangeGreatGeneralReceivesMovementCount(int iChange);
 	int GetGreatGeneralCombatModifier() const;
@@ -1331,6 +1336,7 @@ public:
 
 	bool IsIgnoreGreatGeneralBenefit() const;
 	void ChangeIgnoreGreatGeneralBenefitCount(int iChange);
+
 	// END Great General Stuff
 
 #if defined(MOD_UNITS_NO_SUPPLY)
@@ -2478,6 +2484,8 @@ protected:
 	int m_iAuraEffectChange;
 #endif
 	FAutoVariable<int, CvUnit> m_iGreatGeneralModifier;
+	FAutoVariable<int, CvUnit> m_iPenetrationDamage;
+	FAutoVariable<int, CvUnit> m_iPenetrationRange;
 	int m_iGreatGeneralReceivesMovementCount;
 	int m_iGreatGeneralCombatModifier;
 	int m_iIgnoreGreatGeneralBenefit;

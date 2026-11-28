@@ -1517,6 +1517,34 @@ bool CvPolicyEntry::CacheResults(Database::Results& kResults, CvDatabaseUtility&
 	}
 #endif
 
+	// Policy_EnableUnitPurchase: 
+	{
+		m_UnitPurchaseClasses.clear();
+
+		std::string sqlKey = "m_UnitPurchaseClasses";
+		Database::Results* pResults = kUtility.GetResults(sqlKey);
+		if (pResults == NULL)
+		{
+			const char* szSQL = "select u.ID, p.CostModifier from Policy_EnableUnitPurchase p, UnitClasses u where p.PolicyType = ? and p.UnitClassType = u.Type;";
+			pResults = kUtility.PrepareResults(sqlKey, szSQL);
+		}
+
+		pResults->Bind(1, szPolicyType, false);
+
+		while (pResults->Step())
+		{
+			const int UnitClassID = pResults->GetInt(0);
+			const int CostModifier = pResults->GetInt(1);
+
+			m_UnitPurchaseClasses.insert(std::pair<int, int>(UnitClassID, CostModifier));
+		}
+
+		// Trim capacity
+		std::multimap<int, int>(m_UnitPurchaseClasses).swap(m_UnitPurchaseClasses);
+
+		pResults->Reset();
+	}
+
 #ifdef MOD_API_TRADE_ROUTE_YIELD_RATE
 	if (MOD_API_TRADE_ROUTE_YIELD_RATE)
 	{
@@ -3032,6 +3060,26 @@ bool CvPolicyEntry::IsFaithPurchaseUnitClass(const int eUnitClass, const int eCu
 	return false;
 }
 #endif
+
+bool CvPolicyEntry::HasUnitPurchaseClasses() const
+{
+	return (m_UnitPurchaseClasses.size() != 0);
+}
+
+bool CvPolicyEntry::IsUnitPurchaseClass(const int eUnitClass) const
+{
+	return (m_UnitPurchaseClasses.find(eUnitClass) != m_UnitPurchaseClasses.end());
+}
+
+int CvPolicyEntry::GetUnitPurchaseClassCostModifier(const int eUnitClass) const
+{
+	std::multimap<int, int>::const_iterator it = m_UnitPurchaseClasses.find(eUnitClass);
+	if (it != m_UnitPurchaseClasses.end())
+	{
+		return it->second;
+	}
+	return -1;
+}
 
 /// Free experience by unit type
 int CvPolicyEntry::GetUnitCombatFreeExperiences(int i) const

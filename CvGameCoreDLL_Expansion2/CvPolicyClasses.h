@@ -271,6 +271,9 @@ public:
 	bool HasFaithPurchaseUnitClasses() const;
 	bool IsFaithPurchaseUnitClass(const int eUnitClass, const int eCurrentEra) const;
 #endif
+	bool HasUnitPurchaseClasses() const;
+	bool IsUnitPurchaseClass(const int eUnitClass) const;
+	int GetUnitPurchaseClassCostModifier(const int eUnitClass) const;
 	int GetUnitCombatProductionModifiers(int i) const;
 	int GetUnitCombatFreeExperiences(int i) const;
 	int GetBuildingClassHappiness(int i) const;
@@ -636,6 +639,7 @@ private:
 #if defined(MOD_RELIGION_POLICY_BRANCH_FAITH_GP)
 	std::multimap<int, int> m_FaithPurchaseUnitClasses;
 #endif
+	std::multimap<int, int> m_UnitPurchaseClasses;
 	int* m_piPrereqOrPolicies;
 	int* m_piPrereqAndPolicies;
 	int* m_piPolicyDisables;

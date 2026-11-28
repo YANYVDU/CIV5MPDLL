@@ -125,6 +125,8 @@ CvPromotionEntry::CvPromotionEntry():
 	m_iAOEDamageOnPillage(0),
 	m_iMoraleBreakChance(0),
 	m_iIgnoreDamageChance(0),
+	m_iPenetrationDamage(0),
+	m_iPenetrationRange(0),
 	m_iDamageAoEFortified(0),
 	m_iWorkRateMod(0),
 	m_iTurnDamage(0),
@@ -581,6 +583,8 @@ bool CvPromotionEntry::CacheResults(Database::Results& kResults, CvDatabaseUtili
 	m_iOutsideCapitalLandDefenseMod = kResults.GetInt("OutsideCapitalLandDefenseMod");
 	m_iMoraleBreakChance = kResults.GetInt("MoraleBreakChance");
 	m_iIgnoreDamageChance = kResults.GetInt("IgnoreDamageChance");
+	m_iPenetrationDamage = kResults.GetInt("PenetrationDamage");
+	m_iPenetrationRange = kResults.GetInt("PenetrationRange");
 	m_iDamageAoEFortified = kResults.GetInt("AoEWhileFortified");
 	m_iWorkRateMod = kResults.GetInt("WorkRateMod");
 
@@ -2318,6 +2322,15 @@ int CvPromotionEntry::GetMoraleBreakChance() const
 int CvPromotionEntry::GetIgnoreDamageChance() const
 {
 	return m_iIgnoreDamageChance;
+}
+int CvPromotionEntry::GetPenetrationDamage() const
+{
+	return m_iPenetrationDamage;
+}
+
+int CvPromotionEntry::GetPenetrationRange() const
+{
+	return m_iPenetrationRange;
 }
 int CvPromotionEntry::GetDamageAoEFortified() const
 {
